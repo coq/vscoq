@@ -5,7 +5,29 @@
   - [EditAt](#command-editAt)
   - [Init](#command-init)
   - [Goal](#command-goal)
+  - [Status](#command-status)
+  - [Query](#command-query)
+  - [Evars](#command-evars)
+  - [Hints](#command-hints)
+  - [Search](#command-search)
+  - [GetOptions](#command-getoptions)
+  - [SetOptions](#command-setoptions)
+  - [MkCases](#command-mkcases)
+  - [StopWorker](#command-stopworker)
+  - [PrintAst](#command-printast)
+  - [Annotate](#command-annotate)
 * [Feedback messages](#feedback)
+  - [Added Axiom](#feedback-addedaxiom)
+  - [Processing](#feedback-processing)
+  - [Processed](#feedback-processed)
+  - [Incomplete](#feedback-incomplete)
+  - [Complete](#feedback-complete)
+  - [GlobRef](#feedback-globref)
+  - [Error](#feedback-error)
+  - [InProgress](#feedback-inprogress)
+  - [WorkerStatus](#feedback-workerstatus)
+  - [File Dependencies](#feedback-filedependencies)
+  - [File Loaded](#feedback-fileloaded)
 
 Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace).
 Examples: "Lemma a: True.", "(* asdf *) Qed.", "auto; reflexivity."
@@ -25,9 +47,6 @@ Focusing: take a range of sentences and make then the current focus; place all o
 Unfocusing: append the context to the top and bottom of the current stack (context becomes empty).
 Push: push on top of current stack
 Pop: pop from current stack
-
-  
-
 --------------------------
 
 ## <a name="commands">
@@ -408,14 +427,14 @@ Feedback messages are issued out-of-band,
   giving updates on the current state of sentences/stateIds,
   worker-thread status, etc.
 
-* Added Axiom: in response to `Axiom`, `admit`, `Admitted`, etc.
+* <a name="feedback-addedaxiom">Added Axiom</a>: in response to `Axiom`, `admit`, `Admitted`, etc.
 ```html
 <feedback object="state" route="0">
     <state_id val="${stateId}"/>
     <feedback_content val="addedaxiom" />
 </feedback>
 ```
-* Processing
+* <a name="feedback-processing">Processing</a>
 ```html
 <feedback object="state" route="0">
     <state_id val="${stateId}"/>
@@ -424,7 +443,7 @@ Feedback messages are issued out-of-band,
     </feedback_content>
 </feedback>
 ```
-* Processed
+* <a name="feedback-processed">Processed</a>
 ```html
 </feedback>
     <feedback object="state" route="0">
@@ -432,16 +451,16 @@ Feedback messages are issued out-of-band,
     <feedback_content val="processed"/>
 </feedback>
 ```
-* Incomplete
+* <a name="feedback-incomplete">Incomplete</a>
 ```html
 <feedback object="state" route="0">
     <state_id val="${stateId}"/>
     <feedback_content val="incomplete" />
 </feedback>
 ```
-* Complete
-* GlobRef
-* Error. Issued, for example, when a processed tactic has failed or is unknown.
+* <a name="feedback-complete">Complete</a>
+* <a name="feedback-globref">GlobRef</a>
+* <a name="feedback-error">Error</a>. Issued, for example, when a processed tactic has failed or is unknown.
 The error offsets may both be 0 if there is no particular syntax involved.
 ```html
 <feedback object="state" route="0">
@@ -452,7 +471,7 @@ The error offsets may both be 0 if there is no particular syntax involved.
   </feedback_content>
 </feedback>
 ```
-* InProgress
+* <a name="feedback-inprogress">InProgress</a>
 ```html
 <feedback object="state" route="0">
     <state_id val="${stateId}"/>
@@ -461,7 +480,7 @@ The error offsets may both be 0 if there is no particular syntax involved.
     </feedback_content>
 </feedback>
 ```
-* WorkerStatus
+* <a name="feedback-workerstatus">WorkerStatus</a>
 Ex: `workername = "proofworker:0"`
 Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 ```html
@@ -475,7 +494,7 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
     </feedback_content>
 </feedback>
 ```
-* File Dependencies. Typically in response to a `Require`. Dependencies are *.vo files.
+* <a name="feedback-filedependencies">File Dependencies</a>. Typically in response to a `Require`. Dependencies are *.vo files.
   - State `stateId` directly depends on `dependency`:
   ```html
   <feedback object="state" route="0">
@@ -498,7 +517,7 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
       </feedback_content>
   </feedback>
   ```
-* File loaded. For state `stateId`, module `module` is being loaded from `voFileName`
+* <a name="feedback-fileloaded">File Loaded</a>. For state `stateId`, module `module` is being loaded from `voFileName`
 ```html
 <feedback object="state" route="0">
   <state_id val="${stateId}"/>
