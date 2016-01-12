@@ -1,0 +1,23 @@
+{
+	"version": "0.1.0",
+	// List of configurations. Add new configurations or edit existing ones.
+	"configurations": [
+		{
+			"name": "Attach",
+			"type": "node",
+			"request": "attach",
+			"port": 6004,
+			"sourceMaps": true,
+			"outDir": "../client/server"
+		},
+		{
+			"name": "Attach Mocha Tests",
+			"type": "node",
+			"request": "attach",
+			"port": 5858,
+			"sourceMaps": true,
+			"outDir": "../client/server",
+			"preLaunchTask": "test-debug"
+		}  
+	]
+}

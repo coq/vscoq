@@ -1,0 +1,80 @@
+{
+	"name": "VSCoq",
+	"description": "IDE for the Coq Proof Assistant",
+  "author": {
+    "name": "Christian J. Bell",
+    "email": "cj@csail.mit.edu"
+  },
+	"license": "MIT",
+	"version": "0.0.1",
+	"publisher": "Christian J. Bell",
+	"engines": {
+		"vscode": "0.10.x"
+	},
+	"categories": [
+		"Languages"
+	],
+	"activationEvents": [
+		"onLanguage:coq"
+	],
+	"main": "./out/src/extension",
+	"contributes": {
+		"languages": [{
+			"id": "coq",
+			"aliases": ["Coq", "coq", "Gallina", "gallina"],
+			"extensions": [".v"],
+			"configuration": "./coq.configuration.json"
+		}],
+		"grammars": [{
+			"language": "coq",
+			"scopeName": "source.coq",
+			"path": "./syntaxes/coq.tmLanguage"
+		}],
+		"configuration": {
+			"type": "object",
+			"title": "Coq configuration",
+			"properties": {
+				"coqtop.wrapper": {
+					"type": "string",
+					"default": "C:/Users/cj/Research/vscoq/coqtopw/bin/Debug/coqtopw.exe",
+					"description": "Executable to wrap coqtop."
+				},
+				"coqtop.coqPath": {
+					"type": "string",
+					"default": "C:/Coq8.5rc1/bin/",
+					"description": "Path to coqc and coqtop binaries."
+				},
+        "nodejs.path": {"type": "string", "default": "C:/Program Files/nodejs/", "description": "Path to Node.js"}
+			}
+		},
+    "commands": [
+      {"command": "extension.coq.quit", "title": "Coq: Quit"},
+      {"command": "extension.coq.reset", "title": "Coq: Reset"},
+      {"command": "extension.coq.interrupt", "title": "Coq: Interrupt"},
+      {"command": "extension.coq.stepForward", "title": "Coq: Step Forward"},
+      {"command": "extension.coq.stepBackward", "title": "Coq: Step Backward"},
+      {"command": "extension.coq.interpretToPoint", "title": "Coq: Interpret To Point"},
+      {"command": "extension.coq.interpretToEnd", "title": "Coq: Interpret To End"}
+    ],    
+    "keybindings": [
+        {"command": "extension.coq.reset", "key": "Ctrl+Shift+Home"},
+        {"command": "extension.coq.interrupt", "key": "Ctrl+Shift+~"},
+        {"command": "extension.coq.stepForward", "key": "Ctrl+Shift+Down"},
+        {"command": "extension.coq.stepBackward", "key": "Ctrl+Shift+Up"},
+        {"command": "extension.coq.interpretToPoint", "key": "Ctrl+Shift+Right"},
+        {"command": "extension.coq.interpretToEnd", "key": "Ctrl+Shift+End"}
+    ]
+	},	
+	"scripts": {
+		"vscode:prepublish": "node ./node_modules/vscode/bin/compile",
+		"compile": "node ./node_modules/vscode/bin/compile -watch -p ./"
+	},
+	"devDependencies": {
+		"typescript": "^1.6.2",
+    "vscode": "0.10.x"
+	},
+	"dependencies": {
+    "vscode-jsonrpc": "0.10.x",
+		"vscode-languageclient": "^1.1.0"
+	}
+}

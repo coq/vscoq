@@ -1,0 +1,31 @@
+{
+	"version": "0.1.0",
+	"command": "npm",
+	"isShellCommand": true,
+  "suppressTaskName": true,
+	"showOutput": "silent",
+  "tasks": [
+    {
+      "taskName": "watch",
+      "args": ["run", "watch"],
+	    "isWatching": true,
+      "isBuildCommand": true,
+      "isTestCommand": false,
+      "problemMatcher": "$tsc-watch"
+    },
+    {
+      "taskName": "test",
+      "args": ["test"],
+      "isBuildCommand": false,
+      "isTestCommand": true,
+      "showOutput": "always"
+    },
+    {
+      "taskName": "test-debug",
+      "args": ["run", "test-debug"],
+      "isBuildCommand": false,
+      "isTestCommand": false,
+      "showOutput": "always"
+    }
+  ]
+}

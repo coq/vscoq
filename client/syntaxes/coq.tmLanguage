@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>fileTypes</key>
+    <array>
+        <string>v</string>
+    </array>
+    <!-- <key>foldingStartMarker</key>
+    <string>(?x:       # turn on extended mode
+                          ^        # a line beginning with
+                          \s*      # some optional space
+                          [{\[]    # the start of an object or array
+                          (?!      # but not followed by
+                            .*     # whatever
+                            [}\]]  # and the close of an object or array
+                            ,?     # an optional comma
+                            \s*    # some optional space
+                            $      # at the end of the line
+                          )
+                          |        # ...or...
+                          [{\[]    # the start of an object or array
+                          \s*      # some optional space
+                          $        # at the end of the line
+                        )</string>
+    <key>foldingStopMarker</key>
+    <string>(?x:     # turn on extended mode
+                         ^      # a line beginning with
+                         \s*    # some optional space
+                         [}\]]  # and the close of an object or array
+                       )</string> -->
+    <key>name</key>
+    <string>Coq</string>
+    <key>patterns</key>
+    <array>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Require|Import|Export|Local|Open|Scope)\b</string>
+            <key>comment</key>
+            <string>Vernacular import keywords</string>
+            <key>name</key>
+            <string>keyword.control.import.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>(Lemma|Theorem)\s+([a-zA-Z][a-zA-Z0-9_']*)</string>
+            <key>comment</key>
+            <string>Theorem declarations</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>2</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.function.theorem.coq</string>
+                </dict>
+            </dict>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>(Fixpoint|Definition|Let)\s+([a-zA-Z_][a-zA-Z0-9_']*)</string>
+            <key>comment</key>
+            <string>Definitions</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>2</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.function.coq</string>
+                </dict>
+            </dict>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>(Inductive)\s+([a-zA-Z][a-zA-Z0-9_']*)</string>
+            <key>comment</key>
+            <string>Inductive type declarations</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>2</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.type.coq</string>
+                </dict>
+            </dict>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>(Ltac)\s+([a-zA-Z][a-zA-Z0-9_']*)</string>
+            <key>comment</key>
+            <string>Ltac declarations</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>2</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.function.ltac</string>
+                </dict>
+            </dict>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Qed|Defined|Implicit|Set|Arguments|Notation|Section|End|Variables|Record|Check|Print|Eval)\b</string>
+            <key>comment</key>
+            <string>Vernacular keywords</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(admit|Admitted)\b</string>
+            <key>comment</key>
+            <string>Admits are bad</string>
+            <key>name</key>
+            <string>invalid.illegal.admit.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>:|\||=|&lt;|&gt;|\*|\+|-|\{|\}</string>
+            <key>comment</key>
+            <string>Operators</string>
+            <key>name</key>
+            <string>keyword.operator.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(forall|exists|Type|Set|Prop)\b</string>
+            <key>comment</key>
+            <string>Type keywords</string>
+            <key>name</key>
+            <string>support.type.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(try|repeat|progress|set|fresh|solve|now|first)\b</string>
+            <key>comment</key>
+            <string>Ltac keywords</string>
+            <key>name</key>
+            <string>keyword.control.ltac</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(into|with|eqn|by|as|using)\b</string>
+            <key>comment</key>
+            <string>Common Ltac connectors</string>
+            <key>name</key>
+            <string>keyword.control.ltac</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(match|fun|with|returns|end|let|in|if|then|else)\b</string>
+            <key>comment</key>
+            <string>Gallina keywords</string>
+            <key>name</key>
+            <string>keyword.control.gallina</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(intro|intros|induction|destruct|auto|eauto|eassumption|apply|eapply|assumption|constructor|econstructor|reflexivity|inversion|assert|split|omega|fold|unfold|specialize|rewrite|erewrite|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember)\b</string>
+            <key>comment</key>
+            <string>Ltac builtins</string>
+            <key>name</key>
+            <string>support.function.builtin.ltac</string>
+        </dict>
+
+        <dict>
+            <key>applyEndPatternLast</key>
+            <integer>1</integer>
+            <key>begin</key>
+            <string>\(\*(?!#)</string>
+            <key>end</key>
+            <string>\*\)</string>
+            <key>name</key>
+            <string>comment.block.coq</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>include</key>
+                    <string>#block_comment</string>
+                </dict>
+            </array>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\bnil\b</string>
+            <key>name</key>
+            <string>constant.language.nil.gallina</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b((0(x|X)[0-9a-fA-F]+)|([0-9]+(\.[0-9]+)?))\b</string>
+            <key>name</key>
+            <string>constant.numeric.gallina</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\bTrue\b</string>
+            <key>name</key>
+            <string>constant.language.boolean.true.gallina</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\bFalse\b</string>
+            <key>name</key>
+            <string>constant.language.boolean.false.gallina</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b_\b</string>
+            <key>name</key>
+            <string>constant.language.wildcard.coq</string>
+        </dict>
+
+        <dict>
+            <key>begin</key>
+            <string>"</string>
+            <key>beginCaptures</key>
+            <dict>
+                <key>0</key>
+                <dict>
+                    <key>name</key>
+                    <string>punctuation.definition.string.begin.coq</string>
+                </dict>
+            </dict>
+            <key>end</key>
+            <string>"</string>
+            <key>endCaptures</key>
+            <dict>
+                <key>0</key>
+                <dict>
+                    <key>name</key>
+                    <string>punctuation.definition.string.end.coq</string>
+                </dict>
+            </dict>
+            <key>name</key>
+            <string>string.quoted.double.coq</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>match</key>
+                    <string>\\(x\h{2}|[0-2][0-7]{,2}|3[0-6][0-7]|37[0-7]?|[4-7][0-7]?|.)</string>
+                    <key>name</key>
+                    <string>constant.character.escape.coq</string>
+                </dict>
+            </array>
+        </dict>
+
+    </array>
+
+    <key>repository</key>
+    <dict>
+        <key>block_comment</key>
+        <dict>
+            <key>applyEndPatternLast</key>
+            <integer>1</integer>
+            <key>begin</key>
+            <string>\(\*(?!#)</string>
+            <key>end</key>
+            <string>\*\)</string>
+            <key>name</key>
+            <string>comment.block.coq</string>
+            <key>patterns</key>
+            <array>
+                <dict>
+                    <key>include</key>
+                    <string>#block_comment</string>
+                </dict>
+            </array>
+        </dict>
+    </dict>
+
+    <key>scopeName</key>
+    <string>source.coq</string>
+    <key>uuid</key>
+    <string>CDE1AD3A-C094-457D-B321-93009C6BCFDA</string>
+</dict>
+</plist>

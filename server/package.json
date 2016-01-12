@@ -1,0 +1,31 @@
+{
+  "name": "Coq-Server",
+  "description": "Language server for Coq.",
+  "version": "0.0.1",
+  "author": {
+    "name": "Christian J. Bell",
+    "email": "cj@csail.mit.edu"
+  },
+  "publisher": "Christian J. Bell",
+  "license": "MIT",
+  "engines": {
+    "node": "*",
+		"vscode": "0.10.x"
+  },
+  "dependencies": {
+    "vscode-jsonrpc": "1.0.1",
+    "vscode-languageserver": "^1.1.1",
+    "sax": "1.1.4 ",
+    "async": "1.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^1.7.5",
+    "mocha": "2.3.4"
+  },
+  "scripts": {
+    "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p .",
+		"test": "tsc -p . && mocha -u tdd ../client/server/test",
+		"test-debug": "tsc -p . && mocha -u tdd --debug-brk ../client/server/test",
+    "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ."
+  }
+}

@@ -1,0 +1,1 @@
+This extension connects Visual Studio Code interface to the Coq language server (`../server`)
