@@ -59,7 +59,7 @@ States:
     </pair>
   </pair>
 </call>```
-### *Returns*
+#### *Returns*
 * The added command is given a fresh `stateId` and becomes the next "tip".
 ```html
 <value val="good">
@@ -109,7 +109,7 @@ state that should become the next tip.
 -------------------------------
 
 ### <a name="command-editAt">**EditAt(stateId: integer)**</a>
-### *Returns*
+#### *Returns*
 * Simple backtrack; focused stateId becomes the parent state
 ```html
 <value val="good">
@@ -154,7 +154,7 @@ state that should become the next tip.
 </option>
 </call>```
 
-### *Returns*
+#### *Returns*
 * The initial stateId (not associated with a sentence)
 ```html
 <value val="good">
@@ -170,7 +170,7 @@ state that should become the next tip.
 <unit/>
 </call>
 ```
-### *Returns*
+#### *Returns*
 * If there is a goal. `backgroundGoals`, `shelvedGoals`, and `abandonedGoals` have the same structure as the first set of (current/foreground) goals. 
 ```html
 <value val="good">
@@ -213,7 +213,7 @@ CoqIDE typically sets `force` to `false`.
 <bool val="${force}"/>
 </call>
 ```
-### *Returns*
+#### *Returns*
 *  
 ```html
 <status>
@@ -234,7 +234,7 @@ CoqIDE typically sets `force` to `false`.
 <state_id val="${stateId}"/>
 </call>
 ```
-### *Returns*
+#### *Returns*
 *
 ```html
 (TODO...)
@@ -249,7 +249,7 @@ CoqIDE typically sets `force` to `false`.
 <unit/>
 </call>
 ```
-### *Returns*
+#### *Returns*
 *
 ```html
 (TODO...)
@@ -264,7 +264,7 @@ CoqIDE typically sets `force` to `false`.
 <unit/>
 </call>
 ```
-### *Returns*
+#### *Returns*
 *
 ```html
 (TODO...)
@@ -277,7 +277,7 @@ CoqIDE typically sets `force` to `false`.
 ```html
 <call val="Search">...</call>
 ```
-### *Returns*
+#### *Returns*
 *
 ```html
 (TODO...)
@@ -292,7 +292,7 @@ CoqIDE typically sets `force` to `false`.
 <unit/>
 </call>
 ```
-### *Returns*
+#### *Returns*
 *
 ```html
 (TODO...)
@@ -344,7 +344,7 @@ Printing Implicit : (...false...)
 Printing All : (...false...)
 Printing Universes : (...false...)
 ```
-### *Returns*
+#### *Returns*
 *
 ```html
 (TODO...)
@@ -359,7 +359,7 @@ Printing Universes : (...false...)
 <string>...</string>
 </call>
 ```
-### *Returns*
+#### *Returns*
 *
 ```html
 (TODO...)
@@ -374,7 +374,7 @@ Printing Universes : (...false...)
 <string>${worker}</string>
 </call>
 ```
-### *Returns*
+#### *Returns*
 *
 ```html
 (TODO...)
@@ -389,7 +389,7 @@ Printing Universes : (...false...)
 <unit/>
 </call>
 ```
-### *Returns*
+#### *Returns*
 *
 ```html
 (TODO...)
@@ -405,7 +405,7 @@ Printing Universes : (...false...)
 <string>${annotation}</string>
 </call>
 ```
-### *Returns*
+#### *Returns*
 *
 ```html
 (TODO...)
