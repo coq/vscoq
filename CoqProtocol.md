@@ -58,7 +58,9 @@ States:
       <bool val="false"/>
     </pair>
   </pair>
-</call>```
+</call>
+```
+
 #### *Returns*
 * The added command is given a fresh `stateId` and becomes the next "tip".
 ```html
@@ -104,7 +106,7 @@ state that should become the next tip.
   ```html
   <value val="fail">
 <state_id val="${stateId}"/>${errorMessage}</value>
-  ```
+```
 
 -------------------------------
 
@@ -116,7 +118,9 @@ state that should become the next tip.
     <union val="in_l">
 <unit/>
 </union>
-</value>```
+</value>
+```
+
 * New focus; focusedQedStateId is the closing Qed of the new focus; senteneces between the two should be cleared
 ```html
 <value val="good">
@@ -129,7 +133,8 @@ state that should become the next tip.
         </pair>
       </pair>
     </union>
-</value>```
+</value>
+```
 * Failure: If `stateId` is in an error-state and cannot be jumped to, `errorFreeStateId` is the parent state of ``stateId` that shopuld be edited instead. 
 ```html
 <value val="fail" loc_s="${startOffsetOfError}" loc_e="${endOffsetOfError}">
@@ -145,21 +150,24 @@ state that should become the next tip.
 ```html
 <call val="Init">
 <option val="none"/>
-</call>```
+</call>
+```
 * With options.
 ```html
 <call val="Init">
 <option val="some">
 <string>${options}</string>
 </option>
-</call>```
+</call>
+```
 
 #### *Returns*
 * The initial stateId (not associated with a sentence)
 ```html
 <value val="good">
 <state_id val="${initialStateId}"/>
-</value>```
+</value>
+```
 
 -------------------------------
 
