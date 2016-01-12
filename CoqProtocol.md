@@ -68,9 +68,7 @@ States:
     <pair>
       <state_id val="${newStateId}"/>
       <pair>
-        <union val="in_l">
-<unit/>
-</union>
+        <union val="in_l"><unit/></union>
         <string>${message}</string>
       </pair>
     </pair>
@@ -84,9 +82,7 @@ state that should become the next tip.
     <pair>
       <state_id val="${stateId}"/>
       <pair>
-        <union val="in_r">
-<state_id val="${nextStateId}"/>
-</union>
+        <union val="in_r"><state_id val="${nextStateId}"/></union>
         <string>${message}</string>
       </pair>
     </pair>
@@ -148,16 +144,14 @@ state that should become the next tip.
 ### <a name="command-init">**Init()**</a>
 * No options.
 ```html
-<call val="Init">
-<option val="none"/>
-</call>
+<call val="Init"><option val="none"/></call>
 ```
 * With options.
 ```html
 <call val="Init">
-<option val="some">
-<string>${options}</string>
-</option>
+    <option val="some">
+      <string>${options}</string>
+    </option>
 </call>
 ```
 
@@ -174,9 +168,7 @@ state that should become the next tip.
 
 ### <a name="command-goal">**Goal()**</a>
 ```html
-<call val="Goal">
-<unit/>
-</call>
+<call val="Goal"><unit/></call>
 ```
 #### *Returns*
 * If there is a goal. `backgroundGoals`, `shelvedGoals`, and `abandonedGoals` have the same structure as the first set of (current/foreground) goals. 
@@ -217,9 +209,7 @@ state that should become the next tip.
 ### <a name="command-status">**Status(force)**</a>
 CoqIDE typically sets `force` to `false`. 
 ```html
-<call val="Status">
-<bool val="${force}"/>
-</call>
+<call val="Status"><bool val="${force}"/></call>
 ```
 #### *Returns*
 *  
@@ -238,8 +228,8 @@ CoqIDE typically sets `force` to `false`.
 ### <a name="command-query">**Query(query, stateId)**</a>
 ```html
 <call val="Query">
-<string>${query}</string>
-<state_id val="${stateId}"/>
+    <string>${query}</string>
+    <state_id val="${stateId}"/>
 </call>
 ```
 #### *Returns*
@@ -253,9 +243,7 @@ CoqIDE typically sets `force` to `false`.
 
 ### <a name="command-evars">**Evars()**</a>
 ```html
-<call val="Evars">
-<unit/>
-</call>
+<call val="Evars"><unit/></call>
 ```
 #### *Returns*
 *
@@ -268,9 +256,7 @@ CoqIDE typically sets `force` to `false`.
 
 ### <a name="command-hints">**Hints()**</a>
 ```html
-<call val="Hints">
-<unit/>
-</call>
+<call val="Hints"><unit/></call>
 ```
 #### *Returns*
 *
@@ -296,9 +282,7 @@ CoqIDE typically sets `force` to `false`.
 
 ### <a name="command-getoptions">**GetOptions()**</a>
 ```html
-<call val="GetOptions">
-<unit/>
-</call>
+<call val="GetOptions"><unit/></call>
 ```
 #### *Returns*
 *
@@ -363,9 +347,7 @@ Printing Universes : (...false...)
 
 ### <a name="command-mkcases">**MkCases(...)**</a>
 ```html
-<call val="MkCases">
-<string>...</string>
-</call>
+<call val="MkCases"><string>...</string></call>
 ```
 #### *Returns*
 *
@@ -378,9 +360,7 @@ Printing Universes : (...false...)
 
 ### <a name="command-stopworker">**StopWorker(worker)**</a>
 ```html
-<call val="StopWorker">
-<string>${worker}</string>
-</call>
+<call val="StopWorker"><string>${worker}</string></call>
 ```
 #### *Returns*
 *
@@ -393,9 +373,7 @@ Printing Universes : (...false...)
 
 ### <a name="command-printast">**PrintAst()**</a>
 ```html
-<call val="PrintAst">
-<unit/>
-</call>
+<call val="PrintAst"><unit/></call>
 ```
 #### *Returns*
 *
@@ -409,9 +387,7 @@ Printing Universes : (...false...)
 
 ### <a name="command-annotate">**Annotate(annotation)**</a>
 ```html
-<call val="Annotate">
-<string>${annotation}</string>
-</call>
+<call val="Annotate"><string>${annotation}</string></call>
 ```
 #### *Returns*
 *
@@ -510,9 +486,7 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
   <feedback object="state" route="0">
       <state_id val="${stateId}"/>
       <feedback_content val="filedependency">
-        <option val="some">
-<string>${sourceDependency}</string>
-</option>
+        <option val="some"><string>${sourceDependency}</string></option>
         <string>${dependency}</string>
       </feedback_content>
   </feedback>
