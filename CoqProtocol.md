@@ -106,6 +106,7 @@ state that should become the next tip.
 <state_id val="${stateId}"/>${errorMessage}</value>
   ```
 
+-------------------------------
 
 ### <a name="command-editAt">**EditAt(stateId: integer)**</a>
 ### *Returns*
@@ -137,6 +138,7 @@ state that should become the next tip.
 </value>
 ```
 
+-------------------------------
 
 ### <a name="command-init">**Init()**</a>
 * No options.
@@ -159,6 +161,7 @@ state that should become the next tip.
 <state_id val="${initialStateId}"/>
 </value>```
 
+-------------------------------
 
 
 ### <a name="command-goal">**Goal()**</a>
@@ -200,6 +203,7 @@ state that should become the next tip.
 </value>
 ```
 
+-------------------------------
 
 
 ### <a name="command-status">**Status(force)**</a>
@@ -220,6 +224,7 @@ CoqIDE typically sets `force` to `false`.
 </status>
 ```
 
+-------------------------------
 
 
 ### <a name="command-query">**Query(query, stateId)**</a>
@@ -234,6 +239,7 @@ CoqIDE typically sets `force` to `false`.
 ```html
 (TODO...)
 ```
+-------------------------------
 
 
 
@@ -249,6 +255,7 @@ CoqIDE typically sets `force` to `false`.
 (TODO...)
 ```
 
+-------------------------------
 
 
 ### <a name="command-hints">**Hints()**</a>
@@ -263,6 +270,7 @@ CoqIDE typically sets `force` to `false`.
 (TODO...)
 ```
 
+-------------------------------
 
 
 ### <a name="command-search">**Search(...)**</a>
@@ -275,6 +283,7 @@ CoqIDE typically sets `force` to `false`.
 (TODO...)
 ```
 
+-------------------------------
 
 
 ### <a name="command-getoptions">**GetOptions()**</a>
@@ -289,6 +298,7 @@ CoqIDE typically sets `force` to `false`.
 (TODO...)
 ```
 
+-------------------------------
 
 
 ### <a name="command-setoptions">**SetOptions(options)**</a>
@@ -340,6 +350,7 @@ Printing Universes : (...false...)
 (TODO...)
 ```
 
+-------------------------------
 
 
 ### <a name="command-mkcases">**MkCases(...)**</a>
@@ -354,6 +365,7 @@ Printing Universes : (...false...)
 (TODO...)
 ```
 
+-------------------------------
 
 
 ### <a name="command-stopworker">**StopWorker(worker)**</a>
@@ -368,6 +380,7 @@ Printing Universes : (...false...)
 (TODO...)
 ```
 
+-------------------------------
 
 
 ### <a name="command-printast">**PrintAst()**</a>
@@ -381,6 +394,8 @@ Printing Universes : (...false...)
 ```html
 (TODO...)
 ```
+
+-------------------------------
 
 
 
