@@ -9,7 +9,10 @@ import * as coqParser from './coq-parser';
 import {Sentence, Sentences} from './sentences';
 import * as textUtil from './text-util';
 import {Mutex} from './Mutex';
-import {CancellationSignal} from './CancellationSignal';
+import {CancellationSignal, asyncWithTimeout} from './CancellationSignal';
+
+function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
+function positionToString(p:Position) {return `{${p.line}@${p.character}}`}
 
 
 export interface DocumentCallbacks {
@@ -41,6 +44,7 @@ export class CoqDocument implements ITextDocument {
   private documentUri: string;
   private documentText: string;
   private processingLock = new Mutex();
+  private resettingLock = new Mutex();
   private cancelProcessing = new CancellationSignal();
 
 
@@ -88,6 +92,7 @@ export class CoqDocument implements ITextDocument {
 
   public async textEdit(changes: TextDocumentContentChangeEvent[]) {
     for(const change of changes) {
+      // this.clientConsole.log(`Change: ${rangeToString(change.range)} (${change.rangeLength}) --> ${change.text}`);
       // Remove diagnostics for any text that has been modified
       this.removeDiagnosticsIntersecting(change.range, false);
       // Find offsets for change-range
@@ -296,17 +301,40 @@ export class CoqDocument implements ITextDocument {
   private onCoqStateFileLoaded(stateId: number, route: number, status: coqProto.FileLoaded) {
   }
   
+  private disableOnCoqResetHandler = false;
   private onCoqReset() {
-    this.cancelProcessing.cancel();
-    this.cancelProcessing = new CancellationSignal();
-    this.callbacks.sendReset();
+    if(this.disableOnCoqResetHandler)
+      return;
+    this.disableOnCoqResetHandler = true;
+    this.clientConsole.log('onCoqReset()');
+    try {
+      this.clientConsole.log('coqtop has been reset; cancelling old locks');
+      this.cancelProcessing.cancel();
+      this.cancelProcessing = new CancellationSignal();
+      this.callbacks.sendReset();
+    } finally {
+      this.clientConsole.log('completed onCoqReset()');
+    }
   }
   
   
   private async doResetCoq() {
-    let value = await this.coqTop.resetCoq();
-    this.sentences.reset(value.stateId);
+    this.clientConsole.log('doResetCoq()');
+    this.disableOnCoqResetHandler = true;
+    try {
+      this.clientConsole.log('resetting coqtop');
+      let value = await this.coqTop.resetCoq();
+      this.sentences.reset(value.stateId);
+
+      this.clientConsole.log('completed doResetCoq()');
+    } finally {
+      this.cancelProcessing.cancel();
+      this.cancelProcessing = new CancellationSignal();
+      this.callbacks.sendReset();
+      this.disableOnCoqResetHandler = false;
+    }
   }
+
   
   private async cancellableOperation<T>(operation: Thenable<T>) : Promise<T> {
     return await Promise.race<T>(

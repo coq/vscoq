@@ -19,6 +19,7 @@ import {CoqDocument} from './document';
 import * as coqproto from './protocol';
 import {CoqTopSettings, Settings} from './protocol';
 
+
 let currentSettings : CoqTopSettings;
 
 // Create a connection for the server. The connection uses 

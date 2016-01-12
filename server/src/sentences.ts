@@ -282,6 +282,9 @@ export class Sentences {
   
   public getRangeAffected(beginPos: number, endPos: number) : {length:number,affected:Iterable<Sentence>} {
     let beginIdx = this.positionalIndexAt(beginPos);
+    if(beginIdx >= this.sentencesByPosition.length)
+      return {length: 0, affected: []};
+      
     let endIdx = this.positionalIndexAt(endPos,beginIdx);
     // endIdx includes the position, so take the next sentence
     ++endIdx;

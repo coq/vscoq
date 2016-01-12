@@ -11,6 +11,7 @@ import {ChildProcess, exec, spawn} from 'child_process';
 import {CoqTopSettings} from './protocol';
 import * as fs from 'fs';
 import * as os from 'os';
+import {asyncWithTimeout} from './CancellationSignal';
 // const spawn = require('child_process').spawn;
 
 
@@ -758,13 +759,18 @@ export class CoqTop extends events.EventEmitter {
     this.console.log('Call Init()');
     this.mainChannelW.write('<call val="Init"><option val="none"/></call>');
 
-    const value = await coqResult;
-    const result = <InitResult>{stateId: value.stateId};
-    this.console.log(`Init: () --> ${result.stateId}`);
-    
+    const timeout = 2000;
+    try {
+      const value = await asyncWithTimeout(coqResult, timeout);
+      const result = <InitResult>{stateId: value.stateId};
+      this.console.log(`Init: () --> ${result.stateId}`);
+      return result;
+    } catch(error) {
+      this.console.warn(`Init: () --> TIMEOUT after ${timeout}ms`);
+      this.cleanup();
+      throw error;
+    }    
 // this.controlChannelR.write("PING\n");
-
-    return result;
   }
 
   public async coqQuit() : Promise<void> {
