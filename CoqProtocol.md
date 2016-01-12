@@ -29,7 +29,7 @@
   - [File Dependencies](#feedback-filedependencies)
   - [File Loaded](#feedback-fileloaded)
 
-Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace).
+Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
 Examples: "Lemma a: True.", "(* asdf *) Qed.", "auto; reflexivity."
 In practice, the command sentences sent to CoqTop are terminated at the "." and start with any previous whitespace.
 Each sentence is assigned a unique stateId after being sent to Coq (via Add).
@@ -39,21 +39,13 @@ States:
   * InProgress:
   * Incomplete: the validity of the sentence cannot be checked due to a prior error
   * Complete:
+  * Error: the sentence has an error error
 
-Sentences & Focusing.
-Focus: the stack of sentences representing the current proof being worked on.
-Context: the sentences that occur before and after the current focus.
-Focusing: take a range of sentences and make then the current focus; place all other sentences in the context. Assumes context started empty.
-Unfocusing: append the context to the top and bottom of the current stack (context becomes empty).
-Push: push on top of current stack
-Pop: pop from current stack
 --------------------------
 
-## <a name="commands">
-</a>Commands
+## <a name="commands">Commands</a>
 
-### <a name="command-add">
-</a>**Add(stateId: integer, command: string)**
+### <a name="command-add">**Add(stateId: integer, command: string)**</a>
 ```html
 <call val="Add">
   <pair>
@@ -115,8 +107,7 @@ state that should become the next tip.
   ```
 
 
-### <a name="command-editAt">
-</a>**EditAt(stateId: integer)**
+### <a name="command-editAt">**EditAt(stateId: integer)**</a>
 ### *Returns*
 * Simple backtrack; focused stateId becomes the parent state
 ```html
@@ -147,8 +138,7 @@ state that should become the next tip.
 ```
 
 
-### <a name="command-init">
-</a>**Init()**
+### <a name="command-init">**Init()**</a>
 * No options.
 ```html
 <call val="Init">
@@ -171,8 +161,7 @@ state that should become the next tip.
 
 
 
-### <a name="command-goal">
-</a>**Goal()**
+### <a name="command-goal">**Goal()**</a>
 ```html
 <call val="Goal">
 <unit/>
@@ -213,8 +202,7 @@ state that should become the next tip.
 
 
 
-### <a name="command-status">
-</a>**Status(force)**
+### <a name="command-status">**Status(force)**</a>
 CoqIDE typically sets `force` to `false`. 
 ```html
 <call val="Status">
@@ -234,8 +222,7 @@ CoqIDE typically sets `force` to `false`.
 
 
 
-### <a name="command-query">
-</a>**Query(query, stateId)**
+### <a name="command-query">**Query(query, stateId)**</a>
 ```html
 <call val="Query">
 <string>${query}</string>
@@ -245,13 +232,12 @@ CoqIDE typically sets `force` to `false`.
 ### *Returns*
 *
 ```html
-<TODO/>
+(TODO...)
 ```
 
 
 
-### <a name="command-evars">
-</a>**Evars()**
+### <a name="command-evars">**Evars()**</a>
 ```html
 <call val="Evars">
 <unit/>
@@ -260,13 +246,12 @@ CoqIDE typically sets `force` to `false`.
 ### *Returns*
 *
 ```html
-<TODO/>
+(TODO...)
 ```
 
 
 
-### <a name="command-hints">
-</a>**Hints()**
+### <a name="command-hints">**Hints()**</a>
 ```html
 <call val="Hints">
 <unit/>
@@ -275,26 +260,24 @@ CoqIDE typically sets `force` to `false`.
 ### *Returns*
 *
 ```html
-<TODO/>
+(TODO...)
 ```
 
 
 
-### <a name="command-search">
-</a>**Search(...)**
+### <a name="command-search">**Search(...)**</a>
 ```html
 <call val="Search">...</call>
 ```
 ### *Returns*
 *
 ```html
-<TODO/>
+(TODO...)
 ```
 
 
 
-### <a name="command-getoptions">
-</a>**GetOptions()**
+### <a name="command-getoptions">**GetOptions()**</a>
 ```html
 <call val="GetOptions">
 <unit/>
@@ -303,13 +286,12 @@ CoqIDE typically sets `force` to `false`.
 ### *Returns*
 *
 ```html
-<TODO/>
+(TODO...)
 ```
 
 
 
-### <a name="command-setoptions">
-</a>**SetOptions(options)**
+### <a name="command-setoptions">**SetOptions(options)**</a>
 Sends a list of option settings, where each setting roughly looks like:
 `([optionNamePart1, ..., optionNamePartN], value)`.
 ```html
@@ -355,13 +337,12 @@ Printing Universes : (...false...)
 ### *Returns*
 *
 ```html
-<TODO/>
+(TODO...)
 ```
 
 
 
-### <a name="command-mkcases">
-</a>**MkCases(...)**
+### <a name="command-mkcases">**MkCases(...)**</a>
 ```html
 <call val="MkCases">
 <string>...</string>
@@ -370,13 +351,12 @@ Printing Universes : (...false...)
 ### *Returns*
 *
 ```html
-<TODO/>
+(TODO...)
 ```
 
 
 
-### <a name="command-stopworker">
-</a>**StopWorker(worker)**
+### <a name="command-stopworker">**StopWorker(worker)**</a>
 ```html
 <call val="StopWorker">
 <string>${worker}</string>
@@ -385,13 +365,12 @@ Printing Universes : (...false...)
 ### *Returns*
 *
 ```html
-<TODO/>
+(TODO...)
 ```
 
 
 
-### <a name="command-printast">
-</a>**PrintAst()**
+### <a name="command-printast">**PrintAst()**</a>
 ```html
 <call val="PrintAst">
 <unit/>
@@ -400,13 +379,12 @@ Printing Universes : (...false...)
 ### *Returns*
 *
 ```html
-<TODO/>
+(TODO...)
 ```
 
 
 
-### <a name="command-annotate">
-</a>**Annotate(annotation)**
+### <a name="command-annotate">**Annotate(annotation)**</a>
 ```html
 <call val="Annotate">
 <string>${annotation}</string>
@@ -415,13 +393,12 @@ Printing Universes : (...false...)
 ### *Returns*
 *
 ```html
-<TODO/>
+(TODO...)
 ```
 
 -------------------------------
 
-## <a name="feedback">
-</a>Feedback messages
+## <a name="feedback">Feedback messages</a>
 
 Feedback messages are issued out-of-band,
   giving updates on the current state of sentences/stateIds,
