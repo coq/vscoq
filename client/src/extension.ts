@@ -1,7 +1,3 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
 'use strict';
 
 
@@ -40,6 +36,53 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.stepBackward', stepBackward));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.interpretToPoint', interpretToPoint));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.interpretToEnd', interpretToEnd));
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.locate', locate));
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.search', search));
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.searchAbout', searchAbout)); 
+  
+  // vscode.languages.registerCompletionItemProvider('coq', {provideCompletionItems: provideOptionCompletions}, 'X');
+}
+
+// function provideOptionCompletions(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.CompletionItem[] {
+//   const wordRange = document.lineAt(position.line);
+//   if(!wordRange)
+//     return [];
+//   const wordAtPosition = document.getText();
+//   const optionsMatch = /^[(.*)]$/.exec(wordAtPosition);
+//   if(optionsMatch) {
+//     const options = optionsMatch[1].split('|');
+//     return options.map((o) => <vscode.CompletionItem>{label:o});
+//   }
+//   
+// }
+
+async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {
+  let placeHolder = editor.document.getText(editor.selection);
+  if(editor.selection.isEmpty)
+    placeHolder = editor.document.getText(editor.document.getWordRangeAtPosition(editor.selection.active));
+  
+  return await vscode.window.showInputBox({
+    prompt: prompt,
+    placeHolder: placeHolder
+    });
+}
+
+async function locate(editor: TextEditor, edit: TextEditorEdit) {
+  const doc = documents.get(editor.document.uri.toString());
+  if(doc)
+    doc.locate(await queryStringFromPlaceholder("Locate:", editor));
+}
+
+async function search(editor: TextEditor, edit: TextEditorEdit) {
+  const doc = documents.get(editor.document.uri.toString());
+  if(doc)
+    doc.search(await queryStringFromPlaceholder("Search:", editor));
+}
+
+async function searchAbout(editor: TextEditor, edit: TextEditorEdit) {
+  const doc = documents.get(editor.document.uri.toString());
+  if(doc)
+    doc.searchAbout(await queryStringFromPlaceholder("Search About:", editor));
 }
 
 

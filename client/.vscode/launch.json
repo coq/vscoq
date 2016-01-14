@@ -11,7 +11,7 @@
 			"stopOnEntry": false,
 			"sourceMaps": true,
 			"outDir": "out/src",
-			"preLaunchTask": "npm"
+			"preLaunchTask": "default"
 		},
 		{
 			"name": "Launch Tests",
@@ -22,7 +22,7 @@
 			"stopOnEntry": false,
 			"sourceMaps": true,
 			"outDir": "out/test",
-			"preLaunchTask": "npm"
+			"preLaunchTask": "default"
 		}
 	]
 }

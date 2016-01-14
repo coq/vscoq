@@ -875,6 +875,29 @@ export class CoqTop extends events.EventEmitter {
     return result;
   }
 
+  public async coqLocate(query: string) : Promise<string> {
+    return "";
+//     this.checkState();
+// 
+//     const coqResult = this.coqGetResultOnce('Locate');
+//     // const verboseStr = verbose===true ? "true" : "false";
+//     const verboseStr = verbose === false ? "false" : "true";
+//     this.console.log('--------------------------------');
+//     this.console.log(`Call Add("${command.trim().substr(0, 20) + (command.trim().length > 20 ? "..." : "")}", editId: ${editId}, stateId: ${stateId}, verbose: ${verboseStr})`);
+//     this.mainChannelW.write(`<call val="Add"><pair><pair><string>${command}</string><int>${editId}</int></pair><pair><state_id val="${stateId}"/><bool val="${verboseStr}"/></pair></pair></call>`);
+// 
+//     const value = await coqResult;
+//     let result = <AddResult>{
+//       stateId: value.stateId,
+//       message: value.message,
+//     };
+//     if (value.unfocusedStateId)
+//       result.unfocusedStateId = value.unfocusedStateId;
+//     this.console.log(`Add:  ${stateId} --> ${result.stateId} ${result.unfocusedStateId ? "(unfocus ${result.unfocusedStateId})" : ""} "${result.message || ""}"`);
+//     return result;
+  }
+
+
 //   public async coqStatus(stateId: number) : Promise<EditAtResult> {
 //     const coqResult = this.coqGetResultOnce('EditAt');
 //     this.console.log('--------------------------------');

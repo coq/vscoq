@@ -1,5 +1,4 @@
 'use strict';
-
 import * as vscode from 'vscode'
 import * as fs from 'fs'
 
@@ -7,6 +6,10 @@ import * as view from './CoqView'
 export {CoqView} from './CoqView'
 import * as proto from './protocol'
 import * as textUtil from './text-util'
+import * as WebSocket from 'ws';
+import * as http from 'http';
+import * as path from 'path';
+
 
 function createFile(path: string) : Promise<number> {
   return new Promise<number>((resolve,reject) => {
@@ -36,38 +39,60 @@ function edit(editor: vscode.TextEditor) : Promise<vscode.TextEditorEdit> {
   });
 }
 
-export class MDCoqView implements view.CoqView {
+/**
+ * Displays a Markdown-HTML file which contains javascript to connect to this view
+ * and update the goals and show other status info
+ */
+export class HtmlCoqView implements view.CoqView {
   private editor: vscode.TextEditor;
   private outDoc: vscode.TextDocument;
   private docUri: vscode.Uri;
   private outFile: number; // file descriptor
-  private currentPos = new vscode.Position(0,0);
-  private filename : string;
+  private mdFilename : vscode.Uri;
+  private server : WebSocket.Server;
+  private httpServer : http.Server;
+  // private connection : Promise<WebSocket>;
+  private serverReady : Promise<void>;
+  private currentState : proto.CoqTopGoalResult = {}; 
 
   constructor(uri: vscode.Uri) {
     this.docUri = uri;
+    
+    const httpServer = this.httpServer = http.createServer();
+    this.serverReady = new Promise<void>((resolve, reject) =>
+      httpServer.listen(0,'localhost',undefined,(e) => {
+        if(e)
+          reject(e)
+        else
+          resolve();
+      }));
+    
+    this.server = new WebSocket.Server({server: httpServer});
+    
+    this.server.on('connection', (ws: WebSocket) => {
+      ws.send(JSON.stringify(this.currentState));
+    })
+
     this.createBuffer();
   }
   
-  private async createBuffer() {
+  private async createBuffer() : Promise<void> {
     try {
-      this.filename = this.docUri.fsPath + ".view.md";
-      fs.close(await createFile(this.filename));
-      
-      
+      await this.serverReady;
+      const serverAddress = this.httpServer.address();
+
+      this.mdFilename = vscode.Uri.file(this.docUri.fsPath + ".view.md");
+      const templateFileName = vscode.Uri.file(__dirname + '/HtmlView/Coq.html').toString().replace(/%3A/, ':');
+      await writeFile(this.mdFilename.fsPath,
+`<div style="margin:0px;padding:0px;width:100%;height:100vh;border:none;position:absolute;top:0px;left:0px;right:0px;bottom:0px">
+<iframe src="${templateFileName}?host=${serverAddress.address}&port=${serverAddress.port}" seamless style="position:absolute;top:0px;left:0px;right:0px;bottom:0px;border:none;margin:0px;padding:0px;width:100%;height:100%" />
+</div>`);
+
+
       const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
-      this.outDoc = await vscode.workspace.openTextDocument(this.filename);
-      
-    
-      // vscode.window.onDidChangeActiveTextEditor((editor) => {
-      //   var a = editor.document;
-      // });
-      
+      this.outDoc = await vscode.workspace.openTextDocument(this.mdFilename);
       this.editor = await vscode.window.showTextDocument(this.outDoc, vscode.ViewColumn.Two);
-      
       await vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
-      var x = vscode.window.activeTextEditor;
-      
       if(focusedDoc)
         vscode.window.showTextDocument(focusedDoc);
       // if(focusedEditor)
@@ -96,18 +121,17 @@ export class MDCoqView implements view.CoqView {
 
 
   dispose() {
+    fs.unlinkSync(this.mdFilename.fsPath);
     this.editor.hide();
-    fs.unlink(this.filename);
   }
   
 
-  private displayError(state: proto.CoqTopGoalResult) {
-    // this.out.appendLine(state.error.message);
-  }
-  
   private async setOutputText(text: string) {
-    await writeFile(this.filename, text);
-    await this.refreshView();
+    // for(const connection of this.server.clients) {
+    //   if(connection.send())
+    // }
+    // const connection = await this.connection;
+    // connection.send(text);
     // this.editor.edit((eb) => {
     //   // eb.delete(new vscode.Range(0,0,2,0));
     //   // eb.insert(new vscode.Position(0,0), text);
@@ -122,6 +146,10 @@ export class MDCoqView implements view.CoqView {
     // })
   }
 
+  private displayError(state: proto.CoqTopGoalResult) {
+    // this.out.appendLine(state.error.message);
+  }
+  
   private displayProof(state: proto.CoqTopGoalResult) {
     let out = "";
     if (view.countAllGoals(state) == 0) {
@@ -141,33 +169,29 @@ export class MDCoqView implements view.CoqView {
   }
 
   private displayTop(state: proto.CoqTopGoalResult) {
-    this.editor.edit((eb) => {
-      eb.replace(new vscode.Range(0,0,this.outDoc.lineCount,0), "Top");
-    })
+    this.setOutputText("Top")
+    // this.editor.edit((eb) => {
+    //   eb.replace(new vscode.Range(0,0,this.outDoc.lineCount,0), "Top");
+    // })
     // const eb = await edit(this.editor);
     // eb.insert(new vscode.Position(0,0), "Hello World");
   }
-  
-
-  private async refreshView() {
-    const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
-    await vscode.window.showTextDocument(this.editor.document,vscode.ViewColumn.Two);
-    // vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
-    // await vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
-    await vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
-    if(focusedDoc)
-      vscode.window.showTextDocument(focusedDoc);    
-  }
 
   public async update(state: proto.CoqTopGoalResult) {
-    switch (view.getDisplayState(state)) {
-      case view.DisplayState.Error:
-        this.displayError(state);
-        break;
-      case view.DisplayState.Proof:
-        this.displayProof(state);
-        break;
+    this.currentState = state;
+    for(const connection of this.server.clients) {
+      try {
+      connection.send(JSON.stringify(state));
+      } catch(error) {}
     }
+    // switch (view.getDisplayState(state)) {
+    //   case view.DisplayState.Error:
+    //     this.displayError(state);
+    //     break;
+    //   case view.DisplayState.Proof:
+    //     this.displayProof(state);
+    //     break;
+    // }
   }
   
 }

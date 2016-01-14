@@ -79,7 +79,17 @@ export namespace InterpretToEndRequest {
 } 
 export namespace GoalRequest { 
   export const type: RequestType<CoqTopParams, CoqTopGoalResult, void> = { method: 'coqtop/goal' }; 
+}
+export namespace LocateRequest { 
+  export const type: RequestType<CoqTopQueryParams, CoqTopQueryResult, void> = { method: 'coqtop/locate' }; 
 } 
+export declare interface CoqTopQueryParams extends CoqTopParams {
+  query: string;
+}
+export declare interface CoqTopQueryResult {
+  searchResults: string;
+}
+
 
 export enum HighlightType {
   Clear,  SyntaxError,  TacticFailure,  Parsing,  Processing, Incomplete, Complete, InProgress, Processed 
@@ -116,3 +126,10 @@ export namespace CoqResetNotification {
   export const type: NotificationType<NotificationParams> = { method: 'coqtop/wasReset' }; 
 } 
 
+export interface NotifyStateViewUrlParams extends NotificationParams {
+  stateUrl: string;
+}
+
+export namespace CoqStateViewUrlNotification { 
+  export const type: NotificationType<NotifyStateViewUrlParams> = { method: 'coqtop/stateViewUrl' }; 
+} 

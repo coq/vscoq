@@ -8,7 +8,7 @@ import {RequestType} from 'vscode-jsonrpc';
 import {
 	createConnection, IConnection, TextDocumentSyncKind,
 	TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
-	InitializeParams, InitializeResult, TextDocumentIdentifier,
+	InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
   DidChangeTextDocumentParams,
 	CompletionItem, CompletionItemKind, PublishDiagnosticsParams, ServerCapabilities
 } from 'vscode-languageserver';
@@ -40,7 +40,7 @@ connection.onInitialize((params): InitializeResult => {
   connection.console.log(`Coq Language Server: process.version: ${process.version}, process.arch: ${process.arch}}`);
   // connection.console.log('coq path: ' + currentSettings.coqPath);
 	workspaceRoot = params.rootPath;
-  var x : ServerCapabilities;
+  // var x : ServerCapabilities;
 	return {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
@@ -96,20 +96,25 @@ process.on('SIGBREAK', function () {
 
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion((textDocumentPosition: TextDocumentIdentifier): CompletionItem[] => {
+connection.onCompletion((textDocumentPosition: TextDocumentPosition): CompletionItem[] => {
 	// The pass parameter contains the position of the text document in 
 	// which code complete got requested. For the example we ignore this
 	// info and always provide the same completion items.
 	return [
 		{
-			label: 'TypeScript',
-			kind: CompletionItemKind.Text,
+			label: 'idtac',
+			kind: CompletionItemKind.Snippet,
 			data: 1
 		},
 		{
-			label: 'JavaScript',
-			kind: CompletionItemKind.Text,
+			label: 'Definition',
+			kind: CompletionItemKind.Keyword,
 			data: 2
+		},
+		{
+			label: 'reflexivity.',
+			kind: CompletionItemKind.Text,
+			data: 4
 		}
 	]
 });
@@ -118,11 +123,10 @@ connection.onCompletion((textDocumentPosition: TextDocumentIdentifier): Completi
 // the completion list.
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 	if (item.data === 1) {
-		item.detail = 'TypeScript details',
-		item.documentation = 'TypeScript documentation'
-	} else if (item.data === 2) {
+		item.detail = 'Tactic'
+	} else if (item.data === 4) {
 		item.detail = 'JavaScript details',
-		item.documentation = 'JavaScript documentation'
+		item.documentation = 'solves by reflexivity'
 	}
 	return item;
 });
@@ -183,6 +187,13 @@ connection.onRequest(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams) 
   else
     return null;
 });
+connection.onRequest(coqproto.LocateRequest.type, (params: coqproto.CoqTopQueryParams) => {
+  var doc = coqInstances[params.uri];
+  if(doc)
+    return doc.coq.locate(params.query);
+  else
+    return null;
+});
 
 
 function sendHighlightUpdates(documentUri: string, highlights: coqproto.Highlight[]) {
@@ -210,8 +221,10 @@ connection.onDidOpenTextDocument((params) => {
         uri: uri,
       }),
     sendReset: () =>
-      connection.sendNotification(coqproto.CoqResetNotification.type, {uri: uri})
-    });
+      connection.sendNotification(coqproto.CoqResetNotification.type, {uri: uri}),
+    sendStateViewUrl: (stateUrl: string) =>
+      connection.sendNotification(coqproto.CoqStateViewUrlNotification.type, {uri: uri, stateUrl: stateUrl}),
+  });
 });
 
 connection.onDidChangeTextDocument((params) => {

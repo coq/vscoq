@@ -8,6 +8,7 @@ import { LanguageClient } from 'vscode-languageclient';
 import {Highlights} from './Highlights';
 import {CoqView, SimpleCoqView} from './SimpleCoqView';
 import {MDCoqView} from './MDCoqView';
+import {HtmlCoqView} from './HtmlCoqView';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
 import {CoqLanguageServer} from './CoqLanguageServer';
@@ -29,16 +30,18 @@ export class CoqDocument implements vscode.Disposable {
 
     this.documentUri = uri.toString();
     this.langServer = new CoqLanguageServer(context);
-    
+
     this.infoOut = vscode.window.createOutputChannel('Info');
     
+    this.view = new HtmlCoqView(uri);
+    // this.view = new SimpleCoqView(uri.toString());
     // this.view = new MDCoqView(uri);
-    this.view = new SimpleCoqView(uri.toString());
-    
+
 
     this.langServer.onUpdateHighlights((p) => this.onDidUpdateHighlights(p));
     this.langServer.onMessage((p) => this.onCoqMessage(p));
     this.langServer.onReset((p) => { if (p.uri == this.documentUri) this.onCoqReset(); });
+    this.langServer.onUpdateStateViewUrl((p) => { if (p.uri == this.documentUri) this.updateStateViewUrl(p.stateUrl); });
 
     context.subscriptions.push(this.langServer.start());
     // const viewFile = this.documentUri + '.view.md';
@@ -49,6 +52,11 @@ export class CoqDocument implements vscode.Disposable {
     //   });
   }
 
+  private updateStateViewUrl(stateUrl: string) {
+    // if(this.view)
+    //   this.view.dispose();
+    // this.view = new HttpCoqView(vscode.Uri.parse(this.documentUri), stateUrl);
+  }
 
 
   public getUri() {
@@ -162,5 +170,18 @@ export class CoqDocument implements vscode.Disposable {
     } catch (err) {
     }
     this.statusBar.text = 'Ready';
+  }
+  
+  public async locate(query: string) {
+    const results = await this.langServer.locate(this.documentUri, query);
+    var a = results;
+  }
+  
+  public search(query: string) {
+    
+  }
+  
+  public searchAbout(query: string) {
+    
   }
 }

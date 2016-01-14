@@ -303,6 +303,8 @@ export class Sentences {
     if(count == 0)
       return;
     const beginIdx = this.positionalIndexAt(position);
+    if(beginIdx >= this.sentencesByPosition.length)
+      return false;
     const beginSent = this.sentencesByPosition[beginIdx];
     if(beginSent.textEnd > position) {
       // contains the position

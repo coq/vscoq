@@ -82,6 +82,10 @@ export class CoqLanguageServer {
     this.server.onNotification(proto.CoqResetNotification.type, listener);
   }
 
+  public onUpdateStateViewUrl(listener: (params: proto.NotifyStateViewUrlParams) => void) {
+    this.server.onNotification(proto.CoqStateViewUrlNotification.type, listener);
+  }
+
   public interruptCoq(uri: string) {
     return this.server.sendRequest(proto.InterruptCoqRequest.type, {uri: uri});
   }
@@ -112,6 +116,10 @@ export class CoqLanguageServer {
 
   public interpretToEnd(uri: string) {
     return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.InterpretToEndRequest.type, {uri: uri});
+  }
+  
+  public locate(uri: string, query: string) {
+    return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.LocateRequest.type, {uri: uri, query: query});
   }
 
 

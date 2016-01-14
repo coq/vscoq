@@ -1,0 +1,60 @@
+{
+  "Abstract": {
+    "prefix": "abstract",
+    "body": ["abstract ${1}.\n$0"],
+    "description": "abstract $expr."
+  },
+  "Abstract Using": {
+    "prefix": "abstract",
+    "body": ["abstract ${1} using ${2}.\n$0"],
+    "description": "abstract $expr using $ident."
+  },
+  "Theorem": {
+    "prefix": "Theorem",
+    "body": [
+      "Theorem ${1}: ${2}.",
+      "Proof.",
+      "\t$0",
+      "Qed.\n"
+      ],
+    "description": "Theorem..."
+  },
+  "Definition": {
+    "prefix": "Definition",
+    "body": ["Definition $1 := $2.\n"],
+    "description": "Definition..."
+  },
+  "Notation (Simple)": {
+    "prefix": "Notation",
+    "body": [ "Notation \"$1\" := ($2).\n$0" ],
+    "description": "Notation"
+  },
+  "Notation (Full)": {
+    "prefix": "Notation",
+    "body": [
+      "Notation \"$1\" :=",
+      "\t($2)",
+      "\t(at level $3, ${4:[no|left|right]} associativity)",
+      "\t: ${5:scope}.\n"
+    ],
+    "description": "Notation, level, associativity, scope"
+  },
+  "Section": {
+    "prefix": "Section",
+    "body": [
+      "Section ${name}.",
+      "\t$0",
+      "End ${name}.\n"
+      ],
+    "description": "Section..."
+  },
+  "Module": {
+    "prefix": "Module",
+    "body": [
+      "Module ${name}.",
+      "\t$0",
+      "End ${name}.\n"
+      ],
+    "description": "Module..."
+  }
+}

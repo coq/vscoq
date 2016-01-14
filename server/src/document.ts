@@ -20,6 +20,7 @@ export interface DocumentCallbacks {
   sendDiagnostics(diagnostics: Diagnostic[]) : void;
   sendMessage(level: string, message: string) : void;
   sendReset() : void;
+  sendStateViewUrl(stateUrl: string) : void;
 }
 
 interface BufferedFeedback {
@@ -47,7 +48,6 @@ export class CoqDocument implements ITextDocument {
   private resettingLock = new Mutex();
   private cancelProcessing = new CancellationSignal();
 
-
   constructor(coqtopSettings : thmProto.CoqTopSettings, uri: string, text: string, clientConsole: RemoteConsole, callbacks: DocumentCallbacks) {
     this.clientConsole = clientConsole;
     this.coqTop = new CoqTop(coqtopSettings, clientConsole, {
@@ -63,6 +63,7 @@ export class CoqDocument implements ITextDocument {
     this.documentText = text;
     this.documentUri = uri;
     this.callbacks = callbacks;
+    
     // this.reset();
   }
 
@@ -705,7 +706,7 @@ export class CoqDocument implements ITextDocument {
         if(!lazyInitialize)
           return {};
         await this.cancellableOperation(this.doResetCoq());
-        return await this.cancellableOperation(op(true));
+        const result = await this.cancellableOperation(op(true));
       } else
         return await this.cancellableOperation(op(false));
     } catch(reason) {
@@ -717,6 +718,10 @@ export class CoqDocument implements ITextDocument {
   
   private interrupt() {
     this.coqTop.coqInterrupt();
+  }
+  
+  private async locate(query: string) {
+    return {};
   }
   
   private coqInterface = {
@@ -731,6 +736,7 @@ export class CoqDocument implements ITextDocument {
         if(this.processingLock.isLocked())
           this.coqTop.coqInterrupt();
       },
+      locate: (query: string) => this.protectOperation((wasReset) => this.locate(query)),
     };
   
   public get coq() {

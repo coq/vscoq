@@ -11,20 +11,29 @@
 	"version": "0.1.0",
 
 	// we want to run npm
-	"command": "npm",
+	"command": "gulp",
 
 	// the command is a shell script
 	"isShellCommand": true,
 
-	// show the output window only if unrecognized errors occur.
-	"showOutput": "silent",
+// 	// show the output window only if unrecognized errors occur.
+// 	"showOutput": "silent",
+// 
+// 	// we run the custom script "compile" as defined in package.json
+// 	"args": ["run", "compile", "--loglevel", "silent"],
+// 
+// 	// The tsc compiler is started in watching mode
+// 	"isWatching": true,
+// 
+// 	// use the standard tsc in watch mode problem matcher to find compile problems in the output.
+ 	// "problemMatcher": "$tsc-watch",
 
-	// we run the custom script "compile" as defined in package.json
-	"args": ["run", "compile", "--loglevel", "silent"],
-
-	// The tsc compiler is started in watching mode
-	"isWatching": true,
-
-	// use the standard tsc in watch mode problem matcher to find compile problems in the output.
-	"problemMatcher": "$tsc-watch"
+  "tasks": [
+    {
+      "taskName": "default",
+      "isBuildCommand": true,
+      "showOutput": "silent",
+    	"problemMatcher": "$tsc-watch"
+    }
+  ]
 }

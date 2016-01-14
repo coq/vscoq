@@ -36,6 +36,12 @@ export interface FailValue {
 export declare interface CoqTopInterpretToPointParams extends CoqTopParams {
   offset: number;
 }
+export declare interface CoqTopQueryParams extends CoqTopParams {
+  query: string;
+}
+export declare interface CoqTopQueryResult {
+  searchResults: string;
+}
 
 export namespace InterruptCoqRequest { 
   export const type: RequestType<CoqTopParams, void, void> = { method: 'coqtop/interrupt' }; 
@@ -60,6 +66,9 @@ export namespace InterpretToEndRequest {
 } 
 export namespace GoalRequest { 
   export const type: RequestType<CoqTopParams, CoqTopGoalResult, void> = { method: 'coqtop/goal' }; 
+} 
+export namespace LocateRequest { 
+  export const type: RequestType<CoqTopQueryParams, CoqTopQueryResult, void> = { method: 'coqtop/locate' }; 
 } 
 
 
@@ -107,4 +116,10 @@ export namespace CoqResetNotification {
   export const type: NotificationType<NotificationParams> = { method: 'coqtop/wasReset' }; 
 } 
 
+export interface NotifyStateViewUrlParams extends NotificationParams {
+  stateUrl: string;
+}
 
+export namespace CoqStateViewUrlNotification { 
+  export const type: NotificationType<NotifyStateViewUrlParams> = { method: 'coqtop/stateViewUrl' }; 
+} 
