@@ -2,7 +2,7 @@
 <head>
   <title>Coq</title>
   <style>
-    html {background-color: black;}
+    /*html {background-color: black;}*/
     html, body {
       width:100%;
       height:100%;
@@ -19,7 +19,9 @@
       color: white;
       font-family: 'Segoe WPC','Segoe UI',SFUIText-Light,HelveticaNeue-Light,sans-serif,'Droid Sans Fallback';
     }
-    #messages {color: white}
+    #messages {
+      color: white
+      }
     #stdout {
       padding-left: 4pt;
     }
@@ -30,7 +32,49 @@
       display: none;
     }
     .hypotheses {
-      border-bottom: thick solid white;
+      border-bottom: 2pt solid white;
+      padding: 0pt;
+      padding-bottom: 1em;
+    }
+    .hypotheses .hypothesis .rel {
+      margin-right: 1ex;
+    }
+    .hypotheses .hypothesis .ident {
+      color: lightseagreen;
+    }
+    .hypotheses li:nth-child(odd) {
+      background-color: rgba(255,255,255,0.04)
+    }
+    .hypotheses .hypothesis > ul {
+      list-style-type: none;
+      display: block;
+      margin-left: 0pt;
+      padding-left: 0pt;
+      text-indent: 0pt
+    }
+    .hypotheses > li {
+      list-style-type: none;
+      display: block;
+      padding-left: 0pt;
+      text-indent: 0pt
+    }
+    .goal .goalId {
+      color: lightblue;
+      /*display: block;*/
+      font-size: 9pt;
+      margin-right: 1ex; 
+    }
+    .goal .goalId:before {
+      content: '(';
+    }
+    .goal .goalId:after {
+      content: ')';
+    }
+    .goal {
+      list-style-type: none;
+    }
+    .goal .expr {
+      display: block;
     }
   </style>
 </head>
@@ -38,10 +82,10 @@
   <div id="states">
     <div class="focusedState">
       <div class="hypotheses" />
-      <div class="messages"/>
       <div class="goal" />
     </div>
   </div>
+  <div id="messages" />
   <h1><div id="stdout" /></h1>
 </body>
 <script src="controller.js"></script>

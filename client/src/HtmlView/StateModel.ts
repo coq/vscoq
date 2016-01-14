@@ -60,13 +60,14 @@ function createHypotheses(hyps: string[]) {
 
 function createGoal(goal: string, idx:number, count:number) {
   return makeElement('li', {class:"goal"},
-    [ makeElement('span',{class: 'id'},[makeText(`${idx}/${count}`)])
-    , makeText(goal)
+    [ makeElement('span',{class: 'goalId'},[makeText(`${idx+1}/${count}`)])
+    , makeElement('span',{class: 'error'},[])
+    , makeElement('span',{class: 'expr'},[makeText(goal)])
     ]);
 }
 
 function createGoals(goals: string[]) {
-  return makeElement('ul',{}, goals.map((g,i) => createGoal(g,i,goals.length)));
+  return makeElement('ul',{class:"goalsList"}, goals.map((g,i) => createGoal(g,i,goals.length)));
 }
 
 class StateModel {
@@ -84,9 +85,16 @@ class StateModel {
     return this.statesE.getElementsByClassName(StateModel.focusedStateClass)[this.focusedState];
   }
 
+  private getFocusStatesE() {
+    return this.statesE.getElementsByClassName(StateModel.focusedStateClass);
+  }
+
+  private getGoalsE() {
+    return this.statesE.getElementsByClassName(StateModel.goalNodeClass);
+  }
+
   private getCurrentGoalE() {
-    return this.getCurrentStateE().getElementsByClassName(StateModel.goalNodeClass)[0];
-    
+    return this.getGoalsE()[0];
   }
 
   private currentHypsE() {
@@ -94,13 +102,31 @@ class StateModel {
   }
   
   private setMessage(message: string) {
-    document.getElementById('messages').childNodes = createNodeList([makeText(message)]);
+    // document.getElementById('messages').innerHTML = message;
+    setChildren(document.getElementById('messages'), [makeText(message)]);
+  }
+
+  private setErrorMessage(message: string) {
+    const errorsN = this.getCurrentGoalE().getElementsByClassName('error');
+    if(errorsN.length > 0)
+    setChildren(errorsN.item(0), [makeText(message)]);
+    // document.getElementById('messages').innerHTML = message;
+    // setChildren(document.getElementById('messages'), [makeElement('span',{class:'error'},[makeText(message)])]);
+  }
+  private clearErrorMessage() {
+    const errorsN = this.getCurrentGoalE().getElementsByClassName('error');
+    if(errorsN.length > 0)
+      setChildren(errorsN.item(0), []);
   }
   
   public updateState(state: CoqTopGoalResult) {
     try {
       this.focusedState = 0;
-      clearChildren(this.statesE);
+      this.clearErrorMessage();
+      // clearChildren(document.getElementById('messages'));
+        
+      if(state.error)
+        this.setErrorMessage(state.error.message.toString());
       if (countAllGoals(state) == 0) {
         this.setMessage("No more subgoals.");
       } else if (state.goals) {
