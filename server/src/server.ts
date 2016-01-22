@@ -187,10 +187,21 @@ connection.onRequest(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams) 
   else
     return null;
 });
-connection.onRequest(coqproto.LocateRequest.type, (params: coqproto.CoqTopQueryParams) => {
+connection.onRequest(coqproto.QueryRequest.type, (params: coqproto.CoqTopQueryParams) => {
   var doc = coqInstances[params.uri];
   if(doc)
-    return doc.coq.locate(params.query);
+    switch(params.queryFunction) {
+    case coqproto.QueryFunction.Locate:
+      return doc.coq.locate(params.query);
+    case coqproto.QueryFunction.Check:
+      return doc.coq.check(params.query);
+    case coqproto.QueryFunction.Search:
+      return doc.coq.search(params.query);
+    case coqproto.QueryFunction.SearchAbout:
+      return doc.coq.searchAbout(params.query);
+    default:
+      return null;
+    }
   else
     return null;
 });

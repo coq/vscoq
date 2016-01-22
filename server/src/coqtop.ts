@@ -12,6 +12,7 @@ import {CoqTopSettings} from './protocol';
 import * as fs from 'fs';
 import * as os from 'os';
 import {asyncWithTimeout} from './CancellationSignal';
+// import entities = require('entities'); 
 // const spawn = require('child_process').spawn;
 
 
@@ -448,6 +449,7 @@ export class CoqTop extends events.EventEmitter {
       this.console.log('coqtop could not be started: ' + code);
       this.cleanup();
     });
+    // this.coqtopProc.stdin.write('\n');
  }
 
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
@@ -455,7 +457,6 @@ export class CoqTop extends events.EventEmitter {
     // var coqtopModule = 'cmd';
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',
-      // '-coqtopbin', this.coqPath + '/coqtop',
       '-main-channel', mainAddr,
       '-control-channel', controlAddr,
       '-ideslave',
@@ -472,6 +473,7 @@ export class CoqTop extends events.EventEmitter {
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',
       '-coqtopbin', this.settings.coqPath + '/coqtop',
+      // '-tracefile', 'C:/Users/cj/Desktop/coqtrace.txt',
       '-main-channel', mainAddr,
       '-control-channel', controlAddr,
       '-ideslave',
@@ -678,6 +680,21 @@ export class CoqTop extends events.EventEmitter {
     });
   }
 
+  /**
+   * Note: this needs to be called before this.mainChannelW.write to ensure that the handler for 'response: value'
+   * is installed on time
+   */
+  private coqGetMessageOnce() : Promise<coqProto.Message> {
+    return new Promise<coqProto.Message>((resolve,reject) => {
+      this.parser.once('response: message', (value:coqProto.Message) => {
+        try {
+          resolve(value);
+        } catch(error) {
+          reject(error);
+        }
+      });
+    });
+  }
   
   public async coqInterrupt() {
     if(!this.coqtopProc)
@@ -759,7 +776,7 @@ export class CoqTop extends events.EventEmitter {
     this.console.log('Call Init()');
     this.mainChannelW.write('<call val="Init"><option val="none"/></call>');
 
-    const timeout = 2000;
+    const timeout = 3000;
     try {
       const value = await asyncWithTimeout(coqResult, timeout);
       const result = <InitResult>{stateId: value.stateId};
@@ -875,8 +892,30 @@ export class CoqTop extends events.EventEmitter {
     return result;
   }
 
-  public async coqLocate(query: string) : Promise<string> {
-    return "";
+  public async coqQuery(query: string, stateId?: number) : Promise<string> {
+    this.checkState();
+    if(stateId === undefined)
+    stateId = 0;
+    // 
+    // 
+    // const coqResult1 = this.coqGetResultOnce('Query');
+    // this.mainChannelW.write(`<call val="SetOptions"><list><pair><list><string>Printing</string><string>Width</string></list><option_value val="intvalue"><option val="some"><int>37</int></option></option_value></pair><pair><list><string>Printing</string><string>Coercions</string></list><option_value val="boolvalue"><bool val="false"/></option_value></pair><pair><list><string>Printing</string><string>Matching</string></list><option_value val="boolvalue"><bool val="true"/></option_value></pair><pair><list><string>Printing</string><string>Notations</string></list><option_value val="boolvalue"><bool val="true"/></option_value></pair><pair><list><string>Printing</string><string>Existential</string><string>Instances</string></list><option_value val="boolvalue"><bool val="false"/></option_value></pair><pair><list><string>Printing</string><string>Implicit</string></list><option_value val="boolvalue"><bool val="false"/></option_value></pair><pair><list><string>Printing</string><string>All</string></list><option_value val="boolvalue"><bool val="false"/></option_value></pair><pair><list><string>Printing</string><string>Universes</string></list><option_value val="boolvalue"><bool val="false"/></option_value></pair></list></call>`);
+    // await coqResult1;
+    // 
+    
+    const coqResult = this.coqGetResultOnce('Query');
+    const coqMessageResult = this.coqGetMessageOnce();
+    this.console.log('--------------------------------');
+    this.console.log(`Call Query(stateId: ${stateId}, query: $query})`);
+    this.mainChannelW.write(`<call val="Query"><pair><string>${query}</string><state_id val="${stateId}"/></pair></call>`);    
+    // this.mainChannelW.write(`<call val="Query"><pair><string>${entities.encodeXML(query)}</string><state_id val="${stateId}"/></pair></call>`);    
+
+    const values = await Promise.all<coqProto.Message>([coqMessageResult, coqResult.then(() => null)]);
+    this.console.log(`Query: ${stateId} --> ...`);
+    return values[0].message;
+
+    // return entities.decodeXML(values[0].message);
+
 //     this.checkState();
 // 
 //     const coqResult = this.coqGetResultOnce('Locate');

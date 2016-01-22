@@ -720,10 +720,7 @@ export class CoqDocument implements ITextDocument {
     this.coqTop.coqInterrupt();
   }
   
-  private async locate(query: string) {
-    return {};
-  }
-  
+
   private coqInterface = {
       stepForward: () => this.protectOperation((wasReset) => this.stepForward()),
       stepBackward: () => this.protectOperation((wasReset) => this.stepBackward()),
@@ -736,7 +733,10 @@ export class CoqDocument implements ITextDocument {
         if(this.processingLock.isLocked())
           this.coqTop.coqInterrupt();
       },
-      locate: (query: string) => this.protectOperation((wasReset) => this.locate(query)),
+      locate: (query: string) => this.protectOperation((wasReset) => this.coqTop.coqQuery("Locate " + query + ".")),
+      check: (query: string) => this.protectOperation((wasReset) => this.coqTop.coqQuery("Check " + query + ".")),
+      search: (query: string) => this.protectOperation((wasReset) => this.coqTop.coqQuery("Search " + query + ".")),
+      searchAbout: (query: string) => this.protectOperation((wasReset) => this.coqTop.coqQuery("SearchAbout " + query + ".")),
     };
   
   public get coq() {

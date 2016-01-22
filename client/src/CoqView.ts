@@ -29,5 +29,6 @@ export function countAllGoals(state: proto.CoqTopGoalResult): number {
 export interface CoqView extends vscode.Disposable {
 
   update(state: proto.CoqTopGoalResult) : void;
+  // message(message: string) : void;
 
 }

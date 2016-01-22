@@ -80,10 +80,12 @@ export namespace InterpretToEndRequest {
 export namespace GoalRequest { 
   export const type: RequestType<CoqTopParams, CoqTopGoalResult, void> = { method: 'coqtop/goal' }; 
 }
-export namespace LocateRequest { 
-  export const type: RequestType<CoqTopQueryParams, CoqTopQueryResult, void> = { method: 'coqtop/locate' }; 
-} 
+export namespace QueryRequest { 
+  export const type: RequestType<CoqTopQueryParams, CoqTopQueryResult, void> = { method: 'coqtop/query' }; 
+}
+export enum QueryFunction { Check, Search, SearchAbout, Locate}
 export declare interface CoqTopQueryParams extends CoqTopParams {
+  queryFunction: QueryFunction;
   query: string;
 }
 export declare interface CoqTopQueryResult {

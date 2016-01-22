@@ -48,7 +48,7 @@ export class CoqLanguageServer {
 
     let serverOptions = createServerProcess(serverModule, debugOptions);
     // let serverOptions = createServerLocalExtension(serverModule, debugOptions);
-	
+    
     // Options to control the language client
     let clientOptions: LanguageClientOptions = {
       // Register the server for Coq scripts
@@ -60,7 +60,6 @@ export class CoqLanguageServer {
         fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
       }
     }
-
 
     // Create the language client and start the client.
     this.server = new LanguageClient('Coq Language Server', serverOptions, clientOptions);
@@ -119,8 +118,35 @@ export class CoqLanguageServer {
   }
   
   public locate(uri: string, query: string) {
-    return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.LocateRequest.type, {uri: uri, query: query});
+    return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
+      uri: uri,
+      queryFunction: proto.QueryFunction.Locate,
+      query: query
+    });
   }
 
+  public check(uri: string, query: string) {
+    return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
+      uri: uri,
+      queryFunction: proto.QueryFunction.Check,
+      query: query
+    });
+  }
+
+  public search(uri: string, query: string) {
+    return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
+      uri: uri,
+      queryFunction: proto.QueryFunction.Search,
+      query: query
+    });
+  }
+
+  public searchAbout(uri: string, query: string) {
+    return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
+      uri: uri,
+      queryFunction: proto.QueryFunction.SearchAbout,
+      query: query
+    });
+  }
 
 }

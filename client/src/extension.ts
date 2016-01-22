@@ -36,6 +36,7 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.stepBackward', stepBackward));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.interpretToPoint', interpretToPoint));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.interpretToEnd', interpretToEnd));
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.check', check));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.locate', locate));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.search', search));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.searchAbout', searchAbout)); 
@@ -65,6 +66,12 @@ async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {
     prompt: prompt,
     placeHolder: placeHolder
     });
+}
+
+async function check(editor: TextEditor, edit: TextEditorEdit) {
+  const doc = documents.get(editor.document.uri.toString());
+  if(doc)
+    doc.check(await queryStringFromPlaceholder("Locate:", editor));
 }
 
 async function locate(editor: TextEditor, edit: TextEditorEdit) {

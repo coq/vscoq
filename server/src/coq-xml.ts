@@ -243,9 +243,12 @@ export class XmlStream extends events.EventEmitter {
     }
     
     let options : sax.SAXOptions = {
-      lowercase: true, trim: true,
-      normalize: true, xmlns:false,
-      position: false, strictEntities: false,
+      lowercase: true,
+      trim: true,
+      normalize: false,
+      xmlns:false,
+      position: false,
+      strictEntities: false,
       noscript: true
     };
     

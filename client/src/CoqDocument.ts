@@ -81,9 +81,15 @@ export class CoqDocument implements vscode.Disposable {
     case 'warning':
       vscode.window.showWarningMessage(params.message); return;
     case 'info':
-      this.infoOut.appendLine(params.message); return;
+      // this.infoOut.appendLine(params.message); return;
+      // this.view.message(params.message);
+      this.infoOut.append(params.message);
+      return;
     case 'notice':
-      vscode.window.showInformationMessage(params.message); return;
+      this.infoOut.clear();
+      this.infoOut.append(params.message);
+      return;
+      // vscode.window.showInformationMessage(params.message); return;
     case 'error':
       vscode.window.showErrorMessage(params.message); return;
     }
@@ -171,17 +177,25 @@ export class CoqDocument implements vscode.Disposable {
     }
     this.statusBar.text = 'Ready';
   }
+
+  public async check(query: string) {
+    const results = await this.langServer.check(this.documentUri, query);
+    var a = results;
+  }
+  
   
   public async locate(query: string) {
     const results = await this.langServer.locate(this.documentUri, query);
     var a = results;
   }
   
-  public search(query: string) {
-    
+  public async search(query: string) {
+    const results = await this.langServer.search(this.documentUri, query);
+    var a = results;
   }
   
-  public searchAbout(query: string) {
-    
+  public async searchAbout(query: string) {
+    const results = await this.langServer.searchAbout(this.documentUri, query);
+    var a = results;
   }
 }

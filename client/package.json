@@ -55,6 +55,7 @@
       {"command": "extension.coq.stepBackward", "title": "Coq: Step Backward"},
       {"command": "extension.coq.interpretToPoint", "title": "Coq: Interpret To Point"},
       {"command": "extension.coq.interpretToEnd", "title": "Coq: Interpret To End"},
+      {"command": "extension.coq.check", "title": "Coq: Check"},
       {"command": "extension.coq.locate", "title": "Coq: Locate"},
       {"command": "extension.coq.search", "title": "Coq: Search"},
       {"command": "extension.coq.searchAbout", "title": "Coq: Search About"}, 
