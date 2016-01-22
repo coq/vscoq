@@ -22,6 +22,7 @@ namespace coqtopw
     }
 
     static Regex channelParser = new Regex("^(?<hostname>[^:].*):(?<port>[0-9]*)$");
+    static Regex channelParser2 = new Regex("^(?<hostname>[^:].*):(?<portR>[0-9]*):(?<portW>[0-9]*)$");
     
 
     static async Task<Stream> openChannelSocket(string channel) {
@@ -29,7 +30,19 @@ namespace coqtopw
       {
         if (channel == "stdfs")
           return new StreamJoinIO(Console.OpenStandardInput(), Console.OpenStandardOutput(), true);
-        else
+        else if (channelParser2.IsMatch(channel))
+        {
+          var match = channelParser2.Match(channel);
+          var hostname = match.Groups["hostname"].Value;
+          var portR = int.Parse(match.Groups["portR"].Value);
+          var portW = int.Parse(match.Groups["portW"].Value);
+          var socketR = new TcpClient();
+          var socketW = new TcpClient();
+          await socketR.ConnectAsync(hostname, portR);
+          await socketW.ConnectAsync(hostname, portW);
+          return new StreamJoinIO(socketW.GetStream(), socketR.GetStream());
+        }
+        else if (channelParser.IsMatch(channel))
         {
           var match = channelParser.Match(channel);
           var hostname = match.Groups["hostname"].Value;
@@ -38,6 +51,8 @@ namespace coqtopw
           await socket.ConnectAsync(hostname, port);
           return socket.GetStream();
         }
+        else
+          throw new Exception("Invalid channel syntax");
       }
       catch (Exception err)
       {
@@ -106,12 +121,12 @@ namespace coqtopw
       return Tuple.Create<Stream,Stream>(localMain, localControl);
     }
 
-    static async Task runCoqtop(string coqtopBin, string mainChannel, string controlChannel, bool ideSlave, IEnumerable<string> args)
+    static async Task runCoqtop(string coqtopBin, string mainChannel, string controlChannel, bool ideSlave, IEnumerable<string> args, string traceFile)
     {
-      var remoteMain = await openChannelSocket(mainChannel);
-      var remoteControl = await openChannelSocket(controlChannel);
-      Stream localMain;
-      Stream localControl;
+      var editorMain = await openChannelSocket(mainChannel);
+      var editorControl = await openChannelSocket(controlChannel);
+      Stream coqtopMain;
+      Stream coqtopControl;
       var coqtop = new Process();
       coqtop.StartInfo.UseShellExecute = false;
       coqtop.StartInfo.RedirectStandardError = false;
@@ -119,17 +134,17 @@ namespace coqtopw
       coqtop.StartInfo.RedirectStandardOutput = false;
       if (System.Environment.OSVersion.Platform == PlatformID.Win32NT)
       {
-        var localMainR = new TcpListener(IPAddress.Loopback, 0);
-        var localMainW = new TcpListener(IPAddress.Loopback, 0);
-        var localControlR = new TcpListener(IPAddress.Loopback, 0);
-        var localControlW = new TcpListener(IPAddress.Loopback, 0);
-        localMainR.Start(1);
-        localMainW.Start(1);
-        localControlR.Start(1);
-        localControlW.Start(1);
-        var localMainAddr = ((IPEndPoint)localMainR.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)localMainR.LocalEndpoint).Port + ":" + ((IPEndPoint)localMainW.LocalEndpoint).Port;
-        var localControlAddr = ((IPEndPoint)localControlR.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)localControlR.LocalEndpoint).Port + ":" + ((IPEndPoint)localControlW.LocalEndpoint).Port;
-        var arguments = String.Format("{0} -main-channel {1} -control-channel {2} ", ideSlave ? "-ideslave" : "", localMainAddr, localControlAddr)
+        var coqtopMainR = new TcpListener(IPAddress.Loopback, 0);
+        var coqtopMainW = new TcpListener(IPAddress.Loopback, 0);
+        var coqtopControlR = new TcpListener(IPAddress.Loopback, 0);
+        var coqtopControlW = new TcpListener(IPAddress.Loopback, 0);
+        coqtopMainR.Start(1);
+        coqtopMainW.Start(1);
+        coqtopControlR.Start(1);
+        coqtopControlW.Start(1);
+        var coqtopMainAddr = ((IPEndPoint)coqtopMainR.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)coqtopMainR.LocalEndpoint).Port + ":" + ((IPEndPoint)coqtopMainW.LocalEndpoint).Port;
+        var coqtopControlAddr = ((IPEndPoint)coqtopControlR.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)coqtopControlR.LocalEndpoint).Port + ":" + ((IPEndPoint)coqtopControlW.LocalEndpoint).Port;
+        var arguments = String.Format("{0} -main-channel {1} -control-channel {2} ", ideSlave ? "-ideslave" : "", coqtopMainAddr, coqtopControlAddr)
           + String.Join(" ", args);
 
         coqtop.StartInfo.FileName = coqtopBin;
@@ -140,7 +155,7 @@ namespace coqtopw
         //coqtop.StandardOutput.BaseStream.CopyToAsync(stderr);
 
         var connections = await Task.WhenAny(new Task<Tuple<Stream,Stream>>[]
-          { AcceptCoqTopConnections(localMainR, localMainW, localControlR, localControlW)
+          { AcceptCoqTopConnections(coqtopMainR, coqtopMainW, coqtopControlR, coqtopControlW)
           , Task.Run<Tuple<Stream,Stream>>(() => {System.Threading.Thread.Sleep(5000); return (Tuple<Stream,Stream>)null; })
           }).Result;
         if (connections == null)
@@ -149,67 +164,100 @@ namespace coqtopw
           System.Environment.Exit(-1);
         }
 
-        localMain = connections.Item1;
-        localControl = connections.Item2;
+        coqtopMain = connections.Item1;
+        coqtopControl = connections.Item2;
 
-        localMainR.Stop();
-        localMainW.Stop();
-        localControlR.Stop();
-        localControlW.Stop();
+        coqtopMainR.Stop();
+        coqtopMainW.Stop();
+        coqtopControlR.Stop();
+        coqtopControlW.Stop();
       } else {
-        var localMainRW = new TcpListener(IPAddress.Loopback, 0);
-        var localControlRW = new TcpListener(IPAddress.Loopback, 0);
-        var localMainAddr = ((IPEndPoint)localMainRW.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)localMainRW.LocalEndpoint).Port;
-        var localControlAddr = ((IPEndPoint)localControlRW.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)localControlRW.LocalEndpoint).Port;
-        var arguments = String.Format("{0} -main-channel {1} -control-channel {2}", ideSlave ? "-ideslave" : "", localMainAddr, localControlAddr)
+        var coqtopMainRW = new TcpListener(IPAddress.Loopback, 0);
+        var coqtopControlRW = new TcpListener(IPAddress.Loopback, 0);
+        var coqtopMainAddr = ((IPEndPoint)coqtopMainRW.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)coqtopMainRW.LocalEndpoint).Port;
+        var coqtopControlAddr = ((IPEndPoint)coqtopControlRW.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)coqtopControlRW.LocalEndpoint).Port;
+        var arguments = String.Format("{0} -main-channel {1} -control-channel {2}", ideSlave ? "-ideslave" : "", coqtopMainAddr, coqtopControlAddr)
           + String.Join(" ", args);
-        localMainRW.Start();
-        localControlRW.Start();
+        coqtopMainRW.Start();
+        coqtopControlRW.Start();
 
         coqtop = Process.Start(coqtopBin, arguments);
 
-        var localMainConnection = await localMainRW.AcceptTcpClientAsync();
-        var localControlConnection = await localControlRW.AcceptTcpClientAsync();
-        localMain = localMainConnection.GetStream();
-        localControl = localControlConnection.GetStream();
-        localMainRW.Stop();
-        localControlRW.Stop();
+        var coqtopMainConnection = await coqtopMainRW.AcceptTcpClientAsync();
+        var coqtopControlConnection = await coqtopControlRW.AcceptTcpClientAsync();
+        coqtopMain = coqtopMainConnection.GetStream();
+        coqtopControl = coqtopControlConnection.GetStream();
+        coqtopMainRW.Stop();
+        coqtopControlRW.Stop();
+      }
+
+      FileStream trace = null;
+      if (traceFile != null)
+      {
+        try
+        {
+          File.Delete(traceFile);
+          trace = new FileStream(traceFile, FileMode.Create);
+        }
+        catch (Exception)
+        {
+          trace = null;
+        }
+      }
+
+      if (trace != null)
+      {
+        coqtopMain = new TraceStream(coqtopMain, System.Text.Encoding.UTF8.GetBytes("\neditor->coqtop main-channel:\n"), trace);
+        editorMain = new TraceStream(editorMain, System.Text.Encoding.UTF8.GetBytes("\ncoqtop->editor main-channel:\n"), trace);
+        coqtopControl = new TraceStream(coqtopControl, System.Text.Encoding.UTF8.GetBytes("\neditor->coqtop control-channel:\n"), trace);
+        editorControl = new TraceStream(editorControl, System.Text.Encoding.UTF8.GetBytes("\ncoqtop->editor control-channel:\n"), trace);
       }
 
 
-        if (!ideSlave)
-          await Task.WhenAny(new Task[]
-          { localMain.CopyToAsync(remoteMain)
-          , remoteMain.CopyToAsync(localMain)
-          , localControl.CopyToAsync(remoteControl)
-          , remoteControl.CopyToAsync(localControl)
-          });
-        else
-          await Task.WhenAny(new Task[]
-          { localMain.CopyToAsync(remoteMain)
-          , copyStreamWithInterrupt(coqtop, remoteMain, localMain)
-          , localControl.CopyToAsync(remoteControl)
-          , remoteControl.CopyToAsync(localControl)
-          });
+      if (true || !ideSlave)
+        await Task.WhenAny(new Task[]
+        { coqtopMain.CopyToAsync(editorMain)
+        , editorMain.CopyToAsync(coqtopMain)
+        , coqtopControl.CopyToAsync(editorControl)
+        , editorControl.CopyToAsync(coqtopControl)
+        });
+      else
+        await Task.WhenAny(new Task[]
+        { coqtopMain.CopyToAsync(editorMain)
+        , copyStreamWithInterrupt(coqtop, editorMain, coqtopMain)
+        , coqtopControl.CopyToAsync(editorControl)
+        , editorControl.CopyToAsync(coqtopControl)
+        });
     }
 
     // C:/Users/cj/Research/vscoq/coqtopw/bin/Debug/coqtopw.exe -coqtopbin C:/Coq8.5rc1/bin//coqtop -main-channel 127.0.0.1:7806 -control-channel 127.0.0.1:7809 -ideslave -async-proofs on
-    static void Main(string[] args)
+    static int Main(string[] args)
     {
       //Console.ReadLine();
+      //System.Threading.Thread.Sleep(3000);
 
       Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
+      //while (!System.Diagnostics.Debugger.IsAttached)
+      //  ;
 
       var coqtopArgs = new List<string>();
-      string coqtopBin = null;
+      string coqtopBin = Environment.GetEnvironmentVariable("COQTOP");
+      if(coqtopBin == null)
+        coqtopBin = "coqtop_real.exe";
       string mainChannel = null;
       string controlChannel = null;
       bool ideSlave = false;
+      string traceFile = Environment.GetEnvironmentVariable("COQTOPTRACE");
+      if (traceFile != null && traceFile.Trim() == "")
+        traceFile = null;
+      //traceFile = @"C:\Users\cj\Desktop\coqtrace.txt";
 
       for (int idx = 0; idx < args.Length; ++idx)
       {
         if (args[idx] == "-coqtopbin")
           coqtopBin = args[++idx];
+        else if (args[idx] == "-tracefile")
+          traceFile = args[++idx];
         else if (args[idx] == "-main-channel")
           mainChannel = args[++idx];
         else if (args[idx] == "-control-channel")
@@ -220,23 +268,47 @@ namespace coqtopw
           coqtopArgs.Add(args[idx]);
       }
 
-      if (coqtopBin != null && mainChannel != null && controlChannel != null) {
+      if (coqtopBin != null && Path.GetFullPath(System.Diagnostics.Process.GetCurrentProcess().ProcessName) == Path.GetFullPath(coqtopBin))
+      {
+        Console.Error.WriteLine("Coqtop bin: " + coqtopBin + " points to me (do you want to fork bomb?)");
+      }
+
+      if (coqtopBin != null && mainChannel != null && controlChannel != null)
+      {
         try
         {
-          Task.WaitAll(runCoqtop(coqtopBin, mainChannel, controlChannel, ideSlave, coqtopArgs));
+          Task.WaitAll(runCoqtop(coqtopBin, mainChannel, controlChannel, ideSlave, coqtopArgs, traceFile));
+          return 0;
         }
         catch (Exception error)
         {
           Console.Error.WriteLine("Error communicating with coqtop.");
           Console.Error.WriteLine("Reason: " + error.ToString());
-          System.Environment.Exit(-1);
+          return -1;
         }
-      } else
+      }
+      else if (coqtopBin != null && coqtopBin.Trim() != "")
+      {
+        var coqtop = new Process();
+        coqtop.StartInfo.UseShellExecute = false;
+        coqtop.StartInfo.RedirectStandardError = true;
+        coqtop.StartInfo.RedirectStandardInput = true;
+        coqtop.StartInfo.RedirectStandardOutput = true;
+        coqtop.StartInfo.FileName = coqtopBin;
+        coqtop.StartInfo.Arguments = String.Join(" ", args);
+        coqtop.Start();
+        coqtop.WaitForExit();
+        return coqtop.ExitCode;
+      }
+      else
+      {
         System.Console.Error.WriteLine(
           "Usage: coqtopw" +
           " -coqtopbin <path-to-coqtop-binary>" +
           " -main-channel <\"stdfds\"|hostname:port>" +
           " -control-channel <hostname:port> [coqtop options...]");
+        return -1;
+      }
     }
   }
 }
