@@ -41,6 +41,8 @@ States:
   * Complete:
   * Error: the sentence has an error error
 
+State ID 0 is reserved as 'null' or 'default' state. (The 'query' command suggests that it might also refer to the currently-focused state, but I have not tested this yet). The first command should be added to state ID 0. Queries are typically performed w.r.t. state ID 0.
+
 --------------------------
 
 ## <a name="commands">Commands</a>
@@ -221,6 +223,7 @@ CoqIDE typically sets `force` to `false`.
 
 
 ### <a name="command-query">**Query(query, stateId)**</a>
+In practice, `stateId` is 0, but the effect is to perform the query on the currently-focused state.
 ```html
 <call val="Query">
   <string>${query}</string>
