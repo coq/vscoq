@@ -35,6 +35,16 @@ interface BufferedFeedback {
 const lineEndingRE = /[^\r\n]*(\r\n|\r|\n)?/;
 
 export class CoqDocument implements ITextDocument {
+  // ITextDocument
+  public uri: string;
+  public languageId: string = 'coq';
+  public getText() {
+    return this.documentText;
+  }
+  public lineCount: number;
+
+
+
   private coqTop: CoqTop;
   private clientConsole: RemoteConsole;
   // private document: ITextDocument;
@@ -42,7 +52,6 @@ export class CoqDocument implements ITextDocument {
   private bufferedFeedback: BufferedFeedback[] = [];
   private callbacks : DocumentCallbacks;
   private diagnostics : Diagnostic[] = [];
-  private documentUri: string;
   private documentText: string;
   private processingLock = new Mutex();
   private resettingLock = new Mutex();
@@ -61,7 +70,7 @@ export class CoqDocument implements ITextDocument {
       onReset: () => this.onCoqReset(),
     });
     this.documentText = text;
-    this.documentUri = uri;
+    this.uri = uri;
     this.callbacks = callbacks;
     
     // this.reset();
@@ -97,7 +106,7 @@ export class CoqDocument implements ITextDocument {
       // Remove diagnostics for any text that has been modified
       this.removeDiagnosticsIntersecting(change.range, false);
       // Find offsets for change-range
-      const beginOffset = this.locationAt(change.range.start);
+      const beginOffset = this.offsetAt(change.range.start);
       const endOffset = beginOffset + change.rangeLength;
       // Have any sentences been edited?
       const rangeSent = this.sentences.getRangeAffected(beginOffset,endOffset);
@@ -160,7 +169,7 @@ export class CoqDocument implements ITextDocument {
   }
   
   
-  public locationAt(pos: Position) : number {
+  public offsetAt(pos: Position) : number {
     return textUtil.locationAt(this.documentText,pos);
   }
 
@@ -601,13 +610,6 @@ export class CoqDocument implements ITextDocument {
   }
 
 
-  public get uri() : string {
-    return this.documentUri;
-  }
-
-  public getText() {
-    return this.documentText;
-  }
 
 
   /**

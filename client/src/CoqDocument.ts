@@ -13,7 +13,6 @@ import * as proto from './protocol';
 import * as textUtil from './text-util';
 import {CoqLanguageServer} from './CoqLanguageServer';
 
-
 export class CoqDocument implements vscode.Disposable {
   private statusBar: vscode.StatusBarItem;
   public documentUri: string;
@@ -52,7 +51,7 @@ export class CoqDocument implements vscode.Disposable {
     //   });
 
     this.view.onresize = async (columns:number) => {
-      await this.langServer.resizeView(this.documentUri,Math.floor(columns/3);
+      await this.langServer.resizeView(this.documentUri,Math.floor(columns));
       const value = await this.langServer.getGoal(this.documentUri);
       this.view.update(value);
     };

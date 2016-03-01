@@ -1,5 +1,5 @@
 {
-	"name": "VSCoq",
+	"name": "vscoq",
 	"description": "IDE for the Coq Proof Assistant",
   "author": {
     "name": "Christian J. Bell",
@@ -9,7 +9,7 @@
 	"version": "0.0.1",
 	"publisher": "Christian J. Bell",
 	"engines": {
-		"vscode": "^0.11.x"
+ 		"vscode": "^0.10.7"
 	},
 	"categories": [
 		"Languages"
@@ -84,7 +84,7 @@
     "postinstall": "node ./node_modules/vscode/bin/install"
 	},
 	"devDependencies": {
-		"typescript": "^1.6.2",
+		"typescript": "^1.8.2",
     "vscode": "^0.11.x",
     "gulp": "^3.9.0",
     "gulp-typescript": "^2.10.0",
@@ -92,8 +92,8 @@
     "gulp-watch": "4.3.5"
 	},
 	"dependencies": {
-    "vscode-jsonrpc": "0.10.x",
-		"vscode-languageclient": "^1.1.0",
+    "vscode-jsonrpc": "^1.2.0",
+		"vscode-languageclient": "^1.4.2",
     "ws": "1.0.1"
 	},
   "repository" :

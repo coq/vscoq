@@ -1,5 +1,5 @@
 {
-  "name": "Coq-Server",
+  "name": "coqlangserver",
   "description": "Language server for Coq.",
   "version": "0.0.1",
   "author": {
@@ -13,14 +13,14 @@
 		"vscode": "^0.11.x"
   },
   "dependencies": {
-    "vscode-jsonrpc": "1.0.1",
-    "vscode-languageserver": "^1.1.1",
+    "vscode-jsonrpc": "1.2.0",
+    "vscode-languageserver": "^1.4.0",
     "sax": "1.1.4 ",
     "async": "1.5.0",
     "diff": "2.2.1"
   },
   "devDependencies": {
-    "typescript": "^1.7.5",
+    "typescript": "^1.8.2",
     "mocha": "2.3.4"
   },
   "scripts": {
