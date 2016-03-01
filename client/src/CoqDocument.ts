@@ -50,8 +50,15 @@ export class CoqDocument implements vscode.Disposable {
     //     this.viewDoc = viewDoc;
     //     vscode.window.showTextDocument(viewDoc, vscode.ViewColumn.Three);
     //   });
-  }
 
+    this.view.onresize = async (columns:number) => {
+      await this.langServer.resizeView(this.documentUri,Math.floor(columns/3);
+      const value = await this.langServer.getGoal(this.documentUri);
+      this.view.update(value);
+    };
+
+  }
+  
   private updateStateViewUrl(stateUrl: string) {
     // if(this.view)
     //   this.view.dispose();

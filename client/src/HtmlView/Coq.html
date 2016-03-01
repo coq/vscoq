@@ -38,12 +38,10 @@
     }
     .hypotheses .hypothesis .rel {
       margin-right: 1ex;
+      margin-left: 3pt;
     }
     .hypotheses .hypothesis .ident {
       color: lightseagreen;
-    }
-    .hypotheses li:nth-child(odd) {
-      background-color: rgba(255,255,255,0.04)
     }
     .hypotheses .hypothesis > ul {
       list-style-type: none;
@@ -58,6 +56,36 @@
       padding-left: 0pt;
       text-indent: 0pt
     }
+    .hypotheses li:nth-child(odd) {
+      background-color: rgba(255,255,255,0.04)
+    }
+    .hypotheses .new {
+      background-color: rgba(0,255,0,0.09) !important;
+    } 
+    .hypotheses .changed {
+      background-color: rgba(0,0,255,0.15) !important;
+    } 
+    .hypothesis {
+      white-space: nowrap;
+    }
+    .breakText {
+      white-space: pre;
+    }
+    .noBreakText .expr {
+      white-space: nowrap;
+    }
+    .noBreakText .ident {
+      text-decoration: underline;
+    }
+    /*.noBreakContainedText .breakText {
+      white-space: normal;
+    }*/
+    /*.noBreakContainedText .breakText .hypLine:before {
+      content: ' ';
+    }*/
+    /*.noBreakContainedText,.breakContainedText  {
+      opacity: 1;
+    }*/
     .goal .goalId {
       color: lightblue;
       /*display: block;*/
@@ -76,9 +104,33 @@
     .goal .expr {
       display: block;
     }
+    .hypotheses .new .ident {
+      font-weight: bold;
+    } 
+    .hypotheses .changed .ident {
+      font-style: italic;
+    } 
+    .hypotheses .expr .charsAdded {
+      color: lightgreen;
+    } 
+    .hypotheses .expr .charsRemoved {
+      display: none;
+    } 
+    .goal .expr .charsAdded {
+      color: lightgreen;
+    }
+    
+    .goal .expr .charsRemoved {
+      display: none;
+    }
+    .hypothesese, .hypothesis, .goal, #textMeasurer, #stdout {
+      font-family: Courier New, Courier, monospace;
+      font-size: 9pt;
+    }
   </style>
 </head>
 <body onload="load()">
+  <canvas id="textMeasurer" style="display: none"></canvas>
   <div id="states">
     <div class="focusedState">
       <div class="hypotheses" />

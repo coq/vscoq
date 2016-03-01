@@ -8,7 +8,8 @@ import * as proto from './protocol'
 
 
 export class SimpleCoqView implements view.CoqView {
-  out: vscode.OutputChannel;
+  private out: vscode.OutputChannel;
+  public onresize: (columns: number) => Thenable<void> = null;
 
   constructor(uri: string) {
     const name = uri + " - CoqTop";

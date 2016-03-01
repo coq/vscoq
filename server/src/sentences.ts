@@ -1,7 +1,8 @@
 'use strict';
 
 import * as coqProto from './coq-proto';
-
+import {CoqTopGoalResult, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './protocol';
+import * as diff from 'diff';
 /*
 
 interpreting multiple lines:
@@ -40,6 +41,7 @@ export interface Sentence {
   textBegin: number;
   textEnd: number;
   status: coqProto.SentenceStatus;
+  goalState: CoqTopGoalResult;
 }
 
 class SentenceLink implements Sentence {
@@ -48,6 +50,7 @@ class SentenceLink implements Sentence {
   textBegin: number;
   textEnd: number;
   status: coqProto.SentenceStatus;
+  goalState: CoqTopGoalResult;
   private previous: SentenceLink = null;
   private next : SentenceLink = null;
   constructor(previous:SentenceLink,stateId:number, textBegin:number, textEnd:number) {
@@ -111,6 +114,75 @@ export class Sentences {
   
   public hasTip() : boolean {
     return this.tip != null;
+  }
+  
+  private diffHypotheses(oldHyps: Hypothesis[], newHyps: Hypothesis[]) {
+    newHyps.forEach((hyp,idxHyp) => {
+      var oldHypIdx = idxHyp;
+      var oldHyp = oldHyps[oldHypIdx];
+      if(oldHyp === undefined || oldHyp.identifier !== hyp.identifier) {
+        oldHypIdx = oldHyps.findIndex((h) => h.identifier === hyp.identifier)
+        oldHyp = oldHyps[oldHypIdx];
+      }
+        
+      if(oldHyp === undefined)
+        hyp.diff = HypothesisDifference.New;
+      else if(oldHyp.expression !== hyp.expression) {
+        hyp.diff = HypothesisDifference.Changed
+        var difference = diff.diffWords(oldHyp.expression, hyp.expression);
+        hyp.diffExpression = difference.map((d,idx) => {
+          if(d.added)
+            return {text: d.value, change: TextDifference.Added};
+          else if(d.removed)
+            return {text: d.value, change: TextDifference.Removed};
+          else
+            return {text: d.value, change: TextDifference.None};          
+        });
+      } else
+        hyp.diff = HypothesisDifference.None
+    })
+  }
+
+  private diffGoals(oldGoals: Goal[], newGoals: Goal[]) {
+    newGoals.forEach((g,idxGoal) => {
+      if(oldGoals[idxGoal] !== undefined) {
+        this.diffHypotheses(oldGoals[idxGoal].hypotheses, g.hypotheses)
+
+        var difference = diff.diffWords(oldGoals[idxGoal].goal, g.goal);
+        g.diffGoal = difference.map((d,idx) => {
+          if(d.added)
+            return {text: d.value, change: TextDifference.Added};
+          else if(d.removed)
+            return {text: d.value, change: TextDifference.Removed};
+          else
+            return {text: d.value, change: TextDifference.None};          
+        });
+
+      }
+    })
+
+  }
+  
+  private diffGoalState(sent : SentenceLink) {
+    if(sent.goalState.error)
+      return;
+    var parent = sent.getParent();
+    if(!parent || !parent.goalState || parent.goalState.error)
+      return;
+    var oldState = parent.goalState;
+    var newState = sent.goalState;
+    this.diffGoals(oldState.goals, newState.goals);
+    // this.diffGoals(oldState.backgroundGoals, newState.backgroundGoals);
+    // this.diffGoals(oldState.shelvedGoals, newState.shelvedGoals);
+    // this.diffGoals(oldState.abandonedGoals, newState.abandonedGoals);
+  }
+  
+  public setGoalState(stateId: number, goalState: CoqTopGoalResult) {
+    const sent = this.sentences.get(stateId);
+    if(!sent || sent === undefined)
+      return;
+    sent.goalState = goalState;
+    this.diffGoalState(sent);
   }
 
   private removeDescendants(sent: SentenceLink,sentLast?: Sentence) {

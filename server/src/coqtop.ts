@@ -892,6 +892,55 @@ export class CoqTop extends events.EventEmitter {
     return result;
   }
 
+  public async coqResizeWindow(columns: number) : Promise<void> {
+    if(this.coqtopProc === null)
+      return;
+
+    const coqResult = this.coqGetResultOnce('SetOptions');
+    this.console.log('--------------------------------');
+    this.console.log(`Call ResizeWindow(columns: ${columns})`);
+    this.mainChannelW.write(`<call val="SetOptions"><list><pair><list><string>Printing</string><string>Width</string></list><option_value val="intvalue"><option val="some"><int>${columns}</int></option></option_value></pair></list></call>`);
+    // this.mainChannelW.write(`
+    // <call val="SetOptions">
+    //   <list>
+    //     <pair>
+    //       <list><string>Printing</string><string>Width</string></list>
+    //       <option_value val="intvalue"><option val="some"><int>37</int></option></option_value>
+    //     </pair>
+    //     <pair>
+    //       <list><string>Printing</string><string>Coercions</string></list>
+    //       <option_value val="boolvalue"><bool val="false"/></option_value>
+    //     </pair>
+    //     <pair>
+    //       <list><string>Printing</string><string>Matching</string></list>
+    //       <option_value val="boolvalue"><bool val="true"/></option_value>
+    //     </pair>
+    //     <pair>
+    //       <list><string>Printing</string><string>Notations</string></list>
+    //       <option_value val="boolvalue"><bool val="true"/></option_value>
+    //     </pair>
+    //     <pair>
+    //       <list><string>Printing</string><string>Existential</string><string>Instances</string></list>
+    //       <option_value val="boolvalue"><bool val="false"/></option_value>
+    //     </pair>
+    //     <pair>
+    //       <list><string>Printing</string><string>Implicit</string></list>
+    //       <option_value val="boolvalue"><bool val="false"/></option_value>
+    //     </pair>
+    //     <pair>
+    //       <list><string>Printing</string><string>All</string></list>
+    //       <option_value val="boolvalue"><bool val="false"/></option_value>
+    //     </pair>
+    //     <pair>
+    //       <list><string>Printing</string><string>Universes</string></list>
+    //       <option_value val="boolvalue"><bool val="false"/></option_value>
+    //     </pair>
+    //   </list>
+    // </call>`);
+    await coqResult;
+    this.console.log(`ResizeWindow: ${columns} --> ()`);
+  }
+  
   public async coqQuery(query: string, stateId?: number) : Promise<string> {
     this.checkState();
     if(stateId === undefined)

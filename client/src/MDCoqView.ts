@@ -43,6 +43,7 @@ export class MDCoqView implements view.CoqView {
   private outFile: number; // file descriptor
   private currentPos = new vscode.Position(0,0);
   private filename : string;
+  public onresize: (columns: number) => Thenable<void> = null;
 
   constructor(uri: vscode.Uri) {
     this.docUri = uri;

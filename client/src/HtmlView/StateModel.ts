@@ -1,10 +1,24 @@
 /// <reference path="ui-util.ts" />
 'use strict';
 
+enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
+enum TextDifference { None, Added, Removed }
+interface TextPartDifference {
+  text: string;
+  change: TextDifference;
+}
+interface Hypothesis {
+  identifier: string;
+  relation: string;
+  expression: string;
+  diffExpression?: TextPartDifference[];
+  diff: HypothesisDifference;
+}
 interface Goal {
   id: number;
-  hypotheses: string[];
+  hypotheses: Hypothesis[];
   goal: string;
+  diffGoal?: TextPartDifference[];
 }
 
 interface FailValue {
@@ -42,31 +56,66 @@ function countAllGoals(state: CoqTopGoalResult): number {
   return result;
 }
 
-function createHypothesis(ident: string, rel: string, expr: string) : Element {
-  return makeElement('li',{class: 'hypothesis'},
-    [ makeElement('span',{class:'ident'},[makeText(ident)])
-    , makeElement('span',{class:'rel'},[makeText(rel)])
-    , makeElement('span',{class:'expr'},[makeText(expr)])
-    ]);
+function getDifferenceClass(diff: HypothesisDifference) {
+  switch(diff) {
+    case HypothesisDifference.Changed:
+      return ' changed';
+    case HypothesisDifference.New:
+      return ' new';
+    case HypothesisDifference.MovedUp:
+      return ' movedUp';
+    case HypothesisDifference.MovedDown:
+      return ' movedDown';
+    default:
+      return '';
+  }
 }
 
-function createHypotheses(hyps: string[]) {
+function createDiffText(parts: TextPartDifference[]) : Node[] {
+  return parts.map((part) => {
+    switch(part.change) {
+      case TextDifference.Added:
+        return makeElement('span',{class: 'charsAdded'},makeBreakingText(part.text))
+      case TextDifference.Removed:
+        return makeElement('span',{class: 'charsRemoved'},makeBreakingText(part.text))
+      default:
+        return makeElement('span',{},makeBreakingText(part.text));
+    }
+  })
+}
+
+function createHypothesis(hyp: Hypothesis) : Element {
+  var hypE = makeElement('li', {class: 'hypothesis breakText' + getDifferenceClass(hyp.diff)},
+    [ makeElement('span',{class:'ident'},makeText(hyp.identifier))
+    , makeElement('span',{class:'rel'},makeText(hyp.relation))
+    , makeElement('span',{class:'expr'},
+      hyp.diffExpression
+      ? createDiffText(hyp.diffExpression)
+      : makeBreakingText(hyp.expression))
+    ]);
+  hypE.ondblclick = onDoubleClickBreakableText;
+  return hypE;
+}
+
+function createHypotheses(hyps: Hypothesis[]) {
   return makeElement('ul',{class:"hypotheses"},
     hyps.map((hyp) => {
-      const split = hyp.split(/(:=|:)(.*)/);
-      return createHypothesis(split[0],split[1],split[2]);
+      return createHypothesis(hyp);
     }));
 }
 
-function createGoal(goal: string, idx:number, count:number) {
+function createGoal(goal: Goal, idx:number, count:number) {
   return makeElement('li', {class:"goal"},
-    [ makeElement('span',{class: 'goalId'},[makeText(`${idx+1}/${count}`)])
+    [ makeElement('span',{class: 'goalId'},makeText(`${idx+1}/${count}`))
     , makeElement('span',{class: 'error'},[])
-    , makeElement('span',{class: 'expr'},[makeText(goal)])
+    , makeElement('span',{class: 'expr'},
+      goal.diffGoal
+      ? createDiffText(goal.diffGoal)
+      : makeText(goal.goal))
     ]);
 }
 
-function createGoals(goals: string[]) {
+function createGoals(goals: Goal[]) {
   return makeElement('ul',{class:"goalsList"}, goals.map((g,i) => createGoal(g,i,goals.length)));
 }
 
@@ -103,13 +152,13 @@ class StateModel {
   
   private setMessage(message: string) {
     // document.getElementById('messages').innerHTML = message;
-    setChildren(document.getElementById('messages'), [makeText(message)]);
+    setChildren(document.getElementById('messages'), makeText(message));
   }
 
   private setErrorMessage(message: string) {
     const errorsN = this.getCurrentGoalE().getElementsByClassName('error');
     if(errorsN.length > 0)
-    setChildren(errorsN.item(0), [makeText(message)]);
+    setChildren(errorsN.item(0), makeText(message));
     // document.getElementById('messages').innerHTML = message;
     // setChildren(document.getElementById('messages'), [makeElement('span',{class:'error'},[makeText(message)])]);
   }
@@ -135,7 +184,7 @@ class StateModel {
               state.goals.map((hp,idx) =>
                 makeElement('div',{class: StateModel.focusedStateClass + (this.focusedState===idx ? "" : " hidden")},
                   [ createHypotheses(state.goals[idx].hypotheses)
-                  , createGoal(state.goals[idx].goal, idx, state.goals.length)
+                  , createGoal(state.goals[idx], idx, state.goals.length)
                   ])))
         } else
           this.setMessage("There are unfocused goals.");

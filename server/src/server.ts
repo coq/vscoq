@@ -205,6 +205,14 @@ connection.onRequest(coqproto.QueryRequest.type, (params: coqproto.CoqTopQueryPa
   else
     return null;
 });
+connection.onRequest(coqproto.ResizeWindowRequest.type, (params: coqproto.CoqTopResizeWindowParams) => {
+  var doc = coqInstances[params.uri];
+  if(doc)
+    return doc.coq.resizeWindow(params.columns);
+  else
+    return;
+});
+
 
 
 function sendHighlightUpdates(documentUri: string, highlights: coqproto.Highlight[]) {

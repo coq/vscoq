@@ -97,6 +97,10 @@ export class CoqLanguageServer {
     return this.server.sendRequest(proto.ResetCoqRequest.type, {uri: uri});
   }
 
+  public getGoal(uri: string) {
+    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.GoalRequest.type, {uri: uri});
+  }
+
   public stepForward(uri: string) {
     return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.StepForwardRequest.type, {uri: uri});
   }
@@ -117,6 +121,11 @@ export class CoqLanguageServer {
     return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.InterpretToEndRequest.type, {uri: uri});
   }
   
+  public resizeView(uri: string, columns: number) : Thenable<void> {
+    var x = proto.ResizeWindowRequest.type;
+    return <Thenable<void>>this.server.sendRequest<proto.CoqTopResizeWindowParams,void,void>(proto.ResizeWindowRequest.type, <proto.CoqTopResizeWindowParams>{uri: uri, columns: columns});
+  }
+
   public locate(uri: string, query: string) {
     return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,

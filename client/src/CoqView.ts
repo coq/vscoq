@@ -30,5 +30,6 @@ export interface CoqView extends vscode.Disposable {
 
   update(state: proto.CoqTopGoalResult) : void;
   // message(message: string) : void;
+  onresize: (columns: number) => Thenable<void>;
 
 }

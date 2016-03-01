@@ -10,6 +10,14 @@ import * as WebSocket from 'ws';
 import * as http from 'http';
 import * as path from 'path';
 
+interface ControllerEvent {
+  eventName: string;
+  params: ResizeEvent // | | | | | ;
+}
+
+interface ResizeEvent {
+  columns: number;
+}
 
 function createFile(path: string) : Promise<number> {
   return new Promise<number>((resolve,reject) => {
@@ -54,6 +62,7 @@ export class HtmlCoqView implements view.CoqView {
   // private connection : Promise<WebSocket>;
   private serverReady : Promise<void>;
   private currentState : proto.CoqTopGoalResult = {}; 
+  public onresize: (columns: number) => Thenable<void> = null;
 
   constructor(uri: vscode.Uri) {
     this.docUri = uri;
@@ -68,12 +77,25 @@ export class HtmlCoqView implements view.CoqView {
       }));
     
     this.server = new WebSocket.Server({server: httpServer});
-    
     this.server.on('connection', (ws: WebSocket) => {
+      ws.onmessage = (event) => this.handleClientMessage(event);
       ws.send(JSON.stringify(this.currentState));
     })
 
     this.createBuffer();
+  }
+  
+  private handleClientResize(event: ResizeEvent) {
+    if(this.onresize)
+      this.onresize(event.columns);
+  }
+  
+  private handleClientMessage(event: {data: any; type: string; target: WebSocket}) {
+    const message = <ControllerEvent>JSON.parse(event.data);
+    switch(message.eventName) {
+      case 'resize':
+        this.handleClientResize(message.params);
+    }
   }
   
   private async createBuffer() : Promise<void> {

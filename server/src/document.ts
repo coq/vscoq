@@ -2,7 +2,7 @@
 
 import * as util from 'util';
 import {ITextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic, DiagnosticSeverity} from 'vscode-languageserver';
-import {CoqTop, FailureResult, AddResult, EditAtResult} from './coqtop';
+import {CoqTop, FailureResult, AddResult, EditAtResult, GoalResult} from './coqtop';
 import * as thmProto from './protocol';
 import * as coqProto from './coq-proto';
 import * as coqParser from './coq-parser';
@@ -433,19 +433,36 @@ export class CoqDocument implements ITextDocument {
       this.diagnostics[idx].range = textUtil.rangeTranslate(this.diagnostics[idx].range, delta);
     }
   }
+  
+  private convertGoal(goal: coqProto.Goal) : thmProto.Goal {
+    return <thmProto.Goal>{
+      goal: goal.goal,
+      hypotheses: goal.hypotheses.map((hyp) => {
+        var h = hyp.split(/(:=|:)([^]*)/);
+        return {identifier: h[0].trim(), relation: h[1].trim(), expression: h[2].trim()};
+      })
+    };
+  }
+  
+  private convertGoals(goals: GoalResult) : thmProto.CoqTopGoalResult {
+    return {
+      goals: goals.goals.map(this.convertGoal),
+      backgroundGoals: goals.backgroundGoals.map(this.convertGoal),
+      shelvedGoals: goals.shelvedGoals.map(this.convertGoal),
+      abandonedGoals: goals.abandonedGoals.map(this.convertGoal),
+      };
+      
+  }
 
   /**
    * 
    *  */  
-  private async getGoal() : Promise<thmProto.CoqTopGoalResult> {
+  private async getGoal(stateId?: number) : Promise<thmProto.CoqTopGoalResult> {
     try {
-      const result = await this.coqTop.coqGoal();
-      return {
-        goals: result.goals,
-        backgroundGoals: result.backgroundGoals,
-        shelvedGoals: result.shelvedGoals,
-        abandonedGoals: result.abandonedGoals,
-        };
+      var result = this.convertGoals(await this.coqTop.coqGoal());
+      if(stateId !== undefined)
+        this.sentences.setGoalState(stateId, result);
+      return result;
     } catch(err) {
       const error = <FailureResult>err;
       const e = <coqProto.FailValue>{
@@ -602,14 +619,7 @@ export class CoqDocument implements ITextDocument {
     try {
       await this.stepForwardUntil(maxOffset);
       
-      const result = await this.coqTop.coqGoal();
-      var x: coqProto.Goals;
-      return {
-        goals: result.goals,
-        backgroundGoals: result.backgroundGoals,
-        shelvedGoals: result.shelvedGoals,
-        abandonedGoals: result.abandonedGoals,
-        };
+      return await this.getGoal();
     } catch(err) {
       const error = <FailureResult>err;
       const e = <coqProto.FailValue>{
@@ -627,13 +637,7 @@ export class CoqDocument implements ITextDocument {
       if(!interp)
         return {}
 
-      const result = await this.coqTop.coqGoal();
-      return {
-        goals: result.goals,
-        backgroundGoals: result.backgroundGoals,
-        shelvedGoals: result.shelvedGoals,
-        abandonedGoals: result.abandonedGoals,
-        };
+      return await this.getGoal(interp.nextSentence ? interp.nextSentence.stateId : undefined);
     } catch(err) {
       const error = <FailureResult>err;
 
@@ -671,6 +675,7 @@ export class CoqDocument implements ITextDocument {
       this.callbacks.sendHighlightUpdates([
         this.highlightSentence(currentSentence, thmProto.HighlightType.Clear)
         ]);
+      return await this.getGoal(prevSentence.stateId);
     } catch(err) {
       const error = <FailureResult>err;
       const beforeErrorSentence = this.sentences.get(error.stateId);
@@ -678,15 +683,9 @@ export class CoqDocument implements ITextDocument {
 
       this.clearSentenceHighlightAfter(beforeErrorSentence,currentSentence);
       this.sentences.rewindTo(beforeErrorSentence);
+      return await this.getGoal();
     }
 
-    const result = await this.coqTop.coqGoal();
-    return {
-      goals: result.goals,
-      backgroundGoals: result.backgroundGoals,
-      shelvedGoals: result.shelvedGoals,
-      abandonedGoals: result.abandonedGoals,
-      };
   }
   
   public async close() {
@@ -737,6 +736,7 @@ export class CoqDocument implements ITextDocument {
       check: (query: string) => this.protectOperation((wasReset) => this.coqTop.coqQuery("Check " + query + ".")),
       search: (query: string) => this.protectOperation((wasReset) => this.coqTop.coqQuery("Search " + query + ".")),
       searchAbout: (query: string) => this.protectOperation((wasReset) => this.coqTop.coqQuery("SearchAbout " + query + ".")),
+      resizeWindow: (columns: number) => this.coqTop.coqResizeWindow(columns),
     };
   
   public get coq() {

@@ -61,17 +61,16 @@ async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {
   let placeHolder = editor.document.getText(editor.selection);
   if(editor.selection.isEmpty)
     placeHolder = editor.document.getText(editor.document.getWordRangeAtPosition(editor.selection.active));
-  
   return await vscode.window.showInputBox({
     prompt: prompt,
-    placeHolder: placeHolder
+    value: placeHolder
     });
 }
 
 async function check(editor: TextEditor, edit: TextEditorEdit) {
   const doc = documents.get(editor.document.uri.toString());
   if(doc)
-    doc.check(await queryStringFromPlaceholder("Locate:", editor));
+    doc.check(await queryStringFromPlaceholder("Check:", editor));
 }
 
 async function locate(editor: TextEditor, edit: TextEditorEdit) {

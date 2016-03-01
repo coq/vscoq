@@ -39,10 +39,24 @@ export declare interface CoqTopStepBackwardResult {
   commandStart: number;
   commandEnd: number;
 }
+export enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
+export enum TextDifference { None, Added, Removed }
+export interface TextPartDifference {
+  text: string;
+  change: TextDifference;
+}
+export interface Hypothesis {
+  identifier: string;
+  relation: string;
+  expression: string;
+  diffExpression?: TextPartDifference[];
+  diff: HypothesisDifference;
+}
 export interface Goal {
   id: number;
-  hypotheses: string[];
+  hypotheses: Hypothesis[];
   goal: string;
+  diffGoal?: TextPartDifference[];  
 }
 export declare interface CoqTopGoalResult {
   goals?: Goal[];
@@ -91,6 +105,14 @@ export declare interface CoqTopQueryParams extends CoqTopParams {
 export declare interface CoqTopQueryResult {
   searchResults: string;
 }
+
+export interface CoqTopResizeWindowParams extends CoqTopParams {
+  columns: number;
+}
+export namespace ResizeWindowRequest { 
+  export const type: RequestType<CoqTopResizeWindowParams, void, void> = { method: 'coqtop/resizeWindow' }; 
+} 
+
 
 
 export enum HighlightType {
