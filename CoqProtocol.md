@@ -1,5 +1,9 @@
 #CoqTop XML Protocol#
 
+This documentation aims to provide a "hands on" description of the XML protocol that coqtop and coqide use to communicate.
+A somewhat out-of-date description of the async state machine is [documented here](https://github.com/ejgallego/jscoq/blob/master/notes/coq-notes.md). Typings for the protocol can be [found here](https://github.com/coq/coq/blob/trunk/ide/interface.mli#L222).
+
+
 * [Commands](#commands)
   - [Add](#command-add)
   - [EditAt](#command-editAt)
@@ -29,6 +33,7 @@
   - [File Dependencies](#feedback-filedependencies)
   - [File Loaded](#feedback-fileloaded)
 
+
 Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
 Examples: "Lemma a: True.", "(* asdf *) Qed.", "auto; reflexivity."
 In practice, the command sentences sent to CoqTop are terminated at the "." and start with any previous whitespace.
@@ -40,6 +45,8 @@ States:
   * Incomplete: the validity of the sentence cannot be checked due to a prior error
   * Complete:
   * Error: the sentence has an error error
+
+State ID 0 is reserved as 'null' or 'default' state. (The 'query' command suggests that it might also refer to the currently-focused state, but I have not tested this yet). The first command should be added to state ID 0. Queries are typically performed w.r.t. state ID 0.
 
 --------------------------
 
@@ -143,7 +150,7 @@ state that should become the next tip.
 ```html
 <call val="Init"><option val="none"/></call>
 ```
-* With options.
+* With options. Looking at [ide_slave.ml](https://github.com/coq/coq/blob/c5d0aa889fa80404f6c291000938e443d6200e5b/ide/ide_slave.ml#L355), it seems that `options` is just the name of a *.v file, whose path is added via `Add LoadPath` to the initial state.
 ```html
 <call val="Init">
   <option val="some">
@@ -221,6 +228,7 @@ CoqIDE typically sets `force` to `false`.
 
 
 ### <a name="command-query">**Query(query, stateId)**</a>
+In practice, `stateId` is 0, but the effect is to perform the query on the currently-focused state.
 ```html
 <call val="Query">
   <string>${query}</string>
