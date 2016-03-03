@@ -145,7 +145,7 @@ state that should become the next tip.
 ```html
 <call val="Init"><option val="none"/></call>
 ```
-* With options.
+* With options. Looking at [ide_slave.ml](https://github.com/coq/coq/blob/c5d0aa889fa80404f6c291000938e443d6200e5b/ide/ide_slave.ml#L355), it seems that `options` is just the name of a *.v file, whose path is added via `Add LoadPath` to the initial state.
 ```html
 <call val="Init">
   <option val="some">
