@@ -214,7 +214,7 @@ namespace coqtopw
       }
 
 
-      if (true || !ideSlave)
+      if (!ideSlave)
         await Task.WhenAny(new Task[]
         { coqtopMain.CopyToAsync(editorMain)
         , editorMain.CopyToAsync(coqtopMain)
