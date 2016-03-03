@@ -29,7 +29,7 @@
   - [File Dependencies](#feedback-filedependencies)
   - [File Loaded](#feedback-fileloaded)
 
-A somewhat out-of-date description of the async state maching is [documented here](https://github.com/ejgallego/jscoq/blob/master/notes/coq-notes.md). Typings for the protocol can be [found here](https://github.com/coq/coq/blob/trunk/ide/interface.mli#L222)
+A somewhat out-of-date description of the async state maching is [documented here](https://github.com/ejgallego/jscoq/blob/master/notes/coq-notes.md). Typings for the protocol can be [found here](https://github.com/coq/coq/blob/trunk/ide/interface.mli#L222).
 
 Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
 Examples: "Lemma a: True.", "(* asdf *) Qed.", "auto; reflexivity."
