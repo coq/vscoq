@@ -46,8 +46,8 @@ export class CoqLanguageServer {
     // The debug options for the server
     let debugOptions = ["--nolazy", "--debug=6004"];
 
-    let serverOptions = createServerProcess(serverModule, debugOptions);
-    // let serverOptions = createServerLocalExtension(serverModule, debugOptions);
+    // let serverOptions = createServerProcess(serverModule, debugOptions);
+    let serverOptions = createServerLocalExtension(serverModule, debugOptions);
     
     // Options to control the language client
     let clientOptions: LanguageClientOptions = {

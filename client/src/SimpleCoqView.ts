@@ -58,5 +58,13 @@ export class SimpleCoqView implements view.CoqView {
         break;
     }
   }
-  
+
+  public async show() {
+    await this.out.show(vscode.ViewColumn.Two,true);
+  }
+
+  public showExternal() : Promise<void> {
+    return Promise.reject('external view is unsupported');
+  }
+
 }

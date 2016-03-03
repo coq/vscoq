@@ -32,4 +32,7 @@ export interface CoqView extends vscode.Disposable {
   // message(message: string) : void;
   onresize: (columns: number) => Thenable<void>;
 
+  show() : Promise<void>;
+  showExternal() : Promise<void>;
+
 }

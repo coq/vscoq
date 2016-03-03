@@ -127,9 +127,26 @@
       font-family: Courier New, Courier, monospace;
       font-size: 9pt;
     }
+    #toolbar {
+      display: block;
+      height: 1em;
+    }
+    #toolbar button {
+      background: none;
+      border-color: blue;
+      border-width: 1px;
+      height: 1.5em;
+      min-width: 1.5em;
+      color: green;
+      padding: 0pt;
+      font-size: 8pt;
+    } 
   </style>
 </head>
 <body onload="load()">
+  <div id="toolbar">
+    <button value="R" onclick="location.reload(true)">Refresh</button>
+  </div>
   <canvas id="textMeasurer" style="display: none"></canvas>
   <div id="states">
     <div class="focusedState">

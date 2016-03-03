@@ -32,7 +32,7 @@ export class CoqDocument implements vscode.Disposable {
 
     this.infoOut = vscode.window.createOutputChannel('Info');
     
-    this.view = new HtmlCoqView(uri);
+    this.view = new HtmlCoqView(uri, context);
     // this.view = new SimpleCoqView(uri.toString());
     // this.view = new MDCoqView(uri);
 
@@ -204,4 +204,13 @@ export class CoqDocument implements vscode.Disposable {
     const results = await this.langServer.searchAbout(this.documentUri, query);
     var a = results;
   }
+  
+  public async viewGoalState(editor: TextEditor, external: boolean) {
+    try {
+      if(external) {
+        await this.view.showExternal();
+      } else
+        await this.view.show();
+    } finally {}
+  }  
 }

@@ -41,7 +41,7 @@
 				},
 				"coqtop.coqPath": {
 					"type": "string",
-					"default": "C:/Coq8.5rc1/bin/",
+					"default": "C:/Coq8.5/bin/",
 					"description": "Path to coqc and coqtop binaries."
 				},
         "nodejs.path": {"type": "string", "default": "C:/Program Files/nodejs/", "description": "Path to Node.js"}
@@ -60,7 +60,9 @@
       {"command": "extension.coq.search", "title": "Coq: Search"},
       {"command": "extension.coq.searchAbout", "title": "Coq: Search About"}, 
       {"command": "extension.coq.toggleImplicitArguments", "title": "Coq: Toggle Implicit Arguments"},
-      {"command": "extension.coq.toggleNotations", "title": "Coq: Toggle Notations"}
+      {"command": "extension.coq.toggleNotations", "title": "Coq: Toggle Notations"},
+      {"command": "extension.coq.viewGoalState", "title": "Coq: View goal state"},
+      {"command": "extension.coq.viewGoalStateExternal", "title": "Coq: View goal state in external browser"}
     ],    
     "keybindings": [
         {"command": "extension.coq.reset", "key": "Ctrl+Shift+Home"},
@@ -94,7 +96,8 @@
 	"dependencies": {
     "vscode-jsonrpc": "^1.2.0",
 		"vscode-languageclient": "^1.4.2",
-    "ws": "1.0.1"
+    "ws": "1.0.1",
+    "opener": "1.4.1"
 	},
   "repository" :
   { "type" : "git"

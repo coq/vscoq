@@ -104,7 +104,7 @@ function load() {
   
   try {
     //inheritStyles();
-    inheritStyles(parent);
+    // inheritStyles(parent);
     message('OK'); 
   } catch(err) {
     message(err.toString()); 
