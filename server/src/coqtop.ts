@@ -461,7 +461,7 @@ export class CoqTop extends events.EventEmitter {
       '-control-channel', controlAddr,
       '-ideslave',
       '-async-proofs', 'on'
-      ];
+      ].concat(this.settings.args);
     this.console.log('exec: ' + coqtopModule + ' ' + args.join(' '));
     return spawn(coqtopModule, args, {detached: false});
   }
@@ -478,7 +478,7 @@ export class CoqTop extends events.EventEmitter {
       '-control-channel', controlAddr,
       '-ideslave',
       '-async-proofs', 'on'
-      ];
+      ].concat(this.settings.args);
     this.console.log('exec: ' + coqtopModule + ' ' + args.join(' '));
     return spawn(coqtopModule, args, {detached: false});
   }
@@ -820,13 +820,14 @@ export class CoqTop extends events.EventEmitter {
     this.mainChannelW.write('<call val="Goal"><unit/></call>');
     
     const value = await coqResult;
-    
-    const result = <GoalResult>{
-      goals: value.value.goals,
-      backgroundGoals: value.value.backgroundGoals,
-      shelvedGoals: value.value.shelvedGoals,
-      abandonedGoals: value.value.abandonedGoals
-    };
+    var result = <GoalResult>{};
+    if(value.hasOwnProperty('value'))
+      result = <GoalResult>{
+        goals: value.value.goals,
+        backgroundGoals: value.value.backgroundGoals,
+        shelvedGoals: value.value.shelvedGoals,
+        abandonedGoals: value.value.abandonedGoals
+      };
     this.console.log(`Goal: -->`);
     if (result.goals && result.goals.length > 0) {
       this.console.log("Current:");

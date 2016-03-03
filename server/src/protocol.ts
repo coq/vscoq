@@ -25,6 +25,8 @@ export interface Settings {
 export interface CoqTopSettings {
   coqPath: string;
   wrapper: string;
+  args: string[];
+  loadCoqProject: boolean;
 }
 
 

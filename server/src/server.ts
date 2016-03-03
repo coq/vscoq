@@ -18,13 +18,16 @@ import * as util from 'util';
 import {CoqDocument} from './document';
 import * as coqproto from './protocol';
 import {CoqTopSettings, Settings} from './protocol';
+import {CoqProject} from './CoqProject';
 
 
-let currentSettings : CoqTopSettings;
 
 // Create a connection for the server. The connection uses 
 // stdin / stdout for message passing
 let connection: IConnection = createConnection(process.stdin, process.stdout);
+
+
+let project : CoqProject = null;
 
 // // Create a simple text document manager. The text document manager
 // // supports full document sync only
@@ -40,6 +43,9 @@ connection.onInitialize((params): InitializeResult => {
   connection.console.log(`Coq Language Server: process.version: ${process.version}, process.arch: ${process.arch}}`);
   // connection.console.log('coq path: ' + currentSettings.coqPath);
 	workspaceRoot = params.rootPath;
+  
+  project = new CoqProject(params.rootPath, connection.console);
+  
   // var x : ServerCapabilities;
 	return {
 		capabilities: {
@@ -52,7 +58,6 @@ connection.onInitialize((params): InitializeResult => {
 	}
 });
 
-let coqInstances : { [uri: string] : CoqDocument } = {};
 
 
 // documents.onDidChangeContent((change) => {
@@ -78,8 +83,8 @@ let coqInstances : { [uri: string] : CoqDocument } = {};
 // as well.
 connection.onDidChangeConfiguration((change) => {
 	let settings = <Settings>change.settings;
-	currentSettings = settings.coqtop;
-	connection.console.log('Changed path to: ' + currentSettings.coqPath);
+	project.updateSettings(settings);
+	connection.console.log('Changed path to: ' + project.settings.coqtop.coqPath);
 	// Revalidate any open text documents
 	//documents.all().forEach(validateTextDocument);
 });
@@ -132,85 +137,54 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 });
 
 connection.onRequest(coqproto.InterruptCoqRequest.type, (params: coqproto.CoqTopParams) => {
-  var doc = coqInstances[params.uri];
-  if(doc)
-    doc.coq.interrupt();
-  else
-    return null;
+  return project.lookup(params.uri)
+    .coq.interrupt();
 });
 connection.onRequest(coqproto.QuitCoqRequest.type, (params: coqproto.CoqTopParams) => {
-  var doc = coqInstances[params.uri];
-  if(doc)
-    doc.coq.quit();
-  else
-    return null;
+  return project.lookup(params.uri)
+    .coq.quit();
 });
 connection.onRequest(coqproto.ResetCoqRequest.type, (params: coqproto.CoqTopParams) => {
-  var doc = coqInstances[params.uri];
-  if(doc)
-    doc.coq.reset();
-  else
-    return null;
+  return project.lookup(params.uri)
+    .coq.reset();
 });
 connection.onRequest(coqproto.StepForwardRequest.type, (params: coqproto.CoqTopParams) => {
-  var doc = coqInstances[params.uri];
-  if(doc)
-    return doc.coq.stepForward();
-  else
-    return null;
+  return project.lookup(params.uri)
+    .coq.stepForward();
 });
 connection.onRequest(coqproto.StepBackwardRequest.type, (params: coqproto.CoqTopParams) => {
-  var doc = coqInstances[params.uri];
-  if(doc)
-    return doc.coq.stepBackward();
-  else
-    return null;
+  return project.lookup(params.uri)
+    .coq.stepBackward();
 });
 connection.onRequest(coqproto.InterpretToPointRequest.type, (params: coqproto.CoqTopInterpretToPointParams) => {
-  var doc = coqInstances[params.uri];
-  if(doc)
-    return doc.coq.interpretToPoint(params.offset);
-  else
-    return null;
+  return project.lookup(params.uri)
+    .coq.interpretToPoint(params.offset);
 });
 connection.onRequest(coqproto.InterpretToEndRequest.type, (params: coqproto.CoqTopParams) => {
-  var doc = coqInstances[params.uri];
-  if(doc)
-    return doc.coq.interpretToEnd();
-  else
-    return null;
+  return project.lookup(params.uri)
+    .coq.interpretToEnd();
 });
 connection.onRequest(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams) => {
-  var doc = coqInstances[params.uri];
-  if(doc)
-    return doc.coq.getGoals();
-  else
-    return null;
+  return project.lookup(params.uri)
+    .coq.getGoals();
 });
 connection.onRequest(coqproto.QueryRequest.type, (params: coqproto.CoqTopQueryParams) => {
-  var doc = coqInstances[params.uri];
-  if(doc)
-    switch(params.queryFunction) {
-    case coqproto.QueryFunction.Locate:
-      return doc.coq.locate(params.query);
-    case coqproto.QueryFunction.Check:
-      return doc.coq.check(params.query);
-    case coqproto.QueryFunction.Search:
-      return doc.coq.search(params.query);
-    case coqproto.QueryFunction.SearchAbout:
-      return doc.coq.searchAbout(params.query);
-    default:
-      return null;
-    }
-  else
+  switch(params.queryFunction) {
+  case coqproto.QueryFunction.Locate:
+    return project.lookup(params.uri).coq.locate(params.query);
+  case coqproto.QueryFunction.Check:
+    return project.lookup(params.uri).coq.check(params.query);
+  case coqproto.QueryFunction.Search:
+    return project.lookup(params.uri).coq.search(params.query);
+  case coqproto.QueryFunction.SearchAbout:
+    return project.lookup(params.uri).coq.searchAbout(params.query);
+  default:
     return null;
+  }
 });
 connection.onRequest(coqproto.ResizeWindowRequest.type, (params: coqproto.CoqTopResizeWindowParams) => {
-  var doc = coqInstances[params.uri];
-  if(doc)
-    return doc.coq.resizeWindow(params.columns);
-  else
-    return;
+  return project.lookup(params.uri)
+    .coq.resizeWindow(params.columns);
 });
 
 
@@ -229,8 +203,8 @@ function sendDiagnostics(documentUri: string, diagnostics: Diagnostic[]) {
 
 
 connection.onDidOpenTextDocument((params) => {
-  var uri = params.uri;
-  coqInstances[uri] = new CoqDocument(currentSettings, uri, params.text, connection.console, {
+  const uri = params.uri;
+  project.open(uri, params.text, {
     sendHighlightUpdates: (h) => sendHighlightUpdates(uri, h),
     sendDiagnostics: (diagnostics) => sendDiagnostics(uri, diagnostics),
     sendMessage: (level, message: string) =>
@@ -247,19 +221,14 @@ connection.onDidOpenTextDocument((params) => {
 });
 
 connection.onDidChangeTextDocument((params) => {
-  const doc = coqInstances[params.uri];
-
-  if(doc) {
-    doc.textEdit(params.contentChanges);
-  }
+  return project.lookup(params.uri)
+    .textEdit(params.contentChanges);
 });
 
 connection.onDidCloseTextDocument((params) => {
 	// A text document got closed in VSCode.
 	// params.uri uniquely identifies the document.
-  const doc = coqInstances[params.uri];
-  doc.close();
-  delete coqInstances[params.uri];
+  project.close(params.uri);
 });
 
 

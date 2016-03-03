@@ -144,6 +144,8 @@ export class Sentences {
   }
 
   private diffGoals(oldGoals: Goal[], newGoals: Goal[]) {
+    if(!newGoals || !oldGoals)
+      return;
     newGoals.forEach((g,idxGoal) => {
       if(oldGoals[idxGoal] !== undefined) {
         this.diffHypotheses(oldGoals[idxGoal].hypotheses, g.hypotheses)

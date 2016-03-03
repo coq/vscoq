@@ -455,10 +455,10 @@ export class CoqDocument implements ITextDocument {
   
   private convertGoals(goals: GoalResult) : thmProto.CoqTopGoalResult {
     return {
-      goals: goals.goals.map(this.convertGoal),
-      backgroundGoals: goals.backgroundGoals.map(this.convertGoal),
-      shelvedGoals: goals.shelvedGoals.map(this.convertGoal),
-      abandonedGoals: goals.abandonedGoals.map(this.convertGoal),
+      goals: goals.goals ? goals.goals.map(this.convertGoal) : undefined,
+      backgroundGoals: goals.backgroundGoals ? goals.backgroundGoals.map(this.convertGoal) : undefined,
+      shelvedGoals: goals.shelvedGoals ? goals.shelvedGoals.map(this.convertGoal) : undefined,
+      abandonedGoals: goals.abandonedGoals ? goals.abandonedGoals.map(this.convertGoal) : undefined,
       };
       
   }

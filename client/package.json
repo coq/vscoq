@@ -44,6 +44,16 @@
 					"default": "C:/Coq8.5/bin/",
 					"description": "Path to coqc and coqtop binaries."
 				},
+				"coqtop.args": {
+					"type": "array",
+					"default": [],
+					"description": "A list of arguments to send to coqtop."
+				},
+				"coqtop.loadCoqProject": {
+					"type": "boolean",
+					"default": "true",
+					"description": "If true, load settings from _CoqProject, if found at the root of the Code project"
+				},
         "nodejs.path": {"type": "string", "default": "C:/Program Files/nodejs/", "description": "Path to Node.js"}
 			}
 		},
