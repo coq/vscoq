@@ -71,7 +71,7 @@ export function positionAt(text: string, offset: number) : Position {
   while(true) {
     const match = lineEndingRE.exec(text.substring(lastIndex));
     if(lastIndex + match[1].length >= offset)
-      return Position.create(line, offset - lastIndex)
+      return Position.create(line, Math.max(offset - lastIndex,0))
     lastIndex+= match[0].length;
     ++line;
   }

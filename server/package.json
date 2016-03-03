@@ -10,7 +10,7 @@
   "license": "MIT",
   "engines": {
     "node": "*",
-		"vscode": "^0.11.x"
+ 		"vscode": "^0.10.7"
   },
   "dependencies": {
     "vscode-jsonrpc": "1.2.0",
@@ -28,5 +28,9 @@
 		"test": "tsc -p . && mocha -u tdd ../client/server/test",
 		"test-debug": "tsc -p . && mocha -u tdd --debug-brk ../client/server/test",
     "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ."
+  },
+  "repository" :
+  { "type" : "git"
+  , "url" : "https://github.com/siegebell/vscoq.git"
   }
 }

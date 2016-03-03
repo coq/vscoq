@@ -217,7 +217,7 @@ export interface EventCallbacks {
   onStateFileLoaded? : (stateId: number, route: number, status: coqProto.FileLoaded) => void;
   onEditFeedback? : (editId: number, error?: coqProto.ErrorMessage) => void;
   onMessage? : (level: coqProto.MessageLevel, message: string) => void;
-  onReset?: () => void;
+  onClosed?: (error?: string) => void;
 }
 
 
@@ -263,7 +263,7 @@ export class CoqTop extends events.EventEmitter {
     // this.resetCoq(coqPath);
   }
 
-  cleanup() {
+  cleanup(error?: string) {
     if(this.coqtopProc) {
       try {
         this.coqtopProc.kill();
@@ -292,7 +292,7 @@ export class CoqTop extends events.EventEmitter {
       var x = 0;
     }
 
-    this.callbacks.onReset();
+    this.callbacks.onClosed(error);
   }
 
   public isRunning() : boolean {
@@ -335,16 +335,16 @@ export class CoqTop extends events.EventEmitter {
   
   public async resetCoq() : Promise<InitResult> {    
     this.console.log('reset');
-    this.cleanup();
+    this.cleanup(undefined);
 
     // await this.setupCoqTopWindows();
       
-      if (this.settings.wrapper && this.settings.wrapper != "" && fs.existsSync(this.settings.wrapper))
-        await this.setupCoqTop(true);
-      else if(os.platform() !== 'win32')
-        await this.setupCoqTop(false);
-      else
-        await this.setupCoqTopWindows();
+    if (this.settings.wrapper && this.settings.wrapper != "" && fs.existsSync(this.settings.wrapper))
+      await this.setupCoqTop(true);
+    else if(os.platform() !== 'win32')
+      await this.setupCoqTop(false);
+    else
+      await this.setupCoqTopWindows();
     
     return await this.coqInit();
   }
@@ -428,7 +428,7 @@ export class CoqTop extends events.EventEmitter {
   
   private onCoqTopError(message: string) : void {
     this.console.error('Error: ' + message);
-    this.cleanup();
+    this.cleanup(message);
   }
   
   private startCoqTop(process : ChildProcess) {
@@ -443,11 +443,11 @@ export class CoqTop extends events.EventEmitter {
     });
     this.coqtopProc.on('close', (code) => {
       this.console.log('coqtop closed with code: ' + code);
-      this.cleanup();
+      this.cleanup('coqtop closed with code: ' + code);
     });
     this.coqtopProc.on('error', (code) => {
       this.console.log('coqtop could not be started: ' + code);
-      this.cleanup();
+      this.cleanup('coqtop could not be started: ' + code);
     });
     // this.coqtopProc.stdin.write('\n');
  }
@@ -784,7 +784,7 @@ export class CoqTop extends events.EventEmitter {
       return result;
     } catch(error) {
       this.console.warn(`Init: () --> TIMEOUT after ${timeout}ms`);
-      this.cleanup();
+      this.cleanup(`Init: () --> TIMEOUT after ${timeout}ms`);
       throw error;
     }    
 // this.controlChannelR.write("PING\n");
@@ -807,7 +807,7 @@ export class CoqTop extends events.EventEmitter {
     } catch(error) {
       this.console.log(`Forced Quit.`);
     } finally {
-      this.cleanup();
+      this.cleanup(undefined);
     }
   }
   
