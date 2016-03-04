@@ -12,6 +12,26 @@ export interface RangeDelta {
   charactersDelta: number; // delta for positions on the same line as the end position
 }
 
+const formatTimSpanNumber = new Intl.NumberFormat(undefined,<Intl.NumberFormatOptions>{useGrouping: false, minimumIntegerDigits: 2, maximumFractionDigits: 0});
+export function formatTimeSpanMS(durationMS: number) {
+  const days = Math.floor(durationMS / 1000 / 60 / 60 / 24);
+  const hours = Math.floor(durationMS / 1000 / 60 / 60) - days*24;
+  const minutes = Math.floor(durationMS / 1000 / 60) - hours*60;
+  const seconds = Math.floor(durationMS / 1000) - minutes*60;
+  
+  if (days > 0)
+    return `${days}.${formatTimSpanNumber.format(hours)}:${formatTimSpanNumber.format(minutes)}:${formatTimSpanNumber.format(seconds)}`;
+  else
+    return `${hours}:${formatTimSpanNumber.format(minutes)}:${formatTimSpanNumber.format(seconds)}`;
+  // else if(hours > 0)
+  //   return `${hours}:${formatTimSpanNumber.format(minutes)}:${formatTimSpanNumber.format(seconds)}`;
+  // else if(minutes > 0)
+  //   return `${minutes}:${formatTimSpanNumber.format(seconds)}`;
+  // else
+  //   return `${seconds}`;
+}
+
+
 export function positionIsBefore(pos1: Position, pos2: Position) : boolean {
   return (pos1.line < pos2.line || (pos1.line===pos2.line && pos1.character < pos2.character));
 }

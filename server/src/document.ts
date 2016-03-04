@@ -22,6 +22,7 @@ export interface DocumentCallbacks {
   sendMessage(level: string, message: string) : void;
   sendReset() : void;
   sendStateViewUrl(stateUrl: string) : void;
+  sendComputingStatus(status: thmProto.ComputingStatus, computeTimeMS: number) : void;
 }
 
 interface BufferedFeedback {
@@ -242,6 +243,16 @@ export class CoqDocument implements ITextDocument {
     if(sentence.status > status)
       return;
     else {
+      if(sentence.computeStart && sentence.status < status) {
+        sentence.status = status;
+
+        const duration = process.hrtime(sentence.computeStart);
+        sentence.computeTimeMS = duration[0] * 1000.0 + (duration[1] / 1000000.0);
+
+        if(status == coqProto.SentenceStatus.Processed)
+          this.clientConsole.log(`processed in time ${sentence.stateId}: ${sentence.computeTimeMS/1000.0} sec`);
+      }
+      
       sentence.status = status;
       this.callbacks.sendHighlightUpdates([this.highlightSentence(sentence)]);
     }
@@ -383,10 +394,12 @@ export class CoqDocument implements ITextDocument {
     // or else an edit-state identifier to keep stuff in sync. 
     const editId = -currentSentence.stateId;
 
+    const startTime = process.hrtime();
     try {
       const value = await this.coqTop.coqAddCommand(command, editId, currentSentence.stateId);
 
       const nextSentence = this.sentences.addChild(currentSentence,value.stateId,startPos,stopPos);
+      nextSentence.computeStart = startTime;
       this.applyBufferedFeedback(nextSentence);
       this.updateSentenceStatus(nextSentence,coqProto.SentenceStatus.ProcessingInput);
 
@@ -749,6 +762,13 @@ this.clientConsole.log("rolled back");
     });
   }
 
+
+  private updateComputingStatus(status, startTime: number[]) {
+    const duration = process.hrtime(startTime);
+    const interval = duration[0] * 1000.0 + (duration[1] / 1000000.0);
+    this.callbacks.sendComputingStatus(status, interval);
+  }
+
   private async doCoqOperation<X>(task: ()=>Promise<X>, lazyInitializeCoq? : boolean) {
     lazyInitializeCoq = (lazyInitializeCoq===undefined) ? true : lazyInitializeCoq;
     if(!this.coqTop.isRunning()) {
@@ -757,6 +777,7 @@ this.clientConsole.log("rolled back");
       } else
         return {};
     }
+    
     return await task();
   }
 
@@ -769,13 +790,23 @@ this.clientConsole.log("rolled back");
         return Promise.reject<X>(<coqProto.FailValue>{message: 'operation cancelled'})
         
       this.interactionLoopStatus = InteractionLoopStatus.CoqCommand;
+      const startTime = process.hrtime();
+      const statusCheck = setInterval(() => this.updateComputingStatus(thmProto.ComputingStatus.Computing, startTime), 500);
+      var interrupted = false;
       try {
         return await Promise.race<X>(
           [ this.doCoqOperation(task, lazyInitializeCoq)
           , cancelSignal.event.then(() => Promise.reject<X>(<coqProto.FailValue>{message: 'operation cancelled'}))
           ]);
+      } catch(error) {
+        this.updateComputingStatus(thmProto.ComputingStatus.Interrupted, startTime);
+        interrupted = true;
+        throw error;
       } finally {
         this.interactionLoopStatus = InteractionLoopStatus.Idle;
+        clearInterval(statusCheck);
+        if(!interrupted)
+          this.updateComputingStatus(thmProto.ComputingStatus.Finished, startTime);
       }
     });
   }

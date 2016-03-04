@@ -136,6 +136,17 @@ export namespace CoqMessageNotification {
   export const type: NotificationType<NotifyMessageParams> = { method: 'coqtop/message' }; 
 } 
 
+
+export enum ComputingStatus {Finished, Computing, Interrupted}
+export declare interface NotifyComputingStatusParams extends NotificationParams {
+  status: ComputingStatus;
+  computeTimeMS: number;
+}
+export namespace CoqComputingStatusNotification { 
+  export const type: NotificationType<NotifyComputingStatusParams> = { method: 'coqtop/computingStatus' }; 
+} 
+
+
 export namespace CoqResetNotification { 
   export const type: NotificationType<NotificationParams> = { method: 'coqtop/wasReset' }; 
 } 

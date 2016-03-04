@@ -15,6 +15,7 @@ import {RangeSet} from './RangeSet';
 import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } from 'vscode-languageclient';
 
+
 // export enum HighlightType {
 //   Clear,  SyntaxError,  TacticFailure,  Parsing,  Processing, Incomplete, Complete, InProgress, Processed 
 // }

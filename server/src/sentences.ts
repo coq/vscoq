@@ -42,6 +42,8 @@ export interface Sentence {
   textEnd: number;
   status: coqProto.SentenceStatus;
   goalState: CoqTopGoalResult;
+  computeStart: number[];
+  computeTimeMS: number;
 }
 
 class SentenceLink implements Sentence {
@@ -51,9 +53,12 @@ class SentenceLink implements Sentence {
   textEnd: number;
   status: coqProto.SentenceStatus;
   goalState: CoqTopGoalResult;
+  computeStart: number[];
+  computeTimeMS: number = 0;
+
   private previous: SentenceLink = null;
   private next : SentenceLink = null;
-  constructor(previous:SentenceLink,stateId:number, textBegin:number, textEnd:number) {
+  constructor(previous:SentenceLink, stateId:number, textBegin:number, textEnd:number) {
     this.stateId = stateId; this.textBegin = textBegin; this.textEnd = textEnd;
     this.previous = previous;
     this.status = coqProto.SentenceStatus.Parsed;

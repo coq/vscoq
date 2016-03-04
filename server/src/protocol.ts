@@ -159,3 +159,13 @@ export interface NotifyStateViewUrlParams extends NotificationParams {
 export namespace CoqStateViewUrlNotification { 
   export const type: NotificationType<NotifyStateViewUrlParams> = { method: 'coqtop/stateViewUrl' }; 
 } 
+
+
+export enum ComputingStatus {Finished, Computing, Interrupted}
+export declare interface NotifyComputingStatusParams extends NotificationParams {
+  status: ComputingStatus;
+  computeTimeMS: number;
+}
+export namespace CoqComputingStatusNotification { 
+  export const type: NotificationType<NotifyComputingStatusParams> = { method: 'coqtop/computingStatus' }; 
+} 

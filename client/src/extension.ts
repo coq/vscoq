@@ -41,8 +41,7 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.search', search));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.searchAbout', searchAbout)); 
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.viewGoalState', viewGoalState)); 
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.viewGoalStateExternal', viewGoalStateExternal)); 
-  
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.viewGoalStateExternal', viewGoalStateExternal));
   // vscode.languages.registerCompletionItemProvider('coq', {provideCompletionItems: provideOptionCompletions}, 'X');
 }
 

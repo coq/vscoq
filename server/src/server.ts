@@ -10,7 +10,7 @@ import {
 	TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
 	InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
   DidChangeTextDocumentParams,
-	CompletionItem, CompletionItemKind, PublishDiagnosticsParams, ServerCapabilities
+	CompletionItem, CompletionItemKind, PublishDiagnosticsParams, ServerCapabilities, CodeActionParams, Command, CodeLens, Hover
 } from 'vscode-languageserver';
 import * as vscodeLangServer from 'vscode-languageserver';
 import * as util from 'util';
@@ -201,6 +201,18 @@ function sendDiagnostics(documentUri: string, diagnostics: Diagnostic[]) {
   });
 }
 
+connection.onCodeAction((params:CodeActionParams) => {
+  return <Command[]>[];
+});
+
+connection.onCodeLens((params:TextDocumentIdentifier) => {
+  return [];
+});
+
+connection.onCodeLensResolve((params:CodeLens) => {
+  return params;
+});
+
 
 connection.onDidOpenTextDocument((params) => {
   const uri = params.uri;
@@ -217,7 +229,10 @@ connection.onDidOpenTextDocument((params) => {
       connection.sendNotification(coqproto.CoqResetNotification.type, {uri: uri}),
     sendStateViewUrl: (stateUrl: string) =>
       connection.sendNotification(coqproto.CoqStateViewUrlNotification.type, {uri: uri, stateUrl: stateUrl}),
+    sendComputingStatus : (status: coqproto.ComputingStatus, computeTimeMS: number) =>
+      connection.sendNotification(coqproto.CoqComputingStatusNotification.type, {uri: uri, status: status, computeTimeMS: computeTimeMS}),      
   });
+
 });
 
 connection.onDidChangeTextDocument((params) => {
