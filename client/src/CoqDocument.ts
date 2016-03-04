@@ -73,8 +73,10 @@ export class CoqDocument implements vscode.Disposable {
       const value = await this.langServer.getGoal(this.documentUri);
       this.view.update(value);
     };
-
+    
     this.statusBar.text = 'Ready';
+    
+    
   }
   
   private updateStateViewUrl(stateUrl: string) {
@@ -95,8 +97,8 @@ export class CoqDocument implements vscode.Disposable {
     this.view.dispose();
   }
 
-  private reset(editor: vscode.TextEditor) {
-    this.highlights.clearAllHighlights(editor)
+  private reset() {
+    this.highlights.clearAllHighlights(this.allEditors())
   }
 
   private onDidUpdateHighlights(params: proto.NotifyHighlightParams) {
@@ -156,7 +158,7 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public updateHighlights(editor : vscode.TextEditor, params: proto.NotifyHighlightParams) {
-    this.highlights.updateHighlights(editor,params);
+    this.highlights.updateHighlights(this.allEditors(),params);
   }
 
   public async interruptCoq() {
@@ -183,7 +185,7 @@ export class CoqDocument implements vscode.Disposable {
     try {
       await this.langServer.quitCoq(this.documentUri);
     } finally {}
-    this.reset(editor);
+    this.reset();
     this.setStatusBarReady();
   }
 
@@ -192,7 +194,7 @@ export class CoqDocument implements vscode.Disposable {
     try {
       await this.langServer.resetCoq(this.documentUri);
     } finally {}
-    this.reset(editor);
+    this.reset();
     this.setStatusBarReady();
   }
   
@@ -200,9 +202,14 @@ export class CoqDocument implements vscode.Disposable {
     return vscode.window.visibleTextEditors.find((editor,i,a) => 
       editor.document.uri.toString() === this.documentUri)
   }
+
+  public allEditors() : vscode.TextEditor[] {
+    return vscode.window.visibleTextEditors.filter((editor,i,a) => 
+      editor.document.uri.toString() === this.documentUri)
+  }
   
   private onCoqReset() {
-    this.reset(this.findEditor());
+    this.reset();
     this.setStatusBarReady();
   }
 
@@ -305,7 +312,14 @@ export class CoqDocument implements vscode.Disposable {
       if(external) {
         await this.view.showExternal();
       } else
-        await this.view.show();
+        await this.view.show(true);
     } catch (err) {}
+  }
+  
+  public async doOnLostFocus() {
+  }  
+
+  public async doOnFocus(editor: TextEditor) {
+    // await this.view.show(true);
   }  
 }

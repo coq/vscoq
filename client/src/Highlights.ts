@@ -105,27 +105,30 @@ export class Highlights {
     }
   }
 
-  public updateHighlights(editor: TextEditor, params: proto.NotifyHighlightParams) {
-    if(!editor)
+  public updateHighlights(editors: TextEditor[], params: proto.NotifyHighlightParams) {
+    if(editors.length <= 0 || !editors[0])
       return;
+    const anEditor = editors[0];
     for(const highlight of params.highlights) {
-      const range = new vscode.Range(editor.document.positionAt(highlight.textBegin),
-        editor.document.positionAt(highlight.textEnd));
+      const range = new vscode.Range(anEditor.document.positionAt(highlight.textBegin),
+        anEditor.document.positionAt(highlight.textEnd));
       switch(highlight.style) {
         case proto.HighlightType.Clear:
-          this.clearHighlight(editor, range);  break;
+          editors.forEach((editor) => this.clearHighlight(editor, range));
+          break;
         case proto.HighlightType.SyntaxError:
         case proto.HighlightType.TacticFailure:
         default:
-          this.applyHighlight(editor, highlight.style, range)
+          editors.forEach((editor) => this.applyHighlight(editor, highlight.style, range));
       }
-    }  
+    }
   }
   
-  public refreshHighlights(editor: vscode.TextEditor) {
+  public refreshHighlights(editors: vscode.TextEditor[]) {
     this.textHighlights
       .forEach((highlight,idx,a) => {
-        editor.setDecorations(highlight.decoration,highlight.ranges.getRanges());
+        editors.forEach((editor) =>
+          editor.setDecorations(highlight.decoration,highlight.ranges.getRanges()));
       });
   }
 
@@ -140,11 +143,12 @@ export class Highlights {
       });
   }
 
-  public clearAllHighlights(editor: vscode.TextEditor) {
+  public clearAllHighlights(editors: vscode.TextEditor[]) {
     this.textHighlights
       .forEach((highlight,idx,a) => {
         highlight.ranges.clear();
-        editor.setDecorations(highlight.decoration,highlight.ranges.getRanges());
+        editors.forEach((editor) =>
+          editor.setDecorations(highlight.decoration,highlight.ranges.getRanges()));
       });
   }
 

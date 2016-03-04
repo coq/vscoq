@@ -6,12 +6,17 @@ import {CoqDocument} from './CoqDocument'
 export class CoqDocumentListener implements vscode.Disposable {
   private documents = new Map<string, CoqDocument>();
   private context: vscode.ExtensionContext;
+  private activeEditor : vscode.TextEditor = null;
 
   constructor(context: vscode.ExtensionContext) {
     this.context = context;
+
+    this.activeEditor = vscode.window.activeTextEditor;
+
     vscode.workspace.onDidChangeTextDocument((params) => this.onDidChangeTextDocument(params));
     vscode.workspace.onDidOpenTextDocument((params) => this.onDidOpenTextDocument(params));
     vscode.workspace.onDidCloseTextDocument((params) => this.onDidOpenTextDocument(params));
+    vscode.window.onDidChangeActiveTextEditor((params) => this.onDidChangeActiveTextEditor(params));
     // Handle already-loaded documents
     vscode.workspace.textDocuments
       .forEach((textDoc) => this.tryLoadDocument(textDoc));
@@ -43,7 +48,7 @@ export class CoqDocumentListener implements vscode.Disposable {
       return;
     doc.onDidChangeTextDocument(params);
 // FOR DEBUGGING ONLY!!!
-doc.highlights.refreshHighlights(editor);
+doc.highlights.refreshHighlights(doc.allEditors());
   }
 
   private onDidOpenTextDocument(doc: vscode.TextDocument) {
@@ -58,5 +63,19 @@ doc.highlights.refreshHighlights(editor);
     coqDoc.dispose();
     this.documents.delete(uri);
   }
+
+  private onDidChangeActiveTextEditor(editor: vscode.TextEditor) {
+    const oldUri = this.activeEditor ? this.activeEditor.document.uri.toString() : null;
+    const oldDoc = this.documents.get(oldUri);
+    if(oldDoc)
+      oldDoc.doOnLostFocus();
+
+    this.activeEditor = vscode.window.activeTextEditor;
+
+    const uri = editor.document.uri.toString();
+    const doc = this.documents.get(uri);
+    if(doc)
+      doc.doOnFocus(editor);
+ }
 
 }

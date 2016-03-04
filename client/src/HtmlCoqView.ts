@@ -74,11 +74,7 @@ var coqViewProvider : IFrameDocumentProvider = null;
  * and update the goals and show other status info
  */
 export class HtmlCoqView implements view.CoqView {
-  private editor: vscode.TextEditor;
-  private outDoc: vscode.TextDocument;
   private docUri: vscode.Uri;
-  private outFile: number; // file descriptor
-  private mdFilename : vscode.Uri;
   private server : WebSocket.Server;
   private httpServer : http.Server;
   // private connection : Promise<WebSocket>;
@@ -135,10 +131,7 @@ export class HtmlCoqView implements view.CoqView {
       const templateFileName = vscode.Uri.file(__dirname + '/HtmlView/Coq.html');
       this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
 
-      // const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
-      await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two);
-      // if(focusedDoc)
-      //   vscode.window.showTextDocument(focusedDoc);
+      await this.show(true);
 
 
     } catch(err) {
@@ -146,8 +139,11 @@ export class HtmlCoqView implements view.CoqView {
     }    
   }
 
-  public async show() {
-    await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two);
+  public async show(preserveFocus: boolean) {
+    // const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
+    const result = await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two);
+    // if(preserveFocus && focusedDoc)
+    //   await vscode.window.showTextDocument(focusedDoc);
   }
 
   public showExternal() : Promise<void> {
