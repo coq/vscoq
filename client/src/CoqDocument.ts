@@ -26,6 +26,8 @@ export class CoqDocument implements vscode.Disposable {
   private langServer: CoqLanguageServer;
   private view : CoqView;
   private infoOut: vscode.OutputChannel;
+  private queryOut: vscode.OutputChannel;
+  private noticeOut: vscode.OutputChannel;
 
   constructor(uri: vscode.Uri, context: ExtensionContext) {
     this.statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 3);
@@ -44,6 +46,8 @@ export class CoqDocument implements vscode.Disposable {
     this.langServer = new CoqLanguageServer(context);
 
     this.infoOut = vscode.window.createOutputChannel('Info');
+    this.queryOut = vscode.window.createOutputChannel('Query Results');
+    this.noticeOut = vscode.window.createOutputChannel('Notices');
     
     this.view = new HtmlCoqView(uri, context);
     // this.view = new SimpleCoqView(uri.toString());
@@ -129,11 +133,13 @@ export class CoqDocument implements vscode.Disposable {
     case 'info':
       // this.infoOut.appendLine(params.message); return;
       // this.view.message(params.message);
-      this.infoOut.append(params.message);
+      this.infoOut.show(true);
+      this.infoOut.appendLine(params.message);
       return;
     case 'notice':
-      this.infoOut.clear();
-      this.infoOut.append(params.message);
+      this.noticeOut.clear();
+      this.noticeOut.show(true);
+      this.noticeOut.append(params.message);
       return;
       // vscode.window.showInformationMessage(params.message); return;
     case 'error':
@@ -254,11 +260,18 @@ export class CoqDocument implements vscode.Disposable {
     }
   }
   
+  private displayQueryResults(results: proto.CoqTopQueryResult) {
+    this.queryOut.clear();
+    this.queryOut.show(true);
+    this.queryOut.append(results.searchResults);
+    
+  }
   
   public async locate(query: string) {
     this.setStatusBarWorking('Running query');
     try {
-      return await this.langServer.locate(this.documentUri, query);
+      const results = await this.langServer.locate(this.documentUri, query);
+      this.displayQueryResults(results);
     } catch (err) {
     } finally {
       this.setStatusBarReady();
@@ -268,7 +281,8 @@ export class CoqDocument implements vscode.Disposable {
   public async search(query: string) {
     this.setStatusBarWorking('Running query');
     try {
-      return await this.langServer.search(this.documentUri, query);
+      const results = await this.langServer.search(this.documentUri, query);
+      this.displayQueryResults(results);
     } catch (err) {
     } finally {
       this.setStatusBarReady();
@@ -278,7 +292,8 @@ export class CoqDocument implements vscode.Disposable {
   public async searchAbout(query: string) {
     this.setStatusBarWorking('Running query');
     try {
-      return await this.langServer.searchAbout(this.documentUri, query);
+      const results = await this.langServer.searchAbout(this.documentUri, query);
+      this.displayQueryResults(results);
     } catch (err) {
     } finally {
       this.setStatusBarReady();

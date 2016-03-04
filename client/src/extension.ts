@@ -71,32 +71,32 @@ async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {
 async function check(editor: TextEditor, edit: TextEditorEdit) {
   const doc = documents.get(editor.document.uri.toString());
   if(doc)
-    doc.check(await queryStringFromPlaceholder("Check:", editor));
+    await doc.check(await queryStringFromPlaceholder("Check:", editor));
 }
 
 async function locate(editor: TextEditor, edit: TextEditorEdit) {
   const doc = documents.get(editor.document.uri.toString());
   if(doc)
-    doc.locate(await queryStringFromPlaceholder("Locate:", editor));
+    await doc.locate(await queryStringFromPlaceholder("Locate:", editor));
 }
 
 async function search(editor: TextEditor, edit: TextEditorEdit) {
   const doc = documents.get(editor.document.uri.toString());
   if(doc)
-    doc.search(await queryStringFromPlaceholder("Search:", editor));
+    await doc.search(await queryStringFromPlaceholder("Search:", editor));
 }
 
 async function searchAbout(editor: TextEditor, edit: TextEditorEdit) {
   const doc = documents.get(editor.document.uri.toString());
   if(doc)
-    doc.searchAbout(await queryStringFromPlaceholder("Search About:", editor));
+    await doc.searchAbout(await queryStringFromPlaceholder("Search About:", editor));
 }
 
 
-function quitCoq(editor: TextEditor, edit: TextEditorEdit) {
+async function quitCoq(editor: TextEditor, edit: TextEditorEdit) {
   const doc = documents.get(editor.document.uri.toString());
   if(doc)
-    doc.quitCoq(editor);
+    await doc.quitCoq(editor);
 }
 
 function resetCoq(editor: TextEditor, edit: TextEditorEdit) {
