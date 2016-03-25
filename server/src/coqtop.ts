@@ -856,7 +856,7 @@ export class CoqTop extends events.EventEmitter {
     const verboseStr = verbose === false ? "false" : "true";
     this.console.log('--------------------------------');
     this.console.log(`Call Add("${command.trim().substr(0, 20) + (command.trim().length > 20 ? "..." : "")}", editId: ${editId}, stateId: ${stateId}, verbose: ${verboseStr})`);
-    this.mainChannelW.write(`<call val="Add"><pair><pair><string>${command}</string><int>${editId}</int></pair><pair><state_id val="${stateId}"/><bool val="${verboseStr}"/></pair></pair></call>`);
+    this.mainChannelW.write(`<call val="Add"><pair><pair><string>${coqXml.escapeXml(command)}</string><int>${editId}</int></pair><pair><state_id val="${stateId}"/><bool val="${verboseStr}"/></pair></pair></call>`);
 
     const value = await coqResult;
     let result = <AddResult>{
@@ -957,7 +957,7 @@ export class CoqTop extends events.EventEmitter {
     const coqMessageResult = this.coqGetMessageOnce();
     this.console.log('--------------------------------');
     this.console.log(`Call Query(stateId: ${stateId}, query: $query})`);
-    this.mainChannelW.write(`<call val="Query"><pair><string>${query}</string><state_id val="${stateId}"/></pair></call>`);    
+    this.mainChannelW.write(`<call val="Query"><pair><string>${coqXml.escapeXml(query)}</string><state_id val="${stateId}"/></pair></call>`);    
     // this.mainChannelW.write(`<call val="Query"><pair><string>${entities.encodeXML(query)}</string><state_id val="${stateId}"/></pair></call>`);    
 
     const values = await Promise.all<coqProto.Message>([coqMessageResult, coqResult.then(() => null)]);
