@@ -52,6 +52,22 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
       return <coqProto.Pair<any,any>>{fst: value.$children[0], snd: value.$children[1]};
     case 'list':  
       return value.$children;
+    case 'tactic':
+    {  let entry =
+        { total: <number>+value.$['total']
+        , local: <number>+value.$['local']
+        , ncalls: <number>+value.$['ncalls']
+        , max_total: <number>+value.$['max_total']
+        };
+      let nodeChildren : {fst:string;snd:coqProto.LtacProfTree}[] =
+        value.$children.map((value) => { return {fst:<string>value.fst, snd: <coqProto.LtacProfTree>value.snd} });
+      return <coqProto.LtacProfTree>{entry: entry, children: nodeChildren};
+    }  
+    case 'hashtbl':
+    { let table =
+        value.$children.map((value) => { return {fst:value.fst, snd: value.snd} });
+      return table;
+    }  
     case 'bool':
       let val = value.$['val'];
       if(typeof val === 'boolean')

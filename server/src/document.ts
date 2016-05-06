@@ -1,7 +1,7 @@
 'use strict';
 
 import * as util from 'util';
-import {ITextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic, DiagnosticSeverity} from 'vscode-languageserver';
+import {TextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic, DiagnosticSeverity} from 'vscode-languageserver';
 import {CoqTop, FailureResult, AddResult, EditAtResult, GoalResult} from './coqtop';
 import * as thmProto from './protocol';
 import * as coqProto from './coq-proto';
@@ -37,10 +37,11 @@ enum InteractionLoopStatus {Idle, CoqCommand, TextEdit};
 // 'sticky' flag is not yet supported :()
 const lineEndingRE = /[^\r\n]*(\r\n|\r|\n)?/;
 
-export class CoqDocument implements ITextDocument {
-  // ITextDocument
+export class CoqDocument implements TextDocument {
+  // TextDocument
   public uri: string;
   public languageId: string = 'coq';
+  public version: number;
   public getText() {
     return this.documentText;
   }
@@ -50,7 +51,7 @@ export class CoqDocument implements ITextDocument {
 
   private coqTop: CoqTop;
   private clientConsole: RemoteConsole;
-  // private document: ITextDocument;
+  // private document: TextDocument;
   private sentences : Sentences = new Sentences();
   private bufferedFeedback: BufferedFeedback[] = [];
   private callbacks : DocumentCallbacks;
@@ -109,7 +110,9 @@ export class CoqDocument implements ITextDocument {
     return coqParser.isPassiveEdit(this.documentText.substring(sentence.textBegin,sentence.textEnd), beginOffset-sentence.textBegin, endOffset-sentence.textBegin, change.text);
   }
 
-  private async applyTextEdits(changes: TextDocumentContentChangeEvent[]) {
+  private async applyTextEdits(changes: TextDocumentContentChangeEvent[], cancelCoqSignal: CancellationSignal) {
+    var interrupted = false;
+    
     for(const change of changes) {
       // this.clientConsole.log(`Change: ${rangeToString(change.range)} (${change.rangeLength}) --> ${change.text}`);
       // Remove diagnostics for any text that has been modified
@@ -122,17 +125,26 @@ export class CoqDocument implements ITextDocument {
       try {
         if(this.isPassiveEdit(rangeSent,change, beginOffset, endOffset)) {
           // The change won't affect the validity of a sentence, so don't backtrack
-        } else if(rangeSent.length > 0) {
+        } else if(rangeSent.length > 0 && !cancelCoqSignal.isCancelled()) {
           // If sentences have been edited, we need to editAt the END of the change-range
           // and then backtrack to the start of the change-range in order to undo any
           // sentences that have been affected
-          await this.cancelCoqOperations();
-          let result = await this.editAt(Math.max(endOffset-1,0));
-          while(this.sentences.getTip().textBegin > beginOffset)
-            await this.stepBackward();
+          await Promise.race(
+            [ (async () => {
+                this.interactionLoopStatus = InteractionLoopStatus.CoqCommand;
+                let result = await this.editAt(Math.max(endOffset-1,0));
+                while(this.sentences.getTip().textBegin > beginOffset)
+                  await this.stepBackward();
+                this.interactionLoopStatus = InteractionLoopStatus.TextEdit;
+              }) ()
+            , cancelCoqSignal.event.then(() => Promise.reject(<coqProto.FailValue>{message: 'operation cancelled'}))
+            ]);
         }
-      } catch(err) {
-        this.clientConsole.error("Unexpected command failure while applying edits");
+      } catch(error) {
+        if(error && error.message && error.message === 'operation cancelled')
+          interrupted = true;
+        else
+          this.clientConsole.error("Unexpected command failure while applying edits");
         // But in the end, we still have to apply the edits in order to maintain some
         // kind of consistency, so continue working...
       }
@@ -148,8 +160,11 @@ export class CoqDocument implements ITextDocument {
     }
 
     this.callbacks.sendDiagnostics(this.diagnostics);
-      
 
+    // If we were interrupted during editing, then we've probably hit an inconsistent state
+    // --> We should reset coqtop
+    if(interrupted)
+      this.interactionsCoqReset();
 //       } else if (rangeSent.length == 0) {
 //         // Modification between sentences
 //         this.applyEdit(begin,change);        
@@ -749,13 +764,32 @@ this.clientConsole.log("rolled back");
   }
   
   /**
-   * Ensures that the text edits are applied *after* the currently scheduled operations; this delay prevents their document positions from being invalidated too soon 
+   * Ensures that the text edits are applied *after* the currently scheduled operations; this delay prevents their document positions from being invalidated too soon
+   * However, if the edit will result in changing an already-interpreted sentence, then all current Coq processing will be cancelled.
+   * Text edits themselves cannot be cancelled, but the Coq operations they may perform to set the current editing positions *can* be cancelled. 
    */
   public textEdit(changes: TextDocumentContentChangeEvent[]) {
+    // If any of the edits affect an interpreted sentence, then interrupt and cancell all Coq operations
+    for(const change of changes) {
+      const beginOffset = this.offsetAt(change.range.start);
+      const endOffset = beginOffset + change.rangeLength;
+      // Have any sentences been edited?
+      const rangeSent = this.sentences.getRangeAffected(beginOffset,endOffset);
+
+      if(!this.isPassiveEdit(rangeSent,change, beginOffset, endOffset) && rangeSent.length) {
+        //this.clientConsole.info("Cancelling current Coq operations due to editing text of interpreted statements.");
+        this.cancelCoqOperations();
+        break;
+      }
+    }    
+    
+    
+    const cancelSignal = this.cancelProcessing;
     return this.interactionCommands.process<void>(async () => {
       this.interactionLoopStatus = InteractionLoopStatus.TextEdit;
       try {
-        return await this.applyTextEdits(changes);
+        // applyTextEdits will check for a cancellation signal during Coq calls, but text-editing itself should never be cancelled
+        return await this.applyTextEdits(changes, cancelSignal);
       } finally {
         this.interactionLoopStatus = InteractionLoopStatus.Idle;
       }
@@ -855,6 +889,8 @@ this.clientConsole.log("rolled back");
       search: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("Search " + query + ".")}), true),
       searchAbout: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("SearchAbout " + query + ".")}), true),
       resizeWindow: (columns: number) => this.enqueueCoqOperation(() => this.coqTop.coqResizeWindow(columns), false),
+      ltacProfSet: (enabled: boolean) => this.enqueueCoqOperation(() => this.coqTop.coqLtacProfilingSet(enabled), true),
+      ltacProfResults: () => this.enqueueCoqOperation(() => this.coqTop.coqLtacProfilingResults(), true),
       quit: () => this.interactionsCoqQuit(),
       reset: () => this.interactionsCoqReset(),
       interrupt: () => this.cancelCoqOperations(),

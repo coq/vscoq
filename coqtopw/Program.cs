@@ -242,8 +242,8 @@ namespace coqtopw
 
       var coqtopArgs = new List<string>();
       string coqtopBin = Environment.GetEnvironmentVariable("COQTOP");
-      if(coqtopBin == null)
-        coqtopBin = "coqtop_real.exe";
+      //if(coqtopBin == null)
+      //  coqtopBin = "coqtop_real.exe";
       string mainChannel = null;
       string controlChannel = null;
       bool ideSlave = false;

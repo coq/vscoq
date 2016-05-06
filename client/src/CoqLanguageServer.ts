@@ -37,6 +37,11 @@ function createServerLocalExtension(serverModule: string, debugOptions: string[]
     }
   }
 
+export interface LtacProfTree {
+  entry: {total: number; local: number; ncalls: number; max_total: number};
+  children: Map<string,LtacProfTree>
+}
+
 export class CoqLanguageServer {
   private server: LanguageClient = null;
 
@@ -128,6 +133,22 @@ export class CoqLanguageServer {
   public resizeView(uri: string, columns: number) : Thenable<void> {
     var x = proto.ResizeWindowRequest.type;
     return <Thenable<void>>this.server.sendRequest<proto.CoqTopResizeWindowParams,void,void>(proto.ResizeWindowRequest.type, <proto.CoqTopResizeWindowParams>{uri: uri, columns: columns});
+  }
+
+  public ltacProfSet(uri: string, enabled: boolean) : Thenable<void> {
+    return <Thenable<void>>this.server.sendRequest<proto.CoqTopLtacProfSetParams,void,void>(proto.LtacProfSetRequest.type, <proto.CoqTopLtacProfSetParams>{uri: uri, enabled: enabled});
+  }
+
+  private createLtacProfResultsMap(treelist: {fst:string,snd:proto.LtacProfTree}[]) : Map<string,LtacProfTree> {
+    const results = new Map<string,LtacProfTree>();
+    treelist.forEach((value) =>
+      results.set(value.fst, {entry: value.snd.entry, children: this.createLtacProfResultsMap(value.snd.children)}));
+    return results;
+  }
+
+  public async ltacProfGetResults(uri: string) : Promise<Map<string,LtacProfTree>> {
+    const results = await <Thenable<proto.LtacProfResult>>this.server.sendRequest<proto.CoqTopParams,proto.LtacProfResult,void>(proto.LtacProfResultsRequest.type, {uri: uri});
+    return this.createLtacProfResultsMap(results.results);
   }
 
   public locate(uri: string, query: string) {

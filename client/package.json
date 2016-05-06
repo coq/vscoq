@@ -41,7 +41,7 @@
 				},
 				"coqtop.coqPath": {
 					"type": "string",
-					"default": "C:/Coq8.5/bin/",
+					"default": "C:/Coq8.5lp_xml/bin/",
 					"description": "Path to coqc and coqtop binaries."
 				},
 				"coqtop.args": {
@@ -72,7 +72,10 @@
       {"command": "extension.coq.toggleImplicitArguments", "title": "Coq: Toggle Implicit Arguments"},
       {"command": "extension.coq.toggleNotations", "title": "Coq: Toggle Notations"},
       {"command": "extension.coq.viewGoalState", "title": "Coq: View goal state"},
-      {"command": "extension.coq.viewGoalStateExternal", "title": "Coq: View goal state in external browser"}
+      {"command": "extension.coq.viewGoalStateExternal", "title": "Coq: View goal state in external browser"},
+      {"command": "extension.coq.ltacProfStart", "title": "Coq: Start/reset Ltac profiling"},
+      {"command": "extension.coq.ltacProfStop", "title": "Coq: Stop Ltac profiling"},
+      {"command": "extension.coq.ltacProfGetResults", "title": "Coq: Get the results of Ltac profiling"}
     ],    
     "keybindings": [
         {"command": "extension.coq.reset", "key": "Ctrl+Shift+Home"},
@@ -104,8 +107,8 @@
     "gulp-watch": "4.3.5"
 	},
 	"dependencies": {
-    "vscode-jsonrpc": "^1.2.0",
-		"vscode-languageclient": "^1.4.2",
+    "vscode-jsonrpc": "^2.0.0",
+		"vscode-languageclient": "^2.0.0",
     "ws": "1.0.1",
     "opener": "1.4.1"
 	},

@@ -11,7 +11,7 @@ import {MDCoqView} from './MDCoqView';
 import {HtmlCoqView} from './HtmlCoqView';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
-import {CoqLanguageServer} from './CoqLanguageServer';
+import {CoqLanguageServer, LtacProfTree} from './CoqLanguageServer';
 
 
 
@@ -61,12 +61,6 @@ export class CoqDocument implements vscode.Disposable {
     this.langServer.onUpdateComputingStatus((p) => { if (p.uri == this.documentUri) this.onUpdateComputingStatus(p); });
 
     context.subscriptions.push(this.langServer.start());
-    // const viewFile = this.documentUri + '.view.md';
-    // vscode.workspace.openTextDocument(viewFile)
-    //   .then((viewDoc) => {
-    //     this.viewDoc = viewDoc;
-    //     vscode.window.showTextDocument(viewDoc, vscode.ViewColumn.Three);
-    //   });
 
     this.view.onresize = async (columns:number) => {
       await this.langServer.resizeView(this.documentUri,Math.floor(columns));
@@ -314,6 +308,38 @@ export class CoqDocument implements vscode.Disposable {
       } else
         await this.view.show(true);
     } catch (err) {}
+  }
+
+  public async ltacProfSet(enabled: boolean) {
+    this.setStatusBarWorking('Running query');
+    try {
+      await this.langServer.ltacProfSet(this.documentUri, enabled);
+    } catch (err) {
+    } finally {
+      this.setStatusBarReady();
+    }
+  }
+  
+  private outputLtacProfTreeNode(out: vscode.OutputChannel, indent: string, key: string, node: LtacProfTree) {
+    out.appendLine(`${indent}${key}: ${node.entry.total}, ${node.entry.local}, ${node.entry.ncalls}, ${node.entry.max_total}`);
+    node.children.forEach((node,key) => {
+        this.outputLtacProfTreeNode(out, indent + "..", key, node);
+      });
+  }
+
+  public async ltacProfGetResults() {
+    this.setStatusBarWorking('Running query');
+    try {
+      const results = await this.langServer.ltacProfGetResults(this.documentUri);
+      const out = vscode.window.createOutputChannel("LtacProfiler");
+      results.forEach((value,key) => {
+          out.appendLine("-----------------------------------");
+          this.outputLtacProfTreeNode(out, "", key, value);
+        });
+    } catch (err) {
+    } finally {
+      this.setStatusBarReady();
+    }
   }
   
   public async doOnLostFocus() {

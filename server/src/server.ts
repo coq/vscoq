@@ -7,9 +7,10 @@
 import {RequestType} from 'vscode-jsonrpc';
 import {
 	createConnection, IConnection, TextDocumentSyncKind,
-	TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
-	InitializeParams, InitializeResult, TextDocumentIdentifier, TextDocumentPosition,
+	TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
+	InitializeParams, InitializeResult, TextDocumentIdentifier, Position, TextDocumentPositionParams,
   DidChangeTextDocumentParams,
+  CodeLensParams,
 	CompletionItem, CompletionItemKind, PublishDiagnosticsParams, ServerCapabilities, CodeActionParams, Command, CodeLens, Hover
 } from 'vscode-languageserver';
 import * as vscodeLangServer from 'vscode-languageserver';
@@ -101,7 +102,7 @@ process.on('SIGBREAK', function () {
 
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion((textDocumentPosition: TextDocumentPosition): CompletionItem[] => {
+connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
 	// The pass parameter contains the position of the text document in 
 	// which code complete got requested. For the example we ignore this
 	// info and always provide the same completion items.
@@ -187,6 +188,14 @@ connection.onRequest(coqproto.ResizeWindowRequest.type, (params: coqproto.CoqTop
     .coq.resizeWindow(params.columns);
 });
 
+connection.onRequest(coqproto.LtacProfSetRequest.type, (params: coqproto.CoqTopLtacProfSetParams) => {
+  return project.lookup(params.uri)
+    .coq.ltacProfSet(params.enabled);
+});
+connection.onRequest(coqproto.LtacProfResultsRequest.type, (params: coqproto.CoqTopParams) => {
+  return project.lookup(params.uri)
+    .coq.ltacProfResults();
+});
 
 
 function sendHighlightUpdates(documentUri: string, highlights: coqproto.Highlight[]) {
@@ -205,7 +214,7 @@ connection.onCodeAction((params:CodeActionParams) => {
   return <Command[]>[];
 });
 
-connection.onCodeLens((params:TextDocumentIdentifier) => {
+connection.onCodeLens((params:CodeLensParams) => {
   return [];
 });
 
@@ -215,8 +224,8 @@ connection.onCodeLensResolve((params:CodeLens) => {
 
 
 connection.onDidOpenTextDocument((params) => {
-  const uri = params.uri;
-  project.open(uri, params.text, {
+  const uri = params.textDocument.uri;
+  project.open(uri, params.textDocument.text, {
     sendHighlightUpdates: (h) => sendHighlightUpdates(uri, h),
     sendDiagnostics: (diagnostics) => sendDiagnostics(uri, diagnostics),
     sendMessage: (level, message: string) =>
@@ -236,14 +245,14 @@ connection.onDidOpenTextDocument((params) => {
 });
 
 connection.onDidChangeTextDocument((params) => {
-  return project.lookup(params.uri)
+  return project.lookup(params.textDocument.uri)
     .textEdit(params.contentChanges);
 });
 
 connection.onDidCloseTextDocument((params) => {
 	// A text document got closed in VSCode.
 	// params.uri uniquely identifies the document.
-  project.close(params.uri);
+  project.close(params.textDocument.uri);
 });
 
 

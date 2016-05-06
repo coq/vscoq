@@ -56,6 +56,16 @@ export interface CoqTopResizeWindowParams extends CoqTopParams {
   columns: number;
 }
 
+export declare interface CoqTopLtacProfSetParams extends CoqTopParams {
+  enabled: boolean;
+}
+export interface LtacProfTree {
+  entry: {total: number; local: number; ncalls: number; max_total: number};
+  children: {fst:string;snd:LtacProfTree}[]
+}
+export interface LtacProfResult {
+  results: {fst:string;snd:LtacProfTree}[]
+}
 export namespace InterruptCoqRequest { 
   export const type: RequestType<CoqTopParams, void, void> = { method: 'coqtop/interrupt' }; 
 } 
@@ -94,6 +104,15 @@ export declare interface CoqTopQueryResult {
 export namespace ResizeWindowRequest { 
   export const type: RequestType<CoqTopResizeWindowParams, void, void> = { method: 'coqtop/resizeWindow' }; 
 } 
+
+export namespace LtacProfSetRequest { 
+  export const type: RequestType<CoqTopLtacProfSetParams, void, void> = { method: 'coqtop/ltacProfSet' }; 
+}
+
+export namespace LtacProfResultsRequest { 
+  export const type: RequestType<void, LtacProfResult, void> = { method: 'coqtop/ltacProfResults' }; 
+}
+
 
 
 // Parsing->Processing->Processed->[Incomplete|]
@@ -158,3 +177,4 @@ export interface NotifyStateViewUrlParams extends NotificationParams {
 export namespace CoqStateViewUrlNotification { 
   export const type: NotificationType<NotifyStateViewUrlParams> = { method: 'coqtop/stateViewUrl' }; 
 } 
+

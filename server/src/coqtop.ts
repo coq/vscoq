@@ -8,7 +8,7 @@ import * as events from 'events';
 import * as coqXml from './coq-xml';
 import * as coqProto from './coq-proto';
 import {ChildProcess, exec, spawn} from 'child_process';
-import {CoqTopSettings} from './protocol';
+import {CoqTopSettings, LtacProfResult, LtacProfTree} from './protocol';
 import * as fs from 'fs';
 import * as os from 'os';
 import {asyncWithTimeout} from './CancellationSignal';
@@ -52,6 +52,7 @@ export interface GoalResult {
   shelvedGoals?: coqProto.Goal[];
   abandonedGoals?: coqProto.Goal[];
 }
+
 
 export interface CoqOptions {
   asymmetricPatterns: boolean;
@@ -890,6 +891,43 @@ export class CoqTop extends events.EventEmitter {
       result = {};
     }
     this.console.log(`EditAt: ${stateId} --> ${result.newFocus ? `{newTipId: ${result.newFocus.stateId}, qedId: ${result.newFocus.qedStateId}, oldId: ${result.newFocus.oldStateIdTip}}` : "{}"}`);
+    return result;
+  }
+
+  public async coqLtacProfilingSet(enabled: boolean) : Promise<void> {
+    this.checkState();
+
+    const coqResult = this.coqGetResultOnce('LtacProfSet');
+    this.console.log('--------------------------------');
+    this.console.log(`Call LtacProfSet(enabled: ${enabled})`);
+    this.mainChannelW.write(`<call val="LtacProfSet"><bool val="${enabled}"/></call>`);    
+
+    const value = await coqResult;
+    this.console.log(`LtacProfSet: ${enabled} --> ()`);
+    return
+  }
+
+  public async coqLtacProfilingResults() : Promise<LtacProfResult> {
+    this.checkState();
+
+    const coqResult = this.coqGetResultOnce('LtacProfResults');
+    this.console.log('--------------------------------');
+    this.console.log(`Call LtacProfResults()`);
+    this.mainChannelW.write(`<call val="LtacProfResults"><unit/></call>`);    
+
+    const value = await coqResult;
+    let result : LtacProfResult = {results: value['hashtbl']};
+    // if(value.value.inr) {
+    //   // Jumping inside another proof; create a new tip
+    //   result = {newFocus: {
+    //     stateId: value.value.inr[0].fst,
+    //     qedStateId: value.value.inr[0].snd.fst,
+    //     oldStateIdTip: value.value.inr[0].snd.snd,
+    //   }};
+    // } else {
+    //   result = {};
+    // }
+    this.console.log(`LtacProfResults: () --> ...`);
     return result;
   }
 

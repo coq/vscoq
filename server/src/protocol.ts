@@ -70,16 +70,26 @@ export declare interface CoqTopGoalResult {
 export declare interface CoqTopInterpretToPointParams extends CoqTopParams {
   offset: number;
 }
+export declare interface CoqTopLtacProfSetParams extends CoqTopParams {
+  enabled: boolean;
+}
+export interface LtacProfTree {
+  entry: {total: number; local: number; ncalls: number; max_total: number};
+  children: {fst:string;snd:LtacProfTree}[]
+}
+export interface LtacProfResult {
+  results: {fst:string;snd:LtacProfTree}[]
+}
 
 
 export namespace InterruptCoqRequest { 
-  export const type: RequestType<CoqTopParams, void, void> = { method: 'coqtop/interrupt' }; 
+  export const type: RequestType<CoqTopParams, Promise<void>, void> = { method: 'coqtop/interrupt' }; 
 } 
 export namespace QuitCoqRequest { 
-  export const type: RequestType<CoqTopParams, void, void> = { method: 'coqtop/quitCoq' }; 
+  export const type: RequestType<CoqTopParams, Promise<void>, void> = { method: 'coqtop/quitCoq' }; 
 } 
 export namespace ResetCoqRequest { 
-  export const type: RequestType<CoqTopParams, void, void> = { method: 'coqtop/resetCoq' }; 
+  export const type: RequestType<CoqTopParams, Promise<void>, void> = { method: 'coqtop/resetCoq' }; 
 } 
 export namespace StepForwardRequest { 
   export const type: RequestType<CoqTopParams, CoqTopGoalResult, void> = { method: 'coqtop/stepForward' }; 
@@ -115,6 +125,14 @@ export namespace ResizeWindowRequest {
   export const type: RequestType<CoqTopResizeWindowParams, void, void> = { method: 'coqtop/resizeWindow' }; 
 } 
 
+
+export namespace LtacProfSetRequest { 
+  export const type: RequestType<CoqTopLtacProfSetParams, void, void> = { method: 'coqtop/ltacProfSet' }; 
+}
+
+export namespace LtacProfResultsRequest { 
+  export const type: RequestType<CoqTopParams, LtacProfResult, void> = { method: 'coqtop/ltacProfResults' }; 
+}
 
 
 export enum HighlightType {

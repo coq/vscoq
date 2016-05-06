@@ -104,3 +104,12 @@ export interface Goals {
   abandonedGoals: Goal[],
   error?: FailValue;
 };
+
+
+export interface LtacProfTree {
+  entry: {total: number; local: number; ncalls: number; max_total: number};
+  children: {fst:string;snd:LtacProfTree}[] //Map<string,LtacProfTree>
+}
+export interface LtacProfResult {
+  results: {fst:string;snd:LtacProfTree}[] //Map<string,LtacProfTree>
+}
