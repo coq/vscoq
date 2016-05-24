@@ -28,7 +28,9 @@ namespace coqtopw
     static async Task<Stream> openChannelSocket(string channel) {
       try
       {
-        if (channel == "stdfs")
+        if(channel == null)
+          return Stream.Null;
+        else if (channel == "stdfds")
           return new StreamJoinIO(Console.OpenStandardInput(), Console.OpenStandardOutput(), true);
         else if (channelParser2.IsMatch(channel))
         {
@@ -133,7 +135,7 @@ namespace coqtopw
       coqtop.StartInfo.RedirectStandardInput = true;
       coqtop.StartInfo.RedirectStandardOutput = false;
       if (System.Environment.OSVersion.Platform == PlatformID.Win32NT)
-      {
+      {// coqtop expects a dedicated read and write socket for each channel on Windows due to a bug in OCaml
         var coqtopMainR = new TcpListener(IPAddress.Loopback, 0);
         var coqtopMainW = new TcpListener(IPAddress.Loopback, 0);
         var coqtopControlR = new TcpListener(IPAddress.Loopback, 0);
@@ -213,21 +215,27 @@ namespace coqtopw
         editorControl = new TraceStream(editorControl, System.Text.Encoding.UTF8.GetBytes("\ncoqtop->editor control-channel:\n"), trace);
       }
 
-
+      var tasks = new List<Task>();
+      tasks.Add(coqtopMain.CopyToAsync(editorMain));
       if (!ideSlave)
-        await Task.WhenAny(new Task[]
-        { coqtopMain.CopyToAsync(editorMain)
-        , editorMain.CopyToAsync(coqtopMain)
-        , coqtopControl.CopyToAsync(editorControl)
-        , editorControl.CopyToAsync(coqtopControl)
-        });
+        tasks.Add(editorMain.CopyToAsync(coqtopMain));
       else
-        await Task.WhenAny(new Task[]
-        { coqtopMain.CopyToAsync(editorMain)
-        , copyStreamWithInterrupt(coqtop, editorMain, coqtopMain)
-        , coqtopControl.CopyToAsync(editorControl)
-        , editorControl.CopyToAsync(coqtopControl)
-        });
+        tasks.Add(copyStreamWithInterrupt(coqtop, editorMain, coqtopMain));
+      if (controlChannel != null)
+      {
+        tasks.Add(coqtopControl.CopyToAsync(editorControl));
+        tasks.Add(editorControl.CopyToAsync(coqtopControl));
+      }
+
+      await Task.WhenAny(tasks);        
+    }
+
+    static string capturedArgumentToString(string flag, string value) {
+      return (value!=null ? flag + " " + value : "");
+    }
+
+    static string capturedArgumentToString(string flag, bool value) {
+      return (value ? flag : "");
     }
 
     // C:/Users/cj/Research/vscoq/coqtopw/bin/Debug/coqtopw.exe -coqtopbin C:/Coq8.5rc1/bin//coqtop -main-channel 127.0.0.1:7806 -control-channel 127.0.0.1:7809 -ideslave -async-proofs on
@@ -273,7 +281,7 @@ namespace coqtopw
         Console.Error.WriteLine("Coqtop bin: " + coqtopBin + " points to me (do you want to fork bomb?)");
       }
 
-      if (coqtopBin != null && mainChannel != null && controlChannel != null)
+      if (coqtopBin != null && ideSlave && mainChannel!=null)
       {
         try
         {
@@ -291,11 +299,17 @@ namespace coqtopw
       {
         var coqtop = new Process();
         coqtop.StartInfo.UseShellExecute = false;
-        coqtop.StartInfo.RedirectStandardError = true;
-        coqtop.StartInfo.RedirectStandardInput = true;
-        coqtop.StartInfo.RedirectStandardOutput = true;
+        coqtop.StartInfo.RedirectStandardError = false;
+        coqtop.StartInfo.RedirectStandardInput = false;
+        coqtop.StartInfo.RedirectStandardOutput = false;
         coqtop.StartInfo.FileName = coqtopBin;
-        coqtop.StartInfo.Arguments = String.Join(" ", args);
+
+        // Add back the arguments that were captured
+        if (mainChannel != null) { coqtopArgs.Add("-main-channel"); coqtopArgs.Add(mainChannel); }
+        if (controlChannel != null) { coqtopArgs.Add("-control-channel"); coqtopArgs.Add(controlChannel); }
+        if (ideSlave) { coqtopArgs.Add("-ideslave"); }
+
+        coqtop.StartInfo.Arguments = String.Join(" ", coqtopArgs);
         coqtop.Start();
         coqtop.WaitForExit();
         return coqtop.ExitCode;
