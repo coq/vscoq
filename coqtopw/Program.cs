@@ -230,13 +230,7 @@ namespace coqtopw
       await Task.WhenAny(tasks);        
     }
 
-    static string capturedArgumentToString(string flag, string value) {
-      return (value!=null ? flag + " " + value : "");
-    }
-
-    static string capturedArgumentToString(string flag, bool value) {
-      return (value ? flag : "");
-    }
+   
 
     // C:/Users/cj/Research/vscoq/coqtopw/bin/Debug/coqtopw.exe -coqtopbin C:/Coq8.5rc1/bin//coqtop -main-channel 127.0.0.1:7806 -control-channel 127.0.0.1:7809 -ideslave -async-proofs on
     static int Main(string[] args)
