@@ -32,6 +32,7 @@ A somewhat out-of-date description of the async state machine is [documented her
   - [WorkerStatus](#feedback-workerstatus)
   - [File Dependencies](#feedback-filedependencies)
   - [File Loaded](#feedback-fileloaded)
+* [Messages](#messages)
 
 
 Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
@@ -508,3 +509,13 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 ```
 
 
+--------------------------
+
+## <a name="messages">Messages</a>
+
+Messages are issued out-of-band. `level` is one of `{info,warning,notice,error,debug}`.
+```html
+<message_level val="${level}"/>
+  <string>${message}</string>
+</message>
+```
