@@ -1,5 +1,5 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System.Diagnostics;
 using System.Linq;
 using System.IO;
@@ -35,11 +35,12 @@ namespace UnitTests
   }
 
 
-  [TestClass]
+  [TestFixture]
   public class UnitTest1
   {
     static string coqtopBin = "C:/Coq8.5lp/bin/coqtop.exe";
-    static string coqtopw = "../../../bin/Debug/coqtopw.exe";
+    static string coqtopw = AppDomain.CurrentDomain.SetupInformation.ApplicationBase + "coqtopw.exe";
+    //"../../../bin/Debug/coqtopw.exe";
 
     private static Process runProgram(string bin, string args)
     {
@@ -56,7 +57,7 @@ namespace UnitTests
     }
 
 
-    [TestMethod]
+    [Test]
     public void TestBasicCoqTop()
     {
       var p = runProgram(coqtopBin, "");
@@ -70,7 +71,7 @@ namespace UnitTests
       Assert.AreEqual("Coq <", p.StandardError.ReadLine().TrimEnd());
     }
 
-    [TestMethod]
+    [Test]
     public void TestBasicCoqTopPassthrough()
     {
       var p = runProgram(coqtopw, String.Format("-coqtopbin {0}", coqtopBin));
@@ -84,7 +85,7 @@ namespace UnitTests
       Assert.AreEqual("Coq <", p.StandardError.ReadLine().TrimEnd());
     }
 
-    [TestMethod]
+    [Test]
     public void TestIdeslaveStdfds()
     {
       var p = runProgram(coqtopw, String.Format("-coqtopbin {0} -ideslave -main-channel stdfds", coqtopBin));
