@@ -513,7 +513,7 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 
 ## <a name="messages">Messages</a>
 
-Messages are issued out-of-band. `level` is one of `{info,warning,notice,error,debug}`.
+Messages are issued out-of-band. `level` is one of `{info,warning,notice,error,debug}`, e.g. in response to an <a href="#add">add</a> command with `verbose=true`.
 ```html
 <message_level val="${level}"/>
   <string>${message}</string>
