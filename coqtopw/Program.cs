@@ -74,7 +74,10 @@ namespace coqtopw
         settings.CheckCharacters = false;
         settings.ValidationType = ValidationType.None;
         settings.ConformanceLevel = ConformanceLevel.Fragment;
+        settings.DtdProcessing = DtdProcessing.Parse;
         var context = new XmlParserContext(null, new XmlNamespaceManager(new NameTable()), null, XmlSpace.None, Encoding.UTF8);
+        context.InternalSubset = "<!ENTITY nbsp \"&#160;\">";
+        context.DocTypeName = "coq";
 
         var reader = XmlTextReader.Create(from, settings, context);
         var writer = new StreamWriter(to);
@@ -91,7 +94,7 @@ namespace coqtopw
             }
             //await reader.SkipAsync();
           }
-          else if(reader.NodeType == XmlNodeType.Element)
+          else if (reader.NodeType == XmlNodeType.Element)
           {
             using (var y = reader.ReadSubtree())
             {
@@ -100,8 +103,6 @@ namespace coqtopw
               await writer.FlushAsync();
             }
           }
-          else
-            throw new Exception("XML parsing error.");
         }
       }
       catch (Exception error)
