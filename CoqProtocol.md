@@ -32,6 +32,7 @@ A somewhat out-of-date description of the async state machine is [documented her
   - [WorkerStatus](#feedback-workerstatus)
   - [File Dependencies](#feedback-filedependencies)
   - [File Loaded](#feedback-fileloaded)
+* [Messages](#messages)
 
 
 Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
@@ -52,7 +53,9 @@ State ID 0 is reserved as 'null' or 'default' state. (The 'query' command sugges
 
 ## <a name="commands">Commands</a>
 
-### <a name="command-add">**Add(stateId: integer, command: string)**</a>
+### <a name="command-add">**Add(stateId: integer, command: string, verbose: boolean)**</a>
+Adds a toplevel command (e.g. vernacular, definition, tactic) to the given state.
+`verbose` controls whether out-of-band messages will be generated for the added command (e.g. "foo is assumed" in response to adding "Axiom foo: nat.").
 ```html
 <call val="Add">
   <pair>
@@ -62,7 +65,7 @@ State ID 0 is reserved as 'null' or 'default' state. (The 'query' command sugges
     </pair>
     <pair>
       <state_id val="${stateId}"/>
-      <bool val="false"/>
+      <bool val="${verbose}"/>
     </pair>
   </pair>
 </call>
@@ -506,3 +509,13 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 ```
 
 
+--------------------------
+
+## <a name="messages">Messages</a>
+
+Messages are issued out-of-band. `level` is one of `{info,warning,notice,error,debug}`. E.g. in response to an <a href="#command-add">add</a> `"Axiom foo: nat."` with `verbose=true`, message `foo is assumed` will be emitted in response.
+```html
+<message_level val="${level}"/>
+  <string>${message}</string>
+</message>
+```
