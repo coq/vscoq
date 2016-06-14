@@ -513,7 +513,7 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 
 ## <a name="messages">Messages</a>
 
-Messages are issued out-of-band. `level` is one of `{info,warning,notice,error,debug}`, e.g. in response to an <a href="#command-add">add</a> command with `verbose=true`.
+Messages are issued out-of-band. `level` is one of `{info,warning,notice,error,debug}`. E.g. in response to an <a href="#command-add">add</a> `Axiom foo: nat` with `verbose=true`, message `foo is assumed` will be emitted in response.
 ```html
 <message_level val="${level}"/>
   <string>${message}</string>
