@@ -116,6 +116,10 @@ state that should become the next tip.
 -------------------------------
 
 ### <a name="command-editAt">**EditAt(stateId: integer)**</a>
+Move focus to `${stateId}`, such that commands may be added to the new state ID.
+```html
+<call val="Edit_at"><state_id val="${stateId}"/></call>
+```
 #### *Returns*
 * Simple backtrack; focused stateId becomes the parent state
 ```html
