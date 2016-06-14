@@ -135,8 +135,8 @@ namespace coqtopw
       coqtop.StartInfo.RedirectStandardError = false;
       coqtop.StartInfo.RedirectStandardInput = true;
       coqtop.StartInfo.RedirectStandardOutput = false;
-      if (System.Environment.OSVersion.Platform == PlatformID.Win32NT)
-      {// coqtop expects a dedicated read and write socket for each channel on Windows due to a bug in OCaml
+      //if (System.Environment.OSVersion.Platform == PlatformID.Win32NT)
+      //{// coqtop expects a dedicated read and write socket for each channel on Windows due to a bug in OCaml
         var coqtopMainR = new TcpListener(IPAddress.Loopback, 0);
         var coqtopMainW = new TcpListener(IPAddress.Loopback, 0);
         var coqtopControlR = new TcpListener(IPAddress.Loopback, 0);
@@ -174,25 +174,25 @@ namespace coqtopw
         coqtopMainW.Stop();
         coqtopControlR.Stop();
         coqtopControlW.Stop();
-      } else {
-        var coqtopMainRW = new TcpListener(IPAddress.Loopback, 0);
-        var coqtopControlRW = new TcpListener(IPAddress.Loopback, 0);
-        var coqtopMainAddr = ((IPEndPoint)coqtopMainRW.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)coqtopMainRW.LocalEndpoint).Port;
-        var coqtopControlAddr = ((IPEndPoint)coqtopControlRW.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)coqtopControlRW.LocalEndpoint).Port;
-        var arguments = String.Format("{0} -main-channel {1} -control-channel {2}", ideSlave ? "-ideslave" : "", coqtopMainAddr, coqtopControlAddr)
-          + String.Join(" ", args);
-        coqtopMainRW.Start();
-        coqtopControlRW.Start();
+      //} else {
+      //  var coqtopMainRW = new TcpListener(IPAddress.Loopback, 0);
+      //  var coqtopControlRW = new TcpListener(IPAddress.Loopback, 0);
+      //  var coqtopMainAddr = ((IPEndPoint)coqtopMainRW.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)coqtopMainRW.LocalEndpoint).Port;
+      //  var coqtopControlAddr = ((IPEndPoint)coqtopControlRW.LocalEndpoint).Address.ToString() + ":" + ((IPEndPoint)coqtopControlRW.LocalEndpoint).Port;
+      //  var arguments = String.Format("{0} -main-channel {1} -control-channel {2}", ideSlave ? "-ideslave" : "", coqtopMainAddr, coqtopControlAddr)
+      //    + String.Join(" ", args);
+      //  coqtopMainRW.Start();
+      //  coqtopControlRW.Start();
 
-        coqtop = Process.Start(coqtopBin, arguments);
+      //  coqtop = Process.Start(coqtopBin, arguments);
 
-        var coqtopMainConnection = await coqtopMainRW.AcceptTcpClientAsync();
-        var coqtopControlConnection = await coqtopControlRW.AcceptTcpClientAsync();
-        coqtopMain = coqtopMainConnection.GetStream();
-        coqtopControl = coqtopControlConnection.GetStream();
-        coqtopMainRW.Stop();
-        coqtopControlRW.Stop();
-      }
+      //  var coqtopMainConnection = await coqtopMainRW.AcceptTcpClientAsync();
+      //  var coqtopControlConnection = await coqtopControlRW.AcceptTcpClientAsync();
+      //  coqtopMain = coqtopMainConnection.GetStream();
+      //  coqtopControl = coqtopControlConnection.GetStream();
+      //  coqtopMainRW.Stop();
+      //  coqtopControlRW.Stop();
+      //}
 
       FileStream trace = null;
       if (traceFile != null)
