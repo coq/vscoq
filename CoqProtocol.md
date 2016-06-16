@@ -297,7 +297,20 @@ In practice, `stateId` is 0, but the effect is to perform the query on the curre
 #### *Returns*
 *
 ```html
-(TODO...)
+<value val="good">
+  <list>
+    <pair>
+      <list><string>${string1}</string>...</list>
+      <option_state>
+        <bool>${sync}</bool>
+        <bool>${deprecated}</bool>
+        <string>${name}</string>
+        ${option_value}
+      </option_state>
+    </pair>
+    ...
+  </list>
+</value>
 ```
 
 -------------------------------
@@ -349,7 +362,7 @@ Printing Universes : (...false...)
 #### *Returns*
 *
 ```html
-(TODO...)
+<value val="good"><unit/></value>
 ```
 
 -------------------------------
@@ -362,7 +375,12 @@ Printing Universes : (...false...)
 #### *Returns*
 *
 ```html
-(TODO...)
+<value val="good">
+  <list>
+    <list><string>${string1}</string>...</list>
+    ...
+  </list>
+</value>
 ```
 
 -------------------------------
