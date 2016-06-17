@@ -132,7 +132,7 @@ export class Sentences {
         
       if(oldHyp === undefined)
         hyp.diff = HypothesisDifference.New;
-      else if(oldHyp.expression !== hyp.expression) {
+      else if(typeof hyp === 'string' && oldHyp.expression !== hyp.expression) {
         hyp.diff = HypothesisDifference.Changed
         var difference = diff.diffWords(oldHyp.expression, hyp.expression);
         hyp.diffExpression = difference.map((d,idx) => {
@@ -155,16 +155,17 @@ export class Sentences {
       if(oldGoals[idxGoal] !== undefined) {
         this.diffHypotheses(oldGoals[idxGoal].hypotheses, g.hypotheses)
 
-        var difference = diff.diffWords(oldGoals[idxGoal].goal, g.goal);
-        g.diffGoal = difference.map((d,idx) => {
-          if(d.added)
-            return {text: d.value, change: TextDifference.Added};
-          else if(d.removed)
-            return {text: d.value, change: TextDifference.Removed};
-          else
-            return {text: d.value, change: TextDifference.None};          
-        });
-
+        if(typeof g.goal === 'string' && g.goal != oldGoals[idxGoal].goal) {
+          var difference = diff.diffWords(oldGoals[idxGoal].goal, g.goal);
+          g.diffGoal = difference.map((d,idx) => {
+            if(d.added)
+              return {text: d.value, change: TextDifference.Added};
+            else if(d.removed)
+              return {text: d.value, change: TextDifference.Removed};
+            else
+              return {text: d.value, change: TextDifference.None};          
+          });
+        }
       }
     })
 

@@ -22,7 +22,6 @@ export interface Node {
   $children : coqProto.CoqValue[];
 }
 
-
 export function escapeXml(unsafe: string) : string {
     return unsafe.replace(/[<>&'"]/g, function (c) {
         switch (c) {
@@ -52,22 +51,19 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
       return <coqProto.Pair<any,any>>{fst: value.$children[0], snd: value.$children[1]};
     case 'list':  
       return value.$children;
-    case 'tactic':
-    {  let entry =
-        { total: <number>+value.$['total']
-        , local: <number>+value.$['local']
-        , ncalls: <number>+value.$['ncalls']
-        , max_total: <number>+value.$['max_total']
-        };
-      let nodeChildren : {fst:string;snd:coqProto.LtacProfTree}[] =
-        value.$children.map((value) => { return {fst:<string>value.fst, snd: <coqProto.LtacProfTree>value.snd} });
-      return <coqProto.LtacProfTree>{entry: entry, children: nodeChildren};
-    }  
-    case 'hashtbl':
-    { let table =
-        value.$children.map((value) => { return {fst:value.fst, snd: value.snd} });
-      return table;
-    }  
+    case 'ltacprof_tactic':
+      return <coqProto.LtacProfTactic>{
+        name: value.$['name'],
+        statistics: {
+          total: +value.$['total'],
+          self: +value.$['self'],
+          num_calls: +value.$['num_calls'],
+          max_total: +value.$['max_total']},
+        tactics: value['list'] };
+    case 'ltacprof':
+      return <coqProto.LtacProfResults>{
+        total_time: +value.$['total_time'],
+        tactics: value['list'] };
     case 'bool':
       let val = value.$['val'];
       if(typeof val === 'boolean')
@@ -108,7 +104,8 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
     case 'message':
       return <coqProto.Message>{
         level: <coqProto.MessageLevel>value['message_level'],
-        message: value['string']
+        message: value['string'] || value['richpp_string'],
+        rich_message: value['richpp']
       }
     case 'value':
       switch(value.$['val']) {
@@ -295,10 +292,25 @@ export class XmlStream extends events.EventEmitter {
     this.emit('error', err);
   }
 
+  private build_string = false;
+  private xml_string = "";
+
   private onOpenTag(node: sax.Tag) {
     if(node.name === 'coqtoproot')
       return;
-      
+
+    if(node.name === 'richpp') {
+      this.build_string = true;
+      this.xml_string = "";
+    }
+
+    if(this.build_string) {
+      const parts = [node.name];
+      for(const key in node.attributes)
+        parts.push(`${key}="${node.attributes[key]}"`);
+      this.xml_string+= "<" + parts.join(' ') + '>';
+    }
+
     let topNode = {
       $name: node.name,
       $: node.attributes,
@@ -308,7 +320,6 @@ export class XmlStream extends events.EventEmitter {
     this.stack.push(topNode);
   }
 
-
   private onCloseTag(closingTagName : string) {
     if(closingTagName === 'coqtoproot') {
       this.emit('error', 'malformed XML input stream has too many closing tags');
@@ -316,6 +327,10 @@ export class XmlStream extends events.EventEmitter {
     }
     if (this.stack.length === 0)
       return;
+
+    if(this.build_string)
+      this.xml_string+= `</${closingTagName}>`;
+
 
     let currentTop = this.stack.pop();
     let tagName = currentTop.$name;
@@ -325,6 +340,11 @@ export class XmlStream extends events.EventEmitter {
       let newTop = this.stack[this.stack.length - 1];
       newTop.$children.push(value);
       newTop[tagName] = value;
+      if(closingTagName === 'richpp') {
+        this.build_string = false;
+        value["string"] = this.xml_string;
+        newTop["richpp_string"] = this.xml_string;
+      }
     } else if(currentTop.$name === 'feedback') {
       this.emit('response', value);
       if(currentTop.$['object'] === 'edit')
@@ -361,6 +381,9 @@ export class XmlStream extends events.EventEmitter {
 
   
   private onText(text : string) {
+    if(this.build_string)
+      this.xml_string+= text;
+
     if(this.stack.length > 0) {
       // let plainText = entities.decodeXML(text);
       this.stack[this.stack.length-1].$text += text;

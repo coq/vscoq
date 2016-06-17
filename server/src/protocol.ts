@@ -57,7 +57,7 @@ export interface Hypothesis {
 export interface Goal {
   id: number;
   hypotheses: Hypothesis[];
-  goal: string;
+  goal: any;
   diffGoal?: TextPartDifference[];  
 }
 export declare interface CoqTopGoalResult {
@@ -73,23 +73,25 @@ export declare interface CoqTopInterpretToPointParams extends CoqTopParams {
 export declare interface CoqTopLtacProfSetParams extends CoqTopParams {
   enabled: boolean;
 }
-export interface LtacProfTree {
-  entry: {total: number; local: number; ncalls: number; max_total: number};
-  children: {fst:string;snd:LtacProfTree}[]
+export interface LtacProfTactic {
+  name: string,
+  statistics: {total: number; self: number; num_calls: number; max_total: number},
+  tactics: LtacProfTactic[]
 }
-export interface LtacProfResult {
-  results: {fst:string;snd:LtacProfTree}[]
+export interface LtacProfResults {
+  total_time: number,
+  tactics: LtacProfTactic[]
 }
 
 
 export namespace InterruptCoqRequest { 
-  export const type: RequestType<CoqTopParams, Promise<void>, void> = { method: 'coqtop/interrupt' }; 
+  export const type: RequestType<CoqTopParams, void, void> = { method: 'coqtop/interrupt' }; 
 } 
 export namespace QuitCoqRequest { 
-  export const type: RequestType<CoqTopParams, Promise<void>, void> = { method: 'coqtop/quitCoq' }; 
+  export const type: RequestType<CoqTopParams, void, void> = { method: 'coqtop/quitCoq' }; 
 } 
 export namespace ResetCoqRequest { 
-  export const type: RequestType<CoqTopParams, Promise<void>, void> = { method: 'coqtop/resetCoq' }; 
+  export const type: RequestType<CoqTopParams, void, void> = { method: 'coqtop/resetCoq' }; 
 } 
 export namespace StepForwardRequest { 
   export const type: RequestType<CoqTopParams, CoqTopGoalResult, void> = { method: 'coqtop/stepForward' }; 
@@ -130,8 +132,11 @@ export namespace LtacProfSetRequest {
   export const type: RequestType<CoqTopLtacProfSetParams, void, void> = { method: 'coqtop/ltacProfSet' }; 
 }
 
+export interface CoqTopLtacProfResultsParams extends CoqTopParams {
+  offset?: number;
+}
 export namespace LtacProfResultsRequest { 
-  export const type: RequestType<CoqTopParams, LtacProfResult, void> = { method: 'coqtop/ltacProfResults' }; 
+  export const type: RequestType<CoqTopLtacProfResultsParams, LtacProfResults, void> = { method: 'coqtop/ltacProfResults' }; 
 }
 
 
@@ -161,6 +166,7 @@ export namespace UpdateHighlightsNotification {
 export declare interface NotifyMessageParams extends NotificationParams {
   level: string;
   message: string;
+  rich_message?: any;
 }
 export namespace CoqMessageNotification { 
   export const type: NotificationType<NotifyMessageParams> = { method: 'coqtop/message' }; 

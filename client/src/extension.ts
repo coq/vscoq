@@ -166,5 +166,5 @@ function ltacProfStop(editor: TextEditor, edit: TextEditorEdit) {
 function ltacProfGetResults(editor: TextEditor, edit: TextEditorEdit) {
   const doc = documents.get(editor.document.uri.toString());
   if(doc)
-    doc.ltacProfGetResults();
+    doc.ltacProfGetResults(editor);
 }

@@ -9,9 +9,10 @@ import {Highlights} from './Highlights';
 import {CoqView, SimpleCoqView} from './SimpleCoqView';
 import {MDCoqView} from './MDCoqView';
 import {HtmlCoqView} from './HtmlCoqView';
+import {HtmlLtacProf} from './HtmlLtacProf';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
-import {CoqLanguageServer, LtacProfTree} from './CoqLanguageServer';
+import {CoqLanguageServer} from './CoqLanguageServer';
 
 
 
@@ -69,7 +70,6 @@ export class CoqDocument implements vscode.Disposable {
     };
     
     this.statusBar.text = 'Ready';
-    
     
   }
   
@@ -320,22 +320,19 @@ export class CoqDocument implements vscode.Disposable {
     }
   }
   
-  private outputLtacProfTreeNode(out: vscode.OutputChannel, indent: string, key: string, node: LtacProfTree) {
-    out.appendLine(`${indent}${key}: ${node.entry.total}, ${node.entry.local}, ${node.entry.ncalls}, ${node.entry.max_total}`);
-    node.children.forEach((node,key) => {
-        this.outputLtacProfTreeNode(out, indent + "..", key, node);
-      });
-  }
-
-  public async ltacProfGetResults() {
+  public async ltacProfGetResults(editor: TextEditor) {
     this.setStatusBarWorking('Running query');
     try {
-      const results = await this.langServer.ltacProfGetResults(this.documentUri);
-      const out = vscode.window.createOutputChannel("LtacProfiler");
-      results.forEach((value,key) => {
-          out.appendLine("-----------------------------------");
-          this.outputLtacProfTreeNode(out, "", key, value);
-        });
+      if(!editor || editor.document.uri.toString() !== this.documentUri)
+       return;
+      const offset = editor.document.offsetAt(editor.selection.active);
+      const results = await this.langServer.ltacProfGetResults(this.documentUri,offset);
+      const view = new HtmlLtacProf(results); 
+      // const out = vscode.window.createOutputChannel("LtacProfiler");
+      // results.forEach((value,key) => {
+      //     out.appendLine("-----------------------------------");
+      //     this.outputLtacProfTreeNode(out, "", key, value);
+      //   });
     } catch (err) {
     } finally {
       this.setStatusBarReady();

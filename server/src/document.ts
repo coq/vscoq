@@ -19,7 +19,7 @@ function positionToString(p:Position) {return `{${p.line}@${p.character}}`}
 export interface DocumentCallbacks {
   sendHighlightUpdates(highlights: thmProto.Highlight[]) : void;
   sendDiagnostics(diagnostics: Diagnostic[]) : void;
-  sendMessage(level: string, message: string) : void;
+  sendMessage(level: string, message: string, rich_message?: any) : void;
   sendReset() : void;
   sendStateViewUrl(stateUrl: string) : void;
   sendComputingStatus(status: thmProto.ComputingStatus, computeTimeMS: number) : void;
@@ -70,7 +70,7 @@ export class CoqDocument implements TextDocument {
       onStateStatusUpdate: (x1,x2,x3,x4) => this.onCoqStateStatusUpdate(x1,x2,x3,x4),
       onStateError: (x1,x2,x3,x4) => this.onCoqStateError(x1,x2,x3,x4),
       onEditFeedback: (x1,x2) => this.onCoqEditFeedback(x1,x2),
-      onMessage: (x1,x2) => this.onCoqMessage(x1,x2),
+      onMessage: (x1,x2,x3) => this.onCoqMessage(x1,x2,x3),
       onStateWorkerStatusUpdate: (x1,x2,x3) => this.onCoqStateWorkerStatusUpdate(x1,x2,x3),
       onStateFileDependencies: (x1,x2,x3) => this.onCoqStateFileDependencies(x1,x2,x3),
       onStateFileLoaded: (x1,x2,x3) => this.onCoqStateFileLoaded(x1,x2,x3),
@@ -333,8 +333,8 @@ export class CoqDocument implements TextDocument {
     // }
   }
   
-  private onCoqMessage(level: coqProto.MessageLevel, message: string) {
-    this.callbacks.sendMessage(coqProto.MessageLevel[level], message);
+  private onCoqMessage(level: coqProto.MessageLevel, message: string, rich_message?: any) {
+    this.callbacks.sendMessage(coqProto.MessageLevel[level], message, rich_message);
   }
 
   private onCoqStateWorkerStatusUpdate(stateId: number, route: number, workerUpdates: coqProto.WorkerStatus[]) {
@@ -475,8 +475,13 @@ export class CoqDocument implements TextDocument {
     return <thmProto.Goal>{
       goal: goal.goal,
       hypotheses: goal.hypotheses.map((hyp) => {
-        var h = hyp.split(/(:=|:)([^]*)/);
-        return {identifier: h[0].trim(), relation: h[1].trim(), expression: h[2].trim()};
+        if(hyp.$name === 'richpp') {
+          let h = hyp._.$text.split(/(:=|:)([^]*)/);
+          return {identifier: h[0].trim(), relation: h[1].trim(), expression: hyp._.$children[0]};
+        } else {
+          let h = hyp.split(/(:=|:)([^]*)/);
+          return {identifier: h[0].trim(), relation: h[1].trim(), expression: h[2].trim()};
+        }
       })
     };
   }
@@ -890,7 +895,13 @@ this.clientConsole.log("rolled back");
       searchAbout: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("SearchAbout " + query + ".")}), true),
       resizeWindow: (columns: number) => this.enqueueCoqOperation(() => this.coqTop.coqResizeWindow(columns), false),
       ltacProfSet: (enabled: boolean) => this.enqueueCoqOperation(() => this.coqTop.coqLtacProfilingSet(enabled), true),
-      ltacProfResults: () => this.enqueueCoqOperation(() => this.coqTop.coqLtacProfilingResults(), true),
+      ltacProfResults: (offset?: number) => this.enqueueCoqOperation(async () => {
+        if(offset) {
+          const sent = this.sentences.findAtTextPosition(offset);
+          return this.coqTop.coqLtacProfilingResults(sent===null ? undefined : sent.stateId);
+        } else
+          return this.coqTop.coqLtacProfilingResults();
+      }, true),
       quit: () => this.interactionsCoqQuit(),
       reset: () => this.interactionsCoqReset(),
       interrupt: () => this.cancelCoqOperations(),

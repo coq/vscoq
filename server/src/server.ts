@@ -4,13 +4,13 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
-import {RequestType} from 'vscode-jsonrpc';
+import {RequestType, CancellationToken} from 'vscode-jsonrpc';
 import {
 	createConnection, IConnection, TextDocumentSyncKind,
 	TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
 	InitializeParams, InitializeResult, TextDocumentIdentifier, Position, TextDocumentPositionParams,
   DidChangeTextDocumentParams,
-  CodeLensParams,
+  CodeLensParams, RequestHandler,
 	CompletionItem, CompletionItemKind, PublishDiagnosticsParams, ServerCapabilities, CodeActionParams, Command, CodeLens, Hover
 } from 'vscode-languageserver';
 import * as vscodeLangServer from 'vscode-languageserver';
@@ -125,6 +125,7 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
 	]
 });
 
+
 // This handler resolve additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
@@ -137,39 +138,43 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 	return item;
 });
 
-connection.onRequest(coqproto.InterruptCoqRequest.type, (params: coqproto.CoqTopParams) => {
+// export interface RequestHandler<P, R, E> {
+//     (params: P, token: CancellationToken): R | ResponseError<E> | Thenable<R | ResponseError<E>>;
+// }
+
+connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.InterruptCoqRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
   return project.lookup(params.uri)
     .coq.interrupt();
 });
-connection.onRequest(coqproto.QuitCoqRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.QuitCoqRequest.type, (params: coqproto.CoqTopParams) : Thenable<void> => {
   return project.lookup(params.uri)
     .coq.quit();
 });
-connection.onRequest(coqproto.ResetCoqRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.ResetCoqRequest.type, (params: coqproto.CoqTopParams) => {
   return project.lookup(params.uri)
     .coq.reset();
 });
-connection.onRequest(coqproto.StepForwardRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.StepForwardRequest.type, (params: coqproto.CoqTopParams) => {
   return project.lookup(params.uri)
     .coq.stepForward();
 });
-connection.onRequest(coqproto.StepBackwardRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.StepBackwardRequest.type, (params: coqproto.CoqTopParams) => {
   return project.lookup(params.uri)
     .coq.stepBackward();
 });
-connection.onRequest(coqproto.InterpretToPointRequest.type, (params: coqproto.CoqTopInterpretToPointParams) => {
+connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.InterpretToPointRequest.type, (params: coqproto.CoqTopInterpretToPointParams) => {
   return project.lookup(params.uri)
     .coq.interpretToPoint(params.offset);
 });
-connection.onRequest(coqproto.InterpretToEndRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.InterpretToEndRequest.type, (params: coqproto.CoqTopParams) => {
   return project.lookup(params.uri)
     .coq.interpretToEnd();
 });
-connection.onRequest(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams) => {
   return project.lookup(params.uri)
     .coq.getGoals();
 });
-connection.onRequest(coqproto.QueryRequest.type, (params: coqproto.CoqTopQueryParams) => {
+connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.QueryRequest.type, (params: coqproto.CoqTopQueryParams) => {
   switch(params.queryFunction) {
   case coqproto.QueryFunction.Locate:
     return project.lookup(params.uri).coq.locate(params.query);
@@ -183,18 +188,18 @@ connection.onRequest(coqproto.QueryRequest.type, (params: coqproto.CoqTopQueryPa
     return null;
   }
 });
-connection.onRequest(coqproto.ResizeWindowRequest.type, (params: coqproto.CoqTopResizeWindowParams) => {
+connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.ResizeWindowRequest.type, (params: coqproto.CoqTopResizeWindowParams) => {
   return project.lookup(params.uri)
     .coq.resizeWindow(params.columns);
 });
 
-connection.onRequest(coqproto.LtacProfSetRequest.type, (params: coqproto.CoqTopLtacProfSetParams) => {
+connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.LtacProfSetRequest.type, (params: coqproto.CoqTopLtacProfSetParams) => {
   return project.lookup(params.uri)
     .coq.ltacProfSet(params.enabled);
 });
-connection.onRequest(coqproto.LtacProfResultsRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest<coqproto.CoqTopLtacProfResultsParams, coqproto.CoqTopGoalResult, void>(coqproto.LtacProfResultsRequest.type, (params: coqproto.CoqTopLtacProfResultsParams) => {
   return project.lookup(params.uri)
-    .coq.ltacProfResults();
+    .coq.ltacProfResults(params.offset);
 });
 
 
@@ -228,11 +233,12 @@ connection.onDidOpenTextDocument((params) => {
   project.open(uri, params.textDocument.text, {
     sendHighlightUpdates: (h) => sendHighlightUpdates(uri, h),
     sendDiagnostics: (diagnostics) => sendDiagnostics(uri, diagnostics),
-    sendMessage: (level, message: string) =>
+    sendMessage: (level, message: string, rich_message?: any) =>
       connection.sendNotification(coqproto.CoqMessageNotification.type, {
         level: level,
         message: message,
         uri: uri,
+        rich_message: rich_message,
       }),
     sendReset: () =>
       connection.sendNotification(coqproto.CoqResetNotification.type, {uri: uri}),

@@ -38,7 +38,6 @@ function onDoubleClickBreakableText(event: MouseEvent) {
 
 var throttleTimeout = null;
 var throttleTimeoutCount = 0;
-var aaa = 0;
 var throttleEventHandler = <X>(handler: (X) => void) => (event:X) => {
   throttleTimeoutCount = (throttleTimeoutCount + 1)%10;
   if(throttleTimeoutCount == 1)

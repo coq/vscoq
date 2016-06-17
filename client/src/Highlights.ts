@@ -44,6 +44,7 @@ const tacticErrorTextDecoration: vscode.TextEditorDecorationType = vscode.window
     // light: {backgroundColor: 'lightred'},
     // dark: {backgroundColor: 'darkred'},
   });
+
 const processedTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     overviewRulerColor: 'green', 
     overviewRulerLane: vscode.OverviewRulerLane.Center,

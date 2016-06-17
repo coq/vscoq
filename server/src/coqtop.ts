@@ -8,7 +8,7 @@ import * as events from 'events';
 import * as coqXml from './coq-xml';
 import * as coqProto from './coq-proto';
 import {ChildProcess, exec, spawn} from 'child_process';
-import {CoqTopSettings, LtacProfResult, LtacProfTree} from './protocol';
+import {CoqTopSettings, LtacProfTactic, LtacProfResults} from './protocol';
 import * as fs from 'fs';
 import * as os from 'os';
 import {asyncWithTimeout} from './CancellationSignal';
@@ -217,7 +217,7 @@ export interface EventCallbacks {
   onStateFileDependencies? : (stateId: number, route: number, fileDependencies: Map<string,string[]>) => void;
   onStateFileLoaded? : (stateId: number, route: number, status: coqProto.FileLoaded) => void;
   onEditFeedback? : (editId: number, error?: coqProto.ErrorMessage) => void;
-  onMessage? : (level: coqProto.MessageLevel, message: string) => void;
+  onMessage? : (level: coqProto.MessageLevel, message: string, rich_message?: any) => void;
   onClosed?: (error?: string) => void;
 }
 
@@ -474,7 +474,7 @@ export class CoqTop extends events.EventEmitter {
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',
       '-coqtopbin', this.settings.coqPath + '/coqtop',
-      // '-tracefile', 'C:/Users/cj/Desktop/coqtrace.txt',
+      '-tracefile', 'C:/Users/cj/Desktop/coqtrace.txt',
       '-main-channel', mainAddr,
       '-control-channel', controlAddr,
       '-ideslave',
@@ -644,7 +644,7 @@ export class CoqTop extends events.EventEmitter {
   private onMessage(msg: coqProto.Message) {
     this.console.log(`>> ${coqProto.MessageLevel[msg.level]}: ${msg.message}`);
     if(this.callbacks.onMessage)
-      this.callbacks.onMessage(msg.level, msg.message);
+      this.callbacks.onMessage(msg.level, msg.message, msg.rich_message);
   }
 
   private onOther(x: any) {}
@@ -897,26 +897,27 @@ export class CoqTop extends events.EventEmitter {
   public async coqLtacProfilingSet(enabled: boolean) : Promise<void> {
     this.checkState();
 
-    const coqResult = this.coqGetResultOnce('LtacProfSet');
+    const coqResult = this.coqGetResultOnce('LtacProfReset');
     this.console.log('--------------------------------');
-    this.console.log(`Call LtacProfSet(enabled: ${enabled})`);
-    this.mainChannelW.write(`<call val="LtacProfSet"><bool val="${enabled}"/></call>`);    
+    this.console.log(`Call LtacProfReset()`);
+    this.mainChannelW.write(`<call val="LtacProfReset"><unit/></call>`);    
 
     const value = await coqResult;
     this.console.log(`LtacProfSet: ${enabled} --> ()`);
     return
   }
 
-  public async coqLtacProfilingResults() : Promise<LtacProfResult> {
+  public async coqLtacProfilingResults(stateId?: number) : Promise<LtacProfResults> {
     this.checkState();
+    stateId = stateId || 0;
 
     const coqResult = this.coqGetResultOnce('LtacProfResults');
     this.console.log('--------------------------------');
-    this.console.log(`Call LtacProfResults()`);
-    this.mainChannelW.write(`<call val="LtacProfResults"><unit/></call>`);    
+    this.console.log(`Call LtacProfResults(stateId: ${stateId})`);
+    this.mainChannelW.write(`<call val="LtacProfResults"><state_id val="${stateId}"/></call>`);    
 
     const value = await coqResult;
-    let result : LtacProfResult = {results: value['hashtbl']};
+    let result : LtacProfResults = value['ltacprof'];
     // if(value.value.inr) {
     //   // Jumping inside another proof; create a new tip
     //   result = {newFocus: {

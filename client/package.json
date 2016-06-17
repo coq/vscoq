@@ -41,7 +41,7 @@
 				},
 				"coqtop.coqPath": {
 					"type": "string",
-					"default": "C:/Coq8.5lp_xml/bin/",
+					"default": "C:/Coq_trunk/bin/",
 					"description": "Path to coqc and coqtop binaries."
 				},
 				"coqtop.args": {

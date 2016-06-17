@@ -1,0 +1,419 @@
+/// <reference path="jquery.d.ts" />
+/// <reference path="jqueryui.d.ts" />
+'use strict';
+
+interface LtacProfTactic {
+  name: string,
+  statistics: {total: number; self: number; num_calls: number; max_total: number},
+  tactics: LtacProfTactic[],
+}
+
+interface LtacProfResults {
+  total_time: number,
+  tactics: LtacProfTactic[],
+}
+
+function getQueryStringValue(key) {
+    return decodeURI(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURI(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
+}
+
+
+function importStyles(doc) {
+  var parentStyleSheets = <CSSStyleSheet[]>doc.styleSheets;
+  var cssString = "";
+  for (var i = 0, count = parentStyleSheets.length; i < count; ++i) {
+    if (parentStyleSheets[i].cssRules) {
+      var cssRules = parentStyleSheets[i].cssRules;
+      for (var j = 0, countJ = cssRules.length; j < countJ; ++j)
+        cssString += cssRules[j].cssText;
+    }
+    else
+      cssString += parentStyleSheets[i].cssText;  // IE8 and earlier
+  }
+  var style = document.createElement("style");
+  style.type = "text/css";
+  style.innerHTML = cssString;
+  // message(cssString);
+  document.getElementsByTagName("head")[0].appendChild(style);
+}
+
+function inheritStyles(p) {
+  if (p) {
+    importStyles(p.document);
+    const pp = p.parent;
+    if(pp !== p)
+      inheritStyles(pp);
+  }
+}
+
+
+
+var connection : WebSocket = null;
+
+function load() {
+  if(parent.parent === parent)
+    document.body.style.backgroundColor = 'black';
+
+  var address = `ws://${getQueryStringValue('host')}:${getQueryStringValue('port')}`; 
+  connection = new WebSocket(address);
+  // connection.onopen = function (event) {
+  //   document.getElementById('stdout').innerHTML = "connected";
+  // }
+  // connection.onclose = function (event) {
+  //   document.getElementById('stdout').innerHTML = "connection closed";
+  // }
+  // connection.onerror = function (event) {
+  //   document.getElementById('stdout').innerHTML = "connection error";
+  // }
+  connection.onmessage = function (event) {
+    const results = <LtacProfResults>JSON.parse(event.data);
+    updateResults(results);
+  }
+
+}
+
+interface TreeGridSettings {
+  treeColumn?: number,              // 0 	Number of column using for tree
+  initialState?: string,            // expanded 	Initial state of tree
+                                    // 'expanded' - all nodes will be expanded
+                                    // 'collapsed' - all nodes will be collapsed
+  saveState?: boolean,              // false 	If true you can reload page and tree state was saved
+  saveStateMethod?: string,         // cookie 	'cookie' - save state to cookie
+                                    // 'hash' - save state to hash
+  saveStateName?: string,           // tree-grid-state 	Name of cookie or hash to save state.
+  expanderTemplate?: string,        // <span class="treegrid-expander"></span> 	HTML Element when you click on that will be collapse/expand branches
+  expanderExpandedClass?: string,   // treegrid-expander-expanded 	Class using for expander element when it expanded
+  expanderCollapsedClass?: string,  // treegrid-expander-collapsed 	Class using for expander element when it collapsed
+  indentTemplate?: string,          // <span class="treegrid-indent"></span> 	HTML Element that will be placed as padding, depending on the depth of nesting node
+  onCollapse?: ()=>void,            // null 	Function, which will be executed when one of node will be collapsed
+  onExpand?: ()=>void,              // null 	Function, which will be executed when one of node will be expanded
+  onChange?: ()=>void,              // null 	Function, which will be executed when one of node will be expanded or collapsed
+}
+
+interface TblTreeSettings {
+  rowAttr?: string,                   // 'row-id'
+  parentAttr?: string,                // 'parent-id'
+  initState?: string,                 // 'collapsed'
+  treeColumn?: string,                // 0
+  saveState?: boolean,                // false
+  saveStateName?: string,             // 'tbltree-state'
+  levelPicker?: string,               // ''
+  expanderTemplate?: string,         // '<span class="tbltree-expander"></span>'
+  levelPickerTemplate?: string,       // '<div class="tbltree-level-pickers">\n<span id="0" class="tbltree-level-item">[1]</span>&nbsp;\n<span id="1" class="tbltree-level-item">[2]</span>&nbsp;\n<span id="2" class="tbltree-level-item">[3]</span>&nbsp;\n<span id="3" class="tbltree-level-item">[4]</span>&nbsp;\n</div>'
+  indentTemplate?: string,            // '<span class="tbltree-indent"></span>' 
+  expanderExpandedClass?: string,     // 'tbltree-expander-expanded'
+  expanderCollapsedClass?: string,    // 'tbltree-expander-collapsed'
+  change?: ()=>any,
+  expand?: ()=>any,
+  collapse?: ()=>any,
+  showlevel?: ()=>any,
+}
+
+interface FloatTHeadSettings {
+  position?:	string,                     // 'auto'
+  scrollContainer?: (()=>any) | boolean, // null
+  responsiveContainer?: ()=>any,         // null
+  headerCellSelector?:	string,           // 'tr:first>th:visible'
+  floatTableClass?: string,              // 'floatThead-table'
+  floatContainerClass?: string,          // 'floatThead-container'
+  top?: (()=>any) | number,              // 0
+  bottom?:	(()=>any) | number,           // 0
+  zIndex?:	number,                       // 1001
+  debug?:	boolean,                      // false
+  getSizingRow?:	()=>any,                // undefined
+  copyTableClass?:	boolean,              // true
+  enableAria?:	boolean,                  // false
+  autoReflow?:	boolean,                  // false  
+}
+
+interface StickySettings {
+  topSpacing?: number,              // 0 -- Pixels between the page top and the element's top.
+  bottomSpacing?: number,           // 0 -- Pixels between the page bottom and the element's bottom.
+  className?: string,               // 'is-sticky' -- CSS class added to the element's wrapper when "sticked".
+  wrapperClassName?: string,        // 'sticky-wrapper' -- CSS class added to the wrapper.
+  center?: boolean,                 // false -- Boolean determining whether the sticky element should be horizontally centered in the page.
+  getWidthFrom?: string,            // '' -- Selector of element referenced to set fixed width of "sticky" element.
+  widthFromWrapper?: boolean,       // true -- Boolean determining whether width of the "sticky" element should be updated to match the wrapper's width. Wrapper is a placeholder for "sticky" element while it is fixed (out of static elements flow), and its width depends on the context and CSS rules. Works only as long getWidthForm isn't set.
+  responsiveWidth?: boolean,        // false -- Boolean determining whether widths will be recalculated on window resize (using getWidthfrom).
+  zIndex?: number | string,         // auto -- controls z-index of the sticked element.
+}
+
+// implement cycleNext
+(function($) { $.fn.cycleNext = function() {
+    const siblings = $(this).parent().children();
+    return siblings.eq((siblings.index($(this))+1)%siblings.length);
+} })(jQuery);
+
+interface JQuery { 
+  // treegrid() : JQuery;
+  // treegrid(settings: TreeGridSettings): JQuery;
+  // treegrid(methodName:'initTree',data: string): JQuery;
+  // treegrid(methodName: string, data: string): JQuery;
+
+  tbltree() : JQuery;
+  tbltree(settings: TblTreeSettings);
+  tbltree(methodName:'expand', id: JQuery|string, user?: number): JQuery;
+  tbltree(methodName:'collapse', id: JQuery|string, user?: number): JQuery;
+  tbltree(methodName:'toggle', id: JQuery|string): JQuery;
+  tbltree(methodName:'getRow', id: string): JQuery;
+  tbltree(methodName:'getId', row: JQuery): string;
+  tbltree(methodName:'getParentID', row: JQuery): string;
+  tbltree(methodName:'getTreeCell', row: JQuery): JQuery;
+  tbltree(methodName:'_getChildren', row: JQuery): JQuery;
+  tbltree(methodName:'isLeaf', row: JQuery): boolean;
+  tbltree(methodName:'isExpanded', row: JQuery): boolean;
+  tbltree(methodName:'isCollapsed', row: JQuery): boolean;
+  tbltree(methodName:string, param: JQuery|string): any;
+  tbltree(methodName:'getRootNodes'): JQuery;
+  
+  // floatThead() : JQuery;
+  // floatThead(settings: FloatTHeadSettings) : JQuery;
+
+  // tablesorter(): JQuery;
+  // sticky() : JQuery;
+  // sticky(settings: StickySettings) : JQuery;
+  // sticky(methodName:'update') : JQuery;  
+
+  // resizableColumns() : JQuery;
+
+  colResizable() : JQuery;
+  colResizable(settings: {resizeMode?: string, disable?: boolean, disabledColumns?: number[], liveDrag?: boolean, postbackSafe?: boolean, partialRefresh?: boolean, headerOnly?: boolean, innerGripHtml?: string, draggingClass?: string, minWidth?: number, hoverCursor?: string, dragCursor?: string, flush?: boolean, marginLeft?: string, marginRight?: string, onResize?: (e:JQueryEventObject)=>void, onDrag?: ()=>void}) : JQuery;
+
+  cycleNext(): JQuery;
+}
+
+
+function sleepFor( sleepDuration ){
+    var now = new Date().getTime();
+    while(new Date().getTime() < now + sleepDuration){ /* do nothing */ } 
+}
+
+function time<T>(tag:string, f: ()=> T){
+	const startT = new Date().getTime();
+  f();
+  console.log(tag + ': ' + (new Date().getTime() - startT));
+}
+
+function loadResultsTable(results: LtacProfResults, tbody: JQuery) {
+  let currentId = 0;
+  let totalTime = results.total_time;
+
+  function buildTime(time: number, total: number, name: string) {
+    if(time == 0)
+      return $(document.createElement('td')).text("");
+    else {
+      const seconds = time.toFixed(3); 
+      const minutes = (time/60).toFixed(1);
+      const hh = Math.floor(time/3600);
+      const mm = Math.floor((time - hh*3600)/60);
+      const ss = time - mm*60; 
+      const hhmmss = `${hh}:${mm}:${ss.toFixed(1)}`; 
+      const percent = (time/totalTime*100).toFixed(1) + "%"; 
+      return $(document.createElement('td'))
+        .append($(document.createElement('span')).addClass(name).addClass('seconds').text(seconds).hide())
+        .append($(document.createElement('span')).addClass(name).addClass('minutes').text(minutes).hide())
+        .append($(document.createElement('span')).addClass(name).addClass('hhmmss').text(hhmmss).hide())
+        .append($(document.createElement('span')).addClass(name).addClass('percent').text(percent).show());
+      // return $(document.createElement('td')).text(time);
+      // const percent = ((0.0+time) / (0.0 + totalTime)).toFixed(3);
+      // return $(document.createElement('td')).text(percent);
+    }
+  }
+
+  function* buildTacticResultRow(parentId: number, tactic: LtacProfTactic) : IterableIterator<JQuery> {
+    ++currentId;
+    yield $(document.createElement('tr'))
+      // .addClass('treegrid-'+ this.currentId)
+      // .addClass(`treegrid-${currentId}` + (parentId > 0 ? ` treegrid-parent-${parentId}` : ''))
+      .attr('row-id',currentId)
+      // .map(() => { if(parentId>0) return $(this).attr('parent-id', parentId); else return $(this); })
+      .map((idx,elm) => parentId > 0 ? $(elm).attr('parent-id',parentId).get() : elm)
+      // .attr('parent-id',parentId)
+      .attr('tabindex',currentId)
+      // .map((idx,element) => parentId > 0 ? $(element).addClass('treegrid-parent-'+parentId) : $(element))
+        .append($(document.createElement('td')).text(tactic.name))
+        .append(buildTime(tactic.statistics.self,totalTime,'self'))
+        .append(buildTime(tactic.statistics.total,totalTime,'total'))
+        .append($(document.createElement('td')).text(tactic.statistics.num_calls))
+        .append($(document.createElement('td')).text(tactic.statistics.max_total.toFixed(3)));
+    yield* buildTacticsResults(currentId,tactic.tactics);
+  }
+
+  function* buildTacticsResults(parentId: number, tactics: LtacProfTactic[]) : IterableIterator<JQuery> {
+    for(let tactic of tactics) {
+      yield* buildTacticResultRow(parentId, tactic);
+    }
+  }
+  
+	time('load',() => {  
+    for(let entry of buildTacticsResults(0,results.tactics)) {
+      tbody.append(entry);
+    }
+    // for(let entry of buildResultRow(0,"",result.entry,result.children)) {
+    //   tbody.append(entry);
+    // }
+  });
+
+  // setTimeout(() => {
+  // for(let entry of buildResults(0,result.results)) {
+  //   setTimeout(() => {
+  //     tbody.append(entry);
+  //     // sleepFor(100);
+  //   }, 100);
+  // }
+  // }, 10);
+}
+
+function getDescendants(node: JQuery) : JQuery {
+  const level = node.attr('level');
+  return node.nextUntil(`[level=${level}]`,'tr');
+}
+
+function expandNode(node: JQuery, recursive: boolean) : JQuery {
+  // node.treegrid(recursive ? 'expandRecursive' : 'expand');
+  if(recursive) {
+    getDescendants(node)
+      .removeClass('tbltree-collapsed')
+      .addClass('tbltree-expanded');
+  }
+  return $('#results').tbltree('expand', node, 1);
+}
+
+function collapseNode(node: JQuery, recursive: boolean) : JQuery {
+  // node.treegrid(recursive ? 'collapseRecursive' : 'collapse');
+  if(recursive) {
+    getDescendants(node)
+      .addClass('tbltree-collapsed')
+      .removeClass('tbltree-expanded');
+  }
+  return $('#results').tbltree('collapse', node, 1);
+}
+
+function isExpanded(node: JQuery) : boolean {
+  // node.treegrid(recursive ? 'collapseRecursive' : 'collapse');
+  return $('#results').tbltree('isExpanded',node);
+}
+
+function getParentNode(node: JQuery) : JQuery {
+  // return node.treegrid)'getParentNode');
+  return $('#results').tbltree('getRow',$('#results').tbltree('getParentID', node));
+}
+
+let updateResultsAlternatingBackgroundTimer;
+function updateResultsAlternatingBackground(delay?: number) {
+  if(updateResultsAlternatingBackgroundTimer)
+    clearTimeout(updateResultsAlternatingBackgroundTimer);
+  if(delay)
+    updateResultsAlternatingBackgroundTimer = setTimeout(() => updateResultsAlternatingBackground(), delay);
+  else {
+    $('#results tr:visible:even').removeClass('result-odd');
+    $('#results tr:visible:odd').addClass('result-odd');
+  }
+}
+function updateResults(results: LtacProfResults) {
+  $('#results').remove('tbody').remove('table tr');
+  const tbody = $('<tbody>');
+  $('#results').append(tbody);
+  loadResultsTable(results, tbody);
+
+  $('#results').keydown((e) => {
+    const f = $(':focus');
+    switch(e.which)
+    {
+      case 39: // right
+        expandNode(f, e.shiftKey);
+        break;
+      case 37: // left
+        if(isExpanded(f))
+          collapseNode(f, e.shiftKey);
+        else {
+          getParentNode(f).focus();
+          collapseNode(getParentNode(f), e.shiftKey);
+        }
+        break;
+      case 38: // up
+        f.prevAll('tr:visible').first().focus();
+        break;
+      case 40: //down
+        f.nextAll('tr:visible').first().focus();
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+  });
+
+
+  // time('treegrid', () => {
+  // $('#results').treegrid({
+  //   initialState: 'collapsed',
+  //   saveState: false,
+  //   onChange: () => {
+  //     $('#results tr:visible:even').removeClass('result-odd');
+  //     $('#results tr:visible:odd').addClass('result-odd');
+  //   }
+  // });
+  // });
+
+  time('tbltree', () => {
+  $('#results').tbltree({
+    initState: 'collapsed',
+    saveState: false,
+    change: () => updateResultsAlternatingBackground(50),
+  });
+  });
+
+
+
+  // time('resizable', () => {
+  // $('#results')
+  //   .css('table-layout','auto')
+  //   .resizableColumns()
+  //   .css('table-layout','fixed');
+  // });
+
+  time('resizable', () => {
+  $('#results')
+    .css('table-layout','auto')
+    .colResizable({
+      resizeMode: 'fit', liveDrag: true,
+      // onResize: (e:JQueryEventObject) => {
+      //   console.log('resize');
+      //   // $('#sticky-results-header').remove('thead'); //.append($('results thead'));
+      // } 
+    })
+    .css('table-layout','fixed');
+
+  });
+
+  $('#self-unit').change((ev: JQueryEventObject) => {
+    const tag = $('#self-unit option:selected').val(); 
+    $('#results span.self').not('.'+tag).hide();
+    $('#results span.self').filter('.'+tag).show();
+  });
+  $('#total-unit').change((ev: JQueryEventObject) => {
+    const tag = $('#total-unit option:selected').val(); 
+    $('#results span.total').not('.'+tag).hide();
+    $('#results span.total').filter('.'+tag).show();
+  });
+  $('#self-column').click((ev:JQueryEventObject) => { 
+    if(ev.target === $('#self-column').get(0))
+      $('#self-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#self-unit').change() });
+  $('#total-column').click(() => { $('#total-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#total-unit').change() });
+
+  // $('#results').floatThead('reflow');
+  // time('floatThead', () => {
+  //   $('#results').floatThead({})
+  // });
+  
+  // time('sticky', () => {
+  //   $('#results thead').sticky({topSpacing: 0, getWidthFrom: '#results'});
+  //   $('#results thead').sticky('update');
+  // });
+
+
+  // $('#results tr:visible:even').removeClass('result-odd');
+  // $('#results tr:visible:odd').addClass('result-odd');
+  updateResultsAlternatingBackground(0);
+}
+

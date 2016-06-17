@@ -74,6 +74,7 @@ export enum MessageLevel {
 export interface Message {
   level: MessageLevel;
   message: string;
+  rich_message?: any;
 }
 
 export interface Location {
@@ -93,8 +94,8 @@ export interface EditFeedback {
 
 export interface Goal {
   id: number;
-  hypotheses: string[];
-  goal: string;
+  hypotheses: any[];
+  goal: any;
 }
 
 export interface Goals {
@@ -106,10 +107,12 @@ export interface Goals {
 };
 
 
-export interface LtacProfTree {
-  entry: {total: number; local: number; ncalls: number; max_total: number};
-  children: {fst:string;snd:LtacProfTree}[] //Map<string,LtacProfTree>
+export interface LtacProfTactic {
+  name: string;
+  statistics: {total: number; self: number; num_calls: number; max_total: number};
+  tactics: LtacProfTactic[]
 }
-export interface LtacProfResult {
-  results: {fst:string;snd:LtacProfTree}[] //Map<string,LtacProfTree>
+export interface LtacProfResults {
+  total_time: number;
+  tactics: LtacProfTactic[]
 }
