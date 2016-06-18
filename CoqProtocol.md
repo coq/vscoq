@@ -238,8 +238,10 @@ CoqIDE typically sets `force` to `false`.
 In practice, `stateId` is 0, but the effect is to perform the query on the currently-focused state.
 ```html
 <call val="Query">
-  <string>${query}</string>
-  <state_id val="${stateId}"/>
+  <pair>
+    <string>${query}</string>
+    <state_id val="${stateId}"/>
+  </pair>
 </call>
 ```
 #### *Returns*
