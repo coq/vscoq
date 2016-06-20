@@ -32,7 +32,7 @@ A somewhat out-of-date description of the async state machine is [documented her
   - [WorkerStatus](#feedback-workerstatus)
   - [File Dependencies](#feedback-filedependencies)
   - [File Loaded](#feedback-fileloaded)
-* [Messages](#messages)
+  - [Message](#feedback-message)
 
 
 Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
@@ -512,7 +512,7 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
   </feedback>
   ```
   - State `stateId` depends on `dependency` via dependency `sourceDependency`
-  ```html
+  ```xml
   <feedback object="state" route="0">
     <state_id val="${stateId}"/>
     <feedback_content val="filedependency">
@@ -532,15 +532,14 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 </feedback>
 ```
 
-
---------------------------
-
-## <a name="messages">Messages</a>
-
-Messages are issued out-of-band. `level` is one of `{info,warning,notice,error,debug}`. E.g. in response to an <a href="#command-add">add</a> `"Axiom foo: nat."` with `verbose=true`, message `foo is assumed` will be emitted in response.
+* <a name="feedback-message">Message</a>. `level` is one of `{info,warning,notice,error,debug}`. E.g. in response to an <a href="#command-add">add</a> `"Axiom foo: nat."` with `verbose=true`, message `foo is assumed` will be emitted in response.
 ```xml
-<message>
-  <message_level val="${level}"/>
-  <string>${message}</string>
-</message>
+<feedback object="state" route="0">
+  <state_id val="${stateId}"/>
+  <feedback_content val="message">
+  <message>
+    <message_level val="${level}"/>
+    <string>${message}</string>
+  </message>
+</feedback>
 ```
