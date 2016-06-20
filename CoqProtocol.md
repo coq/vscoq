@@ -33,6 +33,7 @@ A somewhat out-of-date description of the async state machine is [documented her
   - [File Dependencies](#feedback-filedependencies)
   - [File Loaded](#feedback-fileloaded)
   - [Message](#feedback-message)
+  - [Custom](#feedback-custom)
 
 
 Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
@@ -537,9 +538,22 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 <feedback object="state" route="0">
   <state_id val="${stateId}"/>
   <feedback_content val="message">
-  <message>
-    <message_level val="${level}"/>
-    <string>${message}</string>
-  </message>
+    <message>
+      <message_level val="${level}"/>
+      <string>${message}</string>
+    </message>
+  </feedback_content>
+</feedback>
+```
+
+* <a name="feedback-custom">Custom</a>. A feedback message that Coq plugins can use to return structured results. Optionally, `startPos` and `stopPos` define a range of offsets in the document that the message refers to; otherwise, they will be 0. `customTag` is indended as a unique string that identifies what kind of payload is contained in `customXML`.
+```xml
+<feedback object="state" route="0">
+  <state_id val="${stateId}"/>
+  <feedback_content val="custom">
+    <loc start="${startPos}" stop="${stopPos}"/>
+    <string>${customTag}</string>
+    ${customXML}
+  </feedback_content>
 </feedback>
 ```
