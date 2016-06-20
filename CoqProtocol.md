@@ -451,7 +451,7 @@ Feedback messages are issued out-of-band,
 ```
 * <a name="feedback-processed">Processed</a>
 ```html
-</feedback>
+<feedback object="state" route="0">
   <feedback object="state" route="0">
     <state_id val="${stateId}"/>
   <feedback_content val="processed"/>
@@ -522,7 +522,7 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
   </feedback>
   ```
 * <a name="feedback-fileloaded">File Loaded</a>. For state `stateId`, module `module` is being loaded from `voFileName`
-```html
+```xml
 <feedback object="state" route="0">
   <state_id val="${stateId}"/>
   <feedback_content val="fileloaded">
@@ -538,8 +538,9 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 ## <a name="messages">Messages</a>
 
 Messages are issued out-of-band. `level` is one of `{info,warning,notice,error,debug}`. E.g. in response to an <a href="#command-add">add</a> `"Axiom foo: nat."` with `verbose=true`, message `foo is assumed` will be emitted in response.
-```html
-<message_level val="${level}"/>
+```xml
+<message>
+  <message_level val="${level}"/>
   <string>${message}</string>
 </message>
 ```
