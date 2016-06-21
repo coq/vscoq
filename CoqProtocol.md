@@ -567,7 +567,7 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
     <loc start="0" stop="0"/>
     <string>ltacprof_results</string>
     <ltacprof total_time="${totalTimeSec}">
-      <ltacprof_tactic name="${tacticName1}" total="${total1}" self="${self1}" num_calls="${num_calls1}" max_total="${max_total1}">
+      <ltacprof_tactic name="${tacticName1}" total="${totalSec1}" self="${selfSec1}" num_calls="${num_calls1}" max_total="${max_totalSec1}">
         <ltacprof_tactic ... />...
       </ltacprof_tactic>
       ...
