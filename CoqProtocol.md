@@ -559,7 +559,7 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 </feedback>
 ```
 
-* <a name="feedback-ltacprof">LtacProf</a>. As of 8.6, the ltac profiler (LtacProf) will generate an additional feedback message in response to "Show Ltac Profile" with the *full*, *structured* profiling results.
+* <a name="feedback-ltacprof">LtacProf</a>. As of 8.6, the ltac profiler (LtacProf) will generate an additional feedback message in response to "Show Ltac Profile" with the *full*, *structured* profiling results. `ltacprof_results` tags form a tree of tactic invocations and their profiling results. When a tactic has multiple invocations of e.g. tactic "foo",  the profiling results for "foo" under the tactic will be combined together. Each tactic entry in `<ltacprof>` represents a tactic that was run at the top level, where multiple invocations of the same tactic are combined together. `totalTimeSec` is total time taken by all of the tactics. `tacticName` is the name of the tactic that the entry corresponds to. `totalSec` is the total time taken be a tactic over all invocations made by its parent tactic. `selfSec` is the portion of the time running the tactic itself, as opposed to running subtactics. `num_calls` is the number of invocations of the tactic that have been made by its parent. `max_total` is the maximum time spent in the tactic by a single invocation from its parent.
 ```xml
 <feedback object="state" route="0">
   <state_id val="${stateId}"/>
