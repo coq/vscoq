@@ -34,6 +34,7 @@ A somewhat out-of-date description of the async state machine is [documented her
   - [File Loaded](#feedback-fileloaded)
   - [Message](#feedback-message)
   - [Custom](#feedback-custom)
+  - [LtacProf (Custom)](#feedback-ltacprof)
 
 
 Sentences: each command sent to CoqTop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
@@ -554,6 +555,23 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
     <loc start="${startPos}" stop="${stopPos}"/>
     <string>${customTag}</string>
     ${customXML}
+  </feedback_content>
+</feedback>
+```
+
+* <a name="feedback-custom">LtacProf (Custom)</a>. As of 8.6, the ltac profiler (LtacProf) will generate an additional feedback message in response to "Show Ltac Profile" with the *full*, *structured* profiling results.
+```xml
+<feedback object="state" route="0">
+  <state_id val="${stateId}"/>
+  <feedback_content val="custom">
+    <loc start="0" stop="0"/>
+    <string>ltacprof_results</string>
+    <ltacprof total_time="${totalTimeSec}">
+      <ltacprof_tactic name="${tacticName1}" total="${total1}" self="${self1}" num_calls="${num_calls1}" max_total="${max_total1}">
+        <ltacprof_tactic ...>...
+      </ltacprof_tactic>
+      ...
+    </ltacprof>
   </feedback_content>
 </feedback>
 ```
