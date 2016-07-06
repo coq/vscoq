@@ -89,6 +89,10 @@ export class CoqLanguageServer {
     this.server.onNotification(proto.CoqStateViewUrlNotification.type, listener);
   }
 
+  public onLtacProfResults(listener: (params: proto.NotifyLtacProfResultsParams) => void) {
+    this.server.onNotification(proto.CoqLtacProfResultsNotification.type, listener);
+  }
+
   public interruptCoq(uri: string) {
     return this.server.sendRequest(proto.InterruptCoqRequest.type, {uri: uri});
   }
@@ -128,10 +132,6 @@ export class CoqLanguageServer {
   public resizeView(uri: string, columns: number) : Thenable<void> {
     var x = proto.ResizeWindowRequest.type;
     return <Thenable<void>>this.server.sendRequest<proto.CoqTopResizeWindowParams,void,void>(proto.ResizeWindowRequest.type, <proto.CoqTopResizeWindowParams>{uri: uri, columns: columns});
-  }
-
-  public ltacProfSet(uri: string, enabled: boolean) : Thenable<void> {
-    return <Thenable<void>>this.server.sendRequest<proto.CoqTopLtacProfSetParams,void,void>(proto.LtacProfSetRequest.type, <proto.CoqTopLtacProfSetParams>{uri: uri, enabled: enabled});
   }
 
   // private createLtacProfResultsMap(treelist: {fst:string,snd:proto.LtacProfTree}[]) : Map<string,LtacProfTree> {

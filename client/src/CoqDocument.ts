@@ -60,6 +60,7 @@ export class CoqDocument implements vscode.Disposable {
     this.langServer.onReset((p) => { if (p.uri == this.documentUri) this.onCoqReset(); });
     this.langServer.onUpdateStateViewUrl((p) => { if (p.uri == this.documentUri) this.updateStateViewUrl(p.stateUrl); });
     this.langServer.onUpdateComputingStatus((p) => { if (p.uri == this.documentUri) this.onUpdateComputingStatus(p); });
+    this.langServer.onLtacProfResults((p) => { if (p.uri == this.documentUri) this.onLtacProfResults(p); });
 
     context.subscriptions.push(this.langServer.start());
 
@@ -310,16 +311,6 @@ export class CoqDocument implements vscode.Disposable {
     } catch (err) {}
   }
 
-  public async ltacProfSet(enabled: boolean) {
-    this.setStatusBarWorking('Running query');
-    try {
-      await this.langServer.ltacProfSet(this.documentUri, enabled);
-    } catch (err) {
-    } finally {
-      this.setStatusBarReady();
-    }
-  }
-  
   public async ltacProfGetResults(editor: TextEditor) {
     this.setStatusBarWorking('Running query');
     try {
@@ -327,7 +318,7 @@ export class CoqDocument implements vscode.Disposable {
        return;
       const offset = editor.document.offsetAt(editor.selection.active);
       const results = await this.langServer.ltacProfGetResults(this.documentUri,offset);
-      const view = new HtmlLtacProf(results); 
+      // const view = new HtmlLtacProf(results); 
       // const out = vscode.window.createOutputChannel("LtacProfiler");
       // results.forEach((value,key) => {
       //     out.appendLine("-----------------------------------");
@@ -338,7 +329,10 @@ export class CoqDocument implements vscode.Disposable {
       this.setStatusBarReady();
     }
   }
-  
+  private onLtacProfResults(params: proto.NotifyLtacProfResultsParams) {
+    const view = new HtmlLtacProf(params.results); 
+  }
+
   public async doOnLostFocus() {
   }  
 

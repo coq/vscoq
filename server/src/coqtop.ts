@@ -216,6 +216,7 @@ export interface EventCallbacks {
   onStateWorkerStatusUpdate? : (stateId: number, route: number, workerUpdates: coqProto.WorkerStatus[]) => void;
   onStateFileDependencies? : (stateId: number, route: number, fileDependencies: Map<string,string[]>) => void;
   onStateFileLoaded? : (stateId: number, route: number, status: coqProto.FileLoaded) => void;
+  onStateLtacProf?: (stateId: number, route: number, results: LtacProfResults) => void;
   onEditFeedback? : (editId: number, error?: coqProto.ErrorMessage) => void;
   onMessage? : (level: coqProto.MessageLevel, message: string, rich_message?: any) => void;
   onClosed?: (error?: string) => void;
@@ -633,6 +634,10 @@ export class CoqTop extends events.EventEmitter {
       this.console.log(`[stateId: ${feedback.stateId}] --> FileLoaded`);
       this.callbacks.onStateFileLoaded(feedback.stateId, feedback.route, feedback.fileLoaded);
     }
+    if(feedback.custom && feedback.custom.type === 'ltacprof_results' && this.callbacks.onStateLtacProf) {
+      this.console.log(`[stateId: ${feedback.stateId}] --> LtacProfResults`);
+      this.callbacks.onStateLtacProf(feedback.stateId, feedback.route, <LtacProfResults>feedback.custom.data);
+    }
   }
 
   private onEditFeedback(feedback: coqProto.EditFeedback) {
@@ -894,42 +899,21 @@ export class CoqTop extends events.EventEmitter {
     return result;
   }
 
-  public async coqLtacProfilingSet(enabled: boolean) : Promise<void> {
-    this.checkState();
-
-    const coqResult = this.coqGetResultOnce('LtacProfReset');
-    this.console.log('--------------------------------');
-    this.console.log(`Call LtacProfReset()`);
-    this.mainChannelW.write(`<call val="LtacProfReset"><unit/></call>`);    
-
-    const value = await coqResult;
-    this.console.log(`LtacProfSet: ${enabled} --> ()`);
-    return
-  }
 
   public async coqLtacProfilingResults(stateId?: number) : Promise<LtacProfResults> {
     this.checkState();
     stateId = stateId || 0;
 
-    const coqResult = this.coqGetResultOnce('LtacProfResults');
+    const coqResult = this.coqGetResultOnce('Query');
     this.console.log('--------------------------------');
-    this.console.log(`Call LtacProfResults(stateId: ${stateId})`);
-    this.mainChannelW.write(`<call val="LtacProfResults"><state_id val="${stateId}"/></call>`);    
+    this.console.log(`Call Query(query: "Show Ltac Profile.", stateId: ${stateId})`);
+    this.mainChannelW.write(`<call val="Query"><pair><string>Show Ltac Profile.</string><state_id val="${stateId}"/></pair></call>`);    
 
     const value = await coqResult;
-    let result : LtacProfResults = value['ltacprof'];
-    // if(value.value.inr) {
-    //   // Jumping inside another proof; create a new tip
-    //   result = {newFocus: {
-    //     stateId: value.value.inr[0].fst,
-    //     qedStateId: value.value.inr[0].snd.fst,
-    //     oldStateIdTip: value.value.inr[0].snd.snd,
-    //   }};
-    // } else {
-    //   result = {};
-    // }
-    this.console.log(`LtacProfResults: () --> ...`);
-    return result;
+    return {total_time: 0, tactics:[]};;
+    // let result : LtacProfResults = value['ltacprof'];
+    // this.console.log(`LtacProfResults: () --> ...`);
+    // return result;
   }
 
   public async coqResizeWindow(columns: number) : Promise<void> {

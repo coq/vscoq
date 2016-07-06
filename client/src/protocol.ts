@@ -55,10 +55,6 @@ export interface CoqTopInterpretToPointParams extends CoqTopParams {
 export interface CoqTopResizeWindowParams extends CoqTopParams {
   columns: number;
 }
-
-export declare interface CoqTopLtacProfSetParams extends CoqTopParams {
-  enabled: boolean;
-}
 export interface LtacProfTactic {
   name: string,
   statistics: {total: number; self: number; num_calls: number; max_total: number},
@@ -106,10 +102,6 @@ export declare interface CoqTopQueryResult {
 export namespace ResizeWindowRequest { 
   export const type: RequestType<CoqTopResizeWindowParams, void, void> = { method: 'coqtop/resizeWindow' }; 
 } 
-
-export namespace LtacProfSetRequest { 
-  export const type: RequestType<CoqTopLtacProfSetParams, void, void> = { method: 'coqtop/ltacProfSet' }; 
-}
 
 export interface CoqTopLtacProfResultsParams extends CoqTopParams {
   offset?: number;
@@ -184,3 +176,9 @@ export namespace CoqStateViewUrlNotification {
   export const type: NotificationType<NotifyStateViewUrlParams> = { method: 'coqtop/stateViewUrl' }; 
 } 
 
+export declare interface NotifyLtacProfResultsParams extends NotificationParams {
+  results: LtacProfResults
+}
+export namespace CoqLtacProfResultsNotification { 
+  export const type: NotificationType<NotifyLtacProfResultsParams> = { method: 'coqtop/ltacProfResults' }; 
+} 

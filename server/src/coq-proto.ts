@@ -43,6 +43,12 @@ export interface SentenceFeedback {
   worker: string;
 }
 
+export interface CustomFeedback {
+  type: string,
+  location: Location,
+  data: any
+} 
+
 export interface StateFeedback {
   stateId : number;
   route : number;
@@ -50,6 +56,7 @@ export interface StateFeedback {
   fileDependencies?: Map<string,string[]>;
   fileLoaded?: FileLoaded;
   sentenceFeedback?: SentenceFeedback;
+  custom?: CustomFeedback
   error?: ErrorMessage;
 }
 

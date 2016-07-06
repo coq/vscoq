@@ -23,6 +23,7 @@ export interface DocumentCallbacks {
   sendReset() : void;
   sendStateViewUrl(stateUrl: string) : void;
   sendComputingStatus(status: thmProto.ComputingStatus, computeTimeMS: number) : void;
+  sendLtacProfResults(results: coqProto.LtacProfResults) : void;
 }
 
 interface BufferedFeedback {
@@ -74,6 +75,7 @@ export class CoqDocument implements TextDocument {
       onStateWorkerStatusUpdate: (x1,x2,x3) => this.onCoqStateWorkerStatusUpdate(x1,x2,x3),
       onStateFileDependencies: (x1,x2,x3) => this.onCoqStateFileDependencies(x1,x2,x3),
       onStateFileLoaded: (x1,x2,x3) => this.onCoqStateFileLoaded(x1,x2,x3),
+      onStateLtacProf: (x1,x2,x3) => this.onCoqStateLtacProf(x1,x2,x3),
       onClosed: (error?: string) => this.onCoqClosed(error),
     });
     this.documentText = text;
@@ -344,6 +346,10 @@ export class CoqDocument implements TextDocument {
   }
 
   private onCoqStateFileLoaded(stateId: number, route: number, status: coqProto.FileLoaded) {
+  }
+  
+  private onCoqStateLtacProf(stateId: number, route: number, results: coqProto.LtacProfResults) {
+    this.callbacks.sendLtacProfResults(results);
   }
   
   private async onCoqClosed(error?: string) {
@@ -894,7 +900,6 @@ this.clientConsole.log("rolled back");
       search: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("Search " + query + ".")}), true),
       searchAbout: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("SearchAbout " + query + ".")}), true),
       resizeWindow: (columns: number) => this.enqueueCoqOperation(() => this.coqTop.coqResizeWindow(columns), false),
-      ltacProfSet: (enabled: boolean) => this.enqueueCoqOperation(() => this.coqTop.coqLtacProfilingSet(enabled), true),
       ltacProfResults: (offset?: number) => this.enqueueCoqOperation(async () => {
         if(offset) {
           const sent = this.sentences.findAtTextPosition(offset);

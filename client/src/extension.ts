@@ -18,7 +18,6 @@ vscode.Position.prototype.toString = function positionToString() {return `{${thi
 console.log(`Coq Extension: process.version: ${process.version}, process.arch: ${process.arch}}`);
 
 
-
 // from 'vscode-languageserver'
 // export interface TextDocumentIdentifier {
 //     uri: string;
@@ -42,8 +41,6 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.searchAbout', searchAbout)); 
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.viewGoalState', viewGoalState)); 
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.viewGoalStateExternal', viewGoalStateExternal));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.ltacProfStart', ltacProfStart));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.ltacProfStop', ltacProfStop));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.ltacProfGetResults', ltacProfGetResults));
 
   // vscode.languages.registerCompletionItemProvider('coq', {provideCompletionItems: provideOptionCompletions}, 'X');
@@ -149,18 +146,6 @@ function viewGoalStateExternal(editor: TextEditor, edit: TextEditorEdit) {
   const doc = documents.get(editor.document.uri.toString());
   if(doc)
     doc.viewGoalState(editor,true);
-}
-
-function ltacProfStart(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.ltacProfSet(true);
-}
-
-function ltacProfStop(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.ltacProfSet(false);
 }
 
 function ltacProfGetResults(editor: TextEditor, edit: TextEditorEdit) {

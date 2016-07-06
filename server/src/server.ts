@@ -193,10 +193,6 @@ connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.ResizeWindowReq
     .coq.resizeWindow(params.columns);
 });
 
-connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.LtacProfSetRequest.type, (params: coqproto.CoqTopLtacProfSetParams) => {
-  return project.lookup(params.uri)
-    .coq.ltacProfSet(params.enabled);
-});
 connection.onRequest<coqproto.CoqTopLtacProfResultsParams, coqproto.CoqTopGoalResult, void>(coqproto.LtacProfResultsRequest.type, (params: coqproto.CoqTopLtacProfResultsParams) => {
   return project.lookup(params.uri)
     .coq.ltacProfResults(params.offset);
@@ -246,6 +242,8 @@ connection.onDidOpenTextDocument((params) => {
       connection.sendNotification(coqproto.CoqStateViewUrlNotification.type, {uri: uri, stateUrl: stateUrl}),
     sendComputingStatus : (status: coqproto.ComputingStatus, computeTimeMS: number) =>
       connection.sendNotification(coqproto.CoqComputingStatusNotification.type, {uri: uri, status: status, computeTimeMS: computeTimeMS}),      
+    sendLtacProfResults: (results: coqproto.LtacProfResults) =>
+      connection.sendNotification(coqproto.CoqLtacProfResultsNotification.type, {uri: uri, results: results}),
   });
 
 });

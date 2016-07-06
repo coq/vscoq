@@ -59,11 +59,11 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
           self: +value.$['self'],
           num_calls: +value.$['num_calls'],
           max_total: +value.$['max_total']},
-        tactics: value['list'] };
+        tactics: value.$children };
     case 'ltacprof':
       return <coqProto.LtacProfResults>{
         total_time: +value.$['total_time'],
-        tactics: value['list'] };
+        tactics: value.$children };
     case 'bool':
       let val = value.$['val'];
       if(typeof val === 'boolean')
@@ -184,21 +184,28 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
           module: value.$children[0],
           filename: value.$children[1]
         };
-        case 'errormsg':
+      case 'errormsg':
         return <coqProto.ErrorMessage>{
           location: value.$children[0],
           message: value.$children[1]
         };
-        case 'processingin':
-        case 'processed':
-        case 'incomplete':
-        case 'complete':
+      case 'processingin':
+      case 'processed':
+      case 'incomplete':
+      case 'complete':
         return <coqProto.SentenceFeedback>{
           status: coqProto.SentenceStatus[<string>value.$['val']],
           worker: value.$children[0]
-        }          
+        }
+      case 'custom': {
+        return {
+          type: value['string'],
+          location: value['loc'],
+          data: value.$children[2],
+        };
+      } default:
+        return value;
       }
-      break;
     case 'feedback':
       if(value.$['object'] === 'state') {
         let result = <coqProto.StateFeedback>{
@@ -218,8 +225,10 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
             .find((value,i,a) => value.hasOwnProperty('module') && value.hasOwnProperty('filename'));
         const sentenceFeedback = <coqProto.SentenceFeedback>value.$children
             .find((value,i,a) => value.hasOwnProperty('status') && value.hasOwnProperty('worker'));
-        const error= <coqProto.ErrorMessage>value.$children
+        const error = <coqProto.ErrorMessage>value.$children
             .find((value,i,a) => value.hasOwnProperty('location') && value.hasOwnProperty('message'));
+        const custom = <coqProto.CustomFeedback>value.$children
+            .find((value,i,a) => value.hasOwnProperty('location') && value.hasOwnProperty('data') && value.hasOwnProperty('type'));
         if (workerStatus && workerStatus.length > 0)
           result.workerStatus = workerStatus;
         if (fileDependencies && fileDependencies.size > 0)
@@ -229,7 +238,9 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
         if (sentenceFeedback)
           result.sentenceFeedback = sentenceFeedback;
         if (error)
-          result.error = error;          
+          result.error = error;
+        if(custom)
+            result.custom = custom;          
         return result;
       } else if(value.$['object'] === 'edit') {
         return <coqProto.EditFeedback>{
