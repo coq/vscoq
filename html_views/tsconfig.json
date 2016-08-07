@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"target": "es6",
+		"module": "none",
+		"outDir": "../client/html_views",
+		"noLib": false,
+		"sourceMap": true
+	},
+  "exclude": [
+		"node_modules"
+	]
+}

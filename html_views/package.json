@@ -1,0 +1,30 @@
+{
+	"name": "vscoq-html-views",
+	"description": "HTML views for the display of goals and other feedback for the Coq Proof Assistant",
+  "author": {
+    "name": "Christian J. Bell",
+    "email": "siegebell@gmail.com"
+  },
+	"license": "MIT",
+	"version": "0.0.1",
+	"publisher": "Christian J. Bell",
+	"categories": [
+		"Languages"
+	],
+	"scripts": {
+	},
+	"devDependencies": {
+		"typescript": "^1.8.2",
+    "gulp": "^3.9.0",
+    "gulp-typescript": "^2.10.0",
+    "gulp-shell": "^0.5.1",
+    "gulp-watch": "4.3.5",
+    "jquery": "^3.0.x"
+	},
+	"dependencies": {
+	},
+  "repository" :
+  { "type" : "git"
+  , "url" : "https://github.com/siegebell/vscoq.git"
+  }
+}
