@@ -1,3 +1,5 @@
+/// <reference path="ui-util.ts" />
+/// <reference path="StateModel.ts" />
 // import {StateModel, CoqTopGoalResult} from './StateModel'
 
 interface ControllerEvent {

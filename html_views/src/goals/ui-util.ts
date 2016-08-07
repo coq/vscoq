@@ -49,7 +49,7 @@ function createNodeList(nodes: Node[]) : NodeList {
   return resultN.childNodes;
 }
 
-export function setChildren<T extends Element>(obj: T, children: Node[]) : T {
+function setChildren<T extends Element>(obj: T, children: Node[]) : T {
     clearChildren(obj);
     for(const child of children)
       obj.appendChild(child);
@@ -57,14 +57,14 @@ export function setChildren<T extends Element>(obj: T, children: Node[]) : T {
 }
 
 
-export function makeElement(tag: string, attrs?: any, children?: Node[]) {
+function makeElement(tag: string, attrs?: any, children?: Node[]) {
   const resultN = document.createElement(tag);
   setAttributes(resultN,attrs)
   setChildren(resultN,children);
   return resultN;
 }
 
-export function onDoubleClickBreakableText(event: MouseEvent) {
+function onDoubleClickBreakableText(event: MouseEvent) {
   // toggleHideElement(event.fromElement)
   // (<Element>event.target).classList.toggle('breakText');
   var target = <Element>event.currentTarget; 
@@ -78,7 +78,7 @@ export function onDoubleClickBreakableText(event: MouseEvent) {
 }
 
 
-export function makeBreakingText(text: string) : Node[] {
+function makeBreakingText(text: string) : Node[] {
   var txt = //makeElement('span',{class:'breakText',ondblclick: ''},
     document.createTextNode(Array.prototype.map.call(text, (c) => /[\u00a0\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/.test(c) ? ' ' : c).join(''))
     //);
@@ -121,7 +121,7 @@ export function makeBreakingText(text: string) : Node[] {
   // );
 }
 
-export function makeText(text: string) : Node[] {
+function makeText(text: string) : Node[] {
   return [document.createTextNode(text)];
 }
 

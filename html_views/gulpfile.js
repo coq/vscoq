@@ -14,7 +14,7 @@ gulp.task('copy-html', function() {
 });
 gulp.task('compile-goals-ts', function() {
     return gulp.src(['./src/goals/**/*.ts'])
-        .pipe(compileTypescript({target: 'es6', module: 'none', outFile: 'goals.js'}))
+        .pipe(compileTypescript({target: 'es6', typescript: require('typescript'), module: 'none', outFile: 'goals.js'}))
         .pipe(gulp.dest(tsProject.options.outDir + '/goals/'));
 });
 gulp.task('compile-ltacprof-ts', function() {

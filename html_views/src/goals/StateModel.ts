@@ -1,32 +1,33 @@
+/// <reference path="ui-util.ts" />
 // import {makeElement, makeBreakingText, makeText, setChildren, onDoubleClickBreakableText} from './ui-util';
 
 
-export enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
-export enum TextDifference { None, Added, Removed }
-export interface TextPartDifference {
+enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
+enum TextDifference { None, Added, Removed }
+interface TextPartDifference {
   text: string;
   change: TextDifference;
 }
-export interface Hypothesis {
+interface Hypothesis {
   identifier: string;
   relation: string;
   expression: string;
   diffExpression?: TextPartDifference[];
   diff: HypothesisDifference;
 }
-export interface Goal {
+interface Goal {
   id: number;
   hypotheses: Hypothesis[];
   goal: string;
   diffGoal?: TextPartDifference[];
 }
 
-export interface FailValue {
+interface FailValue {
   message: string;
   location?: Location;
 }
 
-export interface CoqTopGoalResult {
+interface CoqTopGoalResult {
   goals?: Goal[];
   backgroundGoals?: Goal[],
   shelvedGoals?: Goal[],
@@ -119,7 +120,7 @@ function createGoals(goals: Goal[]) {
   return makeElement('ul',{class:"goalsList"}, goals.map((g,i) => createGoal(g,i,goals.length)));
 }
 
-export class StateModel {
+class StateModel {
   private static hypothesesNodeClass = 'hypotheses';
   private static goalNodeClass = 'goal';
   private static focusedStateClass = 'focusedState';
