@@ -1,7 +1,7 @@
 #CoqTop XML Protocol#
 
 This documentation aims to provide a "hands on" description of the XML protocol that coqtop and coqide use to communicate.
-A somewhat out-of-date description of the async state machine is [documented here](https://github.com/ejgallego/jscoq/blob/master/notes/coq-notes.md). Typings for the protocol can be [found here](https://github.com/coq/coq/blob/trunk/ide/interface.mli#L222).
+A somewhat out-of-date description of the async state machine is [documented here](https://github.com/ejgallego/jscoq/blob/master/etc/notes/coq-notes.md). Typings for the protocol can be [found here](https://github.com/coq/coq/blob/trunk/ide/interface.mli#L222).
 
 
 * [Commands](#commands)
