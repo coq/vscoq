@@ -249,7 +249,9 @@ In practice, `stateId` is 0, but the effect is to perform the query on the curre
 #### *Returns*
 *
 ```html
-(TODO...)
+<value val="good">
+  <string>${message}</string>
+</value>
 ```
 -------------------------------
 
@@ -262,7 +264,15 @@ In practice, `stateId` is 0, but the effect is to perform the query on the curre
 #### *Returns*
 *
 ```html
-(TODO...)
+<value val="good">
+  <option val="some">
+    <list>
+      <evar>${evar1}</evar>
+      ...
+      <evar>${evarN}</evar>
+    </list>
+  </option>
+</value>
 ```
 
 -------------------------------
@@ -275,7 +285,24 @@ In practice, `stateId` is 0, but the effect is to perform the query on the curre
 #### *Returns*
 *
 ```html
-(TODO...)
+<value val="good">
+  <option val="some">
+    <pair>
+      <list/>
+      <list>
+        <pair>
+          <string>${hint1}</string>
+          <string>${hint2}</string>
+        </pair>
+        ...
+        <pair>
+          <string>${hintN-1}</string>
+          <string>${hintN}</string>
+        </pair>
+      </list>
+    </pair>
+  </option>
+</value>
 ```
 
 -------------------------------
@@ -397,20 +424,36 @@ Printing Universes : (...false...)
 #### *Returns*
 *
 ```html
-(TODO...)
+<value val="good"><unit/></value>
 ```
 
 -------------------------------
 
 
-### <a name="command-printast">**PrintAst()**</a>
+### <a name="command-printast">**PrintAst(stateId: integer)**</a>
 ```html
-<call val="PrintAst"><unit/></call>
+<call val="PrintAst"><state_id val="${stateId}"/></call>
 ```
 #### *Returns*
 *
 ```html
-(TODO...)
+<value val="good">
+  <gallina begin="${gallina_begin}" end="${gallina_end}">
+    <theorem begin="${theorem_begin}" end="${theorem_end}" type="Theorem" name="${theorem_name}">
+      <apply begin="${apply_begin}" end="${apply_end}">
+        <operator begin="${operator_begin}" end="${operator_end}" name="${operator_name}"/>
+        <typed begin="${typed_begin}" end="${typed_end}">
+          <constant begin="${constant_begin}" end="${constant_end}" name="${constant_name}"/>
+          ...
+          <token begin="${token_begin}" end="token_end">${token}</token>
+          ...
+        </typed>
+        ...
+      </apply>
+    </theorem>
+    ...
+  </gallina>
+</value>
 ```
 
 -------------------------------
@@ -423,8 +466,44 @@ Printing Universes : (...false...)
 ```
 #### *Returns*
 *
+
+take `<call val="Annotate"><string>Theorem plus_0_r : forall n : nat, n + 0 = n.</string></call>` as an example.
+
 ```html
-(TODO...)
+<value val="good">
+  <pp startpos="0" endpos="45">
+    <vernac_expr startpos="0" endpos="44">
+      <keyword startpos="0" endpos="7">Theorem</keyword>
+      &nbsp;plus_0_r&nbsp;:&nbsp;
+      <constr_expr startpos="19" endpos="44">
+        <keyword startpos="19" endpos="25">forall</keyword>
+        &nbsp;n&nbsp;:&nbsp;
+        <constr_expr startpos="30" endpos="33">nat</constr_expr>
+        ,&nbsp;
+        <unparsing startpos="35" endpos="44">
+          <unparsing startpos="35" endpos="40">
+            <unparsing startpos="35" endpos="40">
+              <unparsing startpos="35" endpos="36">
+                <constr_expr startpos="35" endpos="36">n</constr_expr>
+              </unparsing>
+              <unparsing startpos="36" endpos="38">&nbsp;+</unparsing>
+              <unparsing startpos="38" endpos="39">&nbsp;</unparsing>
+              <unparsing startpos="39" endpos="40">
+                <constr_expr startpos="39" endpos="40">0</constr_expr>
+              </unparsing>
+            </unparsing>
+          </unparsing>
+          <unparsing startpos="40" endpos="42">&nbsp;=</unparsing>
+          <unparsing startpos="42" endpos="43">&nbsp;</unparsing>
+          <unparsing startpos="43" endpos="44">
+            <constr_expr startpos="43" endpos="44">n</constr_expr>
+          </unparsing>
+        </unparsing>
+      </constr_expr>
+    </vernac_expr>
+    .
+  </pp>
+</value>
 ```
 
 -------------------------------
