@@ -184,11 +184,12 @@ Move focus to `${stateId}`, such that commands may be added to the new state ID.
 <call val="Goal"><unit/></call>
 ```
 #### *Returns*
-* If there is a goal. `backgroundGoals`, `shelvedGoals`, and `abandonedGoals` have the same structure as the first set of (current/foreground) goals. 
+* If there is a goal. `shelvedGoals` and `abandonedGoals` have the same structure as the first set of (current/foreground) goals. `backgroundGoals` contains a list of pairs of lists of goals (list ((list Goal)*(list Goal))).
 ```html
 <value val="good">
   <option val="some">
   <goals>
+    <!-- current goals -->
     <list>
       <goal>
         <string>3</string>
@@ -202,7 +203,14 @@ Move focus to `${stateId}`, such that commands may be added to the new state ID.
       ...
       ${goalN}
     </list>
-    ${backgroundGoals}
+    <!-- `backgroundGoals` -->
+    <list>
+      <pair>
+        <list><goal ... /></list>
+        <list><goal ... /></list>
+      </pair>
+      ...
+    </list>
     ${shelvedGoals}
     ${abandonedGoals}
   </goals>
