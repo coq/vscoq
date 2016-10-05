@@ -239,7 +239,7 @@ background:
   ( [ P|-2=2, P|-1=1 ], [ P|-7=7 ] ) (* Focus 3; notice that 1=1 and 2=2 are reversed *)
 ]
 ```
-Pseudocode for listing all of the goals in order: `flat_map (compose rev fst) background ++ goals ++ flat_map snd background`.
+Pseudocode for listing all of the goals in order: `rev (flat_map fst background) ++ goals ++ flat_map snd background`.
 
 * No goal:
 ```html
