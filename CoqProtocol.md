@@ -184,7 +184,7 @@ Move focus to `${stateId}`, such that commands may be added to the new state ID.
 <call val="Goal"><unit/></call>
 ```
 #### *Returns*
-* If there is a goal. `shelvedGoals` and `abandonedGoals` have the same structure as the first set of (current/foreground) goals. `backgroundGoals` contains a list of pairs of lists of goals (list ((list Goal)*(list Goal))); it represents a "focus stack" ([see code for reference](https://github.com/coq/coq/blob/trunk/engine/proofview.ml#L113)), where the first list is a reversed list of unfocused goals that appear before the current focus, and the second list is an in-order list of unfocused goals that appear after the current focus.
+* If there is a goal. `shelvedGoals` and `abandonedGoals` have the same structure as the first set of (current/foreground) goals. `backgroundGoals` contains a list of pairs of lists of goals (list ((list Goal)*(list Goal))); it represents a "focus stack" ([see code for reference](https://github.com/coq/coq/blob/trunk/engine/proofview.ml#L113)). Each time a proof is focused, it will add a new pair of lists-of-goals. The first pair is the most nested set of background goals, the last pair is the top level set of background goals. The first list in the pair is in reverse order. Each time you focus the goal (e.g. using `Focus` or a bullet), a new pair will be prefixed to the list.
 ```html
 <value val="good">
   <option val="some">
@@ -206,8 +206,8 @@ Move focus to `${stateId}`, such that commands may be added to the new state ID.
     <!-- `backgroundGoals` -->
     <list>
       <pair>
-        <list><goal ... /></list>
-        <list><goal ... /></list>
+        <list><goal />...</list>
+        <list><goal />...</list>
       </pair>
       ...
     </list>
@@ -217,6 +217,30 @@ Move focus to `${stateId}`, such that commands may be added to the new state ID.
   </option>
 </value>
 ```
+
+For example, this script:
+```coq
+Goal P -> (1=1/\2=2) /\ (3=3 /\ (4=4 /\ 5=5) /\ 6=6) /\ 7=7.
+intros.
+split; split. (* current visible goals are [1=1, 2=2, 3=3/\(4=4/\5=5)/\6=6, 7=7] *)
+Focus 3. (* focus on 3=3/\(4=4/\5=5)/\6=6; bg-before: [1=1, 2=2], bg-after: [7=7] *)
+split; [ | split ]. (* current visible goals are [3=3, 4=4/\5=5, 6=6] *)
+Focus 2. (* focus on 4=4/\5=5; bg-before: [3=3], bg-after: [6=6] *)
+* (* focus again on 4=4/\5=5; bg-before: [], bg-after: [] *)
+split. (* current visible goals are [4=4,5=5] *)
+```
+should generate the following goals structure:
+```
+goals: [ P|-4=4, P|-5=5 ]
+background:
+[
+  ( [], [] ), (* bullet with one goal has no before or after background goals *)
+  ( [ P|-3=3 ], [ P|-6=6 ] ), (* Focus 2 *)
+  ( [ P|-2=2, P|-1=1 ], [ P|-7=7 ] ) (* Focus 3; notice that 1=1 and 2=2 are reversed *)
+]
+```
+Pseudocode for listing all of the goals in order: `flat_map (compose rev fst) background ++ goals ++ flat_map snd background`.
+
 * No goal:
 ```html
 <value val="good"><option val="none"/></value>
