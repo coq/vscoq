@@ -184,7 +184,7 @@ Move focus to `${stateId}`, such that commands may be added to the new state ID.
 <call val="Goal"><unit/></call>
 ```
 #### *Returns*
-* If there is a goal. `shelvedGoals` and `abandonedGoals` have the same structure as the first set of (current/foreground) goals. `backgroundGoals` contains a list of pairs of lists of goals (list ((list Goal)*(list Goal))).
+* If there is a goal. `shelvedGoals` and `abandonedGoals` have the same structure as the first set of (current/foreground) goals. `backgroundGoals` contains a list of pairs of lists of goals (list ((list Goal)*(list Goal))); it represents a "focus stack" ([see code for reference](https://github.com/coq/coq/blob/trunk/engine/proofview.ml#L113)), where the first list is a reversed list of unfocused goals that appear before the current focus, and the second list is an in-order list of unfocused goals that appear after the current focus.
 ```html
 <value val="good">
   <option val="some">
