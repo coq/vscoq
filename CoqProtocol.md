@@ -249,7 +249,7 @@ Pseudocode for listing all of the goals in order: `rev (flat_map fst background)
 -------------------------------
 
 
-### <a name="command-status">**Status(force)**</a>
+### <a name="command-status">**Status(force: integer)**</a>
 CoqIDE typically sets `force` to `false`. 
 ```html
 <call val="Status"><bool val="${force}"/></call>
@@ -268,7 +268,7 @@ CoqIDE typically sets `force` to `false`.
 -------------------------------
 
 
-### <a name="command-query">**Query(query, stateId)**</a>
+### <a name="command-query">**Query(query: string, stateId: integer)**</a>
 In practice, `stateId` is 0, but the effect is to perform the query on the currently-focused state.
 ```html
 <call val="Query">
@@ -340,14 +340,45 @@ In practice, `stateId` is 0, but the effect is to perform the query on the curre
 -------------------------------
 
 
-### <a name="command-search">**Search(...)**</a>
+### <a name="command-search">**Search([(constraintTypeN: string, constraintValueN: string, forceN: boolean)])**</a>
 ```html
-<call val="Search">...</call>
+<call val="Search">
+  <list>
+    <pair>
+      <search_cst val="${constraintType1}">
+        <string>${constraintValue1}</string>
+      </search_cst>
+      <bool val="${force1}"/>
+    </pair>
+    ...
+    <!-- Example: -->
+    <pair>
+      <search_cst val="name_pattern">
+        <string>bool_rect</string>
+      </search_cst>
+      <bool val="true"/>
+    </pair>
+  </list>
+</call>
 ```
 #### *Returns*
 *
 ```html
-(TODO...)
+<value val="good">
+  <list>
+      <coq_object>
+          <list>
+              <string>${metaInfo}</string>
+              ...
+          </list>
+          <list>
+              <string>${name}</string>
+          </list>
+          <string>${definition}</string>
+      </coq_object>
+      ...
+  </list>
+</value>
 ```
 
 -------------------------------
@@ -449,7 +480,7 @@ Printing Universes : (...false...)
 -------------------------------
 
 
-### <a name="command-stopworker">**StopWorker(worker)**</a>
+### <a name="command-stopworker">**StopWorker(worker: string)**</a>
 ```html
 <call val="StopWorker"><string>${worker}</string></call>
 ```
@@ -492,7 +523,7 @@ Printing Universes : (...false...)
 
 
 
-### <a name="command-annotate">**Annotate(annotation)**</a>
+### <a name="command-annotate">**Annotate(annotation: string)**</a>
 ```html
 <call val="Annotate"><string>${annotation}</string></call>
 ```
