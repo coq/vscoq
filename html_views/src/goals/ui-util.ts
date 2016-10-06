@@ -18,14 +18,6 @@ function importStyles(doc) {
   document.getElementsByTagName("head")[0].appendChild(style);
 }
 
-// function inheritStyles() {
-//   if (parent) {
-//       var oHead = document.getElementsByTagName("head")[0];
-//       var arrStyleSheets = parent.document.getElementsByTagName("style");
-//       for (var i = 0; i < arrStyleSheets.length; i++)
-//           oHead.appendChild(arrStyleSheets[i].cloneNode(true));
-//   } 
-// }
 
 function inheritStyles(p) {
  if (p) {
@@ -36,47 +28,6 @@ function inheritStyles(p) {
   }
 }
 
-// function setAttributes<T extends Element>(obj: T, attrs: any) : T {
-//   for(let attr in attrs)
-//     if(attrs.hasOwnProperty(attr))
-//       obj.setAttribute(attr, attrs[attr]);
-//   return obj;
-// }
-
-// function createNodeList(nodes: Node[]) : NodeList {
-//   var resultN = document.createDocumentFragment();
-//   nodes.forEach((n) => resultN.appendChild(n));
-//   return resultN.childNodes;
-// }
-
-// function setChildren<T extends Element>(obj: T, children: Node[]) : T {
-//     clearChildren(obj);
-//     for(let child of children)
-//       obj.appendChild(child);
-//     return obj;
-// }
-
-
-// function makeElement(tag: string, attrs?: any, children?: Node[]) {
-//   const resultN = document.createElement(tag);
-//   setAttributes(resultN,attrs)
-//   setChildren(resultN,children);
-//   return resultN;
-// }
-
-// function onDoubleClickBreakableText(event: MouseEvent) {
-//   // toggleHideElement(event.fromElement)
-//   // (<Element>event.target).classList.toggle('breakText');
-//   var target = <Element>event.currentTarget; 
-//   if(target.classList.contains('hypothesis')) {
-//     target.classList.toggle('breakText');
-//     target.classList.toggle('noBreakText');
-//   }
-//   // event.stopPropagation();
-//   // (<Element>event.target).classList.toggle('noBreakContainedText');
-//   // event.fromElement.appendChild(makeText('breakText')[0]);
-// }
-
 
 function makeBreakingText(text: string) : Node[] {
   var txt = //makeElement('span',{class:'breakText',ondblclick: ''},
@@ -84,65 +35,5 @@ function makeBreakingText(text: string) : Node[] {
     //);
   // txt.ondblclick = onDoubleClickBreakableText;
   return [txt];
-
-  // return [makeElement('span',{class:'breakText'},
-  //   text.split('\n').map((line,idx) => {
-  //     if(idx === 0)
-  //       return document.createTextNode(line)
-  //     else {
-  //       var it = /(\s*)(.*)/.exec(line);
-  //       var indent = makeElement('span',{class:'hypLineIndent'},[document.createTextNode('\n' + Array(it[1].length).join(' '))]);
-  //       // indent.innerHTML = '\n' + Array(it[1].length).join(' ');
-  //       return makeElement('span',{class:'hypLine'},
-  //         // [ makeElement('span',{class:'hypLineIndent'},[document.createTextNode('\n' + it[1]])
-  //         [ indent
-  //         , document.createTextNode(it[2])
-  //         ]);
-  //     }
-  //   }))];
-
-  // return [makeElement('span',{class:'breakText'}, [document.createTextNode(text)])];
-  // return  text.split('\n').map((line,idx) => {
-  //     if(idx === 0)
-  //       return document.createTextNode(line)
-  //     else {
-  //       var it = /(\s*)(.*)/.exec(line);
-  //       return makeElement('span',{class:'hypLine'},
-  //         [ makeElement('span',{class:'hypLineIndent'},[document.createTextNode(it[1])])
-  //         , makeElement('span',{class:'hypLineText'},[document.createTextNode(it[2])])
-  //         ]);
-  //     }
-  //   });
-  //   
-  // return text.split('\n').map((t, idx) =>
-  //   idx === 0
-  //   ? document.createTextNode(text)
-  //   : makeElement('span',{class:'hypLine'},[document.createTextNode(t)])
-  // );
 }
 
-// function makeText(text: string) : Node[] {
-//   return [document.createTextNode(text)];
-// }
-
-// function hideElement(e: Element) {
-//   if(e)
-//     e.className = 'hidden ' + e.className;
-// }
-
-// function toggleHideElement(e: Element) {
-//   if(e && e.className.indexOf('hidden') == -1)
-//     hideElement(e);
-//   else
-//     showElement(e);
-// }
-
-// function showElement(e: Element) {
-//   if(e)
-//     e.className = e.className.replace(/\bhidden\b/,'');
-// }
-
-// function clearChildren(e: Element) {
-//   if(e) while(e.firstChild)
-//     e.removeChild(e.firstChild)
-// }

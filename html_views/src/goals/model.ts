@@ -1,7 +1,6 @@
 /// <reference path="../../typings/index.d.ts" />
 /// <reference path="./ui-util.ts" />
 /// <reference path="./StateModel.ts" />
-// import {StateModel, CoqTopGoalResult} from './StateModel'
 
 interface ControllerEvent {
   eventName: string;
@@ -79,12 +78,5 @@ function load() {
     const state = <CoqTopGoalResult>JSON.parse(event.data);
     stateModel.updateState(state);
   }
-  
-  // try {
-  //   //inheritStyles();
-  //   // inheritStyles(parent);
-  //   message('OK'); 
-  // } catch(err) {
-  //   message(err.toString()); 
-  // }  
+
 }
