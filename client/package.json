@@ -9,7 +9,7 @@
 	"version": "0.0.1",
 	"publisher": "Christian J. Bell",
 	"engines": {
- 		"vscode": "^0.10.7"
+ 		"vscode": "^1.5.3"
 	},
 	"categories": [
 		"Languages"
@@ -95,22 +95,20 @@
 	},	
 	"scripts": {
 		"vscode:prepublish": "node ./node_modules/vscode/bin/compile",
-		"compile": "node ./node_modules/vscode/bin/compile -watch -p ./",
+		"compile": "node ./node_modules/vscode/bin/compile -p ./",
+		"watch": "node ./node_modules/vscode/bin/compile -watch -p ./",
     "postinstall": "node ./node_modules/vscode/bin/install"
 	},
 	"devDependencies": {
-		"typescript": "^1.8.2",
-    "vscode": "^0.11.x",
-    "gulp": "^3.9.0",
-    "gulp-typescript": "^2.10.0",
-    "gulp-shell": "^0.5.1",
-    "gulp-watch": "4.3.5"
+		"typescript": "^1.8.10",
+    "vscode": "^0.11.14"
 	},
 	"dependencies": {
-    "vscode-jsonrpc": "^2.0.0",
-		"vscode-languageclient": "^2.0.0",
-    "ws": "1.0.1",
-    "opener": "1.4.1"
+    "vscode-jsonrpc": "^2.4.0",
+		"vscode-languageclient": "^2.5.0",
+    "xml2js": "0.4.17",
+    "ws": "1.1.1",
+    "opener": "1.4.2"
 	},
   "repository" :
   { "type" : "git"
