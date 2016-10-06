@@ -1,0 +1,6 @@
+{
+  "globalDependencies": {
+    "ws": "registry:dt/ws#0.0.0+20160724122153",
+    "xml2js": "registry:dt/xml2js#0.0.0+20160317120654"
+  }
+}
