@@ -65,7 +65,7 @@
 
         <dict>
             <key>match</key>
-            <string>(Fixpoint|Definition|Let)\s+([a-zA-Z_][a-zA-Z0-9_']*)</string>
+            <string>(CoFixpoint|Fixpoint|Definition|Let)\s+([a-zA-Z_][a-zA-Z0-9_']*)</string>
             <key>comment</key>
             <string>Definitions</string>
             <key>captures</key>
@@ -85,7 +85,7 @@
 
         <dict>
             <key>match</key>
-            <string>(Inductive)\s+([a-zA-Z][a-zA-Z0-9_']*)</string>
+            <string>(CoInductive|Inductive)\s+([a-zA-Z][a-zA-Z0-9_']*)</string>
             <key>comment</key>
             <string>Inductive type declarations</string>
             <key>captures</key>
