@@ -34,10 +34,11 @@ gulp.task('compile-ltacprof-ts', function() {
         .pipe(tsProjectLtacProf())
         .pipe(gulp.dest(tsProjectLtacProf.options.outDir + '/ltacprof/'));
 });
-// gulp.task('jquery', function() {
-//     return gulp.src('./src/HtmlView/jquery/**/*.{js,css,png}')
-//         .pipe(gulp.dest(tsProject.options.outDir + '/src/HtmlView/jquery/'));
-// });
+
+gulp.task('jquery', function() {
+    return gulp.src('./jquery/**/*.{js,css,png}')
+        .pipe(gulp.dest(tsProjectGoals.options.outDir + '/jquery/'));
+});
 
 
 // gulp.task('compile-ts', shell.task(['npm run compile --loglevel silent']));
@@ -61,7 +62,7 @@ gulp.task('watch-html', function() {
   // process.stdout.write("--------------------\n");
 
 // Default Task
-gulp.task('build', ['compile-goals-ts', 'compile-ltacprof-ts', 'copy-html']);
+gulp.task('build', ['compile-goals-ts', 'compile-ltacprof-ts', 'copy-html', 'jquery']);
 gulp.task('watch', ['watch-html']);
 gulp.task('default', ['build', 'watch']);
 

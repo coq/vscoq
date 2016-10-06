@@ -36,46 +36,46 @@ function inheritStyles(p) {
   }
 }
 
-function setAttributes<T extends Element>(obj: T, attrs: any) : T {
-  for(let attr in attrs)
-    if(attrs.hasOwnProperty(attr))
-      obj.setAttribute(attr, attrs[attr]);
-  return obj;
-}
+// function setAttributes<T extends Element>(obj: T, attrs: any) : T {
+//   for(let attr in attrs)
+//     if(attrs.hasOwnProperty(attr))
+//       obj.setAttribute(attr, attrs[attr]);
+//   return obj;
+// }
 
-function createNodeList(nodes: Node[]) : NodeList {
-  var resultN = document.createDocumentFragment();
-  nodes.forEach((n) => resultN.appendChild(n));
-  return resultN.childNodes;
-}
+// function createNodeList(nodes: Node[]) : NodeList {
+//   var resultN = document.createDocumentFragment();
+//   nodes.forEach((n) => resultN.appendChild(n));
+//   return resultN.childNodes;
+// }
 
-function setChildren<T extends Element>(obj: T, children: Node[]) : T {
-    clearChildren(obj);
-    for(let child of children)
-      obj.appendChild(child);
-    return obj;
-}
+// function setChildren<T extends Element>(obj: T, children: Node[]) : T {
+//     clearChildren(obj);
+//     for(let child of children)
+//       obj.appendChild(child);
+//     return obj;
+// }
 
 
-function makeElement(tag: string, attrs?: any, children?: Node[]) {
-  const resultN = document.createElement(tag);
-  setAttributes(resultN,attrs)
-  setChildren(resultN,children);
-  return resultN;
-}
+// function makeElement(tag: string, attrs?: any, children?: Node[]) {
+//   const resultN = document.createElement(tag);
+//   setAttributes(resultN,attrs)
+//   setChildren(resultN,children);
+//   return resultN;
+// }
 
-function onDoubleClickBreakableText(event: MouseEvent) {
-  // toggleHideElement(event.fromElement)
-  // (<Element>event.target).classList.toggle('breakText');
-  var target = <Element>event.currentTarget; 
-  if(target.classList.contains('hypothesis')) {
-    target.classList.toggle('breakText');
-    target.classList.toggle('noBreakText');
-  }
-  // event.stopPropagation();
-  // (<Element>event.target).classList.toggle('noBreakContainedText');
-  // event.fromElement.appendChild(makeText('breakText')[0]);
-}
+// function onDoubleClickBreakableText(event: MouseEvent) {
+//   // toggleHideElement(event.fromElement)
+//   // (<Element>event.target).classList.toggle('breakText');
+//   var target = <Element>event.currentTarget; 
+//   if(target.classList.contains('hypothesis')) {
+//     target.classList.toggle('breakText');
+//     target.classList.toggle('noBreakText');
+//   }
+//   // event.stopPropagation();
+//   // (<Element>event.target).classList.toggle('noBreakContainedText');
+//   // event.fromElement.appendChild(makeText('breakText')[0]);
+// }
 
 
 function makeBreakingText(text: string) : Node[] {
@@ -121,28 +121,28 @@ function makeBreakingText(text: string) : Node[] {
   // );
 }
 
-function makeText(text: string) : Node[] {
-  return [document.createTextNode(text)];
-}
+// function makeText(text: string) : Node[] {
+//   return [document.createTextNode(text)];
+// }
 
-function hideElement(e: Element) {
-  if(e)
-    e.className = 'hidden ' + e.className;
-}
+// function hideElement(e: Element) {
+//   if(e)
+//     e.className = 'hidden ' + e.className;
+// }
 
-function toggleHideElement(e: Element) {
-  if(e && e.className.indexOf('hidden') == -1)
-    hideElement(e);
-  else
-    showElement(e);
-}
+// function toggleHideElement(e: Element) {
+//   if(e && e.className.indexOf('hidden') == -1)
+//     hideElement(e);
+//   else
+//     showElement(e);
+// }
 
-function showElement(e: Element) {
-  if(e)
-    e.className = e.className.replace(/\bhidden\b/,'');
-}
+// function showElement(e: Element) {
+//   if(e)
+//     e.className = e.className.replace(/\bhidden\b/,'');
+// }
 
-function clearChildren(e: Element) {
-  if(e) while(e.firstChild)
-    e.removeChild(e.firstChild)
-}
+// function clearChildren(e: Element) {
+//   if(e) while(e.firstChild)
+//     e.removeChild(e.firstChild)
+// }

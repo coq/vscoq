@@ -1,3 +1,4 @@
+/// <reference path="../../typings/index.d.ts" />
 /// <reference path="./ui-util.ts" />
 /// <reference path="./StateModel.ts" />
 // import {StateModel, CoqTopGoalResult} from './StateModel'
@@ -8,13 +9,6 @@ interface ControllerEvent {
 }
 interface ResizeEvent {
   columns: number;
-}
-
-function setText(text) {
-  document.getElementById('stdout').innerHTML = text;
-}
-
-function message(text: string) {
 }
 
 function getQueryStringValue(key) {
@@ -47,8 +41,7 @@ var throttleEventHandler = <X>(handler: (X) => void) => (event:X) => {
 function onWindowResize(event: UIEvent) {
   try {
     const stateView = document.body;
-    const textMeasurer = <HTMLCanvasElement>document.getElementById('textMeasurer');
-    const ctx = textMeasurer.getContext("2d");
+    const ctx = (<HTMLCanvasElement>$('#textMeasurer')[0]).getContext("2d");
     let widthChars = Math.floor(stateView.clientWidth / ctx.measureText("O").width);
     if (widthChars === Number.POSITIVE_INFINITY)
       widthChars = 1;
@@ -60,7 +53,7 @@ function onWindowResize(event: UIEvent) {
         params: <ResizeEvent>{columns: widthChars}
       }));  
   } catch(error) {
-    document.getElementById('stdout').innerHTML = "!" + error;    
+    $('#stdout').text("!" + error);    
   }
 }
 
@@ -69,29 +62,29 @@ function load() {
   window.onresize = throttleEventHandler(onWindowResize);
 
   if(parent.parent === parent)
-    document.body.style.backgroundColor = 'black';
+    $(document.body).css({backgroundColor: 'black'});
 
   var address = `ws://${getQueryStringValue('host')}:${getQueryStringValue('port')}`; 
   connection = new WebSocket(address);
   connection.onopen = function (event) {
-    document.getElementById('stdout').innerHTML = "connected";
+    $('#stdout').text("connected");
   }
   connection.onclose = function (event) {
-    document.getElementById('stdout').innerHTML = "connection closed";
+    $('#stdout').text("connection closed");
   }
   connection.onerror = function (event) {
-    document.getElementById('stdout').innerHTML = "connection error";
+    $('#stdout').text("connection error");
   }
   connection.onmessage = function (event) {
     const state = <CoqTopGoalResult>JSON.parse(event.data);
     stateModel.updateState(state);
   }
   
-  try {
-    //inheritStyles();
-    // inheritStyles(parent);
-    message('OK'); 
-  } catch(err) {
-    message(err.toString()); 
-  }  
+  // try {
+  //   //inheritStyles();
+  //   // inheritStyles(parent);
+  //   message('OK'); 
+  // } catch(err) {
+  //   message(err.toString()); 
+  // }  
 }

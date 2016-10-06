@@ -12,9 +12,11 @@
 		"Languages"
 	],
 	"scripts": {
+		"postinstall": "typings install"
 	},
 	"devDependencies": {
 		"typescript": "^2.0.3",
+		"typings":"^1.4.0",
     "gulp": "^3.9.1",
     "gulp-typescript": "^3.0.2",
     "gulp-shell": "^0.5.2",

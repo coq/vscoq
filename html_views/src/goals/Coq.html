@@ -142,6 +142,8 @@
       font-size: 8pt;
     } 
   </style>
+  <script type="text/javascript" src="../jquery/jquery-2.2.4.min.js"></script>
+  <script type="text/javascript" src="../jquery/jquery-ui.min.js"></script>
 </head>
 <body onload="load()">
   <div id="toolbar">
@@ -150,11 +152,11 @@
   <canvas id="textMeasurer" style="display: none"></canvas>
   <div id="states">
     <div class="focusedState">
-      <div class="hypotheses" />
-      <div class="goal" />
+      <div class="hypotheses"></div>
+      <div class="goal"></div>
     </div>
   </div>
-  <div id="messages" />
+  <div id="messages"></div>
   <h1><div id="stdout" /></h1>
 </body>
 <script src="goals.js"></script>
