@@ -8,21 +8,21 @@
 // string: ([^"])*"
 // bullet: \s*[*]
 // match up to 1) the first period (followed by but not including white whitespace), 2) the start of a comment or quote, 3) a bullet or 4) the end of the string.
-const skipSentenceOrBulletRE = /^(?:\s*)(?:([*-+{}])|((?:[^.("]|[.](?!\s)|\((?!\*))*)([.]|\(\*|"|$))/;
+const skipSentenceOrBulletRE = /^(?:\s*)(?:([*\-+{}])|((?:[^.("]|[.](?!\s)|\((?!\*))*)([.]|\(\*|"|$))/;
 const skipSentenceRE = /^(?:[^.("]|[.](?!\s)|\((?!\*))*([.]|\(\*|"|$)/
 // match up to the end of a quote
 const skipStringRE = /^[^"]*("|$)/;
 // match up to 1) the end of a comment or 2) the beginning of a (nested) comment
 const skipCommentRE = /^(?:[^*(]|\*(?!\))|\((?!\*))*(\*\)|\(\*)|$/;
 
-interface SentnceSkip {
+interface SentenceSkip {
   skip: number;
   terminator: string;
   bullet?: string;
   isPreWhitespace?: boolean;
 }
 
-function doSimpleSkip(str, idx, re) : SentnceSkip {
+function doSimpleSkip(str, idx, re) : SentenceSkip {
   const match = re.exec(str.substr(idx));
   if(!match || match.length===0)
     throw 'anomaly: bad regex';
@@ -33,7 +33,7 @@ function doSimpleSkip(str, idx, re) : SentnceSkip {
   };
 }
 
-function doSkipSentence(str, idx, allowBullet : boolean) : SentnceSkip {
+function doSkipSentence(str, idx, allowBullet : boolean) : SentenceSkip {
   if(allowBullet) {
     const match = skipSentenceOrBulletRE.exec(str.substr(idx));
     if(!match || match.length===0)
@@ -49,11 +49,11 @@ function doSkipSentence(str, idx, allowBullet : boolean) : SentnceSkip {
     return doSimpleSkip(str,idx,skipSentenceRE);
 }
 
-function doSkipComment(str, idx) : SentnceSkip {
+function doSkipComment(str, idx) : SentenceSkip {
   return doSimpleSkip(str,idx,skipCommentRE);
 }
 
-function doSkipString(str, idx) : SentnceSkip {
+function doSkipString(str, idx) : SentenceSkip {
   return doSimpleSkip(str,idx,skipStringRE);
 }
   
@@ -61,7 +61,7 @@ export function parseSentence(str: string) : number {
   // Assume we are starting outside of a comment or parentheses
   // match everything up to a period or beginning of a comment or string
   let idx = 0;
-  let allowBullet = true; // whether a bullet may be expoecte (becomes false after the first non-whitespace)
+  let allowBullet = true; // whether a bullet may be expected (becomes false after the first non-whitespace)
   
   while(true) {
     const skipSen = doSkipSentence(str,idx,allowBullet);
