@@ -105,9 +105,18 @@ export interface Goal {
   goal: any;
 }
 
+export interface UnfocusedGoalStack {
+  // subgoals that appear before the focus
+  before: Goal[];
+  // reference to the more-focused background goals
+  next?: UnfocusedGoalStack 
+  // subgoals that appear after the focus
+  after: Goal[];
+}
+
 export interface Goals {
   goals: Goal[];
-  backgroundGoals: Goal[],
+  backgroundGoals: UnfocusedGoalStack,
   shelvedGoals: Goal[],
   abandonedGoals: Goal[],
   error?: FailValue;

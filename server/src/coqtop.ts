@@ -48,7 +48,7 @@ export interface EditAtResult {
 }
 export interface GoalResult {
   goals?: coqProto.Goal[];
-  backgroundGoals?: coqProto.Goal[];
+  backgroundGoals?: coqProto.UnfocusedGoalStack
   shelvedGoals?: coqProto.Goal[];
   abandonedGoals?: coqProto.Goal[];
 }
@@ -839,9 +839,9 @@ export class CoqTop extends events.EventEmitter {
       this.console.log("Current:");
       result.goals.forEach((g, i) => this.console.log(`    ${i + 1}:${g.id}= ${g.goal}`));
     }
-    if (result.backgroundGoals && result.backgroundGoals.length > 0) {
-      this.console.log("Background:");
-      result.backgroundGoals.forEach((g, i) => this.console.log(`    ${i + 1}) ${util.inspect(g, false, null)}`));
+    if (result.backgroundGoals) {
+      this.console.log("Background: ...");
+      // result.backgroundGoals.forEach((g, i) => this.console.log(`    ${i + 1}) ${util.inspect(g, false, null)}`));
     }
     if (result.shelvedGoals && result.shelvedGoals.length > 0) {
       this.console.log("Shelved:");

@@ -60,9 +60,17 @@ export interface Goal {
   goal: any;
   diffGoal?: TextPartDifference[];  
 }
+export interface UnfocusedGoalStack {
+  // subgoals that appear before the focus
+  before: Goal[];
+  // reference to the more-focused background goals
+  next?: UnfocusedGoalStack 
+  // subgoals that appear after the focus
+  after: Goal[];
+}
 export declare interface CoqTopGoalResult {
   goals?: Goal[];
-  backgroundGoals?: Goal[],
+  backgroundGoals?: UnfocusedGoalStack,
   shelvedGoals?: Goal[],
   abandonedGoals?: Goal[],
   error?: FailValue;

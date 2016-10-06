@@ -492,10 +492,21 @@ export class CoqDocument implements TextDocument {
     };
   }
   
+  private convertUnfocusedGoals(focusStack: coqProto.UnfocusedGoalStack) : thmProto.UnfocusedGoalStack {
+    if(focusStack)
+      return {
+        before: focusStack.before.map(this.convertGoal),
+        next: this.convertUnfocusedGoals(focusStack.next),
+        after: focusStack.after.map(this.convertGoal)
+      };
+    else
+      return null;
+  }
+  
   private convertGoals(goals: GoalResult) : thmProto.CoqTopGoalResult {
     return {
       goals: goals.goals ? goals.goals.map(this.convertGoal) : undefined,
-      backgroundGoals: goals.backgroundGoals ? goals.backgroundGoals.map(this.convertGoal) : undefined,
+      backgroundGoals: this.convertUnfocusedGoals(goals.backgroundGoals),
       shelvedGoals: goals.shelvedGoals ? goals.shelvedGoals.map(this.convertGoal) : undefined,
       abandonedGoals: goals.abandonedGoals ? goals.abandonedGoals.map(this.convertGoal) : undefined,
       };

@@ -88,8 +88,11 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
       }
     case 'goals': {
       let result = <coqProto.Goals>{goals: value.$children[0]};
+      const bg_goals = <{fst: coqProto.Goal[], snd: coqProto.Goal[]}[]>value.$children[1];
       if(value.$children.length > 1) {
-        result.backgroundGoals = value.$children[1];
+        result.backgroundGoals = bg_goals.reduce
+          ( (bg, v) => <coqProto.UnfocusedGoalStack>{before: v.fst, next: bg, after: v.snd}
+          , <coqProto.UnfocusedGoalStack>null);
         result.shelvedGoals = value.$children[2];
         result.abandonedGoals = value.$children[3];
       }
@@ -149,7 +152,7 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
             error: {
               location: value.$['loc_s']!=undefined && value.$['loc_e']!=undefined
                 ? {start: +value.$['loc_s'], stop: +value.$['loc_e']} : null,
-              message: value.$text
+              message: value['richpp_string'] ? value['richpp_string'] : value.$text
             }
            };
         }
