@@ -1,0 +1,11 @@
+{
+  "globalDependencies": {
+    "node": "registry:dt/node#6.0.0+20160805072842",
+    "sax": "registry:dt/sax#0.0.0+20160316155526",
+    "xml2js": "registry:dt/xml2js#0.0.0+20160317120654"
+  },
+  "dependencies": {
+    "diff": "registry:npm/diff#2.0.0+20160723033700",
+    "es6-promise": "registry:npm/es6-promise#3.0.0+20160723033700"
+  }
+}
