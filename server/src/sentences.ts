@@ -132,7 +132,7 @@ export class Sentences {
         
       if(oldHyp === undefined)
         hyp.diff = HypothesisDifference.New;
-      else if(typeof hyp === 'string' && oldHyp.expression !== hyp.expression) {
+      else if(oldHyp.expression !== hyp.expression) {
         hyp.diff = HypothesisDifference.Changed
         var difference = diff.diffWords(oldHyp.expression, hyp.expression);
         hyp.diffExpression = difference.map((d,idx) => {

@@ -4,6 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 'use strict';
 
+import * as vscj from 'vscode-jsonrpc';
 import {RequestType, CancellationToken} from 'vscode-jsonrpc';
 import {
 	createConnection, IConnection, TextDocumentSyncKind,
@@ -20,7 +21,6 @@ import {CoqDocument} from './document';
 import * as coqproto from './protocol';
 import {CoqTopSettings, Settings} from './protocol';
 import {CoqProject} from './CoqProject';
-
 
 
 // Create a connection for the server. The connection uses 
@@ -230,7 +230,7 @@ connection.onDidOpenTextDocument((params) => {
     sendHighlightUpdates: (h) => sendHighlightUpdates(uri, h),
     sendDiagnostics: (diagnostics) => sendDiagnostics(uri, diagnostics),
     sendMessage: (level, message: string, rich_message?: any) =>
-      connection.sendNotification(coqproto.CoqMessageNotification.type, {
+      connection.sendNotification(coqproto.CoqMessageNotification.type, <coqproto.NotifyMessageParams>{
         level: level,
         message: message,
         uri: uri,
