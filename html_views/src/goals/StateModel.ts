@@ -157,6 +157,18 @@ function createGoals(goals: Goal[]) {
     .append(goals.map((g,i) => createGoal(g,i,goals.length)));
 }
 
+function createFocusedGoals(goals: Goal[]) : JQuery {
+  return $('<ul>')
+    .addClass('goalsList')
+    .append(goals.map((g,i) => createGoal(g,i,goals.length)));
+  // return $(goals.map((g,idx) =>
+  //   createGoal(g, idx, goals.length)));
+}
+
+
+
+
+
 class StateModel {
   private static hypothesesNodeClass = '.hypotheses';
   private static goalNodeClass = '.goal';
@@ -195,14 +207,10 @@ class StateModel {
           this.setMessage("");
           $('#states')
           .empty()
-          .append(state.goals.map((hp,idx) =>
-            $('<div>')
-              .addClass(StateModel.focusedStateClass)
-              .addClass(this.focusedState===idx ? "visible" : "hidden")
-              .append(
-                [ createHypotheses(state.goals[idx].hypotheses)
-                , createGoal(state.goals[idx], idx, state.goals.length) ])
-                ))
+          .append(
+            [ createHypotheses(state.goals[0].hypotheses)
+            , createFocusedGoals(state.goals)
+          ])
         } else {
           $('#states').empty();
           this.setMessage("There are unfocused goals.");
