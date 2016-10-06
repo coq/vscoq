@@ -1,6 +1,4 @@
 'use strict';
-
-
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as util from 'util';
@@ -26,7 +24,10 @@ console.log(`Coq Extension: process.version: ${process.version}, process.arch: $
 
 let documents : CoqDocumentListener;
 
+export var extensionContext : ExtensionContext;
+
 export function activate(context: ExtensionContext) {
+  extensionContext = context;
   documents = new CoqDocumentListener(context);
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.quit', quitCoq));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.reset', resetCoq));

@@ -2,14 +2,13 @@
 	"compilerOptions": {
 		"target": "es6",
 		"module": "commonjs",
-		"moduleResolution": "node",
 		"outDir": "out",
-		"noLib": true,
-		"sourceMap": true
+		"sourceMap": true,
+		"noLib": false
 	},
   "exclude": [
 		"node_modules",
 		"server",
-    "src/HtmlView"
+    "html_views"
 	]
 }

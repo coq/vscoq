@@ -37,7 +37,7 @@ function inheritStyles(p) {
 }
 
 function setAttributes<T extends Element>(obj: T, attrs: any) : T {
-  for(const attr in attrs)
+  for(let attr in attrs)
     if(attrs.hasOwnProperty(attr))
       obj.setAttribute(attr, attrs[attr]);
   return obj;
@@ -51,7 +51,7 @@ function createNodeList(nodes: Node[]) : NodeList {
 
 function setChildren<T extends Element>(obj: T, children: Node[]) : T {
     clearChildren(obj);
-    for(const child of children)
+    for(let child of children)
       obj.appendChild(child);
     return obj;
 }

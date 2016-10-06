@@ -18,8 +18,16 @@ interface Hypothesis {
 interface Goal {
   id: number;
   hypotheses: Hypothesis[];
-  goal: string;
+  goal: string|{string:string};
   diffGoal?: TextPartDifference[];
+}
+interface UnfocusedGoalStack {
+  // subgoals that appear before the focus
+  before: Goal[];
+  // reference to the more-focused background goals
+  next?: UnfocusedGoalStack 
+  // subgoals that appear after the focus
+  after: Goal[];
 }
 
 interface FailValue {
@@ -29,7 +37,7 @@ interface FailValue {
 
 interface CoqTopGoalResult {
   goals?: Goal[];
-  backgroundGoals?: Goal[],
+  backgroundGoals?: UnfocusedGoalStack,
   shelvedGoals?: Goal[],
   abandonedGoals?: Goal[],
   error?: FailValue;
@@ -48,10 +56,16 @@ function getDisplayState(state: CoqTopGoalResult) {
     return DisplayState.Top;
 }
 
+function countUnfocusedGoals(u: UnfocusedGoalStack) {
+  if(!u)
+    return 0;
+  return u.before.length + u.after.length + countUnfocusedGoals(u.next); 
+}
+
 function countAllGoals(state: CoqTopGoalResult): number {
   const result =
     (state.goals ? state.goals.length : 0)
-    + (state.backgroundGoals ? state.backgroundGoals.length : 0)
+    + countUnfocusedGoals(state.backgroundGoals)
     + (state.abandonedGoals ? state.abandonedGoals.length : 0)
     + (state.shelvedGoals ? state.shelvedGoals.length : 0);
   return result;
@@ -112,7 +126,9 @@ function createGoal(goal: Goal, idx:number, count:number) {
     , makeElement('span',{class: 'expr'},
       goal.diffGoal
       ? createDiffText(goal.diffGoal)
-      : makeText(goal.goal))
+      : typeof goal.goal === 'string'
+      ? makeText(<string>goal.goal)
+      : makeText((<{string:string}>goal.goal).string))
     ]);
 }
 

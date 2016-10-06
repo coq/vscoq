@@ -14,9 +14,6 @@ import * as proto from './protocol';
 import * as textUtil from './text-util';
 import {CoqLanguageServer} from './CoqLanguageServer';
 
-
-
-
 export class CoqDocument implements vscode.Disposable {
   private statusBar: vscode.StatusBarItem;
   private computingStatusBar: vscode.StatusBarItem;

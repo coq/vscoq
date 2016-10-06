@@ -1,9 +1,9 @@
 {
 	"compilerOptions": {
 		"target": "es6",
-		"module": "commonjs",
+		"module": "system",
 		"outDir": "../client/html_views",
-		"noLib": true,
+		"noLib": false,
 		"sourceMap": true
 	},
   "exclude": [

@@ -4,23 +4,35 @@ var compileTypescript = require('gulp-typescript');
 // var tslint = require('gulp-tslint');
 var shell = require('gulp-shell');
 var watch = require('gulp-watch');
-var tsProject = compileTypescript.createProject('./tsconfig.json');
-
+var sourcemaps = require('gulp-sourcemaps');
+var tsProjectGoals = compileTypescript.createProject('./tsconfig.json', {out: 'goals.js'});
+var tsProjectLtacProf = compileTypescript.createProject('./tsconfig.json', {out: 'ltacprof.js'});
+var path = require('path');
 var util = require('util');
 
 gulp.task('copy-html', function() {
     return gulp.src('./src/**/*.html')
-        .pipe(gulp.dest(tsProject.options.outDir));
+        .pipe(gulp.dest(tsProjectGoals.options.outDir));
 });
 gulp.task('compile-goals-ts', function() {
-    return gulp.src(['./src/goals/**/*.ts'])
-        .pipe(compileTypescript({target: 'es6', typescript: require('typescript'), module: 'none', outFile: 'goals.js'}))
-        .pipe(gulp.dest(tsProject.options.outDir + '/goals/'));
+    var result = gulp.src(['./src/goals/**/*.ts'])
+        .pipe(sourcemaps.init())
+        .pipe(tsProjectGoals());
+    return result.js
+        // .pipe(sourcemaps.write("."))
+        .pipe(sourcemaps.write({sourceRoot: "/html_views"}))
+        // .pipe(sourcemaps.write('.', {
+        //     mapSources: function (sourcePath) {
+        //         console.log(sourcePath);
+        //         return sourcePath;
+        //     }
+        // }))
+        .pipe(gulp.dest(tsProjectGoals.options.outDir + '/goals/'));
 });
 gulp.task('compile-ltacprof-ts', function() {
     return gulp.src(['./src/ltacprof/**/*.ts'])
-        .pipe(compileTypescript({target: 'es6', out: 'ltacprof.js'}))
-        .pipe(gulp.dest(tsProject.options.outDir + '/ltacprof/'));
+        .pipe(tsProjectLtacProf())
+        .pipe(gulp.dest(tsProjectLtacProf.options.outDir + '/ltacprof/'));
 });
 // gulp.task('jquery', function() {
 //     return gulp.src('./src/HtmlView/jquery/**/*.{js,css,png}')

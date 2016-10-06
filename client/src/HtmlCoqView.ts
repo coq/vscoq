@@ -4,6 +4,7 @@ import * as fs from 'fs'
 
 import * as view from './CoqView'
 export {CoqView} from './CoqView'
+import {extensionContext} from './extension'
 import * as proto from './protocol'
 import * as textUtil from './text-util'
 import * as WebSocket from 'ws';
@@ -128,9 +129,11 @@ export class HtmlCoqView implements view.CoqView {
       await this.serverReady;
       const serverAddress = this.httpServer.address();
 
-      const templateFileName = vscode.Uri.file(__dirname + '/HtmlView/Coq.html');
+      // const templateFileName = vscode.Uri.file('html_views/goals/Coq.html');
+      const templateFileName = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/goals/Coq.html'));
+      // const templateFileName = vscode.Uri.file(__dirname + '/HtmlView/Coq.html');
       this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
-
+      console.log("Goals: " + this.coqViewUri.toString());
       await this.show(true);
 
 
@@ -141,7 +144,7 @@ export class HtmlCoqView implements view.CoqView {
 
   public async show(preserveFocus: boolean) {
     // const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
-    const result = await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two);
+    const result = await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two, "Goals");
     // if(preserveFocus && focusedDoc)
     //   await vscode.window.showTextDocument(focusedDoc);
   }

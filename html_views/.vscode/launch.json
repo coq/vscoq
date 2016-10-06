@@ -5,9 +5,13 @@
       "name": "Launch Chrome against localhost, with sourcemaps",
       "type": "chrome",
       "request": "launch",
-      "url": "file:///c:/users/cj/Research/vscoq/client/html_views/goals/Coq.html?host=127.0.0.1&port=10579",
+      "url": "file:///c:/users/cj/Research/vscoq/client/html_views/goals/Coq.html?host=127.0.0.1&port=3823",
       "sourceMaps": true,
-      "webRoot": "${workspaceRoot}"
+      "webRoot": "c:/users/cj/Research/vscoq/",
+      "sourceMapPathOverrides": {
+        "file:///c:/users/cj/Research/vscoq/client/html_views/src/*": "c:/users/cj/Research/vscoq/html_views/src/*",
+        "file:///c:/users/cj/Research/vscoq/client/html_views/goals/*": "c:/users/cj/Research/vscoq/html_views/src/goals/*"
+      }
     },
     {
       "name": "Attach to Chrome, with sourcemaps",
