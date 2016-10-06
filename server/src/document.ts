@@ -11,6 +11,7 @@ import * as textUtil from './text-util';
 import {Mutex} from './Mutex';
 import {CancellationSignal, asyncWithTimeout} from './CancellationSignal';
 import {AsyncWorkQueue} from './AsyncQueue';
+import {richppToMarkdown} from './RichPP';
 
 function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
 function positionToString(p:Position) {return `{${p.line}@${p.character}}`}
@@ -451,8 +452,10 @@ export class CoqDocument implements TextDocument {
     }
   }
 
-  private addDiagnostic(diagnostic: Diagnostic) {
-    this.diagnostics.push(diagnostic);
+  private async addDiagnostic(diagnostic: Diagnostic) {
+    const diag = diagnostic;
+    diag.message = await richppToMarkdown(diag.message);
+    this.diagnostics.push(diag);
     this.callbacks.sendDiagnostics(this.diagnostics);
   }
 
@@ -491,7 +494,7 @@ export class CoqDocument implements TextDocument {
       })
     };
   }
-  
+
   private convertUnfocusedGoals(focusStack: coqProto.UnfocusedGoalStack) : thmProto.UnfocusedGoalStack {
     if(focusStack)
       return {
