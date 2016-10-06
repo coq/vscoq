@@ -17,10 +17,17 @@ export function getDisplayState(state: proto.CoqTopGoalResult) {
     return DisplayState.Top;
 }
 
+function countUnfocusedGoalStack(u: proto.UnfocusedGoalStack) {
+  if(u)
+    return u.before.length + u.after.length + countUnfocusedGoalStack(u.next);
+  else
+    return 0;
+}
+
 export function countAllGoals(state: proto.CoqTopGoalResult): number {
   const result =
     (state.goals ? state.goals.length : 0)
-    + (state.backgroundGoals ? state.backgroundGoals.length : 0)
+    + countUnfocusedGoalStack(state.backgroundGoals)
     + (state.abandonedGoals ? state.abandonedGoals.length : 0)
     + (state.shelvedGoals ? state.shelvedGoals.length : 0);
   return result;
