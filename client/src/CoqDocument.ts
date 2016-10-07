@@ -14,11 +14,10 @@ import * as proto from './protocol';
 import * as textUtil from './text-util';
 import {CoqLanguageServer} from './CoqLanguageServer';
 import {adjacentPane} from './CoqView';
+import {StatusBar} from './StatusBar';
 
 export class CoqDocument implements vscode.Disposable {
-  private statusBar: vscode.StatusBarItem;
-  private computingStatusBar: vscode.StatusBarItem;
-  private interruptButtonStatusBar: vscode.StatusBarItem;
+  private statusBar: StatusBar;
   public documentUri: string;
   public highlights = new Highlights();
   private viewDoc: vscode.TextDocument = null;
@@ -29,17 +28,7 @@ export class CoqDocument implements vscode.Disposable {
   private noticeOut: vscode.OutputChannel;
 
   constructor(uri: vscode.Uri, context: ExtensionContext) {
-    this.statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 3);
-    this.statusBar.text = 'Loading Coq';
-    this.statusBar.show();
-    this.computingStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 2);
-    this.computingStatusBar.tooltip = 'Time elapsed on the current computation';
-    this.computingStatusBar.text = '';
-    this.interruptButtonStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
-    this.interruptButtonStatusBar.tooltip = 'Interrupt Coq computation';
-    this.interruptButtonStatusBar.color = 'rgba(255,100,100,1)';
-    this.interruptButtonStatusBar.command = 'extension.coq.interrupt';
-    this.interruptButtonStatusBar.text = '$(primitive-square)';
+    this.statusBar = new StatusBar();
 
     this.documentUri = uri.toString();
     this.langServer = new CoqLanguageServer(context);
@@ -68,8 +57,9 @@ export class CoqDocument implements vscode.Disposable {
       this.view.update(value);
     };
     
-    this.statusBar.text = 'Ready';
-    
+    if(vscode.window.activeTextEditor.document.uri.toString() == this.documentUri)
+      this.statusBar.focus();
+    this.statusBar.setStateReady();
   }
   
   private updateStateViewUrl(stateUrl: string) {
@@ -84,8 +74,6 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   dispose() {
-    this.interruptButtonStatusBar.dispose();
-    this.computingStatusBar.dispose();
     this.statusBar.dispose();
     this.view.dispose();
   }
@@ -101,25 +89,7 @@ export class CoqDocument implements vscode.Disposable {
   
   
   private onUpdateComputingStatus(params: proto.NotifyComputingStatusParams) {
-    switch(params.status) {
-      case proto.ComputingStatus.Finished:
-        this.computingStatusBar.hide();
-        this.interruptButtonStatusBar.hide();
-        break;
-      case proto.ComputingStatus.Computing:
-        if(params.computeTimeMS > 2000) {
-          this.computingStatusBar.text = `[${textUtil.formatTimeSpanMS(params.computeTimeMS)}]`;
-          this.computingStatusBar.show();
-          this.interruptButtonStatusBar.show();
-        }
-        break;
-      case proto.ComputingStatus.Interrupted:
-        this.computingStatusBar.text = `[Interrupted $(watch) ${textUtil.formatTimeSpanMS(params.computeTimeMS)}]`;
-        this.computingStatusBar.show();
-        this.interruptButtonStatusBar.hide();
-        break;
-    }
-    
+    this.statusBar.setStateComputing(params.status, params.computeTimeMS);
   }
   
   private onCoqMessage(params: proto.NotifyMessageParams) {
@@ -158,40 +128,29 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public async interruptCoq() {
-    this.setStatusBarWorking('Killing CoqTop');
+    this.statusBar.setStateWorking('Killing CoqTop');
     try {
       await this.langServer.interruptCoq(this.documentUri);
     } finally {}
-    this.setStatusBarReady();
-  }
-
-  private setStatusBarReady() {
-    this.statusBar.text = 'Ready';
-    this.interruptButtonStatusBar.hide();
-  }
-
-  private setStatusBarWorking(name: string) {
-    this.computingStatusBar.hide();
-    this.interruptButtonStatusBar.hide();
-    this.statusBar.text = name;
+    this.statusBar.setStateReady();
   }
 
   public async quitCoq(editor: TextEditor) {
-    this.setStatusBarWorking('Killing CoqTop');
+    this.statusBar.setStateWorking('Killing CoqTop');
     try {
       await this.langServer.quitCoq(this.documentUri);
     } finally {}
     this.reset();
-    this.setStatusBarReady();
+    this.statusBar.setStateReady();
   }
 
   public async resetCoq(editor: TextEditor) {
-    this.setStatusBarWorking('Resetting Coq');
+    this.statusBar.setStateWorking('Resetting Coq');
     try {
       await this.langServer.resetCoq(this.documentUri);
     } finally {}
     this.reset();
-    this.setStatusBarReady();
+    this.statusBar.setStateReady();
   }
   
   private findEditor() : vscode.TextEditor {
@@ -214,21 +173,21 @@ export class CoqDocument implements vscode.Disposable {
   
   private onCoqReset() {
     this.reset();
-    this.setStatusBarReady();
+    this.statusBar.setStateReady();
   }
 
   public async stepForward(editor: TextEditor) {
-    this.setStatusBarWorking('Stepping forward');
+    this.statusBar.setStateWorking('Stepping forward');
     try {
       const value = await this.langServer.stepForward(this.documentUri);
       this.view.update(value);
     } catch (err) {
     }
-    this.setStatusBarReady();
+    this.statusBar.setStateReady();
   }
 
   public async stepBackward(editor: TextEditor) {
-    this.setStatusBarWorking('Stepping backward');
+    this.statusBar.setStateWorking('Stepping backward');
     try {
       const value = await this.langServer.stepBackward(this.documentUri);
       this.view.update(value);
@@ -236,11 +195,11 @@ export class CoqDocument implements vscode.Disposable {
       // clearHighlight(editor, range);
     } catch (err) {
     }
-    this.setStatusBarReady();
+    this.statusBar.setStateReady();
   }
 
   public async interpretToCursorPosition(editor: TextEditor) {
-    this.setStatusBarWorking('Interpretting to point');
+    this.statusBar.setStateWorking('Interpretting to point');
     try {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
@@ -248,26 +207,26 @@ export class CoqDocument implements vscode.Disposable {
       this.view.update(value);
     } catch (err) {
     }
-    this.setStatusBarReady();
+    this.statusBar.setStateReady();
   }
 
   public async interpretToEnd(editor: TextEditor) {
-    this.setStatusBarWorking('Interpreting to end');
+    this.statusBar.setStateWorking('Interpreting to end');
     try {
       const params = { uri: this.documentUri };
       const value = await this.langServer.interpretToEnd(this.documentUri);
       this.view.update(value);
     } catch (err) { }
-    this.setStatusBarReady();
+    this.statusBar.setStateReady();
   }
 
   public async check(query: string) {
-    this.setStatusBarWorking('Running query');
+    this.statusBar.setStateWorking('Running query');
     try {
       return await this.langServer.check(this.documentUri, query);
     } catch (err) {
     } finally {
-      this.setStatusBarReady();
+      this.statusBar.setStateReady();
     }
   }
   
@@ -279,35 +238,35 @@ export class CoqDocument implements vscode.Disposable {
   }
   
   public async locate(query: string) {
-    this.setStatusBarWorking('Running query');
+    this.statusBar.setStateWorking('Running query');
     try {
       const results = await this.langServer.locate(this.documentUri, query);
       this.displayQueryResults(results);
     } catch (err) {
     } finally {
-      this.setStatusBarReady();
+      this.statusBar.setStateReady();
     }
   }
   
   public async search(query: string) {
-    this.setStatusBarWorking('Running query');
+    this.statusBar.setStateWorking('Running query');
     try {
       const results = await this.langServer.search(this.documentUri, query);
       this.displayQueryResults(results);
     } catch (err) {
     } finally {
-      this.setStatusBarReady();
+      this.statusBar.setStateReady();
     }
   }
   
   public async searchAbout(query: string) {
-    this.setStatusBarWorking('Running query');
+    this.statusBar.setStateWorking('Running query');
     try {
       const results = await this.langServer.searchAbout(this.documentUri, query);
       this.displayQueryResults(results);
     } catch (err) {
     } finally {
-      this.setStatusBarReady();
+      this.statusBar.setStateReady();
     }
   }
   
@@ -321,7 +280,7 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public async ltacProfGetResults(editor: TextEditor) {
-    this.setStatusBarWorking('Running query');
+    this.statusBar.setStateWorking('Running query');
     try {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
@@ -335,7 +294,7 @@ export class CoqDocument implements vscode.Disposable {
       //   });
     } catch (err) {
     } finally {
-      this.setStatusBarReady();
+      this.statusBar.setStateReady();
     }
   }
   private onLtacProfResults(params: proto.NotifyLtacProfResultsParams) {
@@ -343,11 +302,12 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public async doOnLostFocus() {
+    this.statusBar.unfocus();
   }  
 
   public async doOnFocus(editor: TextEditor) {
     this.highlights.refreshHighlights([editor]);
-    
+    this.statusBar.focus();
     // await this.view.show(true);
   }
 

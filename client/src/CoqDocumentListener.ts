@@ -35,8 +35,12 @@ export class CoqDocumentListener implements vscode.Disposable {
   private tryLoadDocument(textDoc: vscode.TextDocument) {
     if(textDoc.languageId !== 'coq')
       return;
+    // console.log("try load coq doc: " + textDoc.uri.fsPath);
     const uri = textDoc.uri.toString();
-    this.documents.set(uri, new CoqDocument(textDoc.uri, this.context));    
+    if(!this.documents.has(uri)) {
+      this.documents.set(uri, new CoqDocument(textDoc.uri, this.context));
+      // console.log("new coq doc: " + textDoc.uri.fsPath);
+    }    
   }
 
   private onDidChangeTextDocument(params: vscode.TextDocumentChangeEvent) {
@@ -52,6 +56,7 @@ doc.highlights.refreshHighlights(doc.allEditors());
   }
 
   private onDidOpenTextDocument(doc: vscode.TextDocument) {
+    // console.log("opening: " + doc.uri.fsPath);
     this.tryLoadDocument(doc);
   }
 
