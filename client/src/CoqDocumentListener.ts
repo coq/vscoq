@@ -65,17 +65,24 @@ doc.highlights.refreshHighlights(doc.allEditors());
   }
 
   private onDidChangeActiveTextEditor(editor: vscode.TextEditor) {
-    const oldUri = this.activeEditor ? this.activeEditor.document.uri.toString() : null;
-    const oldDoc = this.documents.get(oldUri);
-    if(oldDoc)
-      oldDoc.doOnLostFocus();
-
-    this.activeEditor = vscode.window.activeTextEditor;
-
+    // newly active editor
     const uri = editor.document.uri.toString();
     const doc = this.documents.get(uri);
-    if(doc)
-      doc.doOnFocus(editor);
+
+    const oldUri = this.activeEditor ? this.activeEditor.document.uri.toString() : null;
+    const oldDoc = this.documents.get(oldUri);
+
+    if(doc && oldDoc && uri==oldUri)
+      doc.doOnSwitchActiveEditor(this.activeEditor, editor);
+    else {
+      if(doc)
+        doc.doOnFocus(editor);
+      if(oldDoc)
+        oldDoc.doOnLostFocus();
+    }
+
+    this.activeEditor = editor;
+
  }
 
 }

@@ -33,13 +33,21 @@ export function countAllGoals(state: proto.CoqTopGoalResult): number {
   return result;
 }
 
+export function adjacentPane(pane: vscode.ViewColumn) : vscode.ViewColumn {
+  switch (pane) {
+  case vscode.ViewColumn.One: return vscode.ViewColumn.Two
+  case vscode.ViewColumn.Two: return vscode.ViewColumn.Three;
+  case vscode.ViewColumn.Three: return vscode.ViewColumn.Two;
+  }
+}
+
 export interface CoqView extends vscode.Disposable {
 
   update(state: proto.CoqTopGoalResult) : void;
   // message(message: string) : void;
   onresize: (columns: number) => Thenable<void>;
 
-  show(preserveFocus: boolean) : Promise<void>;
+  show(preserveFocus: boolean, pane: vscode.ViewColumn) : Promise<void>;
   showExternal() : Promise<void>;
 
 }

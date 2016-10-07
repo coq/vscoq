@@ -13,6 +13,7 @@ import {HtmlLtacProf} from './HtmlLtacProf';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
 import {CoqLanguageServer} from './CoqLanguageServer';
+import {adjacentPane} from './CoqView';
 
 export class CoqDocument implements vscode.Disposable {
   private statusBar: vscode.StatusBarItem;
@@ -50,7 +51,7 @@ export class CoqDocument implements vscode.Disposable {
     this.view = new HtmlCoqView(uri, context);
     // this.view = new SimpleCoqView(uri.toString());
     // this.view = new MDCoqView(uri);
-
+    this.view.show(true,adjacentPane(this.currentViewColumn()));
 
     this.langServer.onUpdateHighlights((p) => this.onDidUpdateHighlights(p));
     this.langServer.onMessage((p) => this.onCoqMessage(p));
@@ -94,7 +95,8 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   private onDidUpdateHighlights(params: proto.NotifyHighlightParams) {
-    this.updateHighlights(this.findEditor(),params);
+    this.allEditors()
+      .forEach((editor) => this.updateHighlights(editor,params));
   }
   
   
@@ -192,12 +194,20 @@ export class CoqDocument implements vscode.Disposable {
   
   private findEditor() : vscode.TextEditor {
     return vscode.window.visibleTextEditors.find((editor,i,a) => 
-      editor.document.uri.toString() === this.documentUri)
+      editor.document.uri.toString() === this.documentUri);
   }
 
   public allEditors() : vscode.TextEditor[] {
     return vscode.window.visibleTextEditors.filter((editor,i,a) => 
       editor.document.uri.toString() === this.documentUri)
+  }
+
+  private currentViewColumn() {
+    let editor = this.findEditor();
+    if(editor)
+      return editor.viewColumn;
+    else
+      return vscode.window.activeTextEditor.viewColumn;
   }
   
   private onCoqReset() {
@@ -304,7 +314,7 @@ export class CoqDocument implements vscode.Disposable {
       if(external) {
         await this.view.showExternal();
       } else
-        await this.view.show(true);
+        await this.view.show(true,adjacentPane(editor.viewColumn));
     } catch (err) {}
   }
 
@@ -334,6 +344,12 @@ export class CoqDocument implements vscode.Disposable {
   }  
 
   public async doOnFocus(editor: TextEditor) {
+    this.highlights.refreshHighlights([editor]);
+    
     // await this.view.show(true);
-  }  
+  }
+
+  public async doOnSwitchActiveEditor(oldEditor: TextEditor, newEditor: TextEditor) {
+    this.highlights.refreshHighlights([newEditor]);
+  }
 }

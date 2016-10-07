@@ -107,8 +107,6 @@ export class HtmlCoqView implements view.CoqView {
       ws.onmessage = (event) => this.handleClientMessage(event);
       ws.send(JSON.stringify(this.currentState));
     })
-
-    this.createBuffer();
   }
   
   private handleClientResize(event: ResizeEvent) {
@@ -134,17 +132,17 @@ export class HtmlCoqView implements view.CoqView {
       // const templateFileName = vscode.Uri.file(__dirname + '/HtmlView/Coq.html');
       this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
       console.log("Goals: " + this.coqViewUri.toString());
-      await this.show(true);
-
-
     } catch(err) {
       vscode.window.showErrorMessage(err.toString());
     }    
   }
 
-  public async show(preserveFocus: boolean) {
+  public async show(preserveFocus: boolean, pane: vscode.ViewColumn) {
+    if(!this.coqViewUri)
+      await this.createBuffer();
+
     // const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
-    const result = await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two, "Goals");
+    const result = await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, pane, "ProofView: " + path.basename(this.docUri.fsPath));
     // if(preserveFocus && focusedDoc)
     //   await vscode.window.showTextDocument(focusedDoc);
   }
