@@ -340,15 +340,16 @@ In practice, `stateId` is 0, but the effect is to perform the query on the curre
 -------------------------------
 
 
-### <a name="command-search">**Search([(constraintTypeN: string, constraintValueN: string, forceN: boolean)])**</a>
+### <a name="command-search">**Search(list (constraintTypeN: string, constraintValueN: string, positiveConstraintN: boolean)])**</a>
+Searches for objects that satisfy a list of constraints. If `${positiveConstraint}` is `false`, then the constraint is inverted. 
 ```html
 <call val="Search">
   <list>
     <pair>
       <search_cst val="${constraintType1}">
-        <string>${constraintValue1}</string>
+        ${constraintValue1}
       </search_cst>
-      <bool val="${force1}"/>
+      <bool val="${positiveConstraint1}"/>
     </pair>
     ...
     <!-- Example: -->
@@ -380,6 +381,12 @@ In practice, `stateId` is 0, but the effect is to perform the query on the curre
   </list>
 </value>
 ```
+##### Types of constraints:
+* Name pattern: `${constraintType} = "name_pattern"`; `${constraintValue}` is a regular expression string.
+* Type pattern: `${constraintType} = "type_pattern"`; `${constraintValue}` is a pattern (???: an open gallina term) string.
+* SubType pattern: `${constraintType} = "subtype_pattern"`; `${constraintValue}` is a pattern (???: an open gallina term) string.
+* In module: `${constraintType} = "in_module"`; `${constraintValue}` is a list of strings specifying the module/directory structure.
+* Include blacklist: `${constraintType} = "include_blacklist"`; `${constraintValue}` *is ommitted*.
 
 -------------------------------
 
