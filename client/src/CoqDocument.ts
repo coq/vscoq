@@ -125,7 +125,9 @@ export class CoqDocument implements vscode.Disposable {
   private onCoqMessage(params: proto.NotifyMessageParams) {
     switch(params.level) {
     case 'warning':
-      vscode.window.showWarningMessage(params.message); return;
+      // vscode.window.showWarningMessage(params.message); return;
+      this.infoOut.show(true);
+      this.infoOut.appendLine(params.message);
     case 'info':
       // this.infoOut.appendLine(params.message); return;
       // this.view.message(params.message);
