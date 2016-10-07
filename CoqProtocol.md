@@ -340,7 +340,7 @@ In practice, `stateId` is 0, but the effect is to perform the query on the curre
 -------------------------------
 
 
-### <a name="command-search">**Search(list (constraintTypeN: string, constraintValueN: string, positiveConstraintN: boolean)])**</a>
+### <a name="command-search">**Search([(constraintTypeN: string, constraintValueN: string, positiveConstraintN: boolean)])**</a>
 Searches for objects that satisfy a list of constraints. If `${positiveConstraint}` is `false`, then the constraint is inverted. 
 ```html
 <call val="Search">
