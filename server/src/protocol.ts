@@ -1,6 +1,6 @@
 'use strict';
 import { RequestType, NotificationType } from 'vscode-jsonrpc';
-import { FailValue } from './coq-proto';
+import * as vscode from 'vscode-languageserver-types';
 
 // 
 // // import { RequestType, NotificationType, ResponseEror } from 'vscode-jsonrpc';
@@ -29,18 +29,23 @@ export interface CoqTopSettings {
   loadCoqProject: boolean;
 }
 
+export interface FailValue {
+  message: string;
+  range?: vscode.Range;
+}
+
 
 export declare interface CoqTopParams {
   uri: string;
 }
-export declare interface CoqTopStepForwardResult {
-  processingStart: number;
-  processingEnd: number;
-}
-export declare interface CoqTopStepBackwardResult {
-  commandStart: number;
-  commandEnd: number;
-}
+// export declare interface CoqTopStepForwardResult {
+//   processingStart: number;
+//   processingEnd: number;
+// }
+// export declare interface CoqTopStepBackwardResult {
+//   commandStart: number;
+//   commandEnd: number;
+// }
 export enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
 export enum TextDifference { None, Added, Removed }
 export interface TextPartDifference {
@@ -73,7 +78,8 @@ export declare interface CoqTopGoalResult {
   backgroundGoals?: UnfocusedGoalStack,
   shelvedGoals?: Goal[],
   abandonedGoals?: Goal[],
-  error?: FailValue;
+  error?: FailValue,
+  focus?: vscode.Position
 }
 export declare interface CoqTopInterpretToPointParams extends CoqTopParams {
   offset: number;
@@ -148,8 +154,7 @@ export enum HighlightType {
 
 export interface Highlight {
   style: HighlightType;
-  textBegin: number;
-  textEnd: number;
+  range: vscode.Range;
   message?: string;
 }
 

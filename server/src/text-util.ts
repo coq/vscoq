@@ -12,6 +12,10 @@ export interface RangeDelta {
   charactersDelta: number; // delta for positions on the same line as the end position
 }
 
+export function positionIsEqual(pos1: Position, pos2: Position) : boolean {
+  return pos1.line===pos2.line && pos1.character === pos2.character;
+}
+
 export function positionIsBefore(pos1: Position, pos2: Position) : boolean {
   return (pos1.line < pos2.line || (pos1.line===pos2.line && pos1.character < pos2.character));
 }
@@ -29,23 +33,154 @@ export function positionIsAfterOrEqual(pos1: Position, pos2: Position) : boolean
 }
 
 export function rangeContains(range: Range, pos: Position) : boolean {
-  return !this.positionIsBefore(pos,range.start) && this.positionIsBefore(pos,range.end);
+  return !positionIsBefore(pos,range.start) && positionIsBefore(pos,range.end);
 }
 
 export function rangeContainsOrTouches(range: Range, pos: Position) : boolean {
-  return !this.positionIsBeforeOrEqual(pos,range.start) && this.positionIsBeforeOrEqual(pos,range.end);
+  return !positionIsBeforeOrEqual(pos,range.start) && positionIsBeforeOrEqual(pos,range.end);
 }
 
 export function rangeIntersects(range1: Range, range2: Range) : boolean {
-  return this.rangeContains(range1,range2.start) || this.rangeContains(range1,range2.end);
+  return rangeContains(range1,range2.start) || rangeContains(range1,range2.end);
 }
 
 export function rangeTouches(range1: Range, range2: Range) : boolean {
-  return this.rangeContainsOrTouches(range1,range2.start) || this.rangeContainsOrTouches(range1,range2.end);
+  return rangeContainsOrTouches(range1,range2.start) || rangeContainsOrTouches(range1,range2.end);
 }
 
+export enum RangeContainment {
+  Contains, Disjoint, Overlapping
+}
+export function rangeContainment(range1: Range, range2: Range) : RangeContainment {
+  if(positionIsAfterOrEqual(range1.start,range2.end) || positionIsBeforeOrEqual(range1.end,range2.start))
+     return RangeContainment.Disjoint;
+  else if(positionIsBeforeOrEqual(range1.start, range2.start) && positionIsAfterOrEqual(range1.end, range2.end))
+    return RangeContainment.Contains;
+  else
+     return RangeContainment.Overlapping;
+    
+}
 
-export function locationAt(text: string, pos: Position) : number {
+// enum PositionComparison {
+//   Before   = 0,
+//   Equal    = 1,
+//   After    = 2,
+// }
+// export function comparePositions(pos1: Position, pos2: Position) : PositionComparison {
+//   if(pos1.line < pos2.line)
+//     return PositionComparison.Before;
+//   else if(pos1.line > pos2.line)
+//     return PositionComparison.After;
+//   else if(pos1.character < pos2.character)
+//     return PositionComparison.Before;
+//   else if(pos1.character > pos2.character)
+//     return PositionComparison.After;
+//   else
+//     return PositionComparison.Equal;
+//   }
+
+// enum PositionRangeIntersection {
+//   Before   = 1 << 0, // 001
+//   Within   = 1 << 1, // 010
+//   After    = 1 << 2, // 100
+//   AtStart  = 3,      // 011 
+//   AtEnd    = 1 << 1, // 10
+// }
+// export function positionRangeIntersection(pos: Position, range: Range) : PositionRangeIntersection {
+//   switch(comparePositions(pos,range.start)) {
+//     case PositionComparison.Before:
+//       return PositionRangeIntersection.Before;
+//     case PositionComparison.Equal:
+//     case PositionComparison.After:
+//       // pos.line >= range.end.line
+//       if(pos.line > range.end.line || pos.character > range.end.character)
+//         return PositionRangeIntersection.After;
+//       else
+//         return PositionRangeIntersection.Within;
+//   }
+// }
+// enum EndPositionRangeIntersection {
+//   EndBefore  = 1,
+//   EndAfter   = 2,
+//   EndWithin  = 3,
+// }
+// export function endPositionRangeIntersection(pos: Position, range: Range) : EndPositionRangeIntersection {
+//   switch(comparePositions(pos,range.start)) {
+//     case PositionComparison.Before:
+//     case PositionComparison.Equal:
+//       return EndPositionRangeIntersection.EndBefore;
+//     case PositionComparison.After:
+//       // pos.line >= range.end.line
+//       if(pos.line > range.end.line || pos.character > range.end.character)
+//         return EndPositionRangeIntersection.EndAfter;
+//       else
+//         return EndPositionRangeIntersection.EndWithin;
+//   }
+// }
+
+// enum RangeIntersection {
+//   StartBefore = PositionRangeIntersection.Before,        // 1      = 0001
+//   StartAfter  = PositionRangeIntersection.After,         // 2      = 0010
+//   StartWithin = PositionRangeIntersection.Within,        // 3      = 0011
+//   EndBefore   = EndPositionRangeIntersection.EndBefore,  // 1 << 2 = 0100
+//   EndAfter    = EndPositionRangeIntersection.EndAfter,   // 2 << 2 = 1000
+//   EndWithin   = EndPositionRangeIntersection.EndWithin,  // 3 << 2 = 1100
+
+//   /** Ex: [++++  ----] or [++++----] */
+//   Before = StartBefore | EndBefore,
+//   /** Ex: [+++**---] */
+//   OverlapBefore = StartBefore | EndWithin,
+//   /** Ex: [+++***] or [+++***+++] or [***+++] */
+//   Contains,
+
+//   /** Ex: [****] */
+//   Equal,
+
+//   /** Ex: [---***] or [---***] or [---***---] */
+//   Within,
+//   /** Ex: [---**+++] */
+//   OverlapAfter,
+//   /** Ex: [----  ++++] or [----++++] */
+//   After
+// }
+// export function rangeIntersection(range1: Range, range2: Range) : RangeIntersection {
+//   let result = <number>comparePositions(range1.start,range2.start) | (<number>comparePositions(range1.start,range2.start)) << 3;
+  
+//   if(result & RangeIntersection.StartLT || result & RangeIntersection.StartEq)
+//     result|= RangeIntersection.StartLE;
+//   else if(result & RangeIntersection.StartGT || result & RangeIntersection.StartEq)
+//     result|= RangeIntersection.StartGE;
+
+//   if(result & RangeIntersection.EndLT || result & RangeIntersection.StartEq)
+//     result|= RangeIntersection.StartLE;
+//   else if(result & RangeIntersection.StartGT || result & RangeIntersection.StartEq)
+//     result|= RangeIntersection.StartGE;
+
+//   return result;
+// }
+
+/** Calculates the offset into text of pos, where textStart is the position where text starts and both pos and textStart are absolute positions 
+ * @return the offset into text indicated by pos, or -1 if pos is out of range
+ * */
+export function relativeOffsetAtAbsolutePosition(text: string, textStart: Position, pos: Position) : number {
+  let line = textStart.line;
+  let currentOffset = 0;
+  // count the relative lines and offset w.r.t text
+  while(line < pos.line) {
+    const match = lineEndingRE.exec(text.substring(currentOffset));
+    ++line;
+    currentOffset += match[0].length;
+  }
+
+  if(line > pos.line)
+    return -1
+  else if(textStart.line == pos.line)
+    return Math.max(-1, pos.character - textStart.character);
+  else if(line == pos.line)
+    return Math.max(-1, pos.character - currentOffset);
+}
+
+export function offsetAt(text: string, pos: Position) : number {
   let line = pos.line;
   let lastIndex = 0;
   while (line > 0) {
@@ -58,6 +193,23 @@ export function locationAt(text: string, pos: Position) : number {
     }
   }
   return lastIndex + pos.character;
+}
+
+/**
+ * @returns the Position (line, column) for the location (character position), assuming that text begins at start
+ */
+export function positionAtRelative(start: Position, text: string, offset: number) : Position {
+  if(offset > text.length)
+    offset = text.length;
+  let line = start.line;
+  let lastIndex = start.character;
+  while(true) {
+    const match = lineEndingRE.exec(text.substring(lastIndex));
+    if(lastIndex + match[1].length >= offset)
+      return Position.create(line, Math.max(offset - lastIndex,0))
+    lastIndex+= match[0].length;
+    ++line;
+  }
 }
 
 /**

@@ -39,6 +39,7 @@ function createServerLocalExtension(serverModule: string, debugOptions: string[]
 
 export class CoqLanguageServer {
   private server: LanguageClient = null;
+  private cancelRequest = new vscode.CancellationTokenSource();
 
   public constructor(context: ExtensionContext) {
     // The server is implemented in node
@@ -93,8 +94,10 @@ export class CoqLanguageServer {
     this.server.onNotification(proto.CoqLtacProfResultsNotification.type, listener);
   }
 
-  public interruptCoq(uri: string) {
-    return this.server.sendRequest(proto.InterruptCoqRequest.type, {uri: uri});
+  public async interruptCoq(uri: string) {
+    this.cancelRequest.dispose();
+    this.cancelRequest = new vscode.CancellationTokenSource();
+    await this.server.sendRequest(proto.InterruptCoqRequest.type, {uri: uri}, this.cancelRequest.token);
   }
 
   public quitCoq(uri: string) {
@@ -106,15 +109,15 @@ export class CoqLanguageServer {
   }
 
   public getGoal(uri: string) {
-    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.GoalRequest.type, {uri: uri});
+    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.GoalRequest.type, {uri: uri},this.cancelRequest.token);
   }
 
   public stepForward(uri: string) {
-    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.StepForwardRequest.type, {uri: uri});
+    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.StepForwardRequest.type, {uri: uri},this.cancelRequest.token);
   }
 
   public stepBackward(uri: string) {
-    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.StepBackwardRequest.type, {uri: uri});
+    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.StepBackwardRequest.type, {uri: uri},this.cancelRequest.token);
   }
 
   public interpretToPoint(uri: string, offset: number) {
@@ -122,16 +125,16 @@ export class CoqLanguageServer {
       uri: uri,
       offset: offset
     };
-    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.InterpretToPointRequest.type, params);
+    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.InterpretToPointRequest.type, params,this.cancelRequest.token);
   }
 
   public interpretToEnd(uri: string) {
-    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.InterpretToEndRequest.type, {uri: uri});
+    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.InterpretToEndRequest.type, {uri: uri},this.cancelRequest.token);
   }
   
   public resizeView(uri: string, columns: number) : Thenable<void> {
     var x = proto.ResizeWindowRequest.type;
-    return <Thenable<void>>this.server.sendRequest<proto.CoqTopResizeWindowParams,void,void>(proto.ResizeWindowRequest.type, <proto.CoqTopResizeWindowParams>{uri: uri, columns: columns});
+    return <Thenable<void>>this.server.sendRequest<proto.CoqTopResizeWindowParams,void,void>(proto.ResizeWindowRequest.type, <proto.CoqTopResizeWindowParams>{uri: uri, columns: columns},this.cancelRequest.token);
   }
 
   // private createLtacProfResultsMap(treelist: {fst:string,snd:proto.LtacProfTree}[]) : Map<string,LtacProfTree> {
@@ -142,7 +145,7 @@ export class CoqLanguageServer {
   // }
 
   public ltacProfGetResults(uri: string, offset?: number) : Thenable<proto.LtacProfResults> {
-    return <Thenable<proto.LtacProfResults>>this.server.sendRequest<proto.CoqTopLtacProfResultsParams,proto.LtacProfResults,void>(proto.LtacProfResultsRequest.type, {uri: uri, offset: offset});
+    return <Thenable<proto.LtacProfResults>>this.server.sendRequest<proto.CoqTopLtacProfResultsParams,proto.LtacProfResults,void>(proto.LtacProfResultsRequest.type, {uri: uri, offset: offset},this.cancelRequest.token);
     // return this.createLtacProfResultsMap(results.results);
   }
 
@@ -151,7 +154,7 @@ export class CoqLanguageServer {
       uri: uri,
       queryFunction: proto.QueryFunction.Locate,
       query: query
-    });
+    },this.cancelRequest.token);
   }
 
   public check(uri: string, query: string) {
@@ -159,7 +162,7 @@ export class CoqLanguageServer {
       uri: uri,
       queryFunction: proto.QueryFunction.Check,
       query: query
-    });
+    },this.cancelRequest.token);
   }
 
   public search(uri: string, query: string) {
@@ -167,7 +170,7 @@ export class CoqLanguageServer {
       uri: uri,
       queryFunction: proto.QueryFunction.Search,
       query: query
-    });
+    },this.cancelRequest.token);
   }
 
   public searchAbout(uri: string, query: string) {
@@ -175,7 +178,7 @@ export class CoqLanguageServer {
       uri: uri,
       queryFunction: proto.QueryFunction.SearchAbout,
       query: query
-    });
+    },this.cancelRequest.token);
   }
 
 }

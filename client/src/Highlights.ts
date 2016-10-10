@@ -111,8 +111,7 @@ export class Highlights {
       return;
     const anEditor = editors[0];
     for(const highlight of params.highlights) {
-      const range = new vscode.Range(anEditor.document.positionAt(highlight.textBegin),
-        anEditor.document.positionAt(highlight.textEnd));
+      const range = new vscode.Range(highlight.range.start.line,highlight.range.start.character,highlight.range.end.line,highlight.range.end.character);
       switch(highlight.style) {
         case proto.HighlightType.Clear:
           editors.forEach((editor) => this.clearHighlight(editor, range));

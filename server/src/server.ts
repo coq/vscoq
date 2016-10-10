@@ -144,58 +144,58 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 
 connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.InterruptCoqRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
   return project.lookup(params.uri)
-    .coq.interrupt();
+    .interrupt();
 });
 connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.QuitCoqRequest.type, (params: coqproto.CoqTopParams) : Thenable<void> => {
   return project.lookup(params.uri)
-    .coq.quit();
+    .quitCoq();
 });
 connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.ResetCoqRequest.type, (params: coqproto.CoqTopParams) => {
   return project.lookup(params.uri)
-    .coq.reset();
+    .resetCoq();
 });
 connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.StepForwardRequest.type, (params: coqproto.CoqTopParams) => {
   return project.lookup(params.uri)
-    .coq.stepForward();
+    .stepForward();
 });
 connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.StepBackwardRequest.type, (params: coqproto.CoqTopParams) => {
   return project.lookup(params.uri)
-    .coq.stepBackward();
+    .stepBackward();
 });
 connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.InterpretToPointRequest.type, (params: coqproto.CoqTopInterpretToPointParams) => {
   return project.lookup(params.uri)
-    .coq.interpretToPoint(params.offset);
+    .interpretToPoint(params.offset);
 });
 connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.InterpretToEndRequest.type, (params: coqproto.CoqTopParams) => {
   return project.lookup(params.uri)
-    .coq.interpretToEnd();
+    .interpretToEnd();
 });
 connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams) => {
   return project.lookup(params.uri)
-    .coq.getGoals();
+    .getGoal();
 });
 connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.QueryRequest.type, (params: coqproto.CoqTopQueryParams) => {
   switch(params.queryFunction) {
   case coqproto.QueryFunction.Locate:
-    return project.lookup(params.uri).coq.locate(params.query);
+    return project.lookup(params.uri).locateIdent(params.query);
   case coqproto.QueryFunction.Check:
-    return project.lookup(params.uri).coq.check(params.query);
+    return project.lookup(params.uri).checkTerm(params.query);
   case coqproto.QueryFunction.Search:
-    return project.lookup(params.uri).coq.search(params.query);
+    return project.lookup(params.uri).search(params.query);
   case coqproto.QueryFunction.SearchAbout:
-    return project.lookup(params.uri).coq.searchAbout(params.query);
+    return project.lookup(params.uri).searchAbout(params.query);
   default:
     return null;
   }
 });
 connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.ResizeWindowRequest.type, (params: coqproto.CoqTopResizeWindowParams) => {
   return project.lookup(params.uri)
-    .coq.resizeWindow(params.columns);
+    .setWrappingWidth(params.columns);
 });
 
 connection.onRequest<coqproto.CoqTopLtacProfResultsParams, coqproto.CoqTopGoalResult, void>(coqproto.LtacProfResultsRequest.type, (params: coqproto.CoqTopLtacProfResultsParams) => {
   return project.lookup(params.uri)
-    .coq.ltacProfResults(params.offset);
+    .requestLtacProfResults(params.offset);
 });
 
 
@@ -250,7 +250,7 @@ connection.onDidOpenTextDocument((params) => {
 
 connection.onDidChangeTextDocument((params) => {
   return project.lookup(params.textDocument.uri)
-    .textEdit(params.contentChanges);
+    .applyTextEdits(params.contentChanges, params.textDocument.version);
 });
 
 connection.onDidCloseTextDocument((params) => {

@@ -265,23 +265,15 @@ export class CoqTop extends events.EventEmitter {
     // this.resetCoq(coqPath);
   }
 
-  cleanup(error?: string) {
+  dispose() {
     if(this.coqtopProc) {
       try {
         this.coqtopProc.kill();
-        this.coqtopProc.disconnect();
+        if(this.coqtopProc.connected)
+          this.coqtopProc.disconnect();
       } catch(e) {}
       this.coqtopProc = null;
     }
-    // if(this.mainChannelServerR)
-    //   this.mainChannelServerR.close();
-    // if(this.mainChannelServerW)
-    //   this.mainChannelServerW.close();
-    // if (this.controlChannelServerR)
-    //   this.controlChannelServerR.close();
-    // if (this.controlChannelServerW)
-    //   this.controlChannelServerW.close();
-    try {
     if (this.mainChannelR)
       this.mainChannelR.end();
     if (this.mainChannelW)
@@ -290,11 +282,20 @@ export class CoqTop extends events.EventEmitter {
       this.controlChannelR.end();
     if (this.controlChannelW)
       this.controlChannelW.end();
-    } catch(err) {
-      var x = 0;
-    }
+    
+    this.coqtopProc = undefined;
+    this.mainChannelR = undefined;
+    this.mainChannelW = undefined;
+    this.controlChannelR = undefined;
+    this.controlChannelW = undefined;
+  }
 
-    this.callbacks.onClosed(error);
+  cleanup(error?: string) {
+    if(this.isRunning()) {
+      this.dispose();
+      this.callbacks.onClosed(error);
+    } else
+      this.dispose();
   }
 
   public isRunning() : boolean {
@@ -310,7 +311,7 @@ export class CoqTop extends events.EventEmitter {
     const port = 0;
     const host = 'localhost';
     return new Promise<void>((resolve,reject) => {
-      server.listen({port: port, host: host}, (err) => {
+      server.listen({port: port, host: host}, (err:any) => {
         if (err)
           reject(err);
         else {
@@ -327,8 +328,8 @@ export class CoqTop extends events.EventEmitter {
         this.console.log(`Client connected on ${name} (port ${socket.localPort})`);
         socket.setEncoding('utf8');
         if (dataHandler)
-          socket.on('data', (data) => dataHandler(data));
-        socket.on('error', (err) => this.onCoqTopError(err.toString() + ` (${name})`));
+          socket.on('data', (data:string) => dataHandler(data));
+        socket.on('error', (err:any) => this.onCoqTopError(err.toString() + ` (${name})`));
         resolve(socket);
       });
     });
@@ -436,18 +437,18 @@ export class CoqTop extends events.EventEmitter {
   private startCoqTop(process : ChildProcess) {
     this.coqtopProc = process;
     this.console.log(`coqtop started with pid ${this.coqtopProc.pid}`);
-    this.coqtopProc.stdout.on('data', (data) => this.coqtopOut(data))
-    this.coqtopProc.on('exit', (code) => {
+    this.coqtopProc.stdout.on('data', (data:string) => this.coqtopOut(data))
+    this.coqtopProc.on('exit', (code:number) => {
       this.console.log('coqtop exited with code: ' + code);
     });
-    this.coqtopProc.stderr.on('data', (data) => {
+    this.coqtopProc.stderr.on('data', (data:string) => {
       this.console.log('coqtop-stderr: ' + data);
     });
-    this.coqtopProc.on('close', (code) => {
+    this.coqtopProc.on('close', (code:number) => {
       this.console.log('coqtop closed with code: ' + code);
       this.cleanup('coqtop closed with code: ' + code);
     });
-    this.coqtopProc.on('error', (code) => {
+    this.coqtopProc.on('error', (code:number) => {
       this.console.log('coqtop could not be started: ' + code);
       this.cleanup('coqtop could not be started: ' + code);
     });
@@ -663,9 +664,9 @@ export class CoqTop extends events.EventEmitter {
       stateId: value.stateId,
       message: value.error.message,
       };
-    if(value.error.location)
-      error.range = value.error.location;
-    this.console.log(`ERROR ${logIdent || ""}: ${value.stateId} --> ${value.error.message} ${value.error.location ? `@ ${value.error.location.start}-${value.error.location.stop}`: ""}`);
+    if(value.error.range)
+      error.range = value.error.range;
+    this.console.log(`ERROR ${logIdent || ""}: ${value.stateId} --> ${value.error.message} ${value.error.range ? `@ ${value.error.range.start}-${value.error.range.stop}`: ""}`);
     throw error;
   }
   
@@ -783,16 +784,16 @@ export class CoqTop extends events.EventEmitter {
     this.mainChannelW.write('<call val="Init"><option val="none"/></call>');
 
     const timeout = 3000;
-    try {
-      const value = await asyncWithTimeout(coqResult, timeout);
-      const result = <InitResult>{stateId: value.stateId};
-      this.console.log(`Init: () --> ${result.stateId}`);
-      return result;
-    } catch(error) {
-      this.console.warn(`Init: () --> TIMEOUT after ${timeout}ms`);
-      this.cleanup(`Init: () --> TIMEOUT after ${timeout}ms`);
-      throw error;
-    }    
+    // try {
+    const value = await coqResult;
+    const result = <InitResult>{stateId: value.stateId};
+    this.console.log(`Init: () --> ${result.stateId}`);
+    return result;
+    // } catch(error) {
+    //   this.console.warn(`Init: () --> TIMEOUT after ${timeout}ms`);
+    //   this.cleanup(`Init: () --> TIMEOUT after ${timeout}ms`);
+    //   throw error;
+    // }    
 // this.controlChannelR.write("PING\n");
   }
 
@@ -900,7 +901,7 @@ export class CoqTop extends events.EventEmitter {
   }
 
 
-  public async coqLtacProfilingResults(stateId?: number) : Promise<LtacProfResults> {
+  public async coqLtacProfilingResults(stateId?: number) : Promise<void> {
     this.checkState();
     stateId = stateId || 0;
 
@@ -910,7 +911,7 @@ export class CoqTop extends events.EventEmitter {
     this.mainChannelW.write(`<call val="Query"><pair><string>Show Ltac Profile.</string><state_id val="${stateId}"/></pair></call>`);    
 
     const value = await coqResult;
-    return {total_time: 0, tactics:[]};;
+    // return {total_time: 0, tactics:[]};;
     // let result : LtacProfResults = value['ltacprof'];
     // this.console.log(`LtacProfResults: () --> ...`);
     // return result;

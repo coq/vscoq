@@ -26,6 +26,7 @@ export class CoqDocument implements vscode.Disposable {
   private infoOut: vscode.OutputChannel;
   private queryOut: vscode.OutputChannel;
   private noticeOut: vscode.OutputChannel;
+  private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
 
   constructor(uri: vscode.Uri, context: ExtensionContext) {
     this.statusBar = new StatusBar();
@@ -56,6 +57,11 @@ export class CoqDocument implements vscode.Disposable {
       const value = await this.langServer.getGoal(this.documentUri);
       this.view.update(value);
     };
+
+    vscode.window.onDidChangeTextEditorSelection((e:vscode.TextEditorSelectionChangeEvent) => {
+      if(this.cursorUnmovedSinceCommandInitiated.has(e.textEditor))
+        this.cursorUnmovedSinceCommandInitiated.delete(e.textEditor);
+    })
     
     if(vscode.window.activeTextEditor.document.uri.toString() == this.documentUri)
       this.statusBar.focus();
@@ -80,6 +86,13 @@ export class CoqDocument implements vscode.Disposable {
 
   private reset() {
     this.highlights.clearAllHighlights(this.allEditors())
+  }
+
+  private rememberCursors() {
+    this.cursorUnmovedSinceCommandInitiated.clear();
+    for(let editor of this.allEditors()) {
+      this.cursorUnmovedSinceCommandInitiated.add(editor);    
+    }
   }
 
   private onDidUpdateHighlights(params: proto.NotifyHighlightParams) {
@@ -179,8 +192,12 @@ export class CoqDocument implements vscode.Disposable {
   public async stepForward(editor: TextEditor) {
     this.statusBar.setStateWorking('Stepping forward');
     try {
+      this.rememberCursors();
       const value = await this.langServer.stepForward(this.documentUri);
       this.view.update(value);
+      if(value.focus)
+        for(let editor of this.cursorUnmovedSinceCommandInitiated)
+          editor.selections = [new vscode.Selection(value.focus.line,value.focus.character,value.focus.line,value.focus.character)]
     } catch (err) {
     }
     this.statusBar.setStateReady();
@@ -189,8 +206,12 @@ export class CoqDocument implements vscode.Disposable {
   public async stepBackward(editor: TextEditor) {
     this.statusBar.setStateWorking('Stepping backward');
     try {
+      this.rememberCursors();
       const value = await this.langServer.stepBackward(this.documentUri);
       this.view.update(value);
+      if(value.focus)
+        for(let editor of this.cursorUnmovedSinceCommandInitiated)
+          editor.selections = [new vscode.Selection(value.focus.line,value.focus.character,value.focus.line,value.focus.character)]
       // const range = new vscode.Range(editor.document.positionAt(value.commandStart), editor.document.positionAt(value.commandEnd));
       // clearHighlight(editor, range);
     } catch (err) {

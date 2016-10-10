@@ -1,4 +1,5 @@
 'use strict';
+import {Position, Range} from 'vscode-languageserver';
 
 export type CoqValue = any;
 
@@ -28,7 +29,7 @@ export enum SentenceStatus {
 
 export interface FailValue {
   message: string;
-  location?: Location;
+  range?: Location;
 }
 
 export interface Value {

@@ -22,7 +22,7 @@ interface SentenceSkip {
   isPreWhitespace?: boolean;
 }
 
-function doSimpleSkip(str, idx, re) : SentenceSkip {
+function doSimpleSkip(str:string, idx:number, re: RegExp) : SentenceSkip {
   const match = re.exec(str.substr(idx));
   if(!match || match.length===0)
     throw 'anomaly: bad regex';
@@ -33,7 +33,7 @@ function doSimpleSkip(str, idx, re) : SentenceSkip {
   };
 }
 
-function doSkipSentence(str, idx, allowBullet : boolean) : SentenceSkip {
+function doSkipSentence(str:string, idx:number, allowBullet : boolean) : SentenceSkip {
   if(allowBullet) {
     const match = skipSentenceOrBulletRE.exec(str.substr(idx));
     if(!match || match.length===0)
@@ -49,14 +49,17 @@ function doSkipSentence(str, idx, allowBullet : boolean) : SentenceSkip {
     return doSimpleSkip(str,idx,skipSentenceRE);
 }
 
-function doSkipComment(str, idx) : SentenceSkip {
+function doSkipComment(str:string, idx:number) : SentenceSkip {
   return doSimpleSkip(str,idx,skipCommentRE);
 }
 
-function doSkipString(str, idx) : SentenceSkip {
+function doSkipString(str:string, idx:number) : SentenceSkip {
   return doSimpleSkip(str,idx,skipStringRE);
 }
   
+/**
+ * @returns the length of the parsed command or -1 if there is no [full] command
+ */
 export function parseSentence(str: string) : number {
   // Assume we are starting outside of a comment or parentheses
   // match everything up to a period or beginning of a comment or string
@@ -251,6 +254,18 @@ export function isPassiveEdit(documentText: string, beginOffset: number, endOffs
   try {
     const editedDocumentText = documentText.substring(0,beginOffset) + changeText + documentText.substring(endOffset);
     return normalizeText(documentText) === normalizeText(editedDocumentText);
+  } catch(err) {
+    return false;
+  }
+}
+
+/**
+ * Determines whether the two commands are equivalent modulo whitespace and comments 
+ * @returns `false` if the edit might change the validity of the sentence and thus needs to be reinterpreted
+ */
+export function isPassiveDifference(cmd1: string, cmd2: string) : boolean {
+  try {
+    return normalizeText(cmd1) === normalizeText(cmd2);
   } catch(err) {
     return false;
   }

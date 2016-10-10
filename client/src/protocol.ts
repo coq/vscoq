@@ -1,5 +1,6 @@
 'use strict';
 import { RequestType, NotificationType } from 'vscode-jsonrpc';
+import * as vscode from 'vscode-languageserver-types';
 
 export declare interface CoqTopParams {
   uri: string;
@@ -45,7 +46,8 @@ export declare interface CoqTopGoalResult {
   backgroundGoals?: UnfocusedGoalStack,
   shelvedGoals?: Goal[],
   abandonedGoals?: Goal[],
-  error?: FailValue;
+  error?: FailValue,
+  focus?: vscode.Position
 }
 
 export interface Location {
@@ -54,7 +56,7 @@ export interface Location {
 }
 export interface FailValue {
   message: string;
-  location?: Location;
+  range?: vscode.Range;
 }
 
 export interface CoqTopInterpretToPointParams extends CoqTopParams {
@@ -136,8 +138,7 @@ export enum HighlightType {
 
 export interface Highlight {
   style: HighlightType;
-  textBegin: number;
-  textEnd: number;
+  range: vscode.Range;
   message?: string;
 }
 

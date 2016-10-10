@@ -16,11 +16,10 @@ export function richppToMarkdown(text: string) : Promise<string> {
       trim: false,
       explicitArray: false,     
     }, (err:any,result:any) => {
-      const richpp = <RichPPObject>result['richpp'];
-      if(err || richpp==undefined)
+      if(err || !result || result.hasOwnProperty('richpp'))
         resolve(text);
       else
-        resolve(richpp._);
+        resolve((<RichPPObject>result['richpp'])._);
     });
   })
 }

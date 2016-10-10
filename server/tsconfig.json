@@ -4,7 +4,11 @@
 		"module": "commonjs",
     "moduleResolution": "node",
 		"outDir": "../client/server",
-		"sourceMap": true
+		"sourceMap": true,
+		"allowUnreachableCode": false,
+		"allowUnusedLabels": false,
+		"noFallthroughCasesInSwitch": true,
+		"pretty": true
 	},
 	"exclude": [
 		"node_modules"

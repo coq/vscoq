@@ -30,6 +30,7 @@ export function escapeXml(unsafe: string) : string {
             case '&': return '&amp;';
             case '\'': return '&apos;';
             case '"': return '&quot;';
+            default: return c;
         }
     });
 }
@@ -150,9 +151,9 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
           return <coqProto.Value>{
             stateId: value['state_id'],
             error: {
-              location: value.$['loc_s']!=undefined && value.$['loc_e']!=undefined
+              range: value.$['loc_s']!=undefined && value.$['loc_e']!=undefined
                 ? {start: +value.$['loc_s'], stop: +value.$['loc_e']} : null,
-              message: value['richpp_string'] ? value['richpp_string'] : value.$text
+              message: value['richpp_string'] ? <string>value['richpp_string'] : value.$text
             }
            };
         }
@@ -202,7 +203,7 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
         }
       case 'custom': {
         return {
-          type: value['string'],
+          type: <string>value['string'],
           location: value['loc'],
           data: value.$children[2],
         };
@@ -219,7 +220,7 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
             .filter((value,i,a) => value.hasOwnProperty('id') && value.hasOwnProperty('state'));
         const fileDependencies = <Map<string,string[]>>value.$children
             .filter((value,i,a) => value.hasOwnProperty('filename') && value.hasOwnProperty('dependsOn'))
-            .reduce((m,curr:coqProto.FileDependency,currIdx,a) => {
+            .reduce((m:any,curr:coqProto.FileDependency,currIdx:number,a: any[]) => {
               if(!m.has(curr.filename))
                 m.set(curr.filename, []);
               m.get(curr.filename).push(curr.dependsOn) 
@@ -269,17 +270,17 @@ export class XmlStream extends events.EventEmitter {
     
     if(callbacks) {
       if(callbacks.onValue)
-        this.on('response: value', (x) => callbacks.onValue(x));
+        this.on('response: value', (x:coqProto.Value) => callbacks.onValue(x));
       if(callbacks.onStateFeedback)
-        this.on('response: state-feedback', (x) => callbacks.onStateFeedback(x));
+        this.on('response: state-feedback', (x:coqProto.StateFeedback) => callbacks.onStateFeedback(x));
       if(callbacks.onEditFeedback)
-        this.on('response: edit-feedback', (x) => callbacks.onEditFeedback(x));
+        this.on('response: edit-feedback', (x:coqProto.EditFeedback) => callbacks.onEditFeedback(x));
       if(callbacks.onMessage)
-        this.on('response: message', (x) => callbacks.onMessage(x));
+        this.on('response: message', (x:coqProto.Message) => callbacks.onMessage(x));
       if(callbacks.onOther)
-        this.on('response', (x) => callbacks.onOther(x));
+        this.on('response', (x:any) => callbacks.onOther(x));
       if(callbacks.onError)
-        this.on('error', (x) => callbacks.onError(x));
+        this.on('error', (x:any) => callbacks.onError(x));
     }
     
     let options : sax.SAXOptions = {
@@ -293,16 +294,16 @@ export class XmlStream extends events.EventEmitter {
     };
     
     let saxStream = sax.createStream(false,options);
-    saxStream.on('error', (err) => this.onError(err));
-    saxStream.on('opentag', (node) => this.onOpenTag(node));
-    saxStream.on('closetag', (tagName) => this.onCloseTag(tagName));
-    saxStream.on('text', (text) => this.onText(text));
+    saxStream.on('error', (err:any) => this.onError(err));
+    saxStream.on('opentag', (node:sax.Tag) => this.onOpenTag(node));
+    saxStream.on('closetag', (tagName:string) => this.onCloseTag(tagName));
+    saxStream.on('text', (text:string) => this.onText(text));
     saxStream.on('end', () => this.onEnd());
     saxStream.write('<coqtoproot>'); // write a dummy root node to satisfy the xml parser
     stream.pipe(saxStream);
   }
   
-  private onError(err) {
+  private onError(err:any[]) {
     this.emit('error', err);
   }
 
@@ -329,7 +330,7 @@ export class XmlStream extends events.EventEmitter {
       $name: node.name,
       $: node.attributes,
       $text: "",
-      $children: []
+      $children: <any[]>[]
     };
     this.stack.push(topNode);
   }

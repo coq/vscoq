@@ -2,20 +2,21 @@
 
 import * as util from 'util';
 import {TextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic, DiagnosticSeverity} from 'vscode-languageserver';
-import {CoqTop, FailureResult, AddResult, EditAtResult, GoalResult} from './coqtop';
+import {FailureResult, AddResult, EditAtResult, GoalResult} from './coqtop';
 import * as thmProto from './protocol';
 import * as coqProto from './coq-proto';
 import * as coqParser from './coq-parser';
-import {Sentence, Sentences} from './sentences';
+// import {Sentence, Sentences} from './sentences';
 import * as textUtil from './text-util';
 import {Mutex} from './Mutex';
 import {CancellationSignal, asyncWithTimeout} from './CancellationSignal';
 import {AsyncWorkQueue} from './AsyncQueue';
 import {richppToMarkdown} from './RichPP';
+import {CommandIterator, CoqStateMachine} from './STM';
+
 
 function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
 function positionToString(p:Position) {return `{${p.line}@${p.character}}`}
-
 
 export interface DocumentCallbacks {
   sendHighlightUpdates(highlights: thmProto.Highlight[]) : void;
@@ -27,13 +28,11 @@ export interface DocumentCallbacks {
   sendLtacProfResults(results: coqProto.LtacProfResults) : void;
 }
 
-interface BufferedFeedback {
-  stateId: number,
-  status: coqProto.SentenceStatus,
-  worker: string
-}
-
 enum InteractionLoopStatus {Idle, CoqCommand, TextEdit};
+
+enum StepResult {
+  Focused, Unfocused, ExceedsMaxOffset, NoMoreCommands
+}
 
 
 // 'sticky' flag is not yet supported :()
@@ -50,155 +49,81 @@ export class CoqDocument implements TextDocument {
   public lineCount: number;
 
 
-
-  private coqTop: CoqTop;
+  private stm: CoqStateMachine;
   private clientConsole: RemoteConsole;
   // private document: TextDocument;
-  private sentences : Sentences = new Sentences();
-  private bufferedFeedback: BufferedFeedback[] = [];
   private callbacks : DocumentCallbacks;
   private diagnostics : Diagnostic[] = [];
   private documentText: string;
   private processingLock = new Mutex();
   private resettingLock = new Mutex();
   private cancelProcessing = new CancellationSignal();
-
-  private interactionCommands = new AsyncWorkQueue();
-  private interactionLoopStatus = InteractionLoopStatus.Idle;
+  private coqtopSettings : thmProto.CoqTopSettings;
+  // private interactionCommands = new AsyncWorkQueue();
+  // private interactionLoopStatus = InteractionLoopStatus.Idle;
+  // we'll use this as a callback, so protect it with an arrow function so it gets the correct "this" pointer
 
   constructor(coqtopSettings : thmProto.CoqTopSettings, uri: string, text: string, clientConsole: RemoteConsole, callbacks: DocumentCallbacks) {
     this.clientConsole = clientConsole;
-    this.coqTop = new CoqTop(coqtopSettings, clientConsole, {
-      onStateStatusUpdate: (x1,x2,x3,x4) => this.onCoqStateStatusUpdate(x1,x2,x3,x4),
-      onStateError: (x1,x2,x3,x4) => this.onCoqStateError(x1,x2,x3,x4),
-      onEditFeedback: (x1,x2) => this.onCoqEditFeedback(x1,x2),
-      onMessage: (x1,x2,x3) => this.onCoqMessage(x1,x2,x3),
-      onStateWorkerStatusUpdate: (x1,x2,x3) => this.onCoqStateWorkerStatusUpdate(x1,x2,x3),
-      onStateFileDependencies: (x1,x2,x3) => this.onCoqStateFileDependencies(x1,x2,x3),
-      onStateFileLoaded: (x1,x2,x3) => this.onCoqStateFileLoaded(x1,x2,x3),
-      onStateLtacProf: (x1,x2,x3) => this.onCoqStateLtacProf(x1,x2,x3),
-      onClosed: (error?: string) => this.onCoqClosed(error),
-    });
     this.documentText = text;
     this.uri = uri;
     this.callbacks = callbacks;
-    
+    this.coqtopSettings = coqtopSettings;
+
+    this.resetCoq();
     // this.reset();
     
     // Start a worker to handle incomming commands and text edits in a sequential manner
-    this.interactionLoop();
+    // this.interactionLoop();
   }
 
 
-  private applyEdit(begin: number, change: TextDocumentContentChangeEvent) : void {
+  private applyEditToDocument(begin: number, change: TextDocumentContentChangeEvent) : void {
     this.documentText =
       this.documentText.substring(0,begin)
       + change.text
       + this.documentText.substring(begin+change.rangeLength);
   }
   
-  /**
-   * We can edit if:
-   * 1. NOT inside a string or spanning a string deliminator
-   * 2. inside a comment and the change preserves the comment boundaries
-   * 
-   * @returns true if the change should not affect the validity of a sentence (i.e. adjusting whitespace or within a comment)
-   */
-  private isPassiveEdit(sentences: {length:number; affected:Iterable<Sentence>}, change: TextDocumentContentChangeEvent, beginOffset: number, endOffset: number) : boolean {
-    if(sentences.length === 0)
-      return true;
-    else if(sentences.length > 1)
-      return false;
-    const sentence = sentences.affected[Symbol.iterator]().next().value;
-    return coqParser.isPassiveEdit(this.documentText.substring(sentence.textBegin,sentence.textEnd), beginOffset-sentence.textBegin, endOffset-sentence.textBegin, change.text);
+  private getTextOfRange(range: Range) {
+    const start = this.offsetAt(range.start);
+    const end = this.offsetAt(range.end);
+    return this.documentText.substring(start,end);
   }
 
-  private async applyTextEdits(changes: TextDocumentContentChangeEvent[], cancelCoqSignal: CancellationSignal) {
-    var interrupted = false;
-    
-    for(const change of changes) {
+
+  public async applyTextEdits(changes: TextDocumentContentChangeEvent[], newVersion: number) {
+    // sort the edits such that later edits are processed first
+    let sortedChanges =
+      changes.sort((change1,change2) =>
+        textUtil.positionIsAfter(change1.range.start, change2.range.start) ? -1 : 1)
+
+    await this.stm.applyChanges(sortedChanges, newVersion);
+
+    for(const change of sortedChanges) {
       // this.clientConsole.log(`Change: ${rangeToString(change.range)} (${change.rangeLength}) --> ${change.text}`);
       // Remove diagnostics for any text that has been modified
       this.removeDiagnosticsIntersecting(change.range, false);
+
       // Find offsets for change-range
       const beginOffset = this.offsetAt(change.range.start);
-      const endOffset = beginOffset + change.rangeLength;
-      // Have any sentences been edited?
-      const rangeSent = this.sentences.getRangeAffected(beginOffset,endOffset);
-      try {
-        if(this.isPassiveEdit(rangeSent,change, beginOffset, endOffset)) {
-          // The change won't affect the validity of a sentence, so don't backtrack
-        } else if(rangeSent.length > 0 && !cancelCoqSignal.isCancelled()) {
-          // If sentences have been edited, we need to editAt the END of the change-range
-          // and then backtrack to the start of the change-range in order to undo any
-          // sentences that have been affected
-          await Promise.race(
-            [ (async () => {
-                this.interactionLoopStatus = InteractionLoopStatus.CoqCommand;
-                let result = await this.editAt(Math.max(endOffset-1,0));
-                while(this.sentences.getTip().textBegin > beginOffset)
-                  await this.stepBackward();
-                this.interactionLoopStatus = InteractionLoopStatus.TextEdit;
-              }) ()
-            , cancelCoqSignal.event.then(() => Promise.reject(<coqProto.FailValue>{message: 'operation cancelled'}))
-            ]);
-        }
-      } catch(error) {
-        if(error && error.message && error.message === 'operation cancelled')
-          interrupted = true;
-        else
-          this.clientConsole.error("Unexpected command failure while applying edits");
-        // But in the end, we still have to apply the edits in order to maintain some
-        // kind of consistency, so continue working...
-      }
 
-      // NOTE: we have to 'await' the above operations to make sure everything has synchronized
-      // before commiting changes to the text
-      this.applyEdit(beginOffset, change);
+      this.applyEditToDocument(beginOffset, change);
       
-      // Adjust sentences to reflect space changes
-      this.sentences.shiftCharacters(beginOffset, change.text.length - change.rangeLength);
       // And also adjust the diagnostic locations
       this.shiftDiagnostics(textUtil.toRangeDelta(change.range, change.text));
     }
 
-    this.callbacks.sendDiagnostics(this.diagnostics);
+    this.version = newVersion;
 
-    // If we were interrupted during editing, then we've probably hit an inconsistent state
-    // --> We should reset coqtop
-    if(interrupted)
-      this.interactionsCoqReset();
-//       } else if (rangeSent.length == 0) {
-//         // Modification between sentences
-//         this.applyEdit(begin,change);        
-//         this.sentences.shiftCharacters(begin,change.rangeLength);
-//         continue;
-//       } 
-//       
-//       // Only one sentence to deal with
-//       const editedSentence = rangeSent.affected.next().value;
-// 
-//       const oldText = this.documentText.substr(begin,change.rangeLength);
-//       if(/^\s*$/.test(change.text) && /^\s*$/.test(oldText)
-//         && (begin==0 || end==this.documentText.length || /^\s/.test(this.documentText[begin-1]) || /^\s/.test(this.documentText[end]))) {
-//         // Allow whitespaces to be adjusted so long as
-//         //   1) it occurs within AT MOST one sentence
-//         //   2) it does not break or combine a word
-//         //   3) it does NOT appear in a quote
-//         this.sentences.shiftCharacters(begin,change.rangeLength-oldText.length);
-//         this.applyEdit(begin,change);
-//       } else if(false) {
-//         // Allow text within a comment to be changed as long at the comment deliminators are not changed
-//       } else {
-//         this.applyEdit(begin,change);
-//         this.editAt(begin);
-//         continue;
-//       }
+
+    // send the updated diagnostics
+// TODO
+    this.callbacks.sendDiagnostics(this.diagnostics);
   }
   
-  
   public offsetAt(pos: Position) : number {
-    return textUtil.locationAt(this.documentText,pos);
+    return textUtil.offsetAt(this.documentText,pos);
   }
 
   /**
@@ -208,10 +133,6 @@ export class CoqDocument implements TextDocument {
     return textUtil.positionAt(this.documentText, offset);
   }
 
-  // setCoqBinPath(coqBinPath: string) {
-  //   this.coqTop.setCoqBinPath(coqBinPath);
-  //   this.doResetCoq();
-  // }
   
   private sentenceStatusToHighlightType(status: coqProto.SentenceStatus) : thmProto.HighlightType {
     switch(status) {
@@ -244,213 +165,188 @@ export class CoqDocument implements TextDocument {
         return coqProto.SentenceStatus.Processed;
       case thmProto.HighlightType.Processing:
         return coqProto.SentenceStatus.ProcessingInput;
+      default:
+        throw `Cannot convert ${thmProto.HighlightType[type]} to a SentenceStatus`
     }    
   }
   
-  private highlightSentence(sentence: Sentence, type?: thmProto.HighlightType) : thmProto.Highlight {
-    if(type===undefined)
-        type = this.sentenceStatusToHighlightType(sentence.status);
-    return {
-      style: type,
-      textBegin: sentence.textBegin,
-      textEnd: sentence.textEnd
-    };
+  private highlightSentence(sentence: Range, type: thmProto.HighlightType) : thmProto.Highlight {
+    // if(type===undefined)
+    //     type = this.sentenceStatusToHighlightType(sentence.status);
+    return { style: type, range: sentence };
   }
 
-  private updateSentenceStatus(sentence: Sentence, status: coqProto.SentenceStatus) : thmProto.Highlight {
-    if(sentence.status > status)
-      return;
-    else {
-      if(sentence.computeStart && sentence.status < status) {
-        sentence.status = status;
-
-        const duration = process.hrtime(sentence.computeStart);
-        sentence.computeTimeMS = duration[0] * 1000.0 + (duration[1] / 1000000.0);
-
-        if(status == coqProto.SentenceStatus.Processed)
-          this.clientConsole.log(`processed in time ${sentence.stateId}: ${sentence.computeTimeMS/1000.0} sec`);
-      }
-      
-      sentence.status = status;
-      this.callbacks.sendHighlightUpdates([this.highlightSentence(sentence)]);
+  /** creates the current highlights from scratch */
+  private createHighlights() {
+    let highlights : thmProto.Highlight[] = [];
+    for(let sent of this.stm.getSentences()) {
+      this.highlightSentence(sent.range, this.sentenceStatusToHighlightType(sent.status));
     }
+    return highlights;
   }
-    
-  private applyFeedback(sentence:Sentence, feedback: BufferedFeedback) {
-    if(sentence.stateId === feedback.stateId) {
-      this.updateSentenceStatus(sentence, feedback.status);
+
+  /** creates the current diagnostics from scratch */
+  private createDiagnostics() {
+    let diagnostics : Diagnostic[] = [];
+    for(let error of this.stm.getSentenceErrors()) {
+      diagnostics.push(
+        { message: error.message
+        , range: error.range
+        , severity: DiagnosticSeverity.Error
+        })
     }
+    return diagnostics;
+  }
+
+  private onCoqStateStatusUpdate(range: Range, status: coqProto.SentenceStatus) {
+    this.callbacks.sendHighlightUpdates(
+      [ this.highlightSentence(range, this.sentenceStatusToHighlightType(status))
+      ]);
   }
   
-  private applyBufferedFeedback(sentence:Sentence) {
-    // Process any feedback that we may have seen out of order
-    this.bufferedFeedback
-      .forEach((feedback,i,a) => this.applyFeedback(sentence, feedback));
-    this.bufferedFeedback = [];
+  private onClearSentence(range: Range) {
+    this.callbacks.sendHighlightUpdates(
+      [ this.highlightSentence(range, thmProto.HighlightType.Clear)
+      ]);
   }
 
-  private onCoqStateStatusUpdate(stateId: number, route: number, status: coqProto.SentenceStatus, worker: string) {
-    const sent = this.sentences.get(stateId);
-    if(sent)
-      this.updateSentenceStatus(sent, status);
-    else {
-      // Sometimes, feedback will be received before CoqTop has given us the new stateId,
-      // So we will buffer these messages until we get the next 'value' response.
-      this.bufferedFeedback.push({stateId: stateId, status: status, worker: worker});
-    }
-  }
-  
-  private onCoqStateError(stateId: number, route: number, message: string, location?: coqProto.Location) {
-    const sent = this.sentences.get(stateId);
-    if(sent) {
-      let errorBegin: number, errorEnd : number;
-      if(location) {
-         errorBegin = sent.textBegin + location.start;
-         errorEnd = sent.textBegin + location.stop;
-      } else {
-         errorBegin = sent.textBegin;
-         errorEnd = sent.textEnd;        
-      }
-      
-      this.callbacks.sendHighlightUpdates([
-        this.highlightSentence(sent, thmProto.HighlightType.TacticFailure)
-        ]);
+  private onCoqStateError(sentenceRange: Range, errorRange: Range, message: string, rich_message?: any) {
+    this.callbacks.sendHighlightUpdates(
+      [ this.highlightSentence(sentenceRange, thmProto.HighlightType.TacticFailure)
+      ]);
 
-      this.addDiagnostic({
-        message: message,
-        range: Range.create(this.positionAt(errorBegin), this.positionAt(errorEnd)),
-        severity: DiagnosticSeverity.Error
-        });
-    }
+    this.addDiagnostic(
+      { message: message
+      , range: errorRange
+      , severity: DiagnosticSeverity.Error
+      });
   }
   
-  
-  private onCoqEditFeedback(editId: number, error?: coqProto.ErrorMessage) {
-    // if(feedback.error) {
-    //   const errorBegin = feedback.error.
-    //   this.addDiagnostic({
-    //     message: feedback.error.message,
-    //     range: Range.create(this.positionAt(errorBegin), this.positionAt(errorEnd)),
-    //     severity: DiagnosticSeverity.Error
-    //     });
-    // }
-  }
   
   private onCoqMessage(level: coqProto.MessageLevel, message: string, rich_message?: any) {
     this.callbacks.sendMessage(coqProto.MessageLevel[level], message, rich_message);
   }
 
-  private onCoqStateWorkerStatusUpdate(stateId: number, route: number, workerUpdates: coqProto.WorkerStatus[]) {
-  }
-
-  private onCoqStateFileDependencies(stateId: number, route: number, fileDependencies: Map<string,string[]>) {
-  }
-
-  private onCoqStateFileLoaded(stateId: number, route: number, status: coqProto.FileLoaded) {
-  }
-  
-  private onCoqStateLtacProf(stateId: number, route: number, results: coqProto.LtacProfResults) {
+  private onCoqStateLtacProf(range: Range, results: coqProto.LtacProfResults) {
     this.callbacks.sendLtacProfResults(results);
   }
   
-  private async onCoqClosed(error?: string) {
+  private async onCoqDied(error?: string) {
     if(!error)
       return;
-    this.clientConsole.log(`onCoqClosed(${error})`);
-    try {
-      await this.cancelCoqOperations();
-    } finally {
-      this.callbacks.sendReset();
-      this.clientConsole.log('completed onCoqClosed()');
-    }
-  }
-  
-  
-  private async doResetCoq() {
-    this.clientConsole.log('doResetCoq()');
-    try {
-      this.clientConsole.log('resetting coqtop');
-      let value = await this.coqTop.resetCoq();
-      this.sentences.reset(value.stateId);
-    } finally {
-      this.callbacks.sendReset();
-      this.clientConsole.log('completed doResetCoq()');
-    }
+    this.resetCoq();
+    this.callbacks.sendReset();
   }
 
-  
-  private async cancellableOperation<T>(operation: Thenable<T>) : Promise<T> {
-    return await Promise.race<T>(
-      [ operation
-      , this.cancelProcessing.event.then(() => Promise.reject<T>('operation cancelled'))
-      ]);
+  public async resetCoq() {
+    if(this.stm && this.stm.isRunning())
+      this.stm.shutdown(); // Don't bother awaiting
+    this.stm = new CoqStateMachine(this.coqtopSettings, {
+      sentenceStatusUpdate: (x1,x2) => this.onCoqStateStatusUpdate(x1,x2),
+      clearSentence: (x1) => this.onClearSentence(x1),
+      error: (x1,x2,x3) => this.onCoqStateError(x1,x2,x3),
+      message: (x1,x2,x3) => this.onCoqMessage(x1,x2,x3),
+      ltacProfResults: (x1,x2) => this.onCoqStateLtacProf(x1,x2),
+      coqDied: (error?: string) => this.onCoqDied(error),
+    }, this.clientConsole);
   }
+  
+  
+  // private async cancellableOperation<T>(operation: Thenable<T>) : Promise<T> {
+  //   return await Promise.race<T>(
+  //     [ operation
+  //     , this.cancelProcessing.event.then(() => Promise.reject<T>('operation cancelled'))
+  //     ]);
+  // }
 
-  /**
-   * @param currentSentence: where to start parsing the next sentence
-   * @param maxOffset: do not parse past maxOffset
-   * @returns the next parsed sentence OR else null if parsing exceeds @maxOffset
+  /** generates a list of contiguous commands
+   * @param begin: where to start parsing commands
+   * @param endOffset: if specified, stop at the last command to not exceed the offset
    */
-  private async plainStepForward(currentSentence: Sentence, maxOffset?: number) : Promise<{value: coqProto.CoqValue, nextSentence?: Sentence, isUnfocused: boolean}> {
+  private *commandSequenceGenerator(begin: Position, end?: Position, highlight: boolean = false) : IterableIterator<{text: string, range: Range}> {
+    let endOffset : number;
+    if(end == undefined)
+      endOffset = this.documentText.length;
+    else
+      endOffset = Math.min(this.offsetAt(end), this.documentText.length);
 
-    let startPos = currentSentence.textEnd;
-    let docText = this.documentText;
-    const sentenceLength = coqParser.parseSentence(this.documentText.substr(startPos));
-    if(sentenceLength == -1)
-      return null;
-    let stopPos = startPos + sentenceLength;
-    
-    if(maxOffset!==undefined && stopPos > maxOffset)
-      return null;
-    
-    let command = docText.substring(startPos, stopPos);
+    let currentOffset = this.offsetAt(begin);
+    if(currentOffset >= endOffset)
+      return;
 
-    // Preliminary "parsing" highlight
-    const parsingHighlights = [
-      { style: thmProto.HighlightType.Parsing, textBegin: startPos, textEnd: stopPos }
-      ];
-    this.callbacks.sendHighlightUpdates(parsingHighlights);
-
-    // ????
-    // This might either be the textual starting location of the command we're submitting
-    // or else an edit-state identifier to keep stuff in sync. 
-    const editId = -currentSentence.stateId;
-
-    const startTime = process.hrtime();
-    try {
-      const value = await this.coqTop.coqAddCommand(command, editId, currentSentence.stateId);
-
-      const nextSentence = this.sentences.addChild(currentSentence,value.stateId,startPos,stopPos);
-      nextSentence.computeStart = startTime;
-      this.applyBufferedFeedback(nextSentence);
-      this.updateSentenceStatus(nextSentence,coqProto.SentenceStatus.ProcessingInput);
-
-      if(value.unfocusedStateId) {
-        this.sentences.setTip(value.unfocusedStateId);
-        return {value:value, nextSentence: this.sentences.get(value.unfocusedStateId), isUnfocused: true};
+    while(true) {
+      const commandLength = coqParser.parseSentence(this.documentText.substr(currentOffset, endOffset))
+      const nextOffset = currentOffset + commandLength;
+      if(commandLength > 0 || nextOffset > endOffset) {
+        let result =
+          { text: this.documentText.substring(currentOffset, nextOffset)
+          , range: Range.create(this.positionAt(currentOffset),this.positionAt(nextOffset))
+          };
+        yield result;
+        // only highlight if the command was accepted (i.e. another is going to be request; i.e. after yield)
+        if (highlight) {// Preliminary "parsing" highlight
+          const parsingHighlights : thmProto.Highlight[] = [
+            { style: thmProto.HighlightType.Parsing, range: result.range }
+            ];
+          this.callbacks.sendHighlightUpdates(parsingHighlights);
+        }
       } else
-        return {value:value, nextSentence: nextSentence, isUnfocused: false};
-    } catch(err) {
-      const error = <FailureResult>err;
-
-      const errorBegin = startPos + error.range.start;
-      const errorEnd = startPos + error.range.stop;
-
-      const highlights = [
-        { style: thmProto.HighlightType.Clear, textBegin: startPos, textEnd: stopPos }
-        // { style: thmProto.HighlightType.SyntaxError, textBegin: errorEnd, textEnd: errorEnd },
-        ];
-      this.callbacks.sendHighlightUpdates(highlights);
-
-      this.addDiagnostic({
-        message: error.message,
-        range: Range.create(this.positionAt(errorBegin), this.positionAt(errorEnd)),
-        severity: DiagnosticSeverity.Error
-        });
-
-      throw error;      
+        return;
+      currentOffset = nextOffset; 
     }
   }
+
+  private commandSequence(highlight=false) {
+    return (begin,end?) => this.commandSequenceGenerator(begin,end);
+  }
+
+  // /**
+  //  * @param currentSentence: where to start parsing the next sentence
+  //  * @param maxOffset: do not parse past maxOffset
+  //  * @returns the next parsed sentence OR else null if parsing exceeds @maxOffset
+  //  */
+  // private async plainStepForward(maxOffset?: number) : Promise<StepResult> {
+  //   const start = this.stm.getFocusedPosition();
+  //   const startOffset = this.offsetAt(start);
+  //   const docText = this.documentText;
+  //   const sentenceLength = coqParser.parseSentence(this.documentText.substr(startOffset,maxOffset));
+  //   if(sentenceLength == -1)
+  //     return StepResult.NoMoreCommands;
+  //   const stopPos = startOffset + sentenceLength;
+
+  //   if(maxOffset!==undefined && stopPos > maxOffset)
+  //     return StepResult.ExceedsMaxOffset;
+    
+  //   const range = Range.create(start,this.positionAt(stopPos));
+  //   let command = docText.substring(startOffset, stopPos);
+
+  //   // Preliminary "parsing" highlight
+  //   const parsingHighlights = [
+  //     { style: thmProto.HighlightType.Parsing, textBegin: startOffset, textEnd: stopPos }
+  //     ];
+  //   this.callbacks.sendHighlightUpdates(parsingHighlights);
+
+  //   try {
+  //     const unfocused = await this.stm.stepForward(command, range, this.version, true);
+  //     return unfocused ? StepResult.Unfocused : StepResult.Focused;
+  //   } catch(err) {
+  //     const error = <CommandParseError>err;
+
+  //     const highlights = [
+  //       { style: thmProto.HighlightType.Clear, textBegin: startOffset, textEnd: stopPos }
+  //       // { style: thmProto.HighlightType.SyntaxError, textBegin: errorEnd, textEnd: errorEnd },
+  //       ];
+  //     this.callbacks.sendHighlightUpdates(highlights);
+
+  //     this.addDiagnostic({
+  //       message: error.message,
+  //       range: error.range,
+  //       severity: DiagnosticSeverity.Error
+  //       });
+
+  //     throw error;
+  //   }
+  // }
 
   private async addDiagnostic(diagnostic: Diagnostic) {
     const diag = diagnostic;
@@ -480,451 +376,443 @@ export class CoqDocument implements TextDocument {
     }
   }
   
-  private convertGoal(goal: coqProto.Goal) : thmProto.Goal {
-    return <thmProto.Goal>{
-      goal: goal.goal,
-      hypotheses: goal.hypotheses.map((hyp) => {
-        if(hyp.$name === 'richpp') {
-          let h = hyp._.$text.split(/(:=|:)([^]*)/);
-          return {identifier: h[0].trim(), relation: h[1].trim(), expression: hyp._.$children[0]};
-        } else {
-          let h = hyp.split(/(:=|:)([^]*)/);
-          return {identifier: h[0].trim(), relation: h[1].trim(), expression: h[2].trim()};
-        }
-      })
-    };
-  }
 
-  private convertUnfocusedGoals(focusStack: coqProto.UnfocusedGoalStack) : thmProto.UnfocusedGoalStack {
-    if(focusStack)
-      return {
-        before: focusStack.before.map(this.convertGoal),
-        next: this.convertUnfocusedGoals(focusStack.next),
-        after: focusStack.after.map(this.convertGoal)
-      };
-    else
-      return null;
-  }
-  
-  private convertGoals(goals: GoalResult) : thmProto.CoqTopGoalResult {
-    return {
-      goals: goals.goals ? goals.goals.map(this.convertGoal) : undefined,
-      backgroundGoals: this.convertUnfocusedGoals(goals.backgroundGoals),
-      shelvedGoals: goals.shelvedGoals ? goals.shelvedGoals.map(this.convertGoal) : undefined,
-      abandonedGoals: goals.abandonedGoals ? goals.abandonedGoals.map(this.convertGoal) : undefined,
-      };
-      
-  }
+  // private clearSentenceHighlight(sentence: Sentence, endSentence?: Sentence) {
+  //   this.callbacks.sendHighlightUpdates([{
+  //     style: thmProto.HighlightType.Clear,
+  //     textBegin: sentence.textBegin,
+  //     textEnd: endSentence ? endSentence.textEnd : sentence.textEnd
+  //   }]);
+  // }
 
-  /**
-   * 
-   *  */  
-  private async rawGetGoal(stateId?: number) : Promise<thmProto.CoqTopGoalResult> {
-    var result = this.convertGoals(await this.coqTop.coqGoal());
-    if(stateId !== undefined)
-      this.sentences.setGoalState(stateId, result);
-    return result;
-  }
+  // private clearSentenceHighlightAfter(sentence: Sentence, endSentence?: Sentence) {
+  //   this.callbacks.sendHighlightUpdates([{
+  //     style: thmProto.HighlightType.Clear,
+  //     textBegin: sentence.textEnd,
+  //     textEnd: endSentence ? endSentence.textEnd : sentence.textEnd
+  //   }]);
+  // }
 
-  private async getGoal(stateId?: number) : Promise<thmProto.CoqTopGoalResult> {
-    try {
-      return await this.rawGetGoal(stateId);
-    } catch(err) {
-      const error = <FailureResult>err;
-      const e = <coqProto.FailValue>{
-        message: error.message,
-        location: error.range
-        };
-      return {error: e};
-    }
-  }
+ 
+  // /** Interpret to point
+  //  * Tell Coq to process the proof script up to the given point
+  //  * This may not fully process everything, or it may rewind the state.
+  //  */
+  // private async interpretToPoint(position: Position) : Promise<thmProto.CoqTopGoalResult> {
+  //   try {
+  //     do {
+  //       const focus = this.stm.getFocusedPosition();
+  //       const focusOffset = this.offsetAt(focus);
+  //       const offset = this.offsetAt(position);
+  //       if(textUtil.positionIsAfterOrEqual(position, focus)) {
+  //         // We need to step forward to reach the location.
+  //         // We might be focused in the middle of a proof, so even if there is a
+  //         // closer state we can jump to, we cannot call coqEditAt just yet.
+  //         // (Or else we will get a Coq anomally :/ )
+  //         for(let command of this.commandSequence(focus,offset)) {
+  //           const focusChanged = this.stm.stepForward(command.text, command.range, this.version, true);
+  //           if(focusChanged)
+  //             break;
+  //         }
 
-  
-  private clearSentenceHighlight(sentence: Sentence, endSentence?: Sentence) {
-    this.callbacks.sendHighlightUpdates([{
-      style: thmProto.HighlightType.Clear,
-      textBegin: sentence.textBegin,
-      textEnd: endSentence ? endSentence.textEnd : sentence.textEnd
-    }]);
-  }
+  //         // At this point, either we have reached the location we're looking for,
+  //         // or else the proof has become unfocused (the current state might be
+  //         // anywhere) and we will need to call coqEditAt to get closer to the location.      
+  //         const closestSentence = this.sentences.findPrecedingSentence(location);
+  //         // Are we at the closest sentence?
+  //         if(forwardSentence.stateId !== closestSentence.stateId) {
+  //           // No; jump there
+  //           await this.jumpToLocation(closestSentence);
+  //         }
+  //         // We can now step forward directly to the location
+  //         return await this.interpretToEnd(location);
+  //       } else {
+  //         // Our desired location is above us; we'll have to jump there
+  //         const closestSentence = this.sentences.findPrecedingSentence(location);
+  //         await this.jumpToLocation(closestSentence);
+  //         return await this.rawGetGoal();
+  //       }
+  //     }
+  //   } catch(error) {
+  //     return this.errorGoalResult(error);
+  //   }
+  // }
 
-  private clearSentenceHighlightAfter(sentence: Sentence, endSentence?: Sentence) {
-    this.callbacks.sendHighlightUpdates([{
-      style: thmProto.HighlightType.Clear,
-      textBegin: sentence.textEnd,
-      textEnd: endSentence ? endSentence.textEnd : sentence.textEnd
-    }]);
-  }
 
-  /**
-   * 
-   *  */  
-  private async stepForwardUntil(maxOffset?: number, stopWhenUnfocused?: boolean) : Promise<Sentence> {
-    if(!this.coqTop.isRunning())
-      throw "Coq has not been initialized";
+  // private errorGoalResult(error: FailureResult) : thmProto.CoqTopGoalResult {
+  //   const e = <coqProto.FailValue>{
+  //     message: error.message,
+  //     range: error.range
+  //     };
+  //   return {error: e};
+  // }
 
-    stopWhenUnfocused = (stopWhenUnfocused==undefined) ? false : stopWhenUnfocused;
+  // /**
+  //  * 
+  //  *  */  
+  // private async interpretToEnd(maxOffset?: number) : Promise<thmProto.CoqTopGoalResult> {
+  //   let currentSentence = this.sentences.getTip();
     
-    // grab the head sentences
-    // TODO: support other edit points 
-    let currentSentence = this.sentences.getTip();
-
-    // this.clientConsole.log("Step To End");
-
-    try {
-      while(true) {
-        const interp = await this.plainStepForward(currentSentence,maxOffset);
-
-        if(!interp)
-          return null;
-        else if(stopWhenUnfocused && interp.isUnfocused)
-          return interp.nextSentence;
-        currentSentence = interp.nextSentence;
-      }
-    } catch(err) {
-      const error = <FailureResult>err;
+  //   try {
+  //     await this.stepForwardUntil(maxOffset);
       
-      if(error.stateId) {
-        const beforeErrorSentence = this.sentences.get(error.stateId);
-        this.rollbackState(beforeErrorSentence,currentSentence);
-      }
-      
-      throw error;
-    }
-  }
-  
-  private async jumpToLocation(sentence : Sentence) {
-    try {
-      const editResult = await this.coqTop.coqEditAt(sentence.stateId);
-      if(editResult.newFocus) {
-        // Jumping inside another proof; create a new tip
-        const qedSentence = this.sentences.get(editResult.newFocus.qedStateId);
-        this.sentences.rewindToWithLast(sentence,qedSentence);
-        this.clearSentenceHighlightAfter(sentence,qedSentence);
-      } else if(sentence.textEnd <= this.sentences.getTip().textBegin) {
-        // Simple rewind
-        this.clearSentenceHighlightAfter(sentence,this.sentences.getTip());
-        this.sentences.rewindTo(sentence);
-      } else {
-        // not sure what to make of this state
-        const a = 5;
-  //      throw "Jumping to a new state; not sure what to do in this situation...?";
-      }
-    } catch(err) {
-      const error = <FailureResult>err;
-      const beforeErrorSentence = this.sentences.get(error.stateId);
-      await this.coqTop.coqEditAt(error.stateId);
+  //     return await this.rawGetGoal();
+  //   } catch(error) {
+  //     return this.errorGoalResult(error);
+  //   }
+  // }
 
-      this.clearSentenceHighlightAfter(beforeErrorSentence,sentence);
-      this.sentences.rewindTo(beforeErrorSentence);
-    }
-  }
-  
-  private async editAt(location: number) : Promise<thmProto.CoqTopGoalResult> {
-    const currentSentence = this.sentences.getTip();
-
-    try {
-      if(location >= currentSentence.textEnd) {
-        // We need to step forward to reach the location.
-        // We might be focused in the middle of a proof, so even if there is a
-        // closer state we can jump to, we cannot call coqEditAt just yet.
-        // (Or else we will get a Coq anomally :/ )
-        const forwardSentence = await this.stepForwardUntil(location, true /* stop if we become unfocused */);
-        if(forwardSentence === null) {
-          return await this.rawGetGoal();          
-        }
-        // At this point, either we have reached the location we're looking for,
-        // or else the proof has become unfocused (the current state might be
-        // anywhere) and we will need to call coqEditAt to get closer to the location.      
-        const closestSentence = this.sentences.findPrecedingSentence(location);
-        // Are we at the closest sentence?
-        if(forwardSentence.stateId !== closestSentence.stateId) {
-          // No; jump there
-          await this.jumpToLocation(closestSentence);
-        }
-        // We can now step forward directly to the location
-        return await this.interpretToEnd(location);
-      } else {
-        // Our desired location is above us; we'll have to jump there
-        const closestSentence = this.sentences.findPrecedingSentence(location);
-        await this.jumpToLocation(closestSentence);
-        return await this.rawGetGoal();
-      }
-    } catch(error) {
-      return this.errorGoalResult(error);
-    }
-  }
-
-
-  private errorGoalResult(error: FailureResult) : thmProto.CoqTopGoalResult {
-    const e = <coqProto.FailValue>{
-      message: error.message,
-      location: error.range
-      };
-    return {error: e};
-  }
-
-  /**
-   * 
-   *  */  
-  private async interpretToEnd(maxOffset?: number) : Promise<thmProto.CoqTopGoalResult> {
-    let currentSentence = this.sentences.getTip();
-    
-    try {
-      await this.stepForwardUntil(maxOffset);
-      
-      return await this.rawGetGoal();
-    } catch(error) {
-      return this.errorGoalResult(error);
-    }
-  }
-
-  private async rollbackState(startingSentence: Sentence, endSentence?: Sentence) {
-    if(this.sentences.getTip().stateId !== startingSentence.stateId) {
-      // Undo the sentence
-this.clientConsole.log("rolling back state");
-      await this.coqTop.coqEditAt(startingSentence.stateId);
-      this.sentences.rewindTo(startingSentence);
-      if(endSentence !== undefined)
-        this.clearSentenceHighlightAfter(startingSentence,endSentence);
-this.clientConsole.log("rolled back");
-    }
-  }
+//   private async rollbackState(startingSentence: Sentence, endSentence?: Sentence) {
+//     if(this.sentences.getTip().stateId !== startingSentence.stateId) {
+//       // Undo the sentence
+// this.clientConsole.log("rolling back state");
+//       await this.coqTop.coqEditAt(startingSentence.stateId);
+//       this.sentences.rewindTo(startingSentence);
+//       if(endSentence !== undefined)
+//         this.clearSentenceHighlightAfter(startingSentence,endSentence);
+// this.clientConsole.log("rolled back");
+//     }
+//   }
   
   
-  private async stepForward() : Promise<thmProto.CoqTopGoalResult> {
-    const currentSentence = this.sentences.getTip();
-    try {
-      const interp = await this.plainStepForward(currentSentence);
-      if(!interp)
-        return {}
+  // private async stepForward() : Promise<thmProto.CoqTopGoalResult> {
+  //   const currentSentence = this.sentences.getTip();
+  //   try {
+  //     const interp = await this.plainStepForward(currentSentence);
+  //     if(!interp)
+  //       return {}
 
-      return await this.rawGetGoal(interp.nextSentence ? interp.nextSentence.stateId : undefined);
-    } catch(error) {
-      this.rollbackState(currentSentence);
-      return this.errorGoalResult(error);
-    }
-  }
+  //     return await this.rawGetGoal(interp.nextSentence ? interp.nextSentence.stateId : undefined);
+  //   } catch(error) {
+  //     this.rollbackState(currentSentence);
+  //     return this.errorGoalResult(error);
+  //   }
+  // }
   
-  /**
-   * 
-   *  */  
-  private async stepBackward() : Promise<thmProto.CoqTopGoalResult> {
-    // grab the tip sentence
-    const currentSentence = this.sentences.getTip();
+  // /**
+  //  * 
+  //  *  */  
+  // private async stepBackward() : Promise<thmProto.CoqTopGoalResult> {
+  //   // grab the tip sentence
+  //   const currentSentence = this.sentences.getTip();
 
-    try {
-      const prevSentence = this.sentences.getPredecessor(currentSentence);
+  //   try {
+  //     const prevSentence = this.sentences.getPredecessor(currentSentence);
 
-      if(prevSentence == null) {
-        await this.doResetCoq();
-        return {};
-      }
+  //     if(prevSentence == null) {
+  //       await this.doResetCoq();
+  //       return {};
+  //     }
 
-      await this.coqTop.coqEditAt(prevSentence.stateId);
-      this.sentences.rewindTo(prevSentence);
-      this.callbacks.sendHighlightUpdates([
-        this.highlightSentence(currentSentence, thmProto.HighlightType.Clear)
-        ]);
-      return await this.rawGetGoal(prevSentence.stateId);
-    } catch(err) {
-      const error = <FailureResult>err;
-      const beforeErrorSentence = this.sentences.get(error.stateId);
-      await this.coqTop.coqEditAt(error.stateId);
+  //     await this.coqTop.coqEditAt(prevSentence.stateId);
+  //     this.sentences.rewindTo(prevSentence);
+  //     this.callbacks.sendHighlightUpdates([
+  //       this.highlightSentence(currentSentence, thmProto.HighlightType.Clear)
+  //       ]);
+  //     return await this.rawGetGoal(prevSentence.stateId);
+  //   } catch(err) {
+  //     const error = <FailureResult>err;
+  //     const beforeErrorSentence = this.sentences.get(error.stateId);
+  //     await this.coqTop.coqEditAt(error.stateId);
 
-      this.clearSentenceHighlightAfter(beforeErrorSentence,currentSentence);
-      this.sentences.rewindTo(beforeErrorSentence);
-      return await this.getGoal();
-    }
+  //     this.clearSentenceHighlightAfter(beforeErrorSentence,currentSentence);
+  //     this.sentences.rewindTo(beforeErrorSentence);
+  //     return await this.getGoal();
+  //   }
 
-  }
+  // }
   
   public async close() {
-    return await this.coq.quit();
+    return await this.stm.shutdown();
   }
 
-  private async protectOperation(op: (wasReset:boolean)=>Promise<thmProto.CoqTopGoalResult>, lazyInitialize?: boolean) : Promise<thmProto.CoqTopGoalResult> {
-    lazyInitialize = (lazyInitialize===undefined) ? true : false;
-    let unlock : () => Promise<void>; 
-    try {
-      unlock = await this.processingLock.lock(this.cancelProcessing.event);
-    } catch(reason) {
-      return <coqProto.FailValue>{message: "operation cancelled"};
-    }
-    try {
-      if(!this.coqTop.isRunning()) {
-        if(!lazyInitialize)
-          return {};
-        await this.cancellableOperation(this.doResetCoq());
-        const result = await this.cancellableOperation(op(true));
-      } else
-        return await this.cancellableOperation(op(false));
-    } catch(reason) {
-      return <coqProto.FailValue>{message: reason};
-    } finally {
-      unlock();
-    }
-  }  
+  // private async protectOperation(op: (wasReset:boolean)=>Promise<thmProto.CoqTopGoalResult>, lazyInitialize?: boolean) : Promise<thmProto.CoqTopGoalResult> {
+  //   lazyInitialize = (lazyInitialize===undefined) ? true : false;
+  //   let unlock : () => Promise<void>; 
+  //   try {
+  //     unlock = await this.processingLock.lock(this.cancelProcessing.event);
+  //   } catch(reason) {
+  //     return <coqProto.FailValue>{message: "operation cancelled"};
+  //   }
+  //   try {
+  //     if(!this.coqTop.isRunning()) {
+  //       if(!lazyInitialize)
+  //         return {};
+  //       await this.cancellableOperation(this.doResetCoq());
+  //       const result = await this.cancellableOperation(op(true));
+  //     } else
+  //       return await this.cancellableOperation(op(false));
+  //   } catch(reason) {
+  //     return <coqProto.FailValue>{message: reason};
+  //   } finally {
+  //     unlock();
+  //   }
+  // }  
   
-  private interrupt() {
-    this.coqTop.coqInterrupt();
-  }
+  // private interrupt() {
+  //   this.coqTop.coqInterrupt();
+  // }
 
 
-  /**
-   * This loop handles each coq command and text edit sequentially.
-   * One of the requirements is that a command's document position is still valid when it returns so that we can report accurate error messages, so text edits that arrive while a command is being processed are delayed until the command finished so that we do not invalidate its document positions.
-   * 
-   * To cancel the current queue of commands, call cancelCoqOperations()  
-   */
-  private async interactionLoop() {
-    while(true) {
-      try {
-        await this.interactionCommands.executeOneTask();
-      } catch(error) {
-        this.clientConsole.warn(`Interaction loop exception: ${error}`);
-      } finally {
-      }
-    }
-  }
+  // /**
+  //  * This loop handles each coq command and text edit sequentially.
+  //  * One of the requirements is that a command's document position is still valid when it returns so that we can report accurate error messages, so text edits that arrive while a command is being processed are delayed until the command finished so that we do not invalidate its document positions.
+  //  * 
+  //  * To cancel the current queue of commands, call cancelCoqOperations()  
+  //  */
+  // private async interactionLoop() {
+  //   while(true) {
+  //     try {
+  //       await this.interactionCommands.executeOneTask();
+  //     } catch(error) {
+  //       this.clientConsole.warn(`Interaction loop exception: ${error}`);
+  //     } finally {
+  //     }
+  //   }
+  // }
   
-  /**
-   * Ensures that the text edits are applied *after* the currently scheduled operations; this delay prevents their document positions from being invalidated too soon
-   * However, if the edit will result in changing an already-interpreted sentence, then all current Coq processing will be cancelled.
-   * Text edits themselves cannot be cancelled, but the Coq operations they may perform to set the current editing positions *can* be cancelled. 
-   */
-  public textEdit(changes: TextDocumentContentChangeEvent[]) {
-    // If any of the edits affect an interpreted sentence, then interrupt and cancell all Coq operations
-    for(const change of changes) {
-      const beginOffset = this.offsetAt(change.range.start);
-      const endOffset = beginOffset + change.rangeLength;
-      // Have any sentences been edited?
-      const rangeSent = this.sentences.getRangeAffected(beginOffset,endOffset);
+  // /**
+  //  * Ensures that the text edits are applied *after* the currently scheduled operations; this delay prevents their document positions from being invalidated too soon
+  //  * However, if the edit will result in changing an already-interpreted sentence, then all current Coq processing will be cancelled.
+  //  * Text edits themselves cannot be cancelled, but the Coq operations they may perform to set the current editing positions *can* be cancelled. 
+  //  */
+  // public textEdit(changes: TextDocumentContentChangeEvent[]) {
+  //   // If any of the edits affect an interpreted sentence, then interrupt and cancel all Coq operations
+  //   for(const change of changes) {
+  //     const beginOffset = this.offsetAt(change.range.start);
+  //     const endOffset = beginOffset + change.rangeLength;
+  //     // Have any sentences been edited?
+  //     const rangeSent = this.sentences.getRangeAffected(beginOffset,endOffset);
 
-      if(!this.isPassiveEdit(rangeSent,change, beginOffset, endOffset) && rangeSent.length) {
-        //this.clientConsole.info("Cancelling current Coq operations due to editing text of interpreted statements.");
-        this.cancelCoqOperations();
-        break;
-      }
-    }    
-    
-    
-    const cancelSignal = this.cancelProcessing;
-    return this.interactionCommands.process<void>(async () => {
-      this.interactionLoopStatus = InteractionLoopStatus.TextEdit;
-      try {
-        // applyTextEdits will check for a cancellation signal during Coq calls, but text-editing itself should never be cancelled
-        return await this.applyTextEdits(changes, cancelSignal);
-      } finally {
-        this.interactionLoopStatus = InteractionLoopStatus.Idle;
-      }
-    });
-  }
+  //     if(!this.isPassiveEdit(rangeSent,change, beginOffset, endOffset) && rangeSent.length) {
+  //       //this.clientConsole.info("Cancelling current Coq operations due to editing text of interpreted statements.");
+  //       this.cancelCoqOperations();
+  //       break;
+  //     }
+  //   }    
+  //   const cancelSignal = this.cancelProcessing;
+  //   return this.interactionCommands.process<void>(async () => {
+  //     this.interactionLoopStatus = InteractionLoopStatus.TextEdit;
+  //     try {
+  //       // applyTextEdits will check for a cancellation signal during Coq calls, but text-editing itself should never be cancelled
+  //       return await this.applyTextEdits(changes, cancelSignal);
+  //     } finally {
+  //       this.interactionLoopStatus = InteractionLoopStatus.Idle;
+  //     }
+  //   });
+  // }
 
 
-  private updateComputingStatus(status, startTime: number[]) {
+  private updateComputingStatus(status: thmProto.ComputingStatus, startTime: number[]) {
     const duration = process.hrtime(startTime);
     const interval = duration[0] * 1000.0 + (duration[1] / 1000000.0);
     this.callbacks.sendComputingStatus(status, interval);
   }
 
-  private async doCoqOperation<X>(task: ()=>Promise<X>, lazyInitializeCoq? : boolean) {
-    lazyInitializeCoq = (lazyInitializeCoq===undefined) ? true : lazyInitializeCoq;
-    if(!this.coqTop.isRunning()) {
-      if(lazyInitializeCoq) {
-        await this.doResetCoq();
-      } else
-        return {};
-    }
+  // private async doCoqOperation<X>(task: ()=>Promise<X>, lazyInitializeCoq? : boolean) {
+  //   lazyInitializeCoq = (lazyInitializeCoq===undefined) ? true : lazyInitializeCoq;
+  //   if(!this.coqTop.isRunning()) {
+  //     if(lazyInitializeCoq) {
+  //       await this.doResetCoq();
+  //     } else
+  //       return {};
+  //   }
     
-    return await task();
-  }
+  //   return await task();
+  // }
 
-  private enqueueCoqOperation<X>(task: ()=>Promise<X>, lazyInitializeCoq? : boolean) {
-    // this.cancelProcessing might change in the future, so we want to make sure that, when
-    // the task is eventually run, it will use the CURRENT this.cancelProcessing
-    const cancelSignal = this.cancelProcessing;
-    return this.interactionCommands.process<X>(async () => {
-      if(cancelSignal.isCancelled())
-        return Promise.reject<X>(<coqProto.FailValue>{message: 'operation cancelled'})
+  // private enqueueCoqOperation<X>(task: ()=>Promise<X>, lazyInitializeCoq? : boolean) {
+  //   // this.cancelProcessing might change in the future, so we want to make sure that, when
+  //   // the task is eventually run, it will use the CURRENT this.cancelProcessing
+  //   const cancelSignal = this.cancelProcessing;
+  //   return this.interactionCommands.process<X>(async () => {
+  //     if(cancelSignal.isCancelled())
+  //       return Promise.reject<X>(<coqProto.FailValue>{message: 'operation cancelled'})
         
-      this.interactionLoopStatus = InteractionLoopStatus.CoqCommand;
-      const startTime = process.hrtime();
-      const statusCheck = setInterval(() => this.updateComputingStatus(thmProto.ComputingStatus.Computing, startTime), 500);
-      var interrupted = false;
-      try {
-        return await Promise.race<X>(
-          [ this.doCoqOperation(task, lazyInitializeCoq)
-          , cancelSignal.event.then(() => Promise.reject<X>(<coqProto.FailValue>{message: 'operation cancelled'}))
-          ]);
-      } catch(error) {
-        this.updateComputingStatus(thmProto.ComputingStatus.Interrupted, startTime);
-        interrupted = true;
-        throw error;
-      } finally {
-        this.interactionLoopStatus = InteractionLoopStatus.Idle;
-        clearInterval(statusCheck);
-        if(!interrupted)
-          this.updateComputingStatus(thmProto.ComputingStatus.Finished, startTime);
-      }
-    });
-  }
+  //     this.interactionLoopStatus = InteractionLoopStatus.CoqCommand;
+  //     const startTime = process.hrtime();
+  //     const statusCheck = setInterval(() => this.updateComputingStatus(thmProto.ComputingStatus.Computing, startTime), 500);
+  //     var interrupted = false;
+  //     try {
+  //       return await Promise.race<X>(
+  //         [ this.doCoqOperation(task, lazyInitializeCoq)
+  //         , cancelSignal.event.then(() => Promise.reject<X>(<coqProto.FailValue>{message: 'operation cancelled'}))
+  //         ]);
+  //     } catch(error) {
+  //       this.updateComputingStatus(thmProto.ComputingStatus.Interrupted, startTime);
+  //       interrupted = true;
+  //       throw error;
+  //     } finally {
+  //       this.interactionLoopStatus = InteractionLoopStatus.Idle;
+  //       clearInterval(statusCheck);
+  //       if(!interrupted)
+  //         this.updateComputingStatus(thmProto.ComputingStatus.Finished, startTime);
+  //     }
+  //   });
+  // }
   
-  /**
-   * Cancels all coq commands that are associated with `cancelProcessing`, which should be every coq command in `interactionCommands`.
-   * If a text edit invalidates a state, then this method should also be called.
-   */
-  private cancelCoqOperations() : Promise<void> {
-    // Cancel all current and pending operations
-    this.cancelProcessing.cancel();
-    // Do not cancel subsequent operations
-    this.cancelProcessing = new CancellationSignal();
-    if(this.interactionLoopStatus === InteractionLoopStatus.CoqCommand)
-      return this.coqTop.coqInterrupt();
-  }
+  // /**
+  //  * Cancels all coq commands that are associated with `cancelProcessing`, which should be every coq command in `interactionCommands`.
+  //  * If a text edit invalidates a state, then this method should also be called.
+  //  */
+  // private cancelCoqOperations() : Promise<void> {
+  //   // Cancel all current and pending operations
+  //   this.cancelProcessing.cancel();
+  //   // Do not cancel subsequent operations
+  //   this.cancelProcessing = new CancellationSignal();
+  //   if(this.interactionLoopStatus === InteractionLoopStatus.CoqCommand)
+  //     return this.coqTop.coqInterrupt();
+  // }
   
-  private async interactionsCoqQuit() {
-    const waitMS = 1000;
-    const cancelling = this.cancelCoqOperations();
+  // private async interactionsCoqQuit() {
+  //   const waitMS = 1000;
+  //   const cancelling = this.cancelCoqOperations();
+  //   try {
+  //     await Promise.race<{}>([cancelling, new Promise((resolve,reject) => setTimeout(() => reject(), waitMS))]);
+  //   } finally {
+  //     await this.coqTop.coqQuit();
+  //   }
+  // }
+  
+  // private async interactionsCoqReset() {
+  //   const waitMS = 1000;
+  //   const cancelling = this.cancelCoqOperations();
+  //   try {
+  //     await Promise.race<{}>([cancelling, new Promise((resolve,reject) => setTimeout(() => reject(), waitMS))]);
+  //   } finally {
+  //     await this.doResetCoq();
+  //   }
+  // }
+
+  /** Make sure that the STM is running */
+  private assertStm() {
+    if(!this.stm || !this.stm.isRunning())
+      this.resetCoq();
+  }
+
+  public async stepForward() : Promise<thmProto.CoqTopGoalResult> {
+    this.assertStm();
     try {
-      await Promise.race<{}>([cancelling, new Promise((resolve,reject) => setTimeout(() => reject(), waitMS))]);
-    } finally {
-      await this.coqTop.coqQuit();
-    }
-  }
-  
-  private async interactionsCoqReset() {
-    const waitMS = 1000;
-    const cancelling = this.cancelCoqOperations();
-    try {
-      await Promise.race<{}>([cancelling, new Promise((resolve,reject) => setTimeout(() => reject(), waitMS))]);
-    } finally {
-      await this.doResetCoq();
+  //   const parsingHighlights = [
+  //     { style: thmProto.HighlightType.Parsing, textBegin: startOffset, textEnd: stopPos }
+  //     ];
+  //   this.callbacks.sendHighlightUpdates(parsingHighlights);
+      await this.stm.stepForward(this.commandSequence(true));
+      return await this.stm.getGoal();
+    } catch(err) {
+      return {error: <thmProto.FailValue>err}
     }
   }
 
-  private coqInterface = {
-      stepForward: () => this.enqueueCoqOperation(async () => await this.stepForward(), true),
-      stepBackward: () => this.enqueueCoqOperation(() => this.stepBackward(), true),
-      interpretToPoint: (offset) => this.enqueueCoqOperation(() => this.editAt(offset), true),
-      interpretToEnd: () => this.enqueueCoqOperation(() => this.interpretToEnd(), true),
-      getGoals: () => this.enqueueCoqOperation(() => this.getGoal(), true),
-      locate: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("Locate " + query + ".")}), true),
-      check: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("Check " + query + ".")}), true),
-      search: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("Search " + query + ".")}), true),
-      searchAbout: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("SearchAbout " + query + ".")}), true),
-      resizeWindow: (columns: number) => this.enqueueCoqOperation(() => this.coqTop.coqResizeWindow(columns), false),
-      ltacProfResults: (offset?: number) => this.enqueueCoqOperation(async () => {
-        if(offset) {
-          const sent = this.sentences.findAtTextPosition(offset);
-          return this.coqTop.coqLtacProfilingResults(sent===null ? undefined : sent.stateId);
-        } else
-          return this.coqTop.coqLtacProfilingResults();
-      }, true),
-      quit: () => this.interactionsCoqQuit(),
-      reset: () => this.interactionsCoqReset(),
-      interrupt: () => this.cancelCoqOperations(),
-    };
+  public async stepBackward() : Promise<thmProto.CoqTopGoalResult> {
+    this.assertStm();
+    try {
+      await this.stm.stepBackward();
+      return await this.stm.getGoal();
+    } catch(err) {
+      return {error: <thmProto.FailValue>err}
+    }
+  }
+
+  public async interpretToPoint(offset: number) : Promise<thmProto.CoqTopGoalResult> {
+    this.assertStm();
+    try {
+      const pos = this.positionAt(offset);
+      const parsingHighlights : thmProto.Highlight[] = [
+        { style: thmProto.HighlightType.Parsing, range: Range.create(this.stm.getFocusedPosition(),pos) }
+        ];
+      this.callbacks.sendHighlightUpdates(parsingHighlights);
+      await this.stm.interpretToPoint(pos,this.commandSequence(false));
+      return await this.stm.getGoal();
+    } catch(err) {
+      return {error: <thmProto.FailValue>err}
+    }
+  }
+
+  public async interpretToEnd() : Promise<thmProto.CoqTopGoalResult> {
+    this.assertStm();
+    return await this.interpretToPoint(this.documentText.length);
+  }
+
+  public async getGoal() : Promise<thmProto.CoqTopGoalResult> {
+    if(!this.stm || !this.stm.isRunning())
+      return {};
+    return await this.stm.getGoal();
+  }
+
+  public async locateIdent(ident: string) {
+    if(!this.stm || !this.stm.isRunning())
+      return "Coq is not running";
+    return await this.stm.doQuery(`Locate ${ident}.`);
+  }
+
+  public async checkTerm(term: string) {
+    if(!this.stm || !this.stm.isRunning())
+      return "Coq is not running";
+    return await this.stm.doQuery(`Check ${term}.`);
+  }
+
+  public async search(query: string) {
+    if(!this.stm || !this.stm.isRunning())
+      return "Coq is not running";
+    return await this.stm.doQuery(`Search ${query}.`);
+  }
+
+  public async searchAbout(query: string) {
+    if(!this.stm || !this.stm.isRunning())
+      return "Coq is not running";
+    return await this.stm.doQuery(`SearchAbout ${query}.`);
+  }
+
+  public async setWrappingWidth(columns: number) {
+    if(!this.stm || !this.stm.isRunning())
+      return;
+    
+    await this.stm.setWrappingWidth(columns);
+  }
+
+  public async requestLtacProfResults(offset?: number) {
+    if(!this.stm || !this.stm.isRunning())
+      return;
+    await this.stm.requestLtacProfResults(offset ? this.positionAt(offset) : undefined);
+  }
+
+  public async interrupt() {
+    if(!this.stm || !this.stm.isRunning())
+      return;
+    this.stm.interrupt();
+  }
+
+  public async quitCoq() {
+    if(!this.stm || !this.stm.isRunning())
+      return;
+    await this.stm.shutdown();
+    this.stm.dispose();
+    this.stm = null;
+  }
+
+  // private coqInterface = {
+  //     stepForward: () => this.enqueueCoqOperation(async () => await this.stepForward(), true),
+  //     stepBackward: () => this.enqueueCoqOperation(() => this.stepBackward(), true),
+  //     interpretToPoint: (offset) => this.enqueueCoqOperation(() => this.interpretToPoint(offset), true),
+  //     interpretToEnd: () => this.enqueueCoqOperation(() => this.interpretToEnd(), true),
+  //     getGoals: () => this.enqueueCoqOperation(() => this.getGoal(), true),
+  //     locate: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("Locate " + query + ".")}), true),
+  //     check: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("Check " + query + ".")}), true),
+  //     search: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("Search " + query + ".")}), true),
+  //     searchAbout: (query: string) => this.enqueueCoqOperation(async () => ({searchResults: await this.coqTop.coqQuery("SearchAbout " + query + ".")}), true),
+  //     resizeWindow: (columns: number) => this.enqueueCoqOperation(() => this.coqTop.coqResizeWindow(columns), false),
+  //     ltacProfResults: (offset?: number) => this.enqueueCoqOperation(async () => {
+  //       if(offset) {
+  //         const sent = this.sentences.findAtTextPosition(offset);
+  //         return this.coqTop.coqLtacProfilingResults(sent===null ? undefined : sent.stateId);
+  //       } else
+  //         return this.coqTop.coqLtacProfilingResults();
+  //     }, true),
+  //     quit: () => this.interactionsCoqQuit(),
+  //     reset: () => this.interactionsCoqReset(),
+  //     interrupt: () => this.cancelCoqOperations(),
+  //   };
   // private coqInterface = {
   //     stepForward: () => this.protectOperation((wasReset) => this.stepForward()),
   //     stepBackward: () => this.protectOperation((wasReset) => this.stepBackward()),
@@ -944,9 +832,9 @@ this.clientConsole.log("rolled back");
   //     resizeWindow: (columns: number) => this.coqTop.coqResizeWindow(columns),
   //   };
   
-  public get coq() {
-    return this.coqInterface; 
-  }
+  // public get coq() {
+  //   return this.coqInterface; 
+  // }
 }
 
 
