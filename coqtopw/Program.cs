@@ -210,10 +210,10 @@ namespace coqtopw
 
       if (trace != null)
       {
-        coqtopMain = new TraceStream(coqtopMain, System.Text.Encoding.UTF8.GetBytes("\neditor->coqtop main-channel:\n"), trace);
-        editorMain = new TraceStream(editorMain, System.Text.Encoding.UTF8.GetBytes("\ncoqtop->editor main-channel:\n"), trace);
-        coqtopControl = new TraceStream(coqtopControl, System.Text.Encoding.UTF8.GetBytes("\neditor->coqtop control-channel:\n"), trace);
-        editorControl = new TraceStream(editorControl, System.Text.Encoding.UTF8.GetBytes("\ncoqtop->editor control-channel:\n"), trace);
+        coqtopMain = new TraceStream(coqtopMain, System.Text.Encoding.UTF8.GetBytes("\n<!-- editor->coqtop main-channel: -->\n"), trace);
+        editorMain = new TraceStream(editorMain, System.Text.Encoding.UTF8.GetBytes("\n<!-- coqtop->editor main-channel: -->\n"), trace);
+        coqtopControl = new TraceStream(coqtopControl, System.Text.Encoding.UTF8.GetBytes("\n<!-- editor->coqtop control-channel: -->\n"), trace);
+        editorControl = new TraceStream(editorControl, System.Text.Encoding.UTF8.GetBytes("\n<!-- coqtop->editor control-channel: -->\n"), trace);
       }
 
       var tasks = new List<Task>();
