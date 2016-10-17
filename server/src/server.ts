@@ -242,8 +242,8 @@ connection.onDidOpenTextDocument((params) => {
       }),
     sendReset: () =>
       connection.sendNotification(coqproto.CoqResetNotification.type, {uri: uri}),
-    sendStateViewUrl: (stateUrl: string) =>
-      connection.sendNotification(coqproto.CoqStateViewUrlNotification.type, {uri: uri, stateUrl: stateUrl}),
+    sendStmFocus: (focus: Position) =>
+      connection.sendNotification(coqproto.CoqStmFocusNotification.type, {uri: uri, focus: focus}),
     sendComputingStatus : (status: coqproto.ComputingStatus, computeTimeMS: number) =>
       connection.sendNotification(coqproto.CoqComputingStatusNotification.type, {uri: uri, status: status, computeTimeMS: computeTimeMS}),      
     sendLtacProfResults: (results: coqproto.LtacProfResults) =>

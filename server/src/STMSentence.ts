@@ -242,7 +242,7 @@ export class Sentence {
    */
   public setError(message: string, location?: coqProto.Location) {
     this.error = {message: message, sentence: this.textRange};
-    if(location) {
+    if(location && location.start !== location.stop) {
       this.error.range =
         Range.create(
           textUtil.positionAtRelativeCNL(this.textRange.start,this.commandText, location.start),

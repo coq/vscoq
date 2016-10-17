@@ -4,6 +4,7 @@ import {Position, Range, TextDocumentContentChangeEvent, TextDocument, RemoteCon
 import {CancellationToken} from 'vscode-jsonrpc';
 import * as vscode from 'vscode-languageserver';
 import * as coqProto from './coq-proto';
+import * as util from 'util';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
 import * as coqtop from './coqtop';
@@ -21,6 +22,7 @@ interface BufferedFeedback {
 export interface StateMachineCallbacks {
   sentenceStatusUpdate(range: Range, status: coqProto.SentenceStatus) : void;
   clearSentence(range: Range) : void;
+  updateStmFocus(focus: Position): void;
   error(sentenceRange: Range, errorRange: Range, message: string, rich_message?: any) : void;
   message(level: coqProto.MessageLevel, message: string, rich_message?: any) : void;
   ltacProfResults(range: Range, results: coqProto.LtacProfResults) : void;
@@ -104,7 +106,7 @@ export class CoqStateMachine {
     this.sentences = undefined;
     this.bufferedFeedback = undefined;
     this.console = undefined;
-    this.focusedSentence = undefined;
+    this.setFocusedSentence(undefined);
     this.callbacks = undefined;
     if(this.coqtop)
       this.coqtop.dispose();
@@ -252,7 +254,9 @@ export class CoqStateMachine {
       const result = await this.coqtop.coqGoal();
       return this.convertGoals(result);
     } catch(error) {
+      this.console.log("getGoal error: " + util.inspect(error,false,undefined));
       if(error instanceof coqtop.CallFailure) {
+      this.console.log("is coqtop.CallFailure");
         const sent = this.focusedSentence;
         const failure = await this.handleCallFailure(error, {range: sent.getRange(), text: sent.getText() });
         return Object.assign(failure, <proto.FailureTag>{type: 'failure'})
@@ -375,8 +379,8 @@ export class CoqStateMachine {
       throw "Cannot reinitialize the STM once it has died; create a new one."
     this.root = Sentence.newRoot(rootStateId);
     this.sentences = new Map<StateId,Sentence>([ [this.root.getStateId(),this.root] ]);
-    this.focusedSentence = this.root;
     this.lastSentence = this.root;
+    this.setFocusedSentence(this.root);
   }
 
   /** Assert that we are in a "running"" state
@@ -469,10 +473,10 @@ export class CoqStateMachine {
         this.lastSentence = newSentence;
 
       if(value.unfocusedStateId) {
-        this.focusedSentence = this.sentences.get(value.unfocusedStateId);
+        this.setFocusedSentence(this.sentences.get(value.unfocusedStateId));
         // create a new iterator since the next command will not be adjacent
       } else {
-        this.focusedSentence = newSentence;
+        this.setFocusedSentence(newSentence);
       }
 
       const result =
@@ -496,11 +500,18 @@ export class CoqStateMachine {
    * Converts a CallFailure from coqtop (where ranges are w.r.t. the start of the command/sentence) to a FailValue (where ranges are w.r.t. the start of the Coq script).
    */
   private async handleCallFailure(error: coqtop.CallFailure, command: {range: Range, text: string}) : Promise<proto.FailValue> {
-    const errorRange = vscode.Range.create(
-      textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.start)
-    , textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.stop)
-    );
-    this.console.log("call failure: " + `${error.range.start}-${error.range.stop}=` + textUtil.rangeToString(errorRange) + " of " + textUtil.rangeToString(command.range) + " (" + command.text + ")");
+    let errorRange : Range = undefined;
+    if(error.range) {
+        errorRange = vscode.Range.create(
+          textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.start)
+        , textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.stop)
+        );
+      this.console.log("call failure: " + `${error.range.start}-${error.range.stop}=` + textUtil.rangeToString(errorRange) + " of " + textUtil.rangeToString(command.range) + " (" + command.text + ")");
+      this.currentError = {message: error.message, range: errorRange, sentence: command.range}
+    } else {
+      this.console.log("call failure: " + textUtil.rangeToString(command.range) + " (" + command.text + ")");
+    }
+
     this.currentError = {message: error.message, range: errorRange, sentence: command.range}
 
     // Some errors tell us the new state to assume
@@ -547,6 +558,8 @@ export class CoqStateMachine {
           shelvedGoals: goals.shelvedGoals.map(this.parseConvertGoal),
           abandonedGoals: goals.abandonedGoals.map(this.parseConvertGoal),
         };
+      default:
+        this.console.warn("Goal returned an unexpected value: " + util.inspect(goals,false,undefined));
     }
   }
 
@@ -588,7 +601,7 @@ export class CoqStateMachine {
         // Rewind the entire document to this point
         this.rewindTo(sentence);
       }
-      this.focusedSentence = sentence;
+      this.setFocusedSentence(sentence);
     } catch(err) {
       const error = <coqtop.CallFailure>err;
       if(error.stateId)
@@ -619,7 +632,7 @@ export class CoqStateMachine {
       this.deleteSentence(sent);
     newLast.truncate();
     this.lastSentence = newLast;
-    this.focusedSentence = newLast;
+    this.setFocusedSentence(newLast);
   }
 
   /** Apply buffered feedback to existing sentences, then clear the buffer */    
@@ -636,6 +649,13 @@ export class CoqStateMachine {
         this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getStatus())
       });
     this.bufferedFeedback = [];
+  }
+
+  private setFocusedSentence(sent?: Sentence) {
+    if(sent === this.focusedSentence)
+      return;
+    this.focusedSentence = sent;
+    this.callbacks.updateStmFocus(this.getFocusedPosition());
   }
 
   private onCoqStateStatusUpdate(stateId: number, route: number, status: coqProto.SentenceStatus, worker: string) {
@@ -656,6 +676,8 @@ export class CoqStateMachine {
   private onCoqStateError(stateId: number, route: number, message: string, location?: coqProto.Location) {
     const sent = this.sentences.get(stateId);
     if(sent) {
+      if(location)
+        this.console.log(`CoqStateError: ${location.start}-${location.stop}`);
       sent.setError(message, location);
       this.callbacks.error(sent.getRange(), sent.getError().range, message);
     } else {

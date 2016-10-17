@@ -97,7 +97,7 @@ export type FailureResult = FailValue & FailureTag
 export type ProofViewResult = ProofView & ProofViewTag
 export type InterruptedResult = CommandInterrupted & InterruptedTag
 export type CommandResult =
-  NotRunningTag |
+  NotRunningResult |
   (FailureResult & FocusPosition) |
   (ProofViewResult & FocusPosition) |
   (InterruptedResult & FocusPosition) |
@@ -236,13 +236,13 @@ export namespace CoqResetNotification {
   , _:undefined }; 
 } 
 
-export interface NotifyStateViewUrlParams extends NotificationParams {
-  stateUrl: string;
+export interface NotifyCoqStmFocusParams extends NotificationParams {
+  focus?: vscode.Position;
 }
 
-export namespace CoqStateViewUrlNotification { 
-  export const type: NotificationType<NotifyStateViewUrlParams> =
-  { get method() { return 'coqtop/stateViewUrl' }
+export namespace CoqStmFocusNotification { 
+  export const type: NotificationType<NotifyCoqStmFocusParams> =
+  { get method() { return 'coqtop/stmFocus' }
   , _:undefined }; 
 } 
 

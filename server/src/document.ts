@@ -24,7 +24,7 @@ export interface DocumentCallbacks {
   sendDiagnostics(diagnostics: Diagnostic[]) : void;
   sendMessage(level: string, message: string, rich_message?: any) : void;
   sendReset() : void;
-  sendStateViewUrl(stateUrl: string) : void;
+  sendStmFocus(focus?: Position) : void;
   sendComputingStatus(status: thmProto.ComputingStatus, computeTimeMS: number) : void;
   sendLtacProfResults(results: coqProto.LtacProfResults) : void;
 }
@@ -251,11 +251,16 @@ export class CoqDocument implements TextDocument {
     this.stm = new CoqStateMachine(this.coqtopSettings, {
       sentenceStatusUpdate: (x1,x2) => this.onCoqStateStatusUpdate(x1,x2),
       clearSentence: (x1) => this.onClearSentence(x1),
+      updateStmFocus: (x1) => this.onUpdateStmFocus(x1),
       error: (x1,x2,x3) => this.onCoqStateError(x1,x2,x3),
       message: (x1,x2,x3) => this.onCoqMessage(x1,x2,x3),
       ltacProfResults: (x1,x2) => this.onCoqStateLtacProf(x1,x2),
       coqDied: (error?: string) => this.onCoqDied(error),
     }, this.clientConsole);
+  }
+
+  private onUpdateStmFocus(focus?: Position) {
+    this.callbacks.sendStmFocus(focus);
   }
   
   
@@ -743,8 +748,12 @@ export class CoqDocument implements TextDocument {
   private updateDiagnostics() {
     const diagnostics : Diagnostic[] = [];
     for(let error of this.stm.getErrors()) {
-      // this.clientConsole.log(error.message + '  @' + textUtil.rangeToString(error.range) + ' -- of ' + textUtil.rangeToString(error.sentence));
-      diagnostics.push(Diagnostic.create(error.range,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
+      if(error.range) {
+        this.clientConsole.log("call failure: " + textUtil.rangeToString(error.range) + " of " + textUtil.rangeToString(error.sentence));
+        diagnostics.push(Diagnostic.create(error.range,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
+      } else
+      this.clientConsole.log("call failure: " + textUtil.rangeToString(error.sentence));
+        diagnostics.push(Diagnostic.create(error.sentence,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
     }
     this.callbacks.sendDiagnostics(diagnostics);
   }

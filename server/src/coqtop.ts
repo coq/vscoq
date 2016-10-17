@@ -886,7 +886,7 @@ export class CoqTop extends events.EventEmitter {
         shelvedGoals: value.value.shelvedGoals,
         abandonedGoals: value.value.abandonedGoals
       };
-      this.console.log(`Goal: () --> focused: ${result.goals}, unfocused: ${this.countBackgroundGoals(result.backgroundGoals)}, shelved: ${result.shelvedGoals.length}, abandoned: ${result.abandonedGoals.length}`);
+      this.console.log(`Goal: () --> focused: ${result.goals.length}, unfocused: ${this.countBackgroundGoals(result.backgroundGoals)}, shelved: ${result.shelvedGoals.length}, abandoned: ${result.abandonedGoals.length}`);
       return Object.assign(result, <ProofModeResult>{mode: 'proof'});
     } else {
       this.console.log(`Goal: () --> No Proof`);

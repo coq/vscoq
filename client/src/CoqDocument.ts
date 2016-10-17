@@ -3,7 +3,8 @@
 import * as vscode from 'vscode';
 import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
 import { LanguageClient } from 'vscode-languageclient';
-
+import * as vscodeTypes from 'vscode-languageserver-types';
+import * as vc from 'vscode-languageclient';
 
 import {Highlights} from './Highlights';
 import {CoqView, SimpleCoqView} from './SimpleCoqView';
@@ -27,9 +28,11 @@ export class CoqDocument implements vscode.Disposable {
   private queryOut: vscode.OutputChannel;
   private noticeOut: vscode.OutputChannel;
   private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
+  private focusDecoration : vscode.TextEditorDecorationType;
 
   constructor(uri: vscode.Uri, context: ExtensionContext) {
     this.statusBar = new StatusBar();
+    this.viewDoc = vscode.workspace.textDocuments.find((doc) => doc.uri === uri);
 
     this.documentUri = uri.toString();
     this.langServer = new CoqLanguageServer(context);
@@ -43,10 +46,16 @@ export class CoqDocument implements vscode.Disposable {
     // this.view = new MDCoqView(uri);
     this.view.show(true,adjacentPane(this.currentViewColumn()));
 
+    this.focusDecoration = vscode.window.createTextEditorDecorationType({
+      gutterIconPath: context.asAbsolutePath('./src/stm-focus.svg'),
+      gutterIconSize: "contain"
+    });
+
+
     this.langServer.onUpdateHighlights((p) => this.onDidUpdateHighlights(p));
     this.langServer.onMessage((p) => this.onCoqMessage(p));
     this.langServer.onReset((p) => { if (p.uri == this.documentUri) this.onCoqReset(); });
-    this.langServer.onUpdateStateViewUrl((p) => { if (p.uri == this.documentUri) this.updateStateViewUrl(p.stateUrl); });
+    this.langServer.onUpdateCoqStmFocus((p) => { if (p.uri == this.documentUri) this.updateFocus(p.focus) });
     this.langServer.onUpdateComputingStatus((p) => { if (p.uri == this.documentUri) this.onUpdateComputingStatus(p); });
     this.langServer.onLtacProfResults((p) => { if (p.uri == this.documentUri) this.onLtacProfResults(p); });
 
@@ -68,13 +77,6 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateReady();
   }
   
-  private updateStateViewUrl(stateUrl: string) {
-    // if(this.view)
-    //   this.view.dispose();
-    // this.view = new HttpCoqView(vscode.Uri.parse(this.documentUri), stateUrl);
-  }
-
-
   public getUri() {
     return this.documentUri;
   }
@@ -82,6 +84,7 @@ export class CoqDocument implements vscode.Disposable {
   dispose() {
     this.statusBar.dispose();
     this.view.dispose();
+    this.focusDecoration.dispose();
   }
 
   private reset() {
@@ -189,6 +192,21 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateReady();
   }
 
+  private updateFocus(focus?: vscodeTypes.Position, moveCursor = false) {
+    if(focus) {
+      const focusPos = new vscode.Position(focus.line,focus.character);
+      if(moveCursor) {
+        for(let editor of this.cursorUnmovedSinceCommandInitiated)
+          editor.selections = [new vscode.Selection(focusPos, focusPos)]
+      }
+      for(let editor of this.allEditors())
+        editor.setDecorations(this.focusDecoration, [new vscode.Range(focusPos,focusPos.translate(0,1))]);
+    } else {
+      for(let editor of this.allEditors())
+        editor.setDecorations(this.focusDecoration, []);
+    }
+  }
+
   public async stepForward(editor: TextEditor) {
     this.statusBar.setStateWorking('Stepping forward');
     try {
@@ -196,8 +214,7 @@ export class CoqDocument implements vscode.Disposable {
       const value = await this.langServer.stepForward(this.documentUri);
       this.view.update(value);
       if(value.type !== 'not-running')
-        for(let editor of this.cursorUnmovedSinceCommandInitiated)
-          editor.selections = [new vscode.Selection(value.focus.line,value.focus.character,value.focus.line,value.focus.character)]
+        this.updateFocus(value.focus, true);
     } catch (err) {
     }
     this.statusBar.setStateReady();
@@ -210,8 +227,7 @@ export class CoqDocument implements vscode.Disposable {
       const value = await this.langServer.stepBackward(this.documentUri);
       this.view.update(value);
       if(value.type !== 'not-running')
-        for(let editor of this.cursorUnmovedSinceCommandInitiated)
-          editor.selections = [new vscode.Selection(value.focus.line,value.focus.character,value.focus.line,value.focus.character)]
+        this.updateFocus(value.focus, true)
       // const range = new vscode.Range(editor.document.positionAt(value.commandStart), editor.document.positionAt(value.commandEnd));
       // clearHighlight(editor, range);
     } catch (err) {
@@ -225,6 +241,8 @@ export class CoqDocument implements vscode.Disposable {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
       const value = await this.langServer.interpretToPoint(this.documentUri, editor.document.offsetAt(editor.selection.active));
+      if(value.type !== 'not-running')
+        this.updateFocus(value.focus);
       this.view.update(value);
     } catch (err) {
     }
@@ -236,6 +254,8 @@ export class CoqDocument implements vscode.Disposable {
     try {
       const params = { uri: this.documentUri };
       const value = await this.langServer.interpretToEnd(this.documentUri);
+      if(value.type !== 'not-running')
+        this.updateFocus(value.focus,true);
       this.view.update(value);
     } catch (err) { }
     this.statusBar.setStateReady();
