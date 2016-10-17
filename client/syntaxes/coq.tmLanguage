@@ -45,7 +45,7 @@
 
         <dict>
             <key>match</key>
-            <string>(Lemma|Theorem)\s+([a-zA-Z][a-zA-Z0-9_']*)</string>
+            <string>(Lemma|Theorem|Goal|Example)\s+([a-zA-Z][a-zA-Z0-9_']*)</string>
             <key>comment</key>
             <string>Theorem declarations</string>
             <key>captures</key>
