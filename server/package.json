@@ -9,26 +9,30 @@
   "publisher": "Christian J. Bell",
   "license": "MIT",
   "engines": {
-    "node": "*",
- 		"vscode": "^0.10.7"
+ 		"vscode": "^1.5.3"
   },
   "dependencies": {
-    "vscode-jsonrpc": "^2.4.0",
-    "vscode-languageserver": "^2.5.1",
+    "vscode-jsonrpc": "^3.0.0-alpha.3",
+    "vscode-languageserver": "^3.0.0-alpha.1",
     "sax": "1.2.1",
     "xml2js": "^0.4.17",
     "async": "2.0.1",
-    "diff": "2.2.3"
+    "diff": "2.2.3",
+    "@types/sax": "^0.0.28",
+    "@types/xml2js": "^0.0.28",
+    "@types/diff": "^0.0.31"
   },
   "devDependencies": {
     "typescript": "^2.0.3",
-    "mocha": "^3.1.0"
+    "mocha": "^3.1.1",
+    "@types/node": "^6.0.40",
+    "@types/mocha": "^2.2.32"
   },
   "scripts": {
-    "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p .",
-		"test": "tsc -p . && mocha -u tdd ../client/server/test",
-		"test-debug": "tsc -p . && mocha -u tdd --debug-brk ../client/server/test",
-    "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ."
+    "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./",
+    "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ./",
+		"test": "tsc -p ./ && mocha -u tdd ../client/server/test",
+		"test-debug": "tsc -p ./ && mocha -u tdd --debug-brk ../client/server/test"
   },
   "repository" :
   { "type" : "git"

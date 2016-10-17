@@ -5,7 +5,7 @@
       "name": "Launch Chrome against localhost, with sourcemaps",
       "type": "chrome",
       "request": "launch",
-      "url": "file:///c:/users/cj/Research/vscoq/client/html_views/goals/Coq.html?host=127.0.0.1&port=11562",
+      "url": "file:///c:/users/cj/Research/vscoq/client/html_views/goals/Coq.html?host=127.0.0.1&port=15819",
       "sourceMaps": true,
       "webRoot": "c:/users/cj/Research/vscoq/",
       "userDataDir": "${workspaceRoot}/chrome",

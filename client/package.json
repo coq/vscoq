@@ -94,21 +94,24 @@
     ]    
 	},	
 	"scripts": {
-		"vscode:prepublish": "node ./node_modules/vscode/bin/compile",
-		"compile": "node ./node_modules/vscode/bin/compile -p ./",
-		"watch": "node ./node_modules/vscode/bin/compile -watch -p ./",
+		"vscode:prepublish": "tsc -p ./",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
     "postinstall": "node ./node_modules/vscode/bin/install"
 	},
 	"devDependencies": {
-		"typescript": "^1.8.10",
-    "vscode": "^0.11.14"
+    "typescript": "^2.0.3",
+    "vscode": "^1.0.0",
+		"@types/node": "^6.0.40"
 	},
 	"dependencies": {
-    "vscode-jsonrpc": "^2.4.0",
-		"vscode-languageclient": "^2.5.0",
+    "vscode-jsonrpc": "3.0.0-alpha.3",
+		"vscode-languageclient": "3.0.0-alpha.2",
     "xml2js": "0.4.17",
     "ws": "1.1.1",
-    "opener": "1.4.2"
+    "opener": "1.4.2",
+    "@types/xml2js": "^0.0.28",
+    "@types/ws": "^0.0.34"
 	},
   "repository" :
   { "type" : "git"
