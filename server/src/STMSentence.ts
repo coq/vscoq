@@ -11,7 +11,8 @@ export type StateId = number;
 
 export interface SentenceError {
   message: string,
-  range?: Range
+  range?: Range,
+  sentence: Range,
 }
 
 export class Sentence {
@@ -26,7 +27,7 @@ export class Sentence {
     , private textRange: Range
     , private prev: Sentence | null
     , private next: Sentence | null
-    , private computeStart: number[] = undefined
+    , private computeStart: [number,number] = [0,0]
   ) {
     this.status = coqProto.SentenceStatus.Parsed;
     // this.proofView = {};
@@ -34,10 +35,10 @@ export class Sentence {
   }
 
   public static newRoot(stateId: StateId) : Sentence {
-    return new Sentence("",stateId,Range.create(0,0,0,0),null,null,[]);
+    return new Sentence("",stateId,Range.create(0,0,0,0),null,null,[0,0]);
   }
 
-  public static add(parent: Sentence, command: string, stateId: number, range: Range, computeStart : number[]) : Sentence {
+  public static add(parent: Sentence, command: string, stateId: number, range: Range, computeStart : [number,number]) : Sentence {
     // This implies a strict order of descendents by document position
     // To support comments that are not added as sentences,
     // this could be loosened to if(textUtil.isBefore(range.start,parent.textRange.end)).
@@ -106,8 +107,14 @@ export class Sentence {
     }
   }
 
+  /** Iterates this and all ancestor sentences in the order they appear in the document */
+  public *backwards() : Iterable<Sentence> {
+    yield this;
+    yield *this.ancestors();
+  }
+
   /** Iterates this and all decentant sentences in the order they appear in the document */
-  public *iterate() : Iterable<Sentence> {
+  public *forwards() : Iterable<Sentence> {
     yield this;
     yield *this.descendants();
   }
@@ -152,31 +159,50 @@ export class Sentence {
 
   /**
    * Applies the textual changes to the sentence
-   * @return false if the change has invalidated the sentence
+   * @return false if the change has invalidated the sentence; true if preserved
+   * 
+   * +++***
+   * +++_***
+   * 1:0-1:3
+   * 1:4-1:7
+   * @1:3-1:3 insert "_"
    */
-  public applyTextChanges(changes: vscode.TextDocumentContentChangeEvent[]) : boolean {
+  public applyTextChanges(changes: vscode.TextDocumentContentChangeEvent[], deltas: textUtil.RangeDelta[]  /*, console: vscode.RemoteConsole*/ ) : boolean {
     let newText = this.commandText;
-    change: for(let change of changes) {
-      switch(textUtil.rangeContainment(this.textRange,change.range)) {
-        case textUtil.RangeContainment.Disjoint:
+    let newRange = this.textRange;
+    change: for(let idx = 0; idx < changes.length; ++ idx) {
+      const change = changes[idx];
+      const delta = deltas[idx];
+      switch(parser.sentenceRangeContainment(newRange,change.range)) {
+        case parser.SentenceRangeContainment.Before:
+          newRange = textUtil.rangeTranslate(newRange,delta);
+          continue change;
+        case parser.SentenceRangeContainment.After:
           continue change; // ignore this change
-        case textUtil.RangeContainment.Overlapping:
+        case parser.SentenceRangeContainment.Crosses:
+  // console.log(`Crosses: ${change.range.start.line}:${change.range.start.character}-${change.range.end.line}:${change.range.end.character}`)
           return false; // give up; this sentence is toast (invalidated; needs to be cancelled)
-        case textUtil.RangeContainment.Contains:
+        case parser.SentenceRangeContainment.Contains:
           // the change falls within this sentence
-          const beginOffset = textUtil.relativeOffsetAtAbsolutePosition(this.commandText, this.textRange.start, change.range.start);
+          const beginOffset = textUtil.relativeOffsetAtAbsolutePosition(newText, newRange.start, change.range.start);
+// console.log("offset: "+beginOffset);          
           if(beginOffset == -1)
-            continue;
+            continue change;
+
           newText =
             newText.substring(0,beginOffset)
             + change.text
             + newText.substring(beginOffset+change.rangeLength);
-      }
-    }
+          newRange = Range.create(newRange.start,textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta));
+      } // switch
+    } // change: for
     if(parser.isPassiveDifference(this.commandText, newText)) {
+// console.log(`'${this.commandText}' == '${newText}'`);
       this.commandText = newText;
+      this.textRange = newRange;
       return true;
     } else
+// console.log(`'${this.commandText}' <> '${newText}'`);
       return false;
   }
 
@@ -215,12 +241,12 @@ export class Sentence {
    * @param location: optional offset range within the sentence where the error occurred
    */
   public setError(message: string, location?: coqProto.Location) {
-    this.error = {message: message};
+    this.error = {message: message, sentence: this.textRange};
     if(location) {
       this.error.range =
         Range.create(
-          textUtil.positionAtRelative(this.textRange.start,this.commandText, location.start),
-          textUtil.positionAtRelative(this.textRange.start,this.commandText, location.stop))
+          textUtil.positionAtRelativeCNL(this.textRange.start,this.commandText, location.start),
+          textUtil.positionAtRelativeCNL(this.textRange.start,this.commandText, location.stop))
     }
   }
 

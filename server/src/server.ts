@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 'use strict';
+import {rangeToString} from './text-util';
 
 import * as vscj from 'vscode-jsonrpc';
 import {RequestType, CancellationToken} from 'vscode-jsonrpc';
@@ -142,64 +143,67 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 //     (params: P, token: CancellationToken): R | ResponseError<E> | Thenable<R | ResponseError<E>>;
 // }
 
-connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.InterruptCoqRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
+connection.onRequest(coqproto.InterruptCoqRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
   return project.lookup(params.uri)
     .interrupt();
 });
-connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.QuitCoqRequest.type, (params: coqproto.CoqTopParams) : Thenable<void> => {
+connection.onRequest(coqproto.QuitCoqRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) : Thenable<void> => {
   return project.lookup(params.uri)
     .quitCoq();
 });
-connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.ResetCoqRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest(coqproto.ResetCoqRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
   return project.lookup(params.uri)
     .resetCoq();
 });
-connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.StepForwardRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest(coqproto.StepForwardRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
   return project.lookup(params.uri)
-    .stepForward();
+    .stepForward(token);
 });
-connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.StepBackwardRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest(coqproto.StepBackwardRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
   return project.lookup(params.uri)
-    .stepBackward();
+    .stepBackward(token);
 });
-connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.InterpretToPointRequest.type, (params: coqproto.CoqTopInterpretToPointParams) => {
+connection.onRequest(coqproto.InterpretToPointRequest.type, (params: coqproto.CoqTopInterpretToPointParams, token: CancellationToken) => {
   return project.lookup(params.uri)
-    .interpretToPoint(params.offset);
+    .interpretToPoint(params.offset, token);
 });
-connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.InterpretToEndRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest(coqproto.InterpretToEndRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
   return project.lookup(params.uri)
-    .interpretToEnd();
+    .interpretToEnd(token);
 });
-connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams) => {
+connection.onRequest(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
   return project.lookup(params.uri)
     .getGoal();
 });
-connection.onRequest<coqproto.CoqTopParams, coqproto.CoqTopGoalResult, void>(coqproto.QueryRequest.type, (params: coqproto.CoqTopQueryParams) => {
+connection.onRequest(coqproto.QueryRequest.type, async (params: coqproto.CoqTopQueryParams, token: CancellationToken) => {
   switch(params.queryFunction) {
   case coqproto.QueryFunction.Locate:
-    return project.lookup(params.uri).locateIdent(params.query);
+    return { searchResults: await project.lookup(params.uri).locateIdent(params.query) };
   case coqproto.QueryFunction.Check:
-    return project.lookup(params.uri).checkTerm(params.query);
+    return { searchResults: await project.lookup(params.uri).checkTerm(params.query) };
   case coqproto.QueryFunction.Search:
-    return project.lookup(params.uri).search(params.query);
+    return { searchResults: await project.lookup(params.uri).search(params.query) };
   case coqproto.QueryFunction.SearchAbout:
-    return project.lookup(params.uri).searchAbout(params.query);
+    return { searchResults: await project.lookup(params.uri).searchAbout(params.query) };
   default:
-    return null;
+    return { searchResults: "" };
   }
 });
-connection.onRequest<coqproto.CoqTopParams, void, void>(coqproto.ResizeWindowRequest.type, (params: coqproto.CoqTopResizeWindowParams) => {
+connection.onRequest(coqproto.ResizeWindowRequest.type, (params: coqproto.CoqTopResizeWindowParams, token: CancellationToken) => {
   return project.lookup(params.uri)
     .setWrappingWidth(params.columns);
 });
 
-connection.onRequest<coqproto.CoqTopLtacProfResultsParams, coqproto.CoqTopGoalResult, void>(coqproto.LtacProfResultsRequest.type, (params: coqproto.CoqTopLtacProfResultsParams) => {
+connection.onRequest(coqproto.LtacProfResultsRequest.type, (params: coqproto.CoqTopLtacProfResultsParams, token: CancellationToken) => {
   return project.lookup(params.uri)
     .requestLtacProfResults(params.offset);
 });
 
 
 function sendHighlightUpdates(documentUri: string, highlights: coqproto.Highlight[]) {
+  // for(let h of highlights) {
+  //   connection.console.log(`highlighting ${rangeToString(h.range)} as ${coqproto.HighlightType[h.style]}`);
+  // }
   connection.sendNotification(coqproto.UpdateHighlightsNotification.type, {
     highlights: highlights, uri: documentUri});
 }

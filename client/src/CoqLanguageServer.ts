@@ -107,34 +107,33 @@ export class CoqLanguageServer {
   public resetCoq(uri: string) {
     return this.server.sendRequest(proto.ResetCoqRequest.type, {uri: uri});
   }
-
-  public getGoal(uri: string) {
-    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.GoalRequest.type, {uri: uri},this.cancelRequest.token);
+  public getGoal(uri: string) : Thenable<proto.CommandResult> {
+    return this.server.sendRequest(proto.GoalRequest.type, {uri: uri},this.cancelRequest.token);
   }
 
-  public stepForward(uri: string) {
-    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.StepForwardRequest.type, {uri: uri},this.cancelRequest.token);
+  public stepForward(uri: string) : Thenable<proto.CommandResult> {
+    return this.server.sendRequest(proto.StepForwardRequest.type, {uri: uri},this.cancelRequest.token);
   }
 
-  public stepBackward(uri: string) {
-    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.StepBackwardRequest.type, {uri: uri},this.cancelRequest.token);
+  public stepBackward(uri: string) : Thenable<proto.CommandResult> {
+    return this.server.sendRequest(proto.StepBackwardRequest.type, {uri: uri},this.cancelRequest.token);
   }
 
-  public interpretToPoint(uri: string, offset: number) {
+  public interpretToPoint(uri: string, offset: number) : Thenable<proto.CommandResult> {
     const params = {
       uri: uri,
       offset: offset
     };
-    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.InterpretToPointRequest.type, params,this.cancelRequest.token);
+    return this.server.sendRequest(proto.InterpretToPointRequest.type, params,this.cancelRequest.token);
   }
 
-  public interpretToEnd(uri: string) {
-    return <Thenable<proto.CoqTopGoalResult>>this.server.sendRequest(proto.InterpretToEndRequest.type, {uri: uri},this.cancelRequest.token);
+  public interpretToEnd(uri: string) : Thenable<proto.CommandResult>{
+    return this.server.sendRequest(proto.InterpretToEndRequest.type, {uri: uri},this.cancelRequest.token);
   }
   
   public resizeView(uri: string, columns: number) : Thenable<void> {
     var x = proto.ResizeWindowRequest.type;
-    return <Thenable<void>>this.server.sendRequest<proto.CoqTopResizeWindowParams,void,void>(proto.ResizeWindowRequest.type, <proto.CoqTopResizeWindowParams>{uri: uri, columns: columns},this.cancelRequest.token);
+    return this.server.sendRequest(proto.ResizeWindowRequest.type, <proto.CoqTopResizeWindowParams>{uri: uri, columns: columns},this.cancelRequest.token);
   }
 
   // private createLtacProfResultsMap(treelist: {fst:string,snd:proto.LtacProfTree}[]) : Map<string,LtacProfTree> {
@@ -144,37 +143,37 @@ export class CoqLanguageServer {
   //   return results;
   // }
 
-  public ltacProfGetResults(uri: string, offset?: number) : Thenable<proto.LtacProfResults> {
-    return <Thenable<proto.LtacProfResults>>this.server.sendRequest<proto.CoqTopLtacProfResultsParams,proto.LtacProfResults,void>(proto.LtacProfResultsRequest.type, {uri: uri, offset: offset},this.cancelRequest.token);
+  public ltacProfGetResults(uri: string, offset?: number) : Thenable<void> {
+    return this.server.sendRequest(proto.LtacProfResultsRequest.type, {uri: uri, offset: offset},this.cancelRequest.token);
     // return this.createLtacProfResultsMap(results.results);
   }
 
-  public locate(uri: string, query: string) {
-    return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
+  public locate(uri: string, query: string) : Thenable<proto.CoqTopQueryResult> {
+    return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,
       queryFunction: proto.QueryFunction.Locate,
       query: query
     },this.cancelRequest.token);
   }
 
-  public check(uri: string, query: string) {
-    return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
+  public check(uri: string, query: string) : Thenable<proto.CoqTopQueryResult> {
+    return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,
       queryFunction: proto.QueryFunction.Check,
       query: query
     },this.cancelRequest.token);
   }
 
-  public search(uri: string, query: string) {
-    return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
+  public search(uri: string, query: string) : Thenable<proto.CoqTopQueryResult>{
+    return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,
       queryFunction: proto.QueryFunction.Search,
       query: query
     },this.cancelRequest.token);
   }
 
-  public searchAbout(uri: string, query: string) {
-    return <Thenable<proto.CoqTopQueryResult>>this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
+  public searchAbout(uri: string, query: string) : Thenable<proto.CoqTopQueryResult>{
+    return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,
       queryFunction: proto.QueryFunction.SearchAbout,
       query: query

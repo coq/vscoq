@@ -48,19 +48,9 @@ export function rangeTouches(range1: Range, range2: Range) : boolean {
   return rangeContainsOrTouches(range1,range2.start) || rangeContainsOrTouches(range1,range2.end);
 }
 
-export enum RangeContainment {
-  Contains, Disjoint, Overlapping
+export function rangeToString(r: Range) {
+  return `${r.start.line}:${r.start.character}-${r.end.line}:${r.end.character}`;
 }
-export function rangeContainment(range1: Range, range2: Range) : RangeContainment {
-  if(positionIsAfterOrEqual(range1.start,range2.end) || positionIsBeforeOrEqual(range1.end,range2.start))
-     return RangeContainment.Disjoint;
-  else if(positionIsBeforeOrEqual(range1.start, range2.start) && positionIsAfterOrEqual(range1.end, range2.end))
-    return RangeContainment.Contains;
-  else
-     return RangeContainment.Overlapping;
-    
-}
-
 // enum PositionComparison {
 //   Before   = 0,
 //   Equal    = 1,
@@ -161,6 +151,10 @@ export function rangeContainment(range1: Range, range2: Range) : RangeContainmen
 
 /** Calculates the offset into text of pos, where textStart is the position where text starts and both pos and textStart are absolute positions 
  * @return the offset into text indicated by pos, or -1 if pos is out of range
+ * 
+ * 'abc\ndef'
+ * 'acbX\ndef'
+ * +++*** --> +++_***
  * */
 export function relativeOffsetAtAbsolutePosition(text: string, textStart: Position, pos: Position) : number {
   let line = textStart.line;
@@ -168,16 +162,16 @@ export function relativeOffsetAtAbsolutePosition(text: string, textStart: Positi
   // count the relative lines and offset w.r.t text
   while(line < pos.line) {
     const match = lineEndingRE.exec(text.substring(currentOffset));
-    ++line;
+    ++line;   // there was a new line
     currentOffset += match[0].length;
   }
 
   if(line > pos.line)
     return -1
-  else if(textStart.line == pos.line)
+  else if(textStart.line === pos.line)
     return Math.max(-1, pos.character - textStart.character);
-  else if(line == pos.line)
-    return Math.max(-1, pos.character - currentOffset);
+  else // if(line === pos.line)
+    return Math.max(-1, pos.character + currentOffset);
 }
 
 export function offsetAt(text: string, pos: Position) : number {
@@ -202,12 +196,45 @@ export function positionAtRelative(start: Position, text: string, offset: number
   if(offset > text.length)
     offset = text.length;
   let line = start.line;
+  let currentOffset = 0;  // offset into text we are current at; <= `offset`
+  let lineOffset = start.character;
   let lastIndex = start.character;
   while(true) {
-    const match = lineEndingRE.exec(text.substring(lastIndex));
-    if(lastIndex + match[1].length >= offset)
-      return Position.create(line, Math.max(offset - lastIndex,0))
-    lastIndex+= match[0].length;
+    const match = lineEndingRE.exec(text.substring(currentOffset));
+    // match[0] -- characters plus newline
+    // match[1] -- characters up to newline
+    // match[2] -- newline (\n, \r, or \r\n)
+    if(currentOffset + match[1].length >= offset)
+      return Position.create(line, lineOffset + Math.max(offset - currentOffset, 0))
+    currentOffset+= match[0].length;
+    lineOffset = 0;
+    ++line;
+  }
+}
+
+/**
+ * @returns the Position (line, column) for the location (character position), assuming that text begins at start.
+ * 
+ * @param offset -- counts all newlines (e.g. '\r\n') as *one character* 
+ */
+export function positionAtRelativeCNL(start: Position, text: string, offset: number) : Position {
+  if(offset > text.length) {
+    return positionAtRelative(start, text, text.length);
+  }
+  let line = start.line;
+  let currentOffset = 0;  // offset into text we are current at; <= `offset`
+  let lineOffset = start.character;
+  let lastIndex = start.character;
+  while(true) {
+    const match = lineEndingRE.exec(text.substring(currentOffset));
+    // match[0] -- characters plus newline
+    // match[1] -- characters up to newline
+    // match[2] -- newline (\n, \r, or \r\n)
+    if(match[1].length >= offset)
+      return Position.create(line, lineOffset + offset)
+    currentOffset+= match[0].length;
+    offset -= match[1].length + (match[2]===undefined ? 0 : 1);
+    lineOffset = 0;
     ++line;
   }
 }

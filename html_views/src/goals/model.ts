@@ -75,7 +75,7 @@ function load() {
     $('#stdout').text("connection error");
   }
   connection.onmessage = function (event) {
-    const state = <CoqTopGoalResult>JSON.parse(event.data);
+    const state = <CommandResult>JSON.parse(event.data);
     stateModel.updateState(state);
   }
 

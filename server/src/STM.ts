@@ -1,15 +1,15 @@
 'use strict'
 
 import {Position, Range, TextDocumentContentChangeEvent, TextDocument, RemoteConsole} from 'vscode-languageserver';
+import {CancellationToken} from 'vscode-jsonrpc';
 import * as vscode from 'vscode-languageserver';
 import * as coqProto from './coq-proto';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
 import * as coqtop from './coqtop';
-import {CoqTopGoalResult, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './protocol';
+import {ProofView, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './protocol';
 import * as coqParser from './coq-parser';
 import {Sentence, SentenceError} from './STMSentence';
-
 type StateId = number;
 
 interface BufferedFeedback {
@@ -29,10 +29,24 @@ export interface StateMachineCallbacks {
 
 export type CommandIterator = (begin: Position, end?: Position) => Iterable<{text: string, range: Range}>;
 
+export type GoalErrorResult = proto.NotRunningResult | proto.FailureResult | proto.InterruptedResult
+export type GoalResult = proto.NoProofResult | proto.NotRunningResult |
+  proto.FailureResult |
+  proto.ProofViewResult |
+  proto.InterruptedResult
+
 class InconsistentState {
   constructor(
     public message: string
   ) {}
+}
+
+class AddCommandFailure implements proto.FailValue {
+  constructor(
+    public message: string,
+    public range: vscode.Range,
+    public sentence: vscode.Range)
+  {} 
 }
 
 /**
@@ -61,6 +75,10 @@ export class CoqStateMachine {
   private bufferedFeedback: BufferedFeedback[] = [];
   private documentVersion: number;
   private running = true;
+  // When it is not prudent to interrupt Coq, e.g. cancelling a sentence:
+  private disableInterrupt = false;
+  /** The error from the most recent Coq command (`null` if none) */
+  private currentError : proto.FailValue = null; 
 
   constructor(private settings: proto.CoqTopSettings
     , private callbacks: StateMachineCallbacks
@@ -100,12 +118,18 @@ export class CoqStateMachine {
   }
 
   public async interrupt() : Promise<void> {
-    await this.coqtop.coqInterrupt();
+    try {
+      await this.coqtop.coqInterrupt();
+    } catch(err) {
+      // this will fail on user interrupt
+      this.console.error('Exception thrown while interrupting Coq: ' + err.toString());
+    }
   }
 
   public isRunning() {
     return this.running;
   }
+
 
   /**
    * @returns the document position that Coqtop considers "focused"; use this to update the cursor position or
@@ -122,15 +146,22 @@ export class CoqStateMachine {
    * @param verbose - generate feedback messages with more info
    * @throw proto.FailValue if advancing failed
    */
-  public async stepForward(commandSequence: CommandIterator, verbose: boolean = false) : Promise<void>  {
+  public async stepForward(commandSequence: CommandIterator, verbose: boolean = false) : Promise<(proto.FailureResult & proto.FocusPosition)|null>  {
     await this.validateState(true);
     const currentFocus = this.getFocusedPosition();
+    try {
     // Advance one statement: the one that starts at the current focus
     await this.iterateAdvanceFocus(
       { iterateCondition: (command,contiguousFocus) => textUtil.positionIsEqual(command.range.start, currentFocus)
       , commandSequence: commandSequence
       , verbose: verbose
       });
+    } catch (error) {
+      if(error instanceof AddCommandFailure)
+        return Object.assign(Object.assign(error, <proto.FailureTag>{type: 'failure'}), <proto.FocusPosition>{focus: this.getFocusedPosition()});
+      else
+        throw error;
+    }
   }
 
   /**
@@ -158,46 +189,75 @@ export class CoqStateMachine {
       changes.sort((change1, change2) =>
         textUtil.positionIsAfter(change1.range.start, change2.range.start) ? -1 : 1)
 
-    // precompute how each change will affect an arbitrary range
-    const deltas = sortedChanges.map((change) => textUtil.toRangeDelta(change.range,change.text));
+    // this.console.log(`Sentences before:`);
+    // this.logDebuggingSentences(this.debuggingGetSentences())
 
     try {
-      sent: for (let sent of this.lastSentence.ancestors()) {
-        // optimization: remove any changes that will no longer overlap with the ancestor sentences
-        while (sortedChanges.length > 0 && textUtil.positionIsAfterOrEqual(sortedChanges[0].range.start, sent.getRange().end)) {
-          // this change comes after this sentence and all of its ancestors, so get rid of it
-          sortedChanges.shift();
-        }
-        // If there are no more changes, then we are done adjusting sentences
-        if (sortedChanges.length == 0)
-          break sent; // sent
+      const cancellations : Promise<void>[] = [];
+
+      const deltas = sortedChanges.map((c) => textUtil.toRangeDelta(c.range,c.text))
+
+      for (let sent of this.lastSentence.backwards()) {
+        // // optimization: remove any changes that will no longer overlap with the ancestor sentences
+        // while (sortedChanges.length > 0 && textUtil.positionIsAfterOrEqual(sortedChanges[0].range.start, sent.getRange().end)) {
+        //   // this change comes after this sentence and all of its ancestors, so get rid of it
+        //   sortedChanges.shift();
+        // }
+        // // If there are no more changes, then we are done adjusting sentences
+        // if (sortedChanges.length == 0)
+        //   break sent; // sent
 
         // apply the changes
-        const invalidated = sent.applyTextChanges(sortedChanges);
-        if(invalidated)
-          await this.cancelSentence(sent);
+        const preserved = sent.applyTextChanges(sortedChanges,deltas);
+        if(!preserved) {
+// this.console.log("cancelling: " + createDebuggingSentence(sent));
+          cancellations.push(this.cancelSentence(sent));
+        }
 
       } // for sent in ancestors of last sentence
+
+      await this.noInterrupt(() => Promise.all(cancellations));
     } catch(err) {
       this.handleInconsistentState(err);
     }
+    // this.console.log("Sentences After:");
+    // this.logDebuggingSentences(this.debuggingGetSentences())
 
     this.version = newVersion;
+  }
+
+  private convertCoqTopError(err) : GoalErrorResult {
+    if(err instanceof coqtop.Interrupted)
+      return {type: 'interrupted', range: this.sentences.get(err.stateId).getRange()}
+    else if(err instanceof coqtop.CoqtopError)
+      return {type: 'not-running', message: err.message}
+    // else if(err instanceof coqtop.CallFailure) {
+    //   const sent = this.sentences.get(err.stateId);
+    //   const start = textUtil.positionAtRelative(sent.getRange().start,sent.getText(),err.range.start);
+    //   const end = textUtil.positionAtRelative(sent.getRange().start,sent.getText(),err.range.stop);
+    //   const range = Range.create(start,end); // err.range
+    //   return Object.assign<proto.FailureTag,proto.FailValue>({type: 'failure'}, <proto.FailValue>{message: err.message, range: range, sentence: this.sentences.get(err.stateId).getRange()})
+    else
+      throw err;
   }
 
   /**
    * Return the goal for the currently focused state
    * @throws FailValue
    */
-  public async getGoal() : Promise<proto.CoqTopGoalResult> {
+  public async getGoal() : Promise<GoalResult> {
     if(!this.isCoqReady())
-      return {}
+      return {type: 'not-running'}
     try {
       const result = await this.coqtop.coqGoal();
       return this.convertGoals(result);
-    } catch(err) {
-      // this will fail on user interrupt
-      return {}
+    } catch(error) {
+      if(error instanceof coqtop.CallFailure) {
+        const sent = this.focusedSentence;
+        const failure = await this.handleCallFailure(error, {range: sent.getRange(), text: sent.getText() });
+        return Object.assign(failure, <proto.FailureTag>{type: 'failure'})
+      } else
+        return this.convertCoqTopError(error)
     }
   }
 
@@ -206,20 +266,29 @@ export class CoqStateMachine {
    * This may not fully process everything, or it may rewind the state.
    * @throw proto.FailValue if advancing failed
    */
-  public async interpretToPoint(position: Position, commandSequence: CommandIterator) : Promise<void> {
+  public async interpretToPoint(position: Position, commandSequence: CommandIterator, token: CancellationToken) : Promise<(proto.FailureResult & proto.FocusPosition)|null> {
     await this.validateState(true);
-    // Advance the focus until we reach or exceed the location
-    await this.iterateAdvanceFocus(
-      { iterateCondition: (command,contiguousFocus) =>
-          textUtil.positionIsAfterOrEqual(position,command.range.end)
-      , commandSequence: commandSequence
-      , end: position
-      , verbose: true
-      });
+    try {
+      // Advance the focus until we reach or exceed the location
+      await this.iterateAdvanceFocus(
+        { iterateCondition: (command,contiguousFocus) =>
+            textUtil.positionIsAfterOrEqual(position,command.range.end) && !token.isCancellationRequested
+        , commandSequence: commandSequence
+        , end: position
+        , verbose: true
+        });
+      if(token.isCancellationRequested)
+        throw "operation interrupted"
 
-    if(textUtil.positionIsBefore(position,this.getFocusedPosition())) {
-      // We exceeded the desired position
-      await this.focusSentence(this.getParentSentence(position));
+      if(textUtil.positionIsBefore(position,this.getFocusedPosition())) {
+        // We exceeded the desired position
+        await this.focusSentence(this.getParentSentence(position));
+      }
+    } catch (error) {
+      if(error instanceof AddCommandFailure)
+        return Object.assign(Object.assign(error, <proto.FailureTag>{type: 'failure'}), <proto.FocusPosition>{focus: this.getFocusedPosition()});
+      else
+        throw error;
     }
   }
 
@@ -259,7 +328,7 @@ export class CoqStateMachine {
 
   public *getSentences() : Iterable<{range: Range, status: coqProto.SentenceStatus}> {
     if(!this.running)
-      yield
+      return
     for(let sent of this.root.descendants())
       yield { range: sent.getRange(), status: sent.getStatus()}
   }
@@ -271,6 +340,14 @@ export class CoqStateMachine {
       if(sent.getError())
         yield sent.getError();
     }
+  }
+
+  public *getErrors() : Iterable<SentenceError> {
+    if(!this.running)
+      return;
+    yield *this.getSentenceErrors();
+    if(this.currentError !== null)
+      yield this.currentError;
   }
 
   private getParentSentence(position: Position) : Sentence {
@@ -329,12 +406,22 @@ export class CoqStateMachine {
       return false;
   }
 
+  private async noInterrupt<T>(fun: () => Promise<T>) : Promise<T> {
+    try {
+      this.disableInterrupt = true;
+      return await fun()
+    } finally {
+      this.disableInterrupt = false;
+    }
+  }
+
   /** Continues to add next next command until the callback returns false.
    * Commands are always added from the current focus, which may advance seuqentially or jump around the Coq script document
    * 
    * @param params.end: optionally specify and end position to speed up command parsing (for params.commandSequence) 
    * */
   private async iterateAdvanceFocus(params: {iterateCondition: (command: {text:string,range:Range}, contiguousFocus: boolean)=>boolean, commandSequence: CommandIterator, verbose: boolean, end?: Position}) : Promise<void> {
+    // true if the focus has not jumped elsewhere in the document
     let contiguousFocus = true;
     // Start advancing sentences
     let commandIterator = params.commandSequence(this.getFocusedPosition(),params.end)[Symbol.iterator]();
@@ -343,13 +430,12 @@ export class CoqStateMachine {
       // Do we satisfy the initial condition?
       if(!params.iterateCondition(command, contiguousFocus))
         return;
-this.console.log("1")
+
       // let the command-parsing iterator that we want the next value *NOW*,
       // before we await the command to be added.
       // This is useful for the caller to provide highlighting feedback to the user
       // while we wait for the command to be parsed by Coq
       nextCommand = commandIterator.next();
-this.console.log("2")
 
       const result = await this.addCommand(command,params.verbose);
       contiguousFocus = !result.unfocused;
@@ -365,6 +451,8 @@ this.console.log("2")
   */
   private async addCommand(command: {text: string, range: Range}, verbose: boolean) : Promise<{sentence: Sentence, unfocused: boolean}> {
     try {
+      this.currentError = null;
+
       const startTime = process.hrtime();
       const parent = this.focusedSentence;
       if(!textUtil.positionIsEqual(parent.getRange().end, command.range.start))
@@ -392,27 +480,37 @@ this.console.log("2")
         , unfocused: value.unfocusedStateId == undefined ? false : true
         };        
       return result;
-    } catch(err) {
-      if(err instanceof InconsistentState)
-        throw err;
-      else if(typeof err === 'string')
-        throw new InconsistentState(err);
-
-      const error = <coqtop.FailureResult>err;
-      if(error.stateId)
-        await this.gotoErrorFallbackState(error.stateId);
-      const errorRange = Range.create(
-          textUtil.positionAtRelative(command.range.start, command.text, error.range.start)
-        , textUtil.positionAtRelative(command.range.start, command.text, error.range.stop)
-        );
-      throw <proto.FailValue>
-        { message: error.message
-        , range: errorRange
-        };
+    } catch(error) {
+      if(typeof error === 'string')
+        throw new InconsistentState(error)
+      else if(error instanceof coqtop.CallFailure) {
+        const failure = await this.handleCallFailure(error, {range: command.range, text: command.text});
+        throw new AddCommandFailure(failure.message, failure.range, failure.range);
+      }
+      else
+        throw error
     } // try
   }
 
-  private convertGoal(goal: coqProto.Goal) : proto.Goal {
+  /**
+   * Converts a CallFailure from coqtop (where ranges are w.r.t. the start of the command/sentence) to a FailValue (where ranges are w.r.t. the start of the Coq script).
+   */
+  private async handleCallFailure(error: coqtop.CallFailure, command: {range: Range, text: string}) : Promise<proto.FailValue> {
+    const errorRange = vscode.Range.create(
+      textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.start)
+    , textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.stop)
+    );
+    this.console.log("call failure: " + `${error.range.start}-${error.range.stop}=` + textUtil.rangeToString(errorRange) + " of " + textUtil.rangeToString(command.range) + " (" + command.text + ")");
+    this.currentError = {message: error.message, range: errorRange, sentence: command.range}
+
+    // Some errors tell us the new state to assume
+    if(error.stateId)
+      await this.gotoErrorFallbackState(error.stateId);
+    
+    return {message: error.message, range: errorRange, sentence: command.range}
+  }
+
+  private parseConvertGoal(goal: coqProto.Goal) : proto.Goal {
     return <proto.Goal>{
       goal: goal.goal,
       hypotheses: goal.hypotheses.map((hyp) => {
@@ -430,23 +528,26 @@ this.console.log("2")
   private convertUnfocusedGoals(focusStack: coqProto.UnfocusedGoalStack) : proto.UnfocusedGoalStack {
     if(focusStack)
       return {
-        before: focusStack.before.map(this.convertGoal),
+        before: focusStack.before.map(this.parseConvertGoal),
         next: this.convertUnfocusedGoals(focusStack.next),
-        after: focusStack.after.map(this.convertGoal)
+        after: focusStack.after.map(this.parseConvertGoal)
       };
     else
       return null;
   }
   
-  private convertGoals(goals: coqtop.GoalResult) : proto.CoqTopGoalResult {
-    return {
-      goals: goals.goals ? goals.goals.map(this.convertGoal) : undefined,
-      backgroundGoals: this.convertUnfocusedGoals(goals.backgroundGoals),
-      shelvedGoals: goals.shelvedGoals ? goals.shelvedGoals.map(this.convertGoal) : undefined,
-      abandonedGoals: goals.abandonedGoals ? goals.abandonedGoals.map(this.convertGoal) : undefined,
-      focus: this.getFocusedPosition()
-      };
-      
+  private convertGoals(goals: coqtop.GoalResult) : GoalResult {
+    switch(goals.mode) {
+      case 'no-proof':
+        return {type: 'no-proof'}
+      case 'proof':
+        return {type: 'proof-view',
+          goals: goals.goals.map(this.parseConvertGoal),
+          backgroundGoals: this.convertUnfocusedGoals(goals.backgroundGoals),
+          shelvedGoals: goals.shelvedGoals.map(this.parseConvertGoal),
+          abandonedGoals: goals.abandonedGoals.map(this.parseConvertGoal),
+        };
+    }
   }
 
   private async gotoErrorFallbackState(stateId: StateId) {
@@ -478,10 +579,10 @@ this.console.log("2")
       return;
     try {
       const result = await this.coqtop.coqEditAt(sentence.getStateId());
-      if(result.newFocus) {
+      if(result.enterFocus) {
         // Jumping inside an existing proof
         // cancels a range of sentences instead of rewinding everything to this point
-        const endStateId = result.newFocus.qedStateId;
+        const endStateId = result.enterFocus.qedStateId;
         this.rewindRange(sentence, this.sentences.get(endStateId));
       } else {
         // Rewind the entire document to this point
@@ -489,7 +590,7 @@ this.console.log("2")
       }
       this.focusedSentence = sentence;
     } catch(err) {
-      const error = <coqtop.FailureResult>err;
+      const error = <coqtop.CallFailure>err;
       if(error.stateId)
         await this.gotoErrorFallbackState(error.stateId);
       
@@ -628,6 +729,14 @@ this.console.log("2")
     return results;
   }
 
+
+
+public logDebuggingSentences(ds?: DSentence[], indent: string = '\t') {
+  if(!ds)
+    ds = this.debuggingGetSentences()
+  this.console.log(ds.map((s,idx) => '  ' + (1+idx) + ':\t' + s).join('\n'));  
+}
+
 }
 
 // function createDebuggingSentence(sent: Sentence) : {cmd: string, range: string} {
@@ -642,11 +751,18 @@ this.console.log("2")
 //   Object.defineProperty(DSentence, "name", { value: "A" });
 //   return new DSentence();
 // }
+function abbrString(s:string) {
+  var s2 = coqParser.normalizeText(s);
+  if(s2.length > 80)
+    return s2.substr(0,80-3) + '...';
+  else return s2;
+}
+
 type DSentence = string;
 function createDebuggingSentence(sent: Sentence) : DSentence {
-  return `${sent.getRange().start.line}:${sent.getRange().start.character}-${sent.getRange().end.line}:${sent.getRange().end.character} -- ${sent.getText()}`;
-
+  return `${sent.getRange().start.line}:${sent.getRange().start.character}-${sent.getRange().end.line}:${sent.getRange().end.character} -- ${abbrString(sent.getText().trim())}`;
 }
+
 
 
 

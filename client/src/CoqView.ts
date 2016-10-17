@@ -8,13 +8,17 @@ export enum DisplayState {
   Proof, Top, Error
 }
 
-export function getDisplayState(state: proto.CoqTopGoalResult) {
-  if (state.error)
-    return DisplayState.Error;
-  if (state.goals || state.backgroundGoals || state.abandonedGoals || state.shelvedGoals)
-    return DisplayState.Proof;
-  else
-    return DisplayState.Top;
+export function getDisplayState(state: proto.CommandResult) {
+  switch(state.type) {
+    case 'failure':
+      return DisplayState.Error;
+    case 'proof-view':
+      return DisplayState.Proof;
+    case 'interrupted':
+      return DisplayState.Error;
+    case 'no-proof':
+      return DisplayState.Top;
+  }
 }
 
 function countUnfocusedGoalStack(u: proto.UnfocusedGoalStack) {
@@ -24,13 +28,16 @@ function countUnfocusedGoalStack(u: proto.UnfocusedGoalStack) {
     return 0;
 }
 
-export function countAllGoals(state: proto.CoqTopGoalResult): number {
-  const result =
-    (state.goals ? state.goals.length : 0)
-    + countUnfocusedGoalStack(state.backgroundGoals)
-    + (state.abandonedGoals ? state.abandonedGoals.length : 0)
-    + (state.shelvedGoals ? state.shelvedGoals.length : 0);
-  return result;
+export function countAllGoals(state: proto.CommandResult): number {
+  if(state.type === 'proof-view') {
+    const result =
+      state.goals.length
+      + countUnfocusedGoalStack(state.backgroundGoals)
+      + state.abandonedGoals.length
+      + state.shelvedGoals.length;
+    return result;
+  } else
+    return 0;
 }
 
 export function adjacentPane(pane: vscode.ViewColumn) : vscode.ViewColumn {
@@ -43,7 +50,7 @@ export function adjacentPane(pane: vscode.ViewColumn) : vscode.ViewColumn {
 
 export interface CoqView extends vscode.Disposable {
 
-  update(state: proto.CoqTopGoalResult) : void;
+  update(state: proto.CommandResult) : void;
   // message(message: string) : void;
   onresize: (columns: number) => Thenable<void>;
 

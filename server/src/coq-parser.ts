@@ -1,5 +1,6 @@
 'use strict';
-
+import * as textUtil from './text-util'
+import {Range, Position} from 'vscode-languageserver'
 // const skipSentenceRE = /^(?:[^.("]|[.][^\s(]|[.][^\s]\([^*]|\([^*])*([.]|\(\*|")/;
 // const skipSentenceRE = /^(?:[^.("]|[.][^\s]|\([^*])*([.]|\(\*|")/;
 
@@ -105,20 +106,20 @@ export function parseSentence(str: string) : number {
   return idx;
 }
 
-function isPassiveWhitespaceEdit(documentText: string, beginOffset: number, endOffset: number, changeText: string) : boolean {
-  const surroundingWS =
-    beginOffset === 0 || endOffset === documentText.length ||
-    /^\s$/.test(documentText.charAt(beginOffset - 1)) ||
-    /^\s$/.test(documentText.charAt(endOffset));
-  const changedText = documentText.substring(beginOffset, endOffset);
+// function isPassiveWhitespaceEdit(documentText: string, beginOffset: number, endOffset: number, changeText: string) : boolean {
+//   const surroundingWS =
+//     beginOffset === 0 || endOffset === documentText.length ||
+//     /^\s$/.test(documentText.charAt(beginOffset - 1)) ||
+//     /^\s$/.test(documentText.charAt(endOffset));
+//   const changedText = documentText.substring(beginOffset, endOffset);
 
-  if (surroundingWS && /^\s*$/.test(changedText) && /^\s*$/.test(changedText))
-    return true; // whitespace --> whitespace
-  else if (/^\s+$/.test(changedText) && /^\s+$/.test(changedText))
-    return true; // whitespace --> whitespace
-  else
-    return false;  
-}
+//   if (surroundingWS && /^\s*$/.test(changedText) && /^\s*$/.test(changedText))
+//     return true; // whitespace --> whitespace
+//   else if (/^\s+$/.test(changedText) && /^\s+$/.test(changedText))
+//     return true; // whitespace --> whitespace
+//   else
+//     return false;  
+// }
 
 // /**
 //  * Determines whether an edit should affect the validity of a sentence
@@ -171,7 +172,7 @@ function isPassiveWhitespaceEdit(documentText: string, beginOffset: number, endO
 //   return false;
 // }
 
-function removeComents(str: string) : string {
+function removeComments(str: string) : string {
   // Assume we are starting outside of a comment or parentheses
   // match everything up to a period or beginning of a comment or string
   let result = ''; // accumulates normalized text
@@ -213,7 +214,7 @@ function removeExcessWhitespace(str: string) : string {
     const wsMatch = /^\s*/.exec(str.substring(idx));
     idx+= wsMatch[0].length;
     if(wsMatch[0].length > 0)
-      result+= ' ';
+      result+= ' '; // keep one whitespace character
 
      // skip over non whitespace; but end at any beginning string deliminator
     const senMatch = /^((?:[^\s"])*)(")?/.exec(str.substring(idx));
@@ -231,33 +232,33 @@ function removeExcessWhitespace(str: string) : string {
   return result;
 }
 
-function normalizeText(str: string) : string {
+export function normalizeText(str: string) : string {
   // Assume we are starting outside of a comment or parentheses
-  return removeExcessWhitespace(removeComents(str));
+  return removeExcessWhitespace(removeComments(str));
 }
 
-/**
- * Determines whether an edit should affect the validity of a sentence
- * @param documentText: the Coq document or a sentence
- * @param changeBegin: start offset of change w.r.t. `documentText`
- * @param changeEnd: end offset of change w.r.t. `documentText`
- * @param changeText: new text
- * @returns `false` if the edit might change the validity of the sentence and thus needs to be reinterpreted
- */
-export function isPassiveEdit(documentText: string, beginOffset: number, endOffset: number, changeText: string) : boolean {
-  // Algorithm:
-  // 1. apply edit
-  // 2. normalize original & edited text
-  //   a) remove extra whitespace
-  //   b) remove comments
-  // 3. return true iff both normalized texts are still equal 
-  try {
-    const editedDocumentText = documentText.substring(0,beginOffset) + changeText + documentText.substring(endOffset);
-    return normalizeText(documentText) === normalizeText(editedDocumentText);
-  } catch(err) {
-    return false;
-  }
-}
+// /**
+//  * Determines whether an edit should affect the validity of a sentence
+//  * @param documentText: the Coq document or a sentence
+//  * @param changeBegin: start offset of change w.r.t. `documentText`
+//  * @param changeEnd: end offset of change w.r.t. `documentText`
+//  * @param changeText: new text
+//  * @returns `false` if the edit might change the validity of the sentence and thus needs to be reinterpreted
+//  */
+// export function isPassiveEdit(documentText: string, beginOffset: number, endOffset: number, changeText: string) : boolean {
+//   // Algorithm:
+//   // 1. apply edit
+//   // 2. normalize original & edited text
+//   //   a) remove extra whitespace
+//   //   b) remove comments
+//   // 3. return true iff both normalized texts are still equal 
+//   try {
+//     const editedDocumentText = documentText.substring(0,beginOffset) + changeText + documentText.substring(endOffset);
+//     return normalizeText(documentText) === normalizeText(editedDocumentText);
+//   } catch(err) {
+//     return false;
+//   }
+// }
 
 /**
  * Determines whether the two commands are equivalent modulo whitespace and comments 
@@ -270,3 +271,34 @@ export function isPassiveDifference(cmd1: string, cmd2: string) : boolean {
     return false;
   }
 }
+
+
+export enum SentenceRangeContainment {
+  /** The range is contained by the sentence (range may be empty at the beginning, but not at the end and empty). */
+  Contains,
+  /** The range is before the sentence */
+  Before,
+  /** The range is after the sentence */
+  After,
+  /** The change crosses the sentence boundary */
+  Crosses
+}
+/** Determines whether a Coq sentence range should contain the range
+ * A sentence contains a range if the range is nonempty and is completely within the sentence
+ * OR if it is empty and at the *beginning* of a sentence.
+ * (We only check the beginning because we assume sentences always end with a period (no more whitespace))
+*/
+export function sentenceRangeContainment(sentRange: Range, range: Range) : SentenceRangeContainment {
+  if(textUtil.positionIsAfter(sentRange.start,range.end))
+    return SentenceRangeContainment.Before; // change is strictly before sentence
+  if(textUtil.positionIsBeforeOrEqual(sentRange.end,range.start))
+    return SentenceRangeContainment.After; // change is after sentence
+  else if(textUtil.positionIsBeforeOrEqual(sentRange.start, range.start) && textUtil.positionIsAfterOrEqual(sentRange.end, range.end))
+    return SentenceRangeContainment.Contains; // change is inside the sentence
+  if(textUtil.positionIsAfterOrEqual(sentRange.start,range.end))
+    return SentenceRangeContainment.Before; // change is before sentence (maybe touching) and nonempty
+  else
+    return SentenceRangeContainment.Crosses;
+    
+}
+

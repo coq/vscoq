@@ -80,7 +80,7 @@ export class HtmlCoqView implements view.CoqView {
   private httpServer : http.Server;
   // private connection : Promise<WebSocket>;
   private serverReady : Promise<void>;
-  private currentState : proto.CoqTopGoalResult = {}; 
+  private currentState : proto.CommandResult = {type: 'not-running'}; 
   public onresize: (columns: number) => Thenable<void> = null;
   private coqViewUri : vscode.Uri; 
   
@@ -155,7 +155,7 @@ export class HtmlCoqView implements view.CoqView {
     // this.editor.hide();
   }
   
-  public async update(state: proto.CoqTopGoalResult) {
+  public async update(state: proto.CommandResult) {
     this.currentState = state;
     for(const connection of this.server.clients) {
       try {

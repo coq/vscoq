@@ -102,7 +102,7 @@ export class MDCoqView implements view.CoqView {
   }
   
 
-  private displayError(state: proto.CoqTopGoalResult) {
+  private displayError(state: proto.CommandResult) {
     // this.out.appendLine(state.error.message);
   }
   
@@ -123,11 +123,11 @@ export class MDCoqView implements view.CoqView {
     // })
   }
 
-  private displayProof(state: proto.CoqTopGoalResult) {
+  private displayProof(state: proto.CommandResult) {
     let out = "";
     if (view.countAllGoals(state) == 0) {
       out = "No more subgoals.";
-    } else if (state.goals) {
+    } else if (state.type === 'proof-view') {
       if(state.goals.length > 0) {
         state.goals[0].hypotheses.forEach((hyp) =>
           out = out + hyp + '<br/>');
@@ -141,7 +141,7 @@ export class MDCoqView implements view.CoqView {
     this.setOutputText(out);
   }
 
-  private displayTop(state: proto.CoqTopGoalResult) {
+  private displayTop(state: proto.CommandResult) {
     this.editor.edit((eb) => {
       eb.replace(new vscode.Range(0,0,this.outDoc.lineCount,0), "Top");
     })
@@ -160,7 +160,7 @@ export class MDCoqView implements view.CoqView {
       vscode.window.showTextDocument(focusedDoc);    
   }
 
-  public async update(state: proto.CoqTopGoalResult) {
+  public async update(state: proto.CommandResult) {
     switch (view.getDisplayState(state)) {
       case view.DisplayState.Error:
         this.displayError(state);

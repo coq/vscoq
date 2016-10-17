@@ -2,7 +2,8 @@
 
 import * as util from 'util';
 import {TextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic, DiagnosticSeverity} from 'vscode-languageserver';
-import {FailureResult, AddResult, EditAtResult, GoalResult} from './coqtop';
+import {CancellationToken} from 'vscode-jsonrpc';
+import {Interrupted, CoqtopError, CallFailure, AddResult, EditAtResult} from './coqtop';
 import * as thmProto from './protocol';
 import * as coqProto from './coq-proto';
 import * as coqParser from './coq-parser';
@@ -12,7 +13,7 @@ import {Mutex} from './Mutex';
 import {CancellationSignal, asyncWithTimeout} from './CancellationSignal';
 import {AsyncWorkQueue} from './AsyncQueue';
 import {richppToMarkdown} from './RichPP';
-import {CommandIterator, CoqStateMachine} from './STM';
+import {CommandIterator, CoqStateMachine, GoalResult} from './STM';
 
 
 function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
@@ -98,12 +99,16 @@ export class CoqDocument implements TextDocument {
       changes.sort((change1,change2) =>
         textUtil.positionIsAfter(change1.range.start, change2.range.start) ? -1 : 1)
 
-    await this.stm.applyChanges(sortedChanges, newVersion);
+    try {
+      await this.stm.applyChanges(sortedChanges, newVersion);
+    } catch (err) {
+      this.clientConsole.error("STM crashed while applying text edit: " + err.toString())
+    }
 
     for(const change of sortedChanges) {
       // this.clientConsole.log(`Change: ${rangeToString(change.range)} (${change.rangeLength}) --> ${change.text}`);
       // Remove diagnostics for any text that has been modified
-      this.removeDiagnosticsIntersecting(change.range, false);
+      // this.removeDiagnosticsIntersecting(change.range, false);
 
       // Find offsets for change-range
       const beginOffset = this.offsetAt(change.range.start);
@@ -111,7 +116,7 @@ export class CoqDocument implements TextDocument {
       this.applyEditToDocument(beginOffset, change);
       
       // And also adjust the diagnostic locations
-      this.shiftDiagnostics(textUtil.toRangeDelta(change.range, change.text));
+      // this.shiftDiagnostics(textUtil.toRangeDelta(change.range, change.text));
     }
 
     this.version = newVersion;
@@ -119,7 +124,7 @@ export class CoqDocument implements TextDocument {
 
     // send the updated diagnostics
 // TODO
-    this.callbacks.sendDiagnostics(this.diagnostics);
+    // this.callbacks.sendDiagnostics(this.diagnostics);
   }
   
   public offsetAt(pos: Position) : number {
@@ -193,6 +198,7 @@ export class CoqDocument implements TextDocument {
         { message: error.message
         , range: error.range
         , severity: DiagnosticSeverity.Error
+        , source: 'coq'
         })
     }
     return diagnostics;
@@ -215,11 +221,12 @@ export class CoqDocument implements TextDocument {
       [ this.highlightSentence(sentenceRange, thmProto.HighlightType.TacticFailure)
       ]);
 
-    this.addDiagnostic(
-      { message: message
-      , range: errorRange
-      , severity: DiagnosticSeverity.Error
-      });
+    this.updateDiagnostics()
+    // this.addDiagnostic(
+    //   { message: message
+    //   , range: errorRange
+    //   , severity: DiagnosticSeverity.Error
+    //   });
   }
   
   
@@ -348,33 +355,33 @@ export class CoqDocument implements TextDocument {
   //   }
   // }
 
-  private async addDiagnostic(diagnostic: Diagnostic) {
-    const diag = diagnostic;
-    diag.message = await richppToMarkdown(diag.message);
-    this.diagnostics.push(diag);
-    this.callbacks.sendDiagnostics(this.diagnostics);
-  }
+  // private async addDiagnostic(diagnostic: Diagnostic) {
+  //   const diag = diagnostic;
+  //   diag.message = await richppToMarkdown(diag.message);
+  //   this.diagnostics.push(diag);
+  //   this.callbacks.sendDiagnostics(this.diagnostics);
+  // }
 
-  private removeDiagnosticsContaining(pos: Position, sendUpdate?: boolean) {
-    this.diagnostics = this.diagnostics
-      .filter((d) => !textUtil.rangeContains(d.range, pos));
-    if(sendUpdate === undefined || sendUpdate===true)
-      this.callbacks.sendDiagnostics(this.diagnostics);
-  }
+  // private removeDiagnosticsContaining(pos: Position, sendUpdate?: boolean) {
+  //   this.diagnostics = this.diagnostics
+  //     .filter((d) => !textUtil.rangeContains(d.range, pos));
+  //   if(sendUpdate === undefined || sendUpdate===true)
+  //     this.callbacks.sendDiagnostics(this.diagnostics);
+  // }
 
-  private removeDiagnosticsIntersecting(range: Range, sendUpdate?: boolean) {
-    this.diagnostics = this.diagnostics
-      .filter((d) => !textUtil.rangeTouches(d.range, range));
-    if(sendUpdate === undefined || sendUpdate===true)
-      this.callbacks.sendDiagnostics(this.diagnostics);
-  }
+  // private removeDiagnosticsIntersecting(range: Range, sendUpdate?: boolean) {
+  //   this.diagnostics = this.diagnostics
+  //     .filter((d) => !textUtil.rangeTouches(d.range, range));
+  //   if(sendUpdate === undefined || sendUpdate===true)
+  //     this.callbacks.sendDiagnostics(this.diagnostics);
+  // }
   
 
-  private shiftDiagnostics(delta: textUtil.RangeDelta) {
-    for(let idx = 0; idx < this.diagnostics.length; ++idx) {
-      this.diagnostics[idx].range = textUtil.rangeTranslate(this.diagnostics[idx].range, delta);
-    }
-  }
+  // private shiftDiagnostics(delta: textUtil.RangeDelta) {
+  //   for(let idx = 0; idx < this.diagnostics.length; ++idx) {
+  //     this.diagnostics[idx].range = textUtil.rangeTranslate(this.diagnostics[idx].range, delta);
+  //   }
+  // }
   
 
   // private clearSentenceHighlight(sentence: Sentence, endSentence?: Sentence) {
@@ -603,7 +610,7 @@ export class CoqDocument implements TextDocument {
   // }
 
 
-  private updateComputingStatus(status: thmProto.ComputingStatus, startTime: number[]) {
+  private updateComputingStatus(status: thmProto.ComputingStatus, startTime: [number,number]) {
     const duration = process.hrtime(startTime);
     const interval = duration[0] * 1000.0 + (duration[1] / 1000000.0);
     this.callbacks.sendComputingStatus(status, interval);
@@ -690,31 +697,88 @@ export class CoqDocument implements TextDocument {
       this.resetCoq();
   }
 
-  public async stepForward() : Promise<thmProto.CoqTopGoalResult> {
+  // private convertErrorToCommandResult(error: any) : thmProto.FailureResult {
+  //   if(error instanceof Interrupted) {
+  //     return undefined;
+  //   } else if(error instanceof CoqtopError) {
+  //   } else if(error instanceof CallFailure) {
+  //     return Object.assign<thmProto.FailureResult,thmProto.FocusPosition>({type: 'failure', message: error.message, range: error.range, sentence: error.stateId}, {focus: this.stm.getFocusedPosition()})
+  //   else
+  //     throw error;
+  // }
+
+  private toGoal(goal: GoalResult) : thmProto.CommandResult {
+    if(goal.type === 'not-running')
+      return goal
+    // This is silly (Typescript is not yet smart enough)
+    else if(goal.type === 'proof-view')
+      return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
+    else if(goal.type === 'no-proof')
+      return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
+    else if(goal.type === 'failure')
+      return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
+    else if(goal.type === 'interrupted')
+      return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
+
+  //     export type GoalResult = proto.NoProofTag | proto.NotRunningTag |
+  // (proto.FailValue & proto.FailureTag) |
+  // (proto.ProofView & proto.ProofViewTag) |
+  // (proto.CommandInterrupted & proto.InterruptedTag)
+
+
+//   export type FocusPosition = {focus: vscode.Position}
+// export type NotRunningTag = {type: 'not-running'}
+// export type NoProofTag = {type: 'no-proof'}
+// export type FailureTag = {type: 'failure'}
+// export type ProofViewTag = {type: 'proof-view'}
+// export type InterruptedTag = {type: 'interrupted'}
+// export type NotRunningResult = NotRunningTag
+// export type NoProofResult = NoProofTag & FocusPosition
+// export type FailureResult = FailValue & FailureTag & FocusPosition
+// export type ProofViewResult = ProofView & ProofViewTag & FocusPosition
+// export type InterruptedResult = CommandInterrupted & InterruptedTag & FocusPosition
+// export type CommandResult = NotRunningTag | FailureResult | ProofViewResult | InterruptedResult | NoProofResult
+  }
+
+  private updateDiagnostics() {
+    const diagnostics : Diagnostic[] = [];
+    for(let error of this.stm.getErrors()) {
+      // this.clientConsole.log(error.message + '  @' + textUtil.rangeToString(error.range) + ' -- of ' + textUtil.rangeToString(error.sentence));
+      diagnostics.push(Diagnostic.create(error.range,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
+    }
+    this.callbacks.sendDiagnostics(diagnostics);
+  }
+
+
+  public async stepForward(token: CancellationToken) : Promise<thmProto.CommandResult> {
     this.assertStm();
     try {
-  //   const parsingHighlights = [
-  //     { style: thmProto.HighlightType.Parsing, textBegin: startOffset, textEnd: stopPos }
-  //     ];
-  //   this.callbacks.sendHighlightUpdates(parsingHighlights);
-      await this.stm.stepForward(this.commandSequence(true));
-      return await this.stm.getGoal();
-    } catch(err) {
-      return {error: <thmProto.FailValue>err}
+    //   const parsingHighlights = [
+    //     { style: thmProto.HighlightType.Parsing, textBegin: startOffset, textEnd: stopPos }
+    //     ];
+    //   this.callbacks.sendHighlightUpdates(parsingHighlights);
+      const error = await this.stm.stepForward(this.commandSequence(true));
+      if(error)
+        return error
+  this.stm.logDebuggingSentences();
+      return this.toGoal(await this.stm.getGoal());
+    } finally {
+      this.updateDiagnostics();
     }
   }
 
-  public async stepBackward() : Promise<thmProto.CoqTopGoalResult> {
+  public async stepBackward(token: CancellationToken) : Promise<thmProto.CommandResult> {
     this.assertStm();
     try {
-      await this.stm.stepBackward();
-      return await this.stm.getGoal();
-    } catch(err) {
-      return {error: <thmProto.FailValue>err}
+    await this.stm.stepBackward();
+this.stm.logDebuggingSentences();
+    return this.toGoal(await this.stm.getGoal());
+    } finally {
+      this.updateDiagnostics();
     }
   }
 
-  public async interpretToPoint(offset: number) : Promise<thmProto.CoqTopGoalResult> {
+  public async interpretToPoint(offset: number, token: CancellationToken) : Promise<thmProto.CommandResult> {
     this.assertStm();
     try {
       const pos = this.positionAt(offset);
@@ -722,22 +786,39 @@ export class CoqDocument implements TextDocument {
         { style: thmProto.HighlightType.Parsing, range: Range.create(this.stm.getFocusedPosition(),pos) }
         ];
       this.callbacks.sendHighlightUpdates(parsingHighlights);
-      await this.stm.interpretToPoint(pos,this.commandSequence(false));
-      return await this.stm.getGoal();
-    } catch(err) {
-      return {error: <thmProto.FailValue>err}
+      const error = await this.stm.interpretToPoint(pos,this.commandSequence(false), token);
+      if(error)
+        return error;
+  this.stm.logDebuggingSentences();
+      return this.toGoal(await this.stm.getGoal());
+    } finally {
+      this.updateDiagnostics();
+    }
+
+  }
+
+  public async interpretToEnd(token: CancellationToken) : Promise<thmProto.CommandResult> {
+    this.assertStm();
+    try {
+      const error = await this.interpretToPoint(this.documentText.length,token);
+      if(error)
+        return error;
+  this.stm.logDebuggingSentences();
+      return this.toGoal(await this.stm.getGoal());
+    } finally {
+      this.updateDiagnostics();
     }
   }
 
-  public async interpretToEnd() : Promise<thmProto.CoqTopGoalResult> {
-    this.assertStm();
-    return await this.interpretToPoint(this.documentText.length);
-  }
-
-  public async getGoal() : Promise<thmProto.CoqTopGoalResult> {
+  public async getGoal() : Promise<thmProto.CommandResult> {
     if(!this.stm || !this.stm.isRunning())
-      return {};
-    return await this.stm.getGoal();
+      return {type: 'not-running'};
+    try {
+      return this.toGoal(await this.stm.getGoal());
+    } finally {
+      this.updateDiagnostics();
+    }
+
   }
 
   public async locateIdent(ident: string) {

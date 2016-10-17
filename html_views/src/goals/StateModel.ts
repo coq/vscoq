@@ -35,25 +35,53 @@ interface FailValue {
   location?: Location;
 }
 
-interface CoqTopGoalResult {
-  goals?: Goal[];
-  backgroundGoals?: UnfocusedGoalStack,
-  shelvedGoals?: Goal[],
-  abandonedGoals?: Goal[],
-  error?: FailValue;
+interface ProofView {
+  goals: Goal[];
+  backgroundGoals: UnfocusedGoalStack,
+  shelvedGoals: Goal[],
+  abandonedGoals: Goal[],
 }
+
+interface CommandInterrupted {
+  range: any
+}
+
+type FocusPosition = {focus: any}
+type NotRunningTag = {type: 'not-running'}
+type NoProofTag = {type: 'no-proof'}
+type FailureTag = {type: 'failure'}
+type ProofViewTag = {type: 'proof-view'}
+type InterruptedTag = {type: 'interrupted'}
+type NotRunningResult = NotRunningTag
+type NoProofResult = NoProofTag
+type FailureResult = FailValue & FailureTag
+type ProofViewResult = ProofView & ProofViewTag
+type InterruptedResult = CommandInterrupted & InterruptedTag
+type CommandResult =
+  NotRunningTag |
+  (FailureResult & FocusPosition) |
+  (ProofViewResult & FocusPosition) |
+  (InterruptedResult & FocusPosition) |
+  (NoProofResult & FocusPosition);
+
 
 enum DisplayState {
-  Proof, Top, Error
+  Proof, Top, Error, NotRunning, NoProof, Interrupted
 }
 
-function getDisplayState(state: CoqTopGoalResult) {
-  if (state.error)
-    return DisplayState.Error;
-  if (state.goals || state.backgroundGoals || state.abandonedGoals || state.shelvedGoals)
-    return DisplayState.Proof;
-  else
-    return DisplayState.Top;
+function getDisplayState(state: CommandResult) {
+  switch(state.type) {
+    case 'failure':
+      return DisplayState.Error;
+    case 'proof-view':
+      return DisplayState.Proof;
+    case 'not-running':
+      return DisplayState.NotRunning;
+    case 'no-proof':
+      return DisplayState.NoProof;
+    case 'interrupted':
+      return DisplayState.Interrupted;
+  }
 }
 
 function countUnfocusedGoals(u: UnfocusedGoalStack) {
@@ -62,7 +90,7 @@ function countUnfocusedGoals(u: UnfocusedGoalStack) {
   return u.before.length + u.after.length + countUnfocusedGoals(u.next);
 }
 
-function countAllGoals(state: CoqTopGoalResult): number {
+function countAllGoals(state: ProofView): number {
   const result =
     (state.goals ? state.goals.length : 0)
     + countUnfocusedGoals(state.backgroundGoals)
@@ -174,7 +202,7 @@ class StateModel {
   private static goalNodeClass = '.goal';
   private static focusedStateClass = '.focusedState';
   private focusedState = 0;
-  private coqState : CoqTopGoalResult;
+  private coqState : ProofView;
 
   constructor() {
   }
@@ -185,37 +213,53 @@ class StateModel {
   }
 
   private setErrorMessage(message: string) {
-    $('.error').text(message);
+    $('#error').text(message);
   }
   private clearErrorMessage() {
-    $('.error').empty();
+    $('#error').empty();
   }
 
-  public updateState(state: CoqTopGoalResult) {
+  public updateState(state: CommandResult) {
     try {
       this.focusedState = 0;
       this.clearErrorMessage();
       $('#stdout').text('');
 
-      if(state.error)
-        this.setErrorMessage(state.error.message.toString());
-      if (countAllGoals(state) == 0) {
-        $('#states').empty();
-        this.setMessage("No more subgoals.");
-      } else if (state.goals) {
-        if(state.goals.length > 0) {
-          this.setMessage("");
-          $('#states')
-          .empty()
-          .append(
-            [ createHypotheses(state.goals[0].hypotheses)
-            , createFocusedGoals(state.goals)
-          ])
-        } else {
+      if(state.type === 'failure')
+        this.setErrorMessage(state.message.toString());
+      else if(state.type === 'not-running') 
+        this.setMessage('Not running.');
+      else if(state.type === 'no-proof')
+        this.setMessage('Not in proof mode.');
+      else if(state.type === 'interrupted')
+        this.setMessage("Interrupted.");
+      else if(state.type === 'proof-view') { 
+        if (countAllGoals(state) == 0) {
           $('#states').empty();
-          this.setMessage("There are unfocused goals.");
+          this.setMessage("No more subgoals.");
+        } else if (state.goals) {
+          if(state.goals.length > 0) {
+            this.setMessage("");
+            $('#states')
+            .empty()
+            .append(
+              [ createHypotheses(state.goals[0].hypotheses)
+              , createFocusedGoals(state.goals)
+            ])
+          } else {
+            $('#states').empty();
+            this.setMessage("There are unfocused goals.");
+          }
         }
-      }
+    }
+      //   case 'not-running':
+      //     return DisplayState.NotRunning;
+      //   case 'no-proof':
+      //     return DisplayState.NoProof;
+      //   case 'interrupted':
+      //     return DisplayState.Interrupted;
+      // }
+
     } catch(err) {
       this.setMessage(err);
     }

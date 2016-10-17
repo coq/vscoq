@@ -21,15 +21,15 @@ export class SimpleCoqView implements view.CoqView {
     this.out.dispose();
   }
 
-  private displayError(state: proto.CoqTopGoalResult) {
-    this.out.appendLine(state.error.message);
+  private displayError(state: proto.FailureResult) {
+    this.out.appendLine(state.message);
   }
 
-  private displayProof(state: proto.CoqTopGoalResult) {
+  private displayProof(state: proto.CommandResult) {
     let out = "";
     if (view.countAllGoals(state) == 0) {
       out = "No more subgoals.";
-    } else if (state.goals) {
+    } else if (state.type === 'proof-view') {
       if(state.goals.length > 0) {
         state.goals[0].hypotheses.forEach((hyp) =>
           out = out + hyp + '\n');
@@ -43,20 +43,16 @@ export class SimpleCoqView implements view.CoqView {
     this.out.append(out);
   }
 
-  private displayTop(state: proto.CoqTopGoalResult) {
+  private displayTop(state: proto.CommandResult) {
 
   }
 
-  public update(state: proto.CoqTopGoalResult) {
+  public update(state: proto.CommandResult) {
     this.out.clear();
-    switch (view.getDisplayState(state)) {
-      case view.DisplayState.Error:
+    if(state.type === 'failure')
         this.displayError(state);
-        break;
-      case view.DisplayState.Proof:
-        this.displayProof(state);
-        break;
-    }
+    else if(state.type === 'proof-view')
+      this.displayProof(state);
   }
 
   public async show() {

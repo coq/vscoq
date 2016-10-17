@@ -195,7 +195,7 @@ export class CoqDocument implements vscode.Disposable {
       this.rememberCursors();
       const value = await this.langServer.stepForward(this.documentUri);
       this.view.update(value);
-      if(value.focus)
+      if(value.type !== 'not-running')
         for(let editor of this.cursorUnmovedSinceCommandInitiated)
           editor.selections = [new vscode.Selection(value.focus.line,value.focus.character,value.focus.line,value.focus.character)]
     } catch (err) {
@@ -209,7 +209,7 @@ export class CoqDocument implements vscode.Disposable {
       this.rememberCursors();
       const value = await this.langServer.stepBackward(this.documentUri);
       this.view.update(value);
-      if(value.focus)
+      if(value.type !== 'not-running')
         for(let editor of this.cursorUnmovedSinceCommandInitiated)
           editor.selections = [new vscode.Selection(value.focus.line,value.focus.character,value.focus.line,value.focus.character)]
       // const range = new vscode.Range(editor.document.positionAt(value.commandStart), editor.document.positionAt(value.commandEnd));

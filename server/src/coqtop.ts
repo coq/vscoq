@@ -6,6 +6,7 @@ import * as events from 'events';
 // var xml2js = require('xml2js');
 // import * as stream from 'stream'; 
 import * as coqXml from './coq-xml';
+import * as vscode from 'vscode-languageserver';
 import * as coqProto from './coq-proto';
 import {ChildProcess, exec, spawn} from 'child_process';
 import {CoqTopSettings, LtacProfTactic, LtacProfResults} from './protocol';
@@ -16,18 +17,51 @@ import {asyncWithTimeout} from './CancellationSignal';
 // const spawn = require('child_process').spawn;
 
 
+
 // from vscode-languageserver
-export interface RemoteConsole {
-    error(message: string): any;
-    warn(message: string): any;
-    info(message: string): any;
-    log(message: string): any;
+// export interface RemoteConsole {
+//     error(message: string): any;
+//     warn(message: string): any;
+//     info(message: string): any;
+//     log(message: string): any;
+// }
+
+/** Coqtop was interrupted; call cancelled */
+export class Interrupted {
+  constructor(
+    public stateId: number)
+  {}
+  public toString() {
+    return 'Coqtop Interrupted';
+  }
 }
 
-export interface FailureResult {
-  stateId?: number;
-  message: string;
-  range?: coqProto.Location;
+/** A fatal error of coqtop */
+export class CoqtopError {
+  constructor(
+    public message: string)
+  {}
+
+  public toString() {
+    return this.message;
+  }
+}
+/** A call did not succeed; a nonfatal error */
+export class CallFailure {
+  constructor(
+    public message: string,
+    public stateId?: number,
+    public range?: coqProto.Location)
+  {}
+  public toString() {
+    return this.message +
+      (this.range || this.stateId
+        ? "  (" +
+          (this.range ? `offsets ${this.range.start}-${this.range.stop}` : (this.stateId ? " " : "")) +
+          (this.stateId ? ` of stateId ${this.stateId}` : "")
+          + ")"
+        : "")
+  }
 }
 
 export interface InitResult {
@@ -44,14 +78,21 @@ export interface EditAtFocusResult {
   oldStateIdTip: number;
 }
 export interface EditAtResult {
-  newFocus?: EditAtFocusResult;
+  enterFocus?: EditAtFocusResult;
 }
-export interface GoalResult {
-  goals?: coqProto.Goal[];
-  backgroundGoals?: coqProto.UnfocusedGoalStack
-  shelvedGoals?: coqProto.Goal[];
-  abandonedGoals?: coqProto.Goal[];
+export interface ProofView {
+  goals: coqProto.Goal[];
+  backgroundGoals: coqProto.UnfocusedGoalStack
+  shelvedGoals: coqProto.Goal[];
+  abandonedGoals: coqProto.Goal[];
 }
+
+export type NoProofTag = {mode: 'no-proof'}
+export type ProofModeTag = {mode: 'proof'}
+export type NoProofResult = NoProofTag & {}
+export type ProofModeResult = ProofModeTag & ProofView
+export type GoalResult = NoProofResult | ProofModeResult
+  
 
 
 export interface CoqOptions {
@@ -233,14 +274,14 @@ export class CoqTop extends events.EventEmitter {
   private mainChannelW : net.Socket;
   private controlChannelW : net.Socket;
   private controlChannelR : net.Socket;
-  private console: RemoteConsole;
+  private console: vscode.RemoteConsole;
   private coqtopProc : ChildProcess = null;
   private parser : coqXml.XmlStream;
   private callbacks: EventCallbacks;
   private readyToListen: Thenable<void>[];
   private settings : CoqTopSettings;
 
-  constructor(settings : CoqTopSettings, console: RemoteConsole, callbacks?: EventCallbacks) {
+  constructor(settings : CoqTopSettings, console: vscode.RemoteConsole, callbacks?: EventCallbacks) {
     super();
     this.settings = settings;
     this.console = console;
@@ -367,7 +408,7 @@ export class CoqTop extends events.EventEmitter {
         this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
     } catch(error) {
       this.console.error('Could not spawn coqtop: ' + error);
-      throw <FailureResult>{ message: 'Could not spawn coqtop' };
+      throw new CoqtopError('Could not spawn coqtop');
     }
 
     let channels = await Promise.all([
@@ -404,7 +445,7 @@ export class CoqTop extends events.EventEmitter {
       this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
     } catch(error) {
       this.console.error('Could not spawn coqtop: ' + error);
-      throw <FailureResult>{ message: 'Could not spawn coqtop' };
+      throw new CoqtopError('Could not spawn coqtop');
     }
 
     let channels = await Promise.all([
@@ -660,14 +701,15 @@ export class CoqTop extends events.EventEmitter {
   private validateValue(value: coqProto.Value, logIdent?: string) {
     if(!value.error)
       return;
-    let error = <FailureResult>{
-      stateId: value.stateId,
-      message: value.error.message,
-      };
-    if(value.error.range)
-      error.range = value.error.range;
-    this.console.log(`ERROR ${logIdent || ""}: ${value.stateId} --> ${value.error.message} ${value.error.range ? `@ ${value.error.range.start}-${value.error.range.stop}`: ""}`);
-    throw error;
+    else if(value.error.message === 'User interrupt.')
+      throw new Interrupted(value.stateId);
+    else {
+      let error = new CallFailure(value.error.message,value.stateId)
+      if(value.error.range)
+        error.range = value.error.range;
+      this.console.log(`ERROR ${logIdent || ""}: ${value.stateId} --> ${value.error.message} ${value.error.range ? `@ ${value.error.range.start}-${value.error.range.stop}`: ""}`);
+      throw error;
+    }
   }
   
   /**
@@ -817,6 +859,15 @@ export class CoqTop extends events.EventEmitter {
       this.cleanup(undefined);
     }
   }
+
+  private countBackgroundGoals(g: coqProto.UnfocusedGoalStack) : number {
+    let count = 0;
+    while(g) {
+      count += g.before.length + g.after.length;
+      g = g.next; 
+    }
+    return count;
+  }
   
   public async coqGoal() : Promise<GoalResult> {
     this.checkState();
@@ -827,32 +878,37 @@ export class CoqTop extends events.EventEmitter {
     this.mainChannelW.write('<call val="Goal"><unit/></call>');
     
     const value = await coqResult;
-    var result = <GoalResult>{};
-    if(value.hasOwnProperty('value'))
-      result = <GoalResult>{
+    // this.console.log(util.inspect(value,false,undefined));
+    if(value.hasOwnProperty('value') && value.value.hasOwnProperty('goals')) {
+      const result = <ProofView>{
         goals: value.value.goals,
         backgroundGoals: value.value.backgroundGoals,
         shelvedGoals: value.value.shelvedGoals,
         abandonedGoals: value.value.abandonedGoals
       };
-    this.console.log(`Goal: -->`);
-    if (result.goals && result.goals.length > 0) {
-      this.console.log("Current:");
-      result.goals.forEach((g, i) => this.console.log(`    ${i + 1}:${g.id}= ${g.goal}`));
+      this.console.log(`Goal: () --> focused: ${result.goals}, unfocused: ${this.countBackgroundGoals(result.backgroundGoals)}, shelved: ${result.shelvedGoals.length}, abandoned: ${result.abandonedGoals.length}`);
+      return Object.assign(result, <ProofModeResult>{mode: 'proof'});
+    } else {
+      this.console.log(`Goal: () --> No Proof`);
+      return <GoalResult>{mode: 'no-proof'};
     }
-    if (result.backgroundGoals) {
-      this.console.log("Background: ...");
-      // result.backgroundGoals.forEach((g, i) => this.console.log(`    ${i + 1}) ${util.inspect(g, false, null)}`));
-    }
-    if (result.shelvedGoals && result.shelvedGoals.length > 0) {
-      this.console.log("Shelved:");
-      result.shelvedGoals.forEach((g, i) => this.console.log(`    ${i + 1}) ${util.inspect(g, false, null)}`));
-    }
-    if (result.abandonedGoals && result.abandonedGoals.length > 0) {
-      this.console.log("Abandoned:");
-      result.abandonedGoals.forEach((g, i) => this.console.log(`    ${i + 1}) ${util.inspect(g, false, null)}`));
-    }
-    return result;
+    // this.console.log(`Goal: -->`);
+    // if (result.goals && result.goals.length > 0) {
+    //   this.console.log("Current:");
+    //   result.goals.forEach((g, i) => this.console.log(`    ${i + 1}:${g.id}= ${g.goal}`));
+    // }
+    // if (result.backgroundGoals) {
+    //   this.console.log("Background: ...");
+    //   // result.backgroundGoals.forEach((g, i) => this.console.log(`    ${i + 1}) ${util.inspect(g, false, null)}`));
+    // }
+    // if (result.shelvedGoals && result.shelvedGoals.length > 0) {
+    //   this.console.log("Shelved:");
+    //   result.shelvedGoals.forEach((g, i) => this.console.log(`    ${i + 1}) ${util.inspect(g, false, null)}`));
+    // }
+    // if (result.abandonedGoals && result.abandonedGoals.length > 0) {
+    //   this.console.log("Abandoned:");
+    //   result.abandonedGoals.forEach((g, i) => this.console.log(`    ${i + 1}) ${util.inspect(g, false, null)}`));
+    // }
  }
   
   public async coqAddCommand(command: string, editId: number, stateId: number, verbose?: boolean) : Promise<AddResult> {
@@ -872,7 +928,7 @@ export class CoqTop extends events.EventEmitter {
     };
     if (value.unfocusedStateId)
       result.unfocusedStateId = value.unfocusedStateId;
-    this.console.log(`Add:  ${stateId} --> ${result.stateId} ${result.unfocusedStateId ? "(unfocus ${result.unfocusedStateId})" : ""} "${result.message || ""}"`);
+    this.console.log(`Add:  ${stateId} --> ${result.stateId} ${result.unfocusedStateId ? `(unfocus ${result.unfocusedStateId})` : ""} "${result.message || ""}"`);
     return result;
   }
 
@@ -888,7 +944,7 @@ export class CoqTop extends events.EventEmitter {
     let result : EditAtResult;
     if(value.value.inr) {
       // Jumping inside another proof; create a new tip
-      result = {newFocus: {
+      result = {enterFocus: {
         stateId: value.value.inr[0].fst,
         qedStateId: value.value.inr[0].snd.fst,
         oldStateIdTip: value.value.inr[0].snd.snd,
@@ -896,7 +952,7 @@ export class CoqTop extends events.EventEmitter {
     } else {
       result = {};
     }
-    this.console.log(`EditAt: ${stateId} --> ${result.newFocus ? `{newTipId: ${result.newFocus.stateId}, qedId: ${result.newFocus.qedStateId}, oldId: ${result.newFocus.oldStateIdTip}}` : "{}"}`);
+    this.console.log(`EditAt: ${stateId} --> ${result.enterFocus ? `{newTipId: ${result.enterFocus.stateId}, qedId: ${result.enterFocus.qedStateId}, oldId: ${result.enterFocus.oldStateIdTip}}` : "{}"}`);
     return result;
   }
 
