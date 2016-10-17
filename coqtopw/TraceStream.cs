@@ -12,12 +12,17 @@ namespace coqtopw
     public bool leaveOpen = false;
     private Stream trace;
     private byte[] tracePrefix;
+    private byte[] traceTempPostfix;
 
-    public TraceStream(Stream observed, byte[] tracePrefix, Stream trace, bool leaveOpen=false)
+    /**
+     * @param tracePostfix -- bytes to write after each log message; NOTE: the postfix will always be overwritten by subsequent messages; it is intended to maintain proper XML structure
+     */
+    public TraceStream(Stream observed, byte[] tracePrefix, byte[] traceTempPostfix, Stream trace, bool leaveOpen = false)
     {
       ObservedStream = observed;
       this.trace = trace;
       this.tracePrefix = tracePrefix;
+      this.traceTempPostfix = traceTempPostfix;
       this.leaveOpen = leaveOpen;
     }
 
@@ -75,8 +80,10 @@ namespace coqtopw
 
     private void WriteTrace(byte[] buffer, int offset, int count)
     {
-      var b = tracePrefix.Concat(buffer.Skip(offset).Take(count)).ToArray();
+      var b = tracePrefix.Concat(buffer.Skip(offset).Take(count)).Concat(this.traceTempPostfix).ToArray();
       trace.Write(b, 0, b.Length);
+      trace.Position = trace.Position - this.traceTempPostfix.Length;
+      trace.Flush();
     }
 
 

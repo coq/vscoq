@@ -201,6 +201,10 @@ namespace coqtopw
         {
           File.Delete(traceFile);
           trace = new FileStream(traceFile, FileMode.Create);
+          var header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root>\n</root>";
+          var headerBytes = System.Text.Encoding.UTF8.GetBytes(header);
+          trace.Write(headerBytes, 0, headerBytes.Length);
+          trace.Position = header.IndexOf("\n</root>"); 
         }
         catch (Exception)
         {
@@ -210,10 +214,12 @@ namespace coqtopw
 
       if (trace != null)
       {
-        coqtopMain = new TraceStream(coqtopMain, System.Text.Encoding.UTF8.GetBytes("\n<!-- editor->coqtop main-channel: -->\n"), trace);
-        editorMain = new TraceStream(editorMain, System.Text.Encoding.UTF8.GetBytes("\n<!-- coqtop->editor main-channel: -->\n"), trace);
-        coqtopControl = new TraceStream(coqtopControl, System.Text.Encoding.UTF8.GetBytes("\n<!-- editor->coqtop control-channel: -->\n"), trace);
-        editorControl = new TraceStream(editorControl, System.Text.Encoding.UTF8.GetBytes("\n<!-- coqtop->editor control-channel: -->\n"), trace);
+        var closeXml = "\n</root>";
+        var closeXmlBytes = System.Text.Encoding.UTF8.GetBytes(closeXml);
+        coqtopMain = new TraceStream(coqtopMain, System.Text.Encoding.UTF8.GetBytes("\n<!-- editor->coqtop main-channel: -->\n"), closeXmlBytes, trace);
+        editorMain = new TraceStream(editorMain, System.Text.Encoding.UTF8.GetBytes("\n<!-- coqtop->editor main-channel: -->\n"), closeXmlBytes, trace);
+        coqtopControl = new TraceStream(coqtopControl, System.Text.Encoding.UTF8.GetBytes("\n<!-- editor->coqtop control-channel: -->\n"), closeXmlBytes, trace);
+        editorControl = new TraceStream(editorControl, System.Text.Encoding.UTF8.GetBytes("\n<!-- coqtop->editor control-channel: -->\n"), closeXmlBytes, trace);
       }
 
       var tasks = new List<Task>();
