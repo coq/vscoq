@@ -517,7 +517,7 @@ export class CoqTop extends events.EventEmitter {
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',
       '-coqtopbin', this.settings.coqPath + '/coqtop',
-      '-tracefile', 'C:/Users/cj/Desktop/coqtrace.txt',
+      '-tracefile', 'C:/Users/cj/Desktop/coqtrace.xml',
       '-main-channel', mainAddr,
       '-control-channel', controlAddr,
       '-ideslave',
