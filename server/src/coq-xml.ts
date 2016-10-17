@@ -283,7 +283,7 @@ export class XmlStream extends events.EventEmitter {
         this.on('error', (x:any) => callbacks.onError(x));
     }
     
-    let options : sax.SAXOptions = {
+    let options : sax.SAXOptions | {strictEntities: boolean} = {
       lowercase: true,
       trim: true,
       normalize: false,
