@@ -29,6 +29,7 @@ export class CoqDocument implements vscode.Disposable {
   private noticeOut: vscode.OutputChannel;
   private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
   private focusDecoration : vscode.TextEditorDecorationType;
+  private focusBeforeDecoration : vscode.TextEditorDecorationType;
 
   constructor(uri: vscode.Uri, context: ExtensionContext) {
     this.statusBar = new StatusBar();
@@ -48,6 +49,10 @@ export class CoqDocument implements vscode.Disposable {
 
     this.focusDecoration = vscode.window.createTextEditorDecorationType({
       gutterIconPath: context.asAbsolutePath('./src/stm-focus.svg'),
+      gutterIconSize: "contain"
+    });
+    this.focusBeforeDecoration = vscode.window.createTextEditorDecorationType({
+      gutterIconPath: context.asAbsolutePath('./src/stm-focus-before.svg'),
       gutterIconSize: "contain"
     });
 
@@ -85,6 +90,7 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.dispose();
     this.view.dispose();
     this.focusDecoration.dispose();
+    this.focusBeforeDecoration.dispose();
   }
 
   private reset() {
@@ -199,8 +205,17 @@ export class CoqDocument implements vscode.Disposable {
         for(let editor of this.cursorUnmovedSinceCommandInitiated)
           editor.selections = [new vscode.Selection(focusPos, focusPos)]
       }
-      for(let editor of this.allEditors())
-        editor.setDecorations(this.focusDecoration, [new vscode.Range(focusPos,focusPos.translate(0,1))]);
+      if(focusPos.line === 0 && focus.character === 0) {
+        for(let editor of this.allEditors()) {
+          editor.setDecorations(this.focusBeforeDecoration, [new vscode.Range(focusPos,focusPos.translate(0,1))]);
+          editor.setDecorations(this.focusDecoration, []);
+        }
+      } else {
+        for(let editor of this.allEditors()) {
+          editor.setDecorations(this.focusBeforeDecoration, []);
+          editor.setDecorations(this.focusDecoration, [new vscode.Range(focusPos,focusPos.translate(0,1))]);
+        }
+      }
     } else {
       for(let editor of this.allEditors())
         editor.setDecorations(this.focusDecoration, []);
