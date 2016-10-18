@@ -9,7 +9,7 @@ Support for the [Coq Proof Assistant](https://coq.inria.fr/) in [Visual Studio C
 6. start vscode (run `code`)
 7. open or create a new Coq script (*.v) file
 
-## Basic usage:
+## Basic usage
 * step forward: `ctrl+shift+down` 
 * step backward: `ctrl+shift+up` 
 * interpret to point: `ctrl+shift+right` 
@@ -17,6 +17,11 @@ Support for the [Coq Proof Assistant](https://coq.inria.fr/) in [Visual Studio C
 * interpret to home (and reset Coq): `ctrl+shift+home`
 * interrupt computation: `ctrl+shift+~`
 * *explore more commands*: `F1` and begin typing `Coq:`
+
+## Settings (press `F1` and start typing "open workspace settings")
+* `"coqtop.coqPath": ""` -- specify the path to coqtop (e.g. "path/to/coq/bin/")
+* `"coqtop.args": ""` -- a string specifying additional command line arguments for coqtop
+* `"coqtop.loadCoqProject": true` -- set to `false` to ignore <span>_CoqProject</span>.
 
 ## Tips
 * use the [prettify-symbols-mode](https://marketplace.visualstudio.com/items?itemName=siegebell.prettify-symbols-mode) extension to support fancy notation.
