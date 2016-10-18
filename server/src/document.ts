@@ -13,14 +13,14 @@ import {Mutex} from './Mutex';
 import {CancellationSignal, asyncWithTimeout} from './CancellationSignal';
 import {AsyncWorkQueue} from './AsyncQueue';
 import {richppToMarkdown} from './RichPP';
-import {CommandIterator, CoqStateMachine, GoalResult} from './STM';
+import {CommandIterator, CoqStateMachine, GoalResult, SentenceState} from './STM';
 
 
 function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
 function positionToString(p:Position) {return `{${p.line}@${p.character}}`}
 
 export interface DocumentCallbacks {
-  sendHighlightUpdates(highlights: thmProto.Highlight[]) : void;
+  sendHighlightUpdates(highlights: thmProto.Highlights) : void;
   sendDiagnostics(diagnostics: Diagnostic[]) : void;
   sendMessage(level: string, message: string, rich_message?: any) : void;
   sendReset() : void;
@@ -100,7 +100,9 @@ export class CoqDocument implements TextDocument {
         textUtil.positionIsAfter(change1.range.start, change2.range.start) ? -1 : 1)
 
     try {
-      await this.stm.applyChanges(sortedChanges, newVersion);
+      const passive = await this.stm.applyChanges(sortedChanges, newVersion);
+      if(!passive)
+        this.updateHighlights();
     } catch (err) {
       this.clientConsole.error("STM crashed while applying text edit: " + err.toString())
     }
@@ -139,54 +141,66 @@ export class CoqDocument implements TextDocument {
   }
 
   
-  private sentenceStatusToHighlightType(status: coqProto.SentenceStatus) : thmProto.HighlightType {
-    switch(status) {
-      case coqProto.SentenceStatus.Complete:
-        return thmProto.HighlightType.Complete;
-      case coqProto.SentenceStatus.Incomplete:
-        return thmProto.HighlightType.Incomplete;
-      case coqProto.SentenceStatus.InProgress:
-        return thmProto.HighlightType.InProgress;
-      case coqProto.SentenceStatus.Parsed:
-        return thmProto.HighlightType.Parsing;
-      case coqProto.SentenceStatus.Processed:
-        return thmProto.HighlightType.Processed;
-      case coqProto.SentenceStatus.ProcessingInput:
-        return thmProto.HighlightType.Processing;
-    }    
-  }
+  // private sentenceStatusToHighlightType(status: coqProto.SentenceStatus) : thmProto.HighlightType {
+  //   switch(status) {
+  //     case coqProto.SentenceStatus.Complete:
+  //       return thmProto.HighlightType.Complete;
+  //     case coqProto.SentenceStatus.Incomplete:
+  //       return thmProto.HighlightType.Incomplete;
+  //     case coqProto.SentenceStatus.InProgress:
+  //       return thmProto.HighlightType.InProgress;
+  //     case coqProto.SentenceStatus.Parsed:
+  //       return thmProto.HighlightType.Parsing;
+  //     case coqProto.SentenceStatus.Processed:
+  //       return thmProto.HighlightType.Processed;
+  //     case coqProto.SentenceStatus.ProcessingInput:
+  //       return thmProto.HighlightType.Processing;
+  //   }    
+  // }
 
-  private highlightTypeToSentenceStatus(type: thmProto.HighlightType) : coqProto.SentenceStatus {
-    switch(type) {
-      case thmProto.HighlightType.Complete:
-        return coqProto.SentenceStatus.Complete;
-      case thmProto.HighlightType.Incomplete:
-        return coqProto.SentenceStatus.Incomplete;
-      case thmProto.HighlightType.InProgress:
-        return coqProto.SentenceStatus.InProgress;
-      case thmProto.HighlightType.Parsing:
-        return coqProto.SentenceStatus.Parsed;
-      case thmProto.HighlightType.Processed:
-        return coqProto.SentenceStatus.Processed;
-      case thmProto.HighlightType.Processing:
-        return coqProto.SentenceStatus.ProcessingInput;
-      default:
-        throw `Cannot convert ${thmProto.HighlightType[type]} to a SentenceStatus`
-    }    
-  }
+  // private highlightTypeToSentenceStatus(type: thmProto.HighlightType) : coqProto.SentenceStatus {
+  //   switch(type) {
+  //     case thmProto.HighlightType.Complete:
+  //       return coqProto.SentenceStatus.Complete;
+  //     case thmProto.HighlightType.Incomplete:
+  //       return coqProto.SentenceStatus.Incomplete;
+  //     case thmProto.HighlightType.InProgress:
+  //       return coqProto.SentenceStatus.InProgress;
+  //     case thmProto.HighlightType.Parsing:
+  //       return coqProto.SentenceStatus.Parsed;
+  //     case thmProto.HighlightType.Processed:
+  //       return coqProto.SentenceStatus.Processed;
+  //     case thmProto.HighlightType.Processing:
+  //       return coqProto.SentenceStatus.ProcessingInput;
+  //     default:
+  //       throw `Cannot convert ${thmProto.HighlightType[type]} to a SentenceStatus`
+  //   }    
+  // }
   
-  private highlightSentence(sentence: Range, type: thmProto.HighlightType) : thmProto.Highlight {
-    // if(type===undefined)
-    //     type = this.sentenceStatusToHighlightType(sentence.status);
-    return { style: type, range: sentence };
+  // private highlightSentence(sentence: Range, type: thmProto.HighlightType) : thmProto.Highlight {
+  //   // if(type===undefined)
+  //   //     type = this.sentenceStatusToHighlightType(sentence.status);
+  //   return { style: type, range: sentence };
+  // }
+
+  private sentenceToHighlightType(status: SentenceState) : thmProto.HighlightType {
+    switch(status) {
+      case SentenceState.Error:           return thmProto.HighlightType.StateError;
+      case SentenceState.Parsing:         return thmProto.HighlightType.Parsing;
+      case SentenceState.ProcessingInput: return thmProto.HighlightType.Processing;
+      case SentenceState.Incomplete:      return thmProto.HighlightType.Incomplete;
+      case SentenceState.Complete:        return thmProto.HighlightType.Complete;
+      case SentenceState.InProgress:      return thmProto.HighlightType.InProgress;
+      case SentenceState.Processed:       return thmProto.HighlightType.Processed;
+    }    
   }
 
   /** creates the current highlights from scratch */
-  private createHighlights() {
-    let highlights : thmProto.Highlight[] = [];
-    for(let sent of this.stm.getSentences()) {
-      this.highlightSentence(sent.range, this.sentenceStatusToHighlightType(sent.status));
-    }
+  private createHighlights() : thmProto.Highlights {
+    let highlights : thmProto.Highlights =
+      { ranges: [ [], [], [], [], [], [], [] ] };
+    for(let sent of this.stm.getSentences())
+      highlights.ranges[this.sentenceToHighlightType(sent.status)].push(sent.range);
     return highlights;
   }
 
@@ -204,23 +218,22 @@ export class CoqDocument implements TextDocument {
     return diagnostics;
   }
 
-  private onCoqStateStatusUpdate(range: Range, status: coqProto.SentenceStatus) {
-    this.callbacks.sendHighlightUpdates(
-      [ this.highlightSentence(range, this.sentenceStatusToHighlightType(status))
-      ]);
+  private onCoqStateStatusUpdate(range: Range, status: SentenceState) {
+    this.updateHighlights();
   }
   
   private onClearSentence(range: Range) {
-    this.callbacks.sendHighlightUpdates(
-      [ this.highlightSentence(range, thmProto.HighlightType.Clear)
-      ]);
+    // this.updateHighlights();
+  }
+
+  private updateHighlights(parsing: Range[] = []) {
+    const highlights = this.createHighlights();
+    highlights.ranges[thmProto.HighlightType.Parsing].concat(parsing);
+    this.callbacks.sendHighlightUpdates(highlights);
   }
 
   private onCoqStateError(sentenceRange: Range, errorRange: Range, message: string, rich_message?: any) {
-    this.callbacks.sendHighlightUpdates(
-      [ this.highlightSentence(sentenceRange, thmProto.HighlightType.TacticFailure)
-      ]);
-
+    this.updateHighlights();
     this.updateDiagnostics()
     // this.addDiagnostic(
     //   { message: message
@@ -286,6 +299,8 @@ export class CoqDocument implements TextDocument {
     if(currentOffset >= endOffset)
       return;
 
+    const parsingRanges : Range[] = [];
+
     while(true) {
       const commandLength = coqParser.parseSentence(this.documentText.substr(currentOffset, endOffset))
       const nextOffset = currentOffset + commandLength;
@@ -297,10 +312,8 @@ export class CoqDocument implements TextDocument {
         yield result;
         // only highlight if the command was accepted (i.e. another is going to be request; i.e. after yield)
         if (highlight) {// Preliminary "parsing" highlight
-          const parsingHighlights : thmProto.Highlight[] = [
-            { style: thmProto.HighlightType.Parsing, range: result.range }
-            ];
-          this.callbacks.sendHighlightUpdates(parsingHighlights);
+          parsingRanges.push(result.range);
+          this.updateHighlights(parsingRanges);
         }
       } else
         return;
@@ -772,6 +785,7 @@ export class CoqDocument implements TextDocument {
   this.stm.logDebuggingSentences();
       return this.toGoal(await this.stm.getGoal());
     } finally {
+      this.updateHighlights();      
       this.updateDiagnostics();
     }
   }
@@ -783,6 +797,7 @@ export class CoqDocument implements TextDocument {
 this.stm.logDebuggingSentences();
     return this.toGoal(await this.stm.getGoal());
     } finally {
+      this.updateHighlights();      
       this.updateDiagnostics();
     }
   }
@@ -791,16 +806,15 @@ this.stm.logDebuggingSentences();
     this.assertStm();
     try {
       const pos = this.positionAt(offset);
-      const parsingHighlights : thmProto.Highlight[] = [
-        { style: thmProto.HighlightType.Parsing, range: Range.create(this.stm.getFocusedPosition(),pos) }
-        ];
-      this.callbacks.sendHighlightUpdates(parsingHighlights);
+
+      this.updateHighlights([Range.create(this.stm.getFocusedPosition(),pos)]);
       const error = await this.stm.interpretToPoint(pos,this.commandSequence(false), token);
       if(error)
         return error;
   this.stm.logDebuggingSentences();
       return this.toGoal(await this.stm.getGoal());
     } finally {
+      this.updateHighlights();      
       this.updateDiagnostics();
     }
 
@@ -815,6 +829,7 @@ this.stm.logDebuggingSentences();
   this.stm.logDebuggingSentences();
       return this.toGoal(await this.stm.getGoal());
     } finally {
+      this.updateHighlights();
       this.updateDiagnostics();
     }
   }

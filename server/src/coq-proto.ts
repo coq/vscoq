@@ -17,7 +17,7 @@ export interface WorkerStatus {
 }
 
 export enum SentenceStatus {
-  Parsed,ProcessingInput,Processed,InProgress,Incomplete,Complete,
+  Parsing,ProcessingInput,Processed,InProgress,Incomplete,Complete,
   // NOTE!
   // Coq uses IDs like 'processingin'; the below lets us convert into SentenceStatus
   processingin=ProcessingInput,

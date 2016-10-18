@@ -98,7 +98,7 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   private reset() {
-    this.highlights.clearAllHighlights(this.allEditors())
+    this.highlights.clearAll(this.allEditors())
   }
 
   private rememberCursors() {
@@ -108,9 +108,8 @@ export class CoqDocument implements vscode.Disposable {
     }
   }
 
-  private onDidUpdateHighlights(params: proto.NotifyHighlightParams) {
-    this.allEditors()
-      .forEach((editor) => this.updateHighlights(editor,params));
+  private onDidUpdateHighlights(params: proto.Highlights) {
+    this.highlights.set(this.allEditors(),params);
   }
   
   
@@ -143,15 +142,12 @@ export class CoqDocument implements vscode.Disposable {
 
 
   public onDidChangeTextDocument(params: vscode.TextDocumentChangeEvent) {
-    for (const change of params.contentChanges) {
-      const changeRange = textUtil.toRangeDelta(change.range, change.text);
-      this.highlights.applyEdit(changeRange);
-    }
+    // for (const change of params.contentChanges) {
+    //   const changeRange = textUtil.toRangeDelta(change.range, change.text);
+    //   this.highlights.applyEdit(changeRange);
+    // }
   }
 
-  public updateHighlights(editor : vscode.TextEditor, params: proto.NotifyHighlightParams) {
-    this.highlights.updateHighlights(this.allEditors(),params);
-  }
 
   public async interruptCoq() {
     this.statusBar.setStateMessage('Killing CoqTop');
@@ -374,12 +370,12 @@ export class CoqDocument implements vscode.Disposable {
   }  
 
   public async doOnFocus(editor: TextEditor) {
-    this.highlights.refreshHighlights([editor]);
+    this.highlights.refresh([editor]);
     this.statusBar.focus();
     // await this.view.show(true);
   }
 
   public async doOnSwitchActiveEditor(oldEditor: TextEditor, newEditor: TextEditor) {
-    this.highlights.refreshHighlights([newEditor]);
+    this.highlights.refresh([newEditor]);
   }
 }

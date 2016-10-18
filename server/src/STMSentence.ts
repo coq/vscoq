@@ -15,6 +15,27 @@ export interface SentenceError {
   sentence: Range,
 }
 
+export enum SentenceState {
+  Parsing,
+  ProcessingInput,
+  Processed,
+  InProgress,
+  Incomplete,
+  Complete,
+  Error
+}
+
+function statusToState(status: coqProto.SentenceStatus) : SentenceState {
+  switch(status) {
+    case coqProto.SentenceStatus.Parsing:          return SentenceState.Parsing;
+    case coqProto.SentenceStatus.ProcessingInput:  return SentenceState.ProcessingInput;
+    case coqProto.SentenceStatus.Processed:        return SentenceState.Processed;
+    case coqProto.SentenceStatus.InProgress:       return SentenceState.InProgress;
+    case coqProto.SentenceStatus.Incomplete:       return SentenceState.Incomplete;
+    case coqProto.SentenceStatus.Complete:         return SentenceState.Complete;
+  }
+}
+
 export class Sentence {
   private status: coqProto.SentenceStatus;
   // private proofView: CoqTopGoalResult;
@@ -29,7 +50,7 @@ export class Sentence {
     , private next: Sentence | null
     , private computeStart: [number,number] = [0,0]
   ) {
-    this.status = coqProto.SentenceStatus.Parsed;
+    this.status = coqProto.SentenceStatus.Parsing;
     // this.proofView = {};
     this.computeTimeMS = 0;
   }
@@ -219,8 +240,11 @@ export class Sentence {
     end.prev = this;
   }
 
-  public getStatus() : coqProto.SentenceStatus {
-    return this.status;
+  public getState() : SentenceState {
+    if(this.error)
+      return SentenceState.Error;
+    else
+      return statusToState(this.status);
   }
 
   public setStatus(status: coqProto.SentenceStatus) {

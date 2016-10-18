@@ -10,7 +10,8 @@ import * as textUtil from './text-util';
 import * as coqtop from './coqtop';
 import {ProofView, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './protocol';
 import * as coqParser from './coq-parser';
-import {Sentence, SentenceError} from './STMSentence';
+import {Sentence, SentenceError, SentenceState} from './STMSentence';
+export {SentenceState} from './STMSentence';
 type StateId = number;
 
 interface BufferedFeedback {
@@ -20,7 +21,7 @@ interface BufferedFeedback {
 }
 
 export interface StateMachineCallbacks {
-  sentenceStatusUpdate(range: Range, status: coqProto.SentenceStatus) : void;
+  sentenceStatusUpdate(range: Range, status: SentenceState) : void;
   clearSentence(range: Range) : void;
   updateStmFocus(focus: Position): void;
   error(sentenceRange: Range, errorRange: Range, message: string, rich_message?: any) : void;
@@ -180,10 +181,11 @@ export class CoqStateMachine {
 
   /** Adjust sentence ranges and cancel any sentences that are invalidated by the edit
    * @param isInvalidated: a function to determine whether an intersecting change is passive (i.e. changes the meaning of a sentence); returns true if the change invalidates the sentence.
+   * @returns `true` if no sentences were cancelled
   */
-  public async applyChanges(changes: TextDocumentContentChangeEvent[], newVersion: number) {
+  public async applyChanges(changes: TextDocumentContentChangeEvent[], newVersion: number) : Promise<boolean> {
     if(!this.running || changes.length == 0)
-      return;
+      return true;
 
     // sort the edits such that later edits are processed first
     // this way, we do not have to adjust the change position as we modify the document
@@ -220,13 +222,15 @@ export class CoqStateMachine {
       } // for sent in ancestors of last sentence
 
       await this.noInterrupt(() => Promise.all(cancellations));
+      this.version = newVersion;
+      return cancellations.length === 0;
     } catch(err) {
       this.handleInconsistentState(err);
+      return false;
     }
     // this.console.log("Sentences After:");
     // this.logDebuggingSentences(this.debuggingGetSentences())
 
-    this.version = newVersion;
   }
 
   private convertCoqTopError(err) : GoalErrorResult {
@@ -331,11 +335,11 @@ export class CoqStateMachine {
   //     }, true),
   
 
-  public *getSentences() : Iterable<{range: Range, status: coqProto.SentenceStatus}> {
+  public *getSentences() : Iterable<{range: Range, status: SentenceState}> {
     if(!this.running)
       return
     for(let sent of this.root.descendants())
-      yield { range: sent.getRange(), status: sent.getStatus()}
+      yield { range: sent.getRange(), status: sent.getState()}
   }
 
   public *getSentenceErrors() : Iterable<SentenceError> {
@@ -647,7 +651,7 @@ export class CoqStateMachine {
           return;
         }
         sent.updateStatus(feedback.status);
-        this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getStatus())
+        this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getState())
       });
     this.bufferedFeedback = [];
   }
@@ -663,7 +667,7 @@ export class CoqStateMachine {
     const sent = this.sentences.get(stateId);
     if(sent) {
       sent.updateStatus(status);
-      this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getStatus())
+      this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getState())
     } else {
       // Sometimes, feedback will be received before CoqTop has given us the new stateId,
       // So we will buffer these messages until we get the next 'value' response.

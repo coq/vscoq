@@ -70,7 +70,7 @@ export class CoqLanguageServer {
     return this.server.start();
   }
 
-  public onUpdateHighlights(listener: (params: proto.NotifyHighlightParams) => void) {
+  public onUpdateHighlights(listener: (params: proto.Highlights) => void) {
     this.server.onNotification(proto.UpdateHighlightsNotification.type, listener);
   }
 

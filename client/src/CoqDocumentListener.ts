@@ -52,7 +52,7 @@ export class CoqDocumentListener implements vscode.Disposable {
       return;
     doc.onDidChangeTextDocument(params);
 // FOR DEBUGGING ONLY!!!
-doc.highlights.refreshHighlights(doc.allEditors());
+// doc.highlights.refresh(doc.allEditors());
   }
 
   private onDidOpenTextDocument(doc: vscode.TextDocument) {

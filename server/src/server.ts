@@ -199,12 +199,12 @@ connection.onRequest(coqproto.LtacProfResultsRequest.type, (params: coqproto.Coq
 });
 
 
-function sendHighlightUpdates(documentUri: string, highlights: coqproto.Highlight[]) {
+function sendHighlightUpdates(documentUri: string, highlights: coqproto.Highlights) {
   // for(let h of highlights) {
   //   connection.console.log(`highlighting ${rangeToString(h.range)} as ${coqproto.HighlightType[h.style]}`);
   // }
-  connection.sendNotification(coqproto.UpdateHighlightsNotification.type, {
-    highlights: highlights, uri: documentUri});
+  connection.sendNotification(coqproto.UpdateHighlightsNotification.type,
+    Object.assign(highlights, {uri: documentUri}));
 }
 
 function sendDiagnostics(documentUri: string, diagnostics: Diagnostic[]) {
