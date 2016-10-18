@@ -2,6 +2,8 @@
 out/test/**
 test/**
 src/**
+server/installServerIntoExtension.cmd
+server/installServerIntoExtension
 **/*.map
 .gitignore
 tsconfig.json
