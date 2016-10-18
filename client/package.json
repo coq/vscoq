@@ -79,16 +79,16 @@
       {"command": "extension.coq.ltacProfGetResults", "title": "Coq: Get the results of Ltac profiling"}
     ],
     "keybindings": [
-        {"command": "extension.coq.reset", "key": "Ctrl+Shift+Home"},
-        {"command": "extension.coq.interrupt", "key": "Ctrl+Shift+`"},
-        {"command": "extension.coq.stepForward", "key": "Ctrl+Shift+Down"},
-        {"command": "extension.coq.stepBackward", "key": "Ctrl+Shift+Up"},
-        {"command": "extension.coq.interpretToPoint", "key": "Ctrl+Shift+Right"},
-        {"command": "extension.coq.interpretToEnd", "key": "Ctrl+Shift+End"},
-        {"command": "extension.coq.searchAbout", "key": "ctrl+shift+k"},
-        {"command": "extension.coq.locate", "key": "ctrl+shift+l"},
-        {"command": "extension.coq.check", "key": "ctrl+shift+c"},
-        {"command": "extension.coq.print", "key": "ctrl+shift+p"}
+        {"command": "extension.coq.reset", "key": "Ctrl+Shift+Home", "when": "editorTextFocus && editorLangId  == coq"},
+        {"command": "extension.coq.interrupt", "key": "Ctrl+Shift+`", "when": "editorTextFocus && editorLangId  == coq"},
+        {"command": "extension.coq.stepForward", "key": "Ctrl+Shift+Down", "when": "editorTextFocus && editorLangId  == coq"},
+        {"command": "extension.coq.stepBackward", "key": "Ctrl+Shift+Up", "when": "editorTextFocus && editorLangId  == coq"},
+        {"command": "extension.coq.interpretToPoint", "key": "Ctrl+Shift+Right", "when": "editorTextFocus && editorLangId  == coq"},
+        {"command": "extension.coq.interpretToEnd", "key": "Ctrl+Shift+End", "when": "editorTextFocus && editorLangId  == coq"},
+        {"command": "extension.coq.searchAbout", "key": "ctrl+shift+k", "when": "editorTextFocus && editorLangId  == coq"},
+        {"command": "extension.coq.locate", "key": "ctrl+shift+l", "when": "editorTextFocus && editorLangId  == coq"},
+        {"command": "extension.coq.check", "key": "ctrl+shift+c", "when": "editorTextFocus && editorLangId  == coq"},
+        {"command": "extension.coq.print", "key": "ctrl+shift+p", "when": "editorTextFocus && editorLangId  == coq"}
     ],
     "menus": {
       "editor/context": [
