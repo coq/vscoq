@@ -283,6 +283,7 @@ export class CoqTop extends events.EventEmitter {
   private readyToListen: Thenable<void>[];
   private settings : CoqTopSettings;
   private scriptFile : string;
+  private supportsInterruptCall = false;
 
   constructor(settings : CoqTopSettings, scriptFile: string, console: vscode.RemoteConsole, callbacks?: EventCallbacks) {
     super();
@@ -518,6 +519,7 @@ export class CoqTop extends events.EventEmitter {
 
   private spawnCoqTopWrapper(mainAddr : string, controlAddr: string, traceFile?: string) : ChildProcess {
     // var coqtopModule = this.coqPath + '/coqtop';
+    this.supportsInterruptCall = true;
     var coqtopModule = this.settings.wrapper;
     // var coqtopModule = 'cmd';
     var args = [
@@ -756,14 +758,20 @@ export class CoqTop extends events.EventEmitter {
     if(!this.coqtopProc)
       return;
 
-    this.parser.once('response: value', (value:coqProto.Value) => {
-      this.console.log('interrupted');
-    });
-    this.console.log('interrupt');
-    
-    this.console.log('--------------------------------');
-    this.console.log('Call Interrupt()');
-    this.mainChannelW.write('<call val="Interrupt"><unit/></call>');
+    if(this.supportsInterruptCall) {
+      this.parser.once('response: value', (value:coqProto.Value) => {
+        this.console.log('interrupted');
+      });
+      this.console.log('interrupt');
+      
+      this.console.log('--------------------------------');
+      this.console.log('Call Interrupt()');
+      this.mainChannelW.write('<call val="Interrupt"><unit/></call>');
+    } else {
+      this.console.log('--------------------------------');
+      this.console.log('Sending SIGINT');
+      this.coqtopProc.kill("SIGINT");
+    }
   }
 
 
