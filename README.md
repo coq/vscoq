@@ -3,10 +3,11 @@ Support for the [Coq Proof Assistant](https://coq.inria.fr/) in [Visual Studio C
 ## Instructions
 1. install [Coq 8.5](https://coq.inria.fr/download)
 2. install [vscode](https://code.visualstudio.com/)
-3. [download this extension: vscoq-0.0.1.vsix]()
+3. [download this extension: vscoq-0.0.1.vsix](https://github.com/siegebell/vscoq/releases/download/0.0.1-beta.1/vscoq-0.0.1.vsix)
 4. run: `code --install-extension vscoq-0.0.1.vsix`
-5. start vscode (run `code`)
-6. open or create a new Coq script (*.v) file
+5. *optional for Windows*: to enable interrupt computation, download [coqtopw.exe](https://github.com/siegebell/vscoq/releases/download/0.0.1-beta.1/coqtopw.exe) and add `"coqtop.wrapper": "path/to/coqtopw.exe"` to your vscode settings file.
+6. start vscode (run `code`)
+7. open or create a new Coq script (*.v) file
 
 ## Basic usage:
 * step forward: `ctrl+shift+down` 
