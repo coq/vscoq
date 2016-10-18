@@ -174,7 +174,7 @@ export class CoqStateMachine {
    * @throw proto.FailValue if advancing failed
    */
   public async stepBackward() : Promise<void>  {
-    await this.validateState(true);
+    await this.validateState(false);
     await this.cancelSentence(this.focusedSentence);
   }
 
@@ -184,7 +184,7 @@ export class CoqStateMachine {
    * @returns `true` if no sentences were cancelled
   */
   public async applyChanges(changes: TextDocumentContentChangeEvent[], newVersion: number) : Promise<boolean> {
-    if(!this.running || changes.length == 0)
+    if(!this.running || changes.length == 0 || this.root === null)
       return true;
 
     // sort the edits such that later edits are processed first
@@ -302,7 +302,8 @@ export class CoqStateMachine {
   }
 
   public async doQuery(query: string, position?: Position) : Promise<string> {
-    await this.validateState(true);
+    if(!this.isCoqReady())
+      return "";
     let state: StateId = undefined;
     if(position)
       state = this.getParentSentence(position).getStateId();
@@ -336,15 +337,15 @@ export class CoqStateMachine {
   
 
   public *getSentences() : Iterable<{range: Range, status: SentenceState}> {
-    if(!this.running)
-      return
+    if(!this.running || this.root===null)
+      return;
     for(let sent of this.root.descendants())
       yield { range: sent.getRange(), status: sent.getState()}
   }
 
   public *getSentenceErrors() : Iterable<SentenceError> {
-    if(!this.running)
-      yield
+    if(!this.running || this.root===null)
+      return;
     for(let sent of this.root.descendants()) {
       if(sent.getError())
         yield sent.getError();
@@ -352,7 +353,7 @@ export class CoqStateMachine {
   }
 
   public *getErrors() : Iterable<SentenceError> {
-    if(!this.running)
+    if(!this.running || this.root===null)
       return;
     yield *this.getSentenceErrors();
     if(this.currentError !== null)
