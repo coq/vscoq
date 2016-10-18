@@ -1,13 +1,13 @@
 {
   "name": "coqlangserver",
   "description": "Language server for Coq.",
-  "version": "0.0.1",
   "author": {
     "name": "Christian J. Bell",
-    "email": "cj@csail.mit.edu"
+    "email": "siegebell@gmail.com"
   },
-  "publisher": "Christian J. Bell",
-  "license": "MIT",
+	"version": "0.0.1",
+	"publisher": "siegebell",
+  "license": "MIT license (MIT)",
   "engines": {
  		"vscode": "^1.5.3"
   },

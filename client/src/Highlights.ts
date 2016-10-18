@@ -33,9 +33,6 @@ const parsingTextDecoration: vscode.TextEditorDecorationType = vscode.window.cre
     light: {backgroundColor: 'rgba(0,0,255,0.3)'},
     dark: {backgroundColor: 'rgba(0,0,255,0.3)'},
   });
-const syntaxErrorTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    gutterIconPath: "C:/Users/cj/vscode_coq/client/src/syntax_error_icon.svg"
-    });
 const tacticErrorTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     outlineWidth: '1px',
     outlineStyle: 'solid', 

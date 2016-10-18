@@ -5,7 +5,6 @@
 'use strict';
 import {rangeToString} from './text-util';
 
-import * as vscj from 'vscode-jsonrpc';
 import {RequestType, CancellationToken} from 'vscode-jsonrpc';
 import {
 	createConnection, IConnection, TextDocumentSyncKind,

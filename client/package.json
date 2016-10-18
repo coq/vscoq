@@ -3,11 +3,11 @@
 	"description": "IDE for the Coq Proof Assistant",
   "author": {
     "name": "Christian J. Bell",
-    "email": "cj@csail.mit.edu"
+    "email": "siegebell@gmail.com"
   },
-	"license": "MIT",
 	"version": "0.0.1",
-	"publisher": "Christian J. Bell",
+	"publisher": "siegebell",
+  "license": "MIT license (MIT)",
 	"engines": {
  		"vscode": "^1.5.3"
 	},
@@ -34,14 +34,9 @@
 			"type": "object",
 			"title": "Coq configuration",
 			"properties": {
-				"coqtop.wrapper": {
-					"type": "string",
-					"default": "C:/Users/cj/Research/vscoq/coqtopw/bin/Debug/coqtopw.exe",
-					"description": "Executable to wrap coqtop."
-				},
 				"coqtop.coqPath": {
 					"type": "string",
-					"default": "C:/Coq_trunk/bin/",
+					"default": "",
 					"description": "Path to coqc and coqtop binaries."
 				},
 				"coqtop.args": {
@@ -94,7 +89,9 @@
     ]    
 	},	
 	"scripts": {
-		"vscode:prepublish": "tsc -p ./",
+		"vscode:prepublish": "npm run compile-server && npm run compile-html-view && npm run compile",
+		"compile-server": "cd ../server && npm run compile && cd ../client",
+		"compile-html-view": "cd ../html_views && npm run compile && cd ../client",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
     "postinstall": "node ./node_modules/vscode/bin/install"

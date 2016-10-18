@@ -12,6 +12,7 @@
 		"Languages"
 	],
 	"scripts": {
+		"compile": "gulp build",
 		"postinstall": "typings install"
 	},
 	"devDependencies": {

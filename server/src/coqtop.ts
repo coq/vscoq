@@ -2,11 +2,13 @@
 
 import * as net from 'net'; 
 import * as util from 'util';
+import * as path from 'path';
 import * as events from 'events'; 
 // var xml2js = require('xml2js');
 // import * as stream from 'stream'; 
 import * as coqXml from './coq-xml';
 import * as vscode from 'vscode-languageserver';
+
 import * as coqProto from './coq-proto';
 import {ChildProcess, exec, spawn} from 'child_process';
 import {CoqTopSettings, LtacProfTactic, LtacProfResults} from './protocol';
@@ -280,10 +282,12 @@ export class CoqTop extends events.EventEmitter {
   private callbacks: EventCallbacks;
   private readyToListen: Thenable<void>[];
   private settings : CoqTopSettings;
+  private scriptFile : string;
 
-  constructor(settings : CoqTopSettings, console: vscode.RemoteConsole, callbacks?: EventCallbacks) {
+  constructor(settings : CoqTopSettings, scriptFile: string, console: vscode.RemoteConsole, callbacks?: EventCallbacks) {
     super();
     this.settings = settings;
+    this.scriptFile = scriptFile;
     this.console = console;
     this.callbacks = callbacks;
     this.mainChannelServer = net.createServer();
@@ -402,9 +406,11 @@ export class CoqTop extends events.EventEmitter {
     var controlAddressArg = controlAddr.address + ':' + controlAddr.port;
 
     try {
-      if(useWrapper)
-        this.startCoqTop(this.spawnCoqTopWrapper(mainAddressArg, controlAddressArg));
-      else
+      const scriptUri = decodeURIComponent(this.scriptFile); 
+      if(useWrapper && scriptUri.startsWith("file:///")) {
+        const traceFile = scriptUri.substring("file:///".length) + ".coq-trace.xml";
+        this.startCoqTop(this.spawnCoqTopWrapper(mainAddressArg, controlAddressArg, traceFile));
+      } else
         this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
     } catch(error) {
       this.console.error('Could not spawn coqtop: ' + error);
@@ -497,7 +503,7 @@ export class CoqTop extends events.EventEmitter {
  }
 
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
-    var coqtopModule = this.settings.coqPath + '/coqtop';
+    var coqtopModule = path.join(this.settings.coqPath.trim(), 'coqtop');
     // var coqtopModule = 'cmd';
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',
@@ -510,19 +516,20 @@ export class CoqTop extends events.EventEmitter {
     return spawn(coqtopModule, args, {detached: false});
   }
 
-  private spawnCoqTopWrapper(mainAddr : string, controlAddr: string) : ChildProcess {
+  private spawnCoqTopWrapper(mainAddr : string, controlAddr: string, traceFile?: string) : ChildProcess {
     // var coqtopModule = this.coqPath + '/coqtop';
     var coqtopModule = this.settings.wrapper;
     // var coqtopModule = 'cmd';
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',
-      '-coqtopbin', this.settings.coqPath + '/coqtop',
-      '-tracefile', 'C:/Users/cj/Desktop/coqtrace.xml',
+      '-coqtopbin', path.join(this.settings.coqPath.trim(), 'coqtop'),
       '-main-channel', mainAddr,
       '-control-channel', controlAddr,
       '-ideslave',
       '-async-proofs', 'on'
-      ].concat(this.settings.args);
+      ]
+      .concat(traceFile ? ['-tracefile', traceFile] : [])
+      .concat(this.settings.args);
     this.console.log('exec: ' + coqtopModule + ' ' + args.join(' '));
     return spawn(coqtopModule, args, {detached: false});
   }
@@ -757,65 +764,6 @@ export class CoqTop extends events.EventEmitter {
     this.console.log('--------------------------------');
     this.console.log('Call Interrupt()');
     this.mainChannelW.write('<call val="Interrupt"><unit/></call>');
-// 
-// 
-// 
-// // process.once('kill', () => {
-// //   this.console.log('kill'); 
-// // });
-//     try {
-//       // NOTE!!!!
-//       // CoqTop uses the interrupt signal (SIGINT) to interrupt processing and return to a 'ready' state
-//       // But signals are not cross-platform; Windows only barely supports them, and WORSE
-//       // Node.js's `kill` will simply terminate a process instead of sending any kind of signal (on Windows)
-// 
-//       
-//       // 'assasinate-coqtop'
-//       // const assassin = fork('C:/Users/cj/vscode_coq/client/server/assassinate-coqtop.js');
-//       // const assassin = fork('./assassinate-coqtop', [this.coqtopProc.pid.toString()]);
-//       // const assassin = fork('./assassinate-coqtop.js');
-//       // assassin.on('exit', () => {this.console.info('assassination complete');});
-//       // assassin.disconnect();
-//       // this.coqtopProc.stdin.write("\x03", () => {
-//       //   this.console.info('ctrl+c written to coqtop');
-//       // });
-//       // this.mainChannelW.write("\x03", () => {
-//       //   this.console.info('ctrl+c written to coqtop');
-//       // });
-//       // exec(`C:/cygwin64/bin/kill -f -2 ${this.coqtopProc.pid}`, {}, (error,stdout,stdin) => {
-//       // const pid = this.coqtopProc.pid;        
-//       // try {
-//         // exec(`C:/cygwin64/bin/kill -f -SIGQUIT ${pid}`, {}, (error,stdout,stdin) => {
-//         //   if(error)
-//         //     this.coqtopProc.kill('SIGINT');
-//         //   else
-//         //     this.console.log(`Interrupting coqtop: C:/cygwin64/bin/kill -f -SIGINT ${pid}`);
-//         // });
-//       // } catch(err) {
-//         this.coqtopProc.kill('SIGINT');
-//       // }
-//         
-//       // exec(`start C:/Users/cj/vscode_coq/SendSignal.exe ${this.coqtopProc.pid}`, {}, (error,stdout,stdin) => {
-//       //   if(error)
-//       //     this.coqtopProc.kill('SIGINT');
-//       //   else
-//       //     this.console.log(`Interrupting coqtop: C:/cygwin64/bin/kill -f -SIGINT ${this.coqtopProc.pid}`);
-//       // });
-//       
-//       // this.coqtopProc.stdin.write("\x03");
-//       // process.kill(this.coqtopProc.pid, 'SIGINT');
-//       // process.kill(this.coqtopProc.pid, 'SIGINT');
-//       // spawn("taskkill", ["/pid", this.coqtopProc.pid.toString()]);
-//       
-//       // this.console.info(util.inspect(assassin,false,null));
-//       // this.coqtopProc.kill('SIGBREAK');
-//       // this.coqtopProc.kill('SIGINT');
-//       // this.coqtopProc.stdin.write('\x03');
-//       // this.mainChannelW.write('\x03');
-//       // this.coqtopProc.stdin.writable.uncork();
-//     } catch(err) {
-//       this.console.error("Cannot send interrupt to coqtop: " + err.toString());
-//     }
   }
 
 
