@@ -176,10 +176,12 @@ connection.onRequest(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams, 
 });
 connection.onRequest(coqproto.QueryRequest.type, async (params: coqproto.CoqTopQueryParams, token: CancellationToken) => {
   switch(params.queryFunction) {
-  case coqproto.QueryFunction.Locate:
-    return { searchResults: await project.lookup(params.uri).locateIdent(params.query) };
   case coqproto.QueryFunction.Check:
     return { searchResults: await project.lookup(params.uri).checkTerm(params.query) };
+  case coqproto.QueryFunction.Print:
+    return { searchResults: await project.lookup(params.uri).printTerm(params.query) };
+  case coqproto.QueryFunction.Locate:
+    return { searchResults: await project.lookup(params.uri).locateIdent(params.query) };
   case coqproto.QueryFunction.Search:
     return { searchResults: await project.lookup(params.uri).search(params.query) };
   case coqproto.QueryFunction.SearchAbout:

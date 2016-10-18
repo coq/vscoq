@@ -266,6 +266,7 @@ export class CoqDocument implements vscode.Disposable {
         this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
       this.view.update(value);
     } catch (err) {
+      console.warn("Interpret to point failed: " + err.toString());
     }
     this.statusBar.setStateReady();
   }
@@ -288,6 +289,16 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateWorking('Running query');
     try {
       return await this.langServer.check(this.documentUri, query);
+    } catch (err) {
+    } finally {
+      this.statusBar.setStateReady();
+    }
+  }
+  
+  public async print(query: string) {
+    this.statusBar.setStateWorking('Running query');
+    try {
+      return await this.langServer.print(this.documentUri, query);
     } catch (err) {
     } finally {
       this.statusBar.setStateReady();

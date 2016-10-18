@@ -166,7 +166,7 @@
     { get method() { return 'coqtop/query' }
     , _:undefined }; 
   }
-  export enum QueryFunction { Check, Search, SearchAbout, Locate}
+  export enum QueryFunction { Check, Print, Search, SearchAbout, Locate}
   export interface CoqTopQueryParams extends CoqTopParams {
     queryFunction: QueryFunction;
     query: string;

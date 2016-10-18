@@ -2,6 +2,7 @@
 
 import * as vscode from 'vscode'
 import {CoqDocument} from './CoqDocument'
+export {CoqDocument} from './CoqDocument'
 
 export class CoqDocumentListener implements vscode.Disposable {
   private documents = new Map<string, CoqDocument>();

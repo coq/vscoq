@@ -164,6 +164,14 @@ export class CoqLanguageServer {
     },this.cancelRequest.token);
   }
 
+  public print(uri: string, query: string) : Thenable<proto.CoqTopQueryResult> {
+    return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
+      uri: uri,
+      queryFunction: proto.QueryFunction.Print,
+      query: query
+    },this.cancelRequest.token);
+  }
+
   public search(uri: string, query: string) : Thenable<proto.CoqTopQueryResult>{
     return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,

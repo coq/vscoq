@@ -207,7 +207,7 @@ export class CoqDocument implements TextDocument {
   /** creates the current diagnostics from scratch */
   private createDiagnostics() {
     let diagnostics : Diagnostic[] = [];
-    for(let error of this.stm.getSentenceErrors()) {
+    for(let error of this.stm.getErrors()) {
       diagnostics.push(
         { message: error.message
         , range: error.range
@@ -762,11 +762,12 @@ export class CoqDocument implements TextDocument {
     const diagnostics : Diagnostic[] = [];
     for(let error of this.stm.getErrors()) {
       if(error.range) {
-        this.clientConsole.log("call failure: " + textUtil.rangeToString(error.range) + " of " + textUtil.rangeToString(error.sentence));
+        // this.clientConsole.log("call failure: " + textUtil.rangeToString(error.range) + " of " + textUtil.rangeToString(error.sentence));
         diagnostics.push(Diagnostic.create(error.range,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
-      } else
-      this.clientConsole.log("call failure: " + textUtil.rangeToString(error.sentence));
+      } else {
+      // this.clientConsole.log("call failure: " + textUtil.rangeToString(error.sentence));
         diagnostics.push(Diagnostic.create(error.sentence,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
+      }
     }
     this.callbacks.sendDiagnostics(diagnostics);
   }
@@ -855,6 +856,12 @@ this.stm.logDebuggingSentences();
     if(!this.stm || !this.stm.isRunning())
       return "Coq is not running";
     return await this.stm.doQuery(`Check ${term}.`);
+  }
+
+  public async printTerm(term: string) {
+    if(!this.stm || !this.stm.isRunning())
+      return "Coq is not running";
+    return await this.stm.doQuery(`Print ${term}.`);
   }
 
   public async search(query: string) {

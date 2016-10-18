@@ -7,7 +7,7 @@ import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } 
 
 
 import * as proto from './protocol';
-import {CoqDocumentListener} from './CoqDocumentListener';
+import {CoqDocumentListener, CoqDocument} from './CoqDocumentListener';
 
 
 vscode.Range.prototype.toString = function rangeToString() {return `[${this.start.toString()},${this.end.toString()})`}
@@ -40,6 +40,12 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.locate', locate));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.search', search));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.searchAbout', searchAbout)); 
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.print', print)); 
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.queryCheck', queryCheck));
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.queryLocate', queryLocate));
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.querySearch', querySearch));
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.querySearchAbout', querySearchAbout)); 
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.queryPrint', queryPrint)); 
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.viewGoalState', viewGoalState)); 
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.viewGoalStateExternal', viewGoalStateExternal));
   context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.ltacProfGetResults', ltacProfGetResults));
@@ -60,6 +66,12 @@ export function activate(context: ExtensionContext) {
 //   
 // }
 
+function withDoc<T>(editor: TextEditor, callback: (doc: CoqDocument) => T) : void {
+  const doc = documents.get(editor.document.uri.toString());
+  if(doc)
+    callback(doc);
+}
+
 async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {
   let placeHolder = editor.document.getText(editor.selection);
   if(editor.selection.isEmpty)
@@ -70,87 +82,132 @@ async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {
     });
 }
 
+async function queryStringFromPosition(prompt: string, editor: TextEditor) {
+  let query = editor.document.getText(editor.selection);
+  if(editor.selection.isEmpty)
+    query = editor.document.getText(editor.document.getWordRangeAtPosition(editor.selection.active));
+  if(query.trim() === "")
+    return await queryStringFromPlaceholder(prompt, editor);
+  else
+    return query;
+}
+
+async function queryCheck(editor: TextEditor, edit: TextEditorEdit) {
+  withDoc(editor, async (doc) =>
+    await doc.check(await queryStringFromPlaceholder("Check:", editor))
+  )
+}
+
+async function queryLocate(editor: TextEditor, edit: TextEditorEdit) {
+  withDoc(editor, async (doc) =>
+    await doc.locate(await queryStringFromPlaceholder("Locate:", editor))
+  )
+}
+
+async function querySearch(editor: TextEditor, edit: TextEditorEdit) {
+  withDoc(editor, async (doc) =>
+    await doc.search(await queryStringFromPlaceholder("Search:", editor))
+  )
+}
+
+async function querySearchAbout(editor: TextEditor, edit: TextEditorEdit) {
+  withDoc(editor, async (doc) =>
+    await doc.searchAbout(await queryStringFromPlaceholder("Search About:", editor))
+  )
+}
+
+async function queryPrint(editor: TextEditor, edit: TextEditorEdit) {
+  withDoc(editor, async (doc) =>
+    await doc.print(await queryStringFromPlaceholder("Print:", editor))
+  )
+}
+
 async function check(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    await doc.check(await queryStringFromPlaceholder("Check:", editor));
+  withDoc(editor, async (doc) =>
+    await doc.check(await queryStringFromPosition("Check:", editor))
+  )
 }
 
 async function locate(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    await doc.locate(await queryStringFromPlaceholder("Locate:", editor));
+  withDoc(editor, async (doc) =>
+    await doc.locate(await queryStringFromPosition("Locate:", editor))
+  )
 }
 
 async function search(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    await doc.search(await queryStringFromPlaceholder("Search:", editor));
+  withDoc(editor, async (doc) =>
+    await doc.search(await queryStringFromPosition("Search:", editor))
+  )
 }
 
 async function searchAbout(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    await doc.searchAbout(await queryStringFromPlaceholder("Search About:", editor));
+  withDoc(editor, async (doc) =>
+    await doc.searchAbout(await queryStringFromPosition("Search About:", editor))
+  )
 }
 
+async function print(editor: TextEditor, edit: TextEditorEdit) {
+  withDoc(editor, async (doc) =>
+    await doc.print(await queryStringFromPosition("Search About:", editor))
+  )
+}
 
 async function quitCoq(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    await doc.quitCoq(editor);
+  withDoc(editor, async (doc) =>
+    await doc.quitCoq(editor)
+  )
 }
 
 function resetCoq(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.resetCoq(editor);
+  withDoc(editor, async (doc) =>
+    doc.resetCoq(editor)
+  )
 }
 
 function interruptCoq(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.interruptCoq();
+  withDoc(editor, async (doc) =>
+    doc.interruptCoq()
+  )
 }
 
 function stepForward(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.stepForward(editor);
+  withDoc(editor, async (doc) =>
+    doc.stepForward(editor)
+  )
 }
 
 function stepBackward(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.stepBackward(editor);
+  withDoc(editor, async (doc) =>
+    doc.stepBackward(editor)
+  )
 }
 
 function interpretToPoint(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.interpretToCursorPosition(editor);
+  withDoc(editor, async (doc) =>
+    doc.interpretToCursorPosition(editor)
+  )
 }
 
 function interpretToEnd(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.interpretToEnd(editor);
+  withDoc(editor, (doc) =>
+    doc.interpretToEnd(editor)
+  )
 }
 
 function viewGoalState(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.viewGoalState(editor,false);
+  withDoc(editor, async (doc) =>
+    doc.viewGoalState(editor,false)
+  )
 }
 
 function viewGoalStateExternal(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.viewGoalState(editor,true);
+  withDoc(editor, async (doc) =>
+    doc.viewGoalState(editor,true)
+  )
 }
 
 function ltacProfGetResults(editor: TextEditor, edit: TextEditorEdit) {
-  const doc = documents.get(editor.document.uri.toString());
-  if(doc)
-    doc.ltacProfGetResults(editor);
+  withDoc(editor, async (doc) =>
+    doc.ltacProfGetResults(editor)
+  )
 }

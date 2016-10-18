@@ -60,10 +60,16 @@
       {"command": "extension.coq.stepBackward", "title": "Coq: Step Backward"},
       {"command": "extension.coq.interpretToPoint", "title": "Coq: Interpret To Point"},
       {"command": "extension.coq.interpretToEnd", "title": "Coq: Interpret To End"},
-      {"command": "extension.coq.check", "title": "Coq: Check"},
-      {"command": "extension.coq.locate", "title": "Coq: Locate"},
-      {"command": "extension.coq.search", "title": "Coq: Search"},
-      {"command": "extension.coq.searchAbout", "title": "Coq: Search About"}, 
+      {"command": "extension.coq.check", "title": "Coq: Check", "description": "Check the type of term at the cursor"},
+      {"command": "extension.coq.locate", "title": "Coq: Locate", "description": "Locate the term at the cursor"},
+      {"command": "extension.coq.search", "title": "Coq: Search", "description": "Search for the term pattern at the cursor"},
+      {"command": "extension.coq.print", "title": "Coq: Print", "description": "Print the definition of the term at the cursor"},
+      {"command": "extension.coq.searchAbout", "title": "Coq: Search About", "description": "SearchAbout for the term pattern at the cursor"}, 
+      {"command": "extension.coq.queryCheck", "title": "Coq: Query Check", "description": "Check the type of a term"},
+      {"command": "extension.coq.queryLocate", "title": "Coq: Query Locate", "description": "Locate a term"},
+      {"command": "extension.coq.querySearch", "title": "Coq: Query Search", "description": "Search for a term"},
+      {"command": "extension.coq.querySearchAbout", "title": "Coq: Query Search About", "description": "SearchAbout a term"}, 
+      {"command": "extension.coq.queryPrint", "title": "Coq: Print", "description": "Print the definition of a term"},
       {"command": "extension.coq.toggleImplicitArguments", "title": "Coq: Toggle Implicit Arguments"},
       {"command": "extension.coq.toggleNotations", "title": "Coq: Toggle Notations"},
       {"command": "extension.coq.viewGoalState", "title": "Coq: View goal state"},
@@ -74,12 +80,15 @@
     ],    
     "keybindings": [
         {"command": "extension.coq.reset", "key": "Ctrl+Shift+Home"},
-        {"command": "extension.coq.interrupt", "key": "Ctrl+Shift+Tilde"},
+        {"command": "extension.coq.interrupt", "key": "Ctrl+Shift+`"},
         {"command": "extension.coq.stepForward", "key": "Ctrl+Shift+Down"},
         {"command": "extension.coq.stepBackward", "key": "Ctrl+Shift+Up"},
         {"command": "extension.coq.interpretToPoint", "key": "Ctrl+Shift+Right"},
         {"command": "extension.coq.interpretToEnd", "key": "Ctrl+Shift+End"},
-        {"command": "extension.coq.locate", "key": "F2"}
+        {"command": "extension.coq.searchAbout", "key": "ctrl+shift+k"},
+        {"command": "extension.coq.locate", "key": "ctrl+shift+l"},
+        {"command": "extension.coq.check", "key": "ctrl+shift+c"},
+        {"command": "extension.coq.print", "key": "ctrl+shift+p"}
     ],
     "snippets": [
         {
