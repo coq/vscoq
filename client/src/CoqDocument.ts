@@ -115,7 +115,7 @@ export class CoqDocument implements vscode.Disposable {
   
   
   private onUpdateComputingStatus(params: proto.NotifyComputingStatusParams) {
-    this.statusBar.setStateComputing(params.status, params.computeTimeMS);
+    this.statusBar.setStateComputing(params.status);
   }
   
   private onCoqMessage(params: proto.NotifyMessageParams) {
@@ -154,7 +154,7 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public async interruptCoq() {
-    this.statusBar.setStateWorking('Killing CoqTop');
+    this.statusBar.setStateMessage('Killing CoqTop');
     try {
       await this.langServer.interruptCoq(this.documentUri);
     } finally {}
@@ -162,7 +162,7 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public async quitCoq(editor: TextEditor) {
-    this.statusBar.setStateWorking('Killing CoqTop');
+    this.statusBar.setStateMessage('Killing CoqTop');
     try {
       await this.langServer.quitCoq(this.documentUri);
     } finally {}
@@ -171,7 +171,7 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public async resetCoq(editor: TextEditor) {
-    this.statusBar.setStateWorking('Resetting Coq');
+    this.statusBar.setStateMessage('Resetting Coq');
     try {
       await this.langServer.resetCoq(this.documentUri);
     } finally {}
@@ -234,6 +234,8 @@ export class CoqDocument implements vscode.Disposable {
       this.view.update(value);
       if(value.type !== 'not-running')
         this.updateFocus(value.focus, true);
+      if(value.type === 'interrupted')
+        this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
     } catch (err) {
     }
     this.statusBar.setStateReady();
@@ -247,6 +249,8 @@ export class CoqDocument implements vscode.Disposable {
       this.view.update(value);
       if(value.type !== 'not-running')
         this.updateFocus(value.focus, true)
+      if(value.type === 'interrupted')
+        this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
       // const range = new vscode.Range(editor.document.positionAt(value.commandStart), editor.document.positionAt(value.commandEnd));
       // clearHighlight(editor, range);
     } catch (err) {
@@ -262,6 +266,8 @@ export class CoqDocument implements vscode.Disposable {
       const value = await this.langServer.interpretToPoint(this.documentUri, editor.document.offsetAt(editor.selection.active));
       if(value.type !== 'not-running')
         this.updateFocus(value.focus);
+      if(value.type === 'interrupted')
+        this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
       this.view.update(value);
     } catch (err) {
     }
@@ -275,6 +281,8 @@ export class CoqDocument implements vscode.Disposable {
       const value = await this.langServer.interpretToEnd(this.documentUri);
       if(value.type !== 'not-running')
         this.updateFocus(value.focus,true);
+      if(value.type === 'interrupted')
+        this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
       this.view.update(value);
     } catch (err) { }
     this.statusBar.setStateReady();
