@@ -389,7 +389,7 @@ export class CoqTop extends events.EventEmitter {
       
     if (this.settings.wrapper && this.settings.wrapper != "" && fs.existsSync(this.settings.wrapper))
       await this.setupCoqTop(true);
-    else if(os.platform() !== 'win32')
+    else if(os.platform() === 'linux')
       await this.setupCoqTop(false);
     else
       await this.setupCoqTopWindows();
