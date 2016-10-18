@@ -17,6 +17,10 @@ import {CoqLanguageServer} from './CoqLanguageServer';
 import {adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
 
+
+const STM_FOCUS_IMAGE = "./images/stm-focus.svg";
+const STM_FOCUS_IMAGE_BEFORE = "./images/stm-focus-before.svg";
+
 export class CoqDocument implements vscode.Disposable {
   private statusBar: StatusBar;
   public documentUri: string;
@@ -48,11 +52,11 @@ export class CoqDocument implements vscode.Disposable {
     this.view.show(true,adjacentPane(this.currentViewColumn()));
 
     this.focusDecoration = vscode.window.createTextEditorDecorationType({
-      gutterIconPath: context.asAbsolutePath('./src/stm-focus.svg'),
+      gutterIconPath: context.asAbsolutePath(STM_FOCUS_IMAGE),
       gutterIconSize: "contain"
     });
     this.focusBeforeDecoration = vscode.window.createTextEditorDecorationType({
-      gutterIconPath: context.asAbsolutePath('./src/stm-focus-before.svg'),
+      gutterIconPath: context.asAbsolutePath(STM_FOCUS_IMAGE_BEFORE),
       gutterIconSize: "contain"
     });
 
