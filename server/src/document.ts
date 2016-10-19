@@ -14,20 +14,23 @@ import {CancellationSignal, asyncWithTimeout} from './CancellationSignal';
 import {AsyncWorkQueue} from './AsyncQueue';
 import {richppToMarkdown} from './RichPP';
 import {CommandIterator, CoqStateMachine, GoalResult, SentenceState} from './STM';
-
+import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
 
 function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
 function positionToString(p:Position) {return `{${p.line}@${p.character}}`}
 
-export interface DocumentCallbacks {
-  sendHighlightUpdates(highlights: thmProto.Highlights) : void;
-  sendDiagnostics(diagnostics: Diagnostic[]) : void;
+interface MessageCallback {
   sendMessage(level: string, message: string, rich_message?: any) : void;
+}
+interface ResetCallback {
   sendReset() : void;
-  sendStmFocus(focus?: Position) : void;
-  sendComputingStatus(status: thmProto.ComputingStatus, computeTimeMS: number) : void;
+}
+interface LtacProfCallback {
   sendLtacProfResults(results: coqProto.LtacProfResults) : void;
 }
+
+export type DocumentCallbacks = MessageCallback & ResetCallback & LtacProfCallback & DocumentFeedbackCallbacks;
+
 
 enum InteractionLoopStatus {Idle, CoqCommand, TextEdit};
 
@@ -53,13 +56,14 @@ export class CoqDocument implements TextDocument {
   private stm: CoqStateMachine;
   private clientConsole: RemoteConsole;
   // private document: TextDocument;
-  private callbacks : DocumentCallbacks;
+  private callbacks : MessageCallback & ResetCallback & LtacProfCallback;
   private diagnostics : Diagnostic[] = [];
   private documentText: string;
   private processingLock = new Mutex();
   private resettingLock = new Mutex();
   private cancelProcessing = new CancellationSignal();
   private coqtopSettings : thmProto.CoqTopSettings;
+  private feedback : FeedbackSync;
   // private interactionCommands = new AsyncWorkQueue();
   // private interactionLoopStatus = InteractionLoopStatus.Idle;
   // we'll use this as a callback, so protect it with an arrow function so it gets the correct "this" pointer
@@ -70,6 +74,7 @@ export class CoqDocument implements TextDocument {
     this.uri = uri;
     this.callbacks = callbacks;
     this.coqtopSettings = coqtopSettings;
+    this.feedback = new FeedbackSync(callbacks, 200);
 
     this.resetCoq();
     // this.reset();
@@ -122,7 +127,6 @@ export class CoqDocument implements TextDocument {
     }
 
     this.version = newVersion;
-
 
     // send the updated diagnostics
 // TODO
@@ -197,10 +201,21 @@ export class CoqDocument implements TextDocument {
 
   /** creates the current highlights from scratch */
   private createHighlights() : thmProto.Highlights {
-    let highlights : thmProto.Highlights =
+    const highlights : thmProto.Highlights =
       { ranges: [ [], [], [], [], [], [], [] ] };
-    for(let sent of this.stm.getSentences())
-      highlights.ranges[this.sentenceToHighlightType(sent.status)].push(sent.range);
+    let count1 = 0;
+    let count2 = 0;
+    for(let sent of this.stm.getSentences()) {
+      const ranges = highlights.ranges[this.sentenceToHighlightType(sent.status)];
+      if(ranges.length > 0 && textUtil.positionIsEqual(ranges[ranges.length-1].end, sent.range.start))
+        ranges[ranges.length-1].end = sent.range.end;
+      else {
+        ranges.push(Range.create(sent.range.start,sent.range.end));
+        ++count2;
+      }
+      ++count1;
+    }
+    this.clientConsole.log(`Highlights: ${count1} sentences --> ${count2} ranges`)
     return highlights;
   }
 
@@ -226,10 +241,12 @@ export class CoqDocument implements TextDocument {
     // this.updateHighlights();
   }
 
-  private updateHighlights(parsing: Range[] = []) {
-    const highlights = this.createHighlights();
-    highlights.ranges[thmProto.HighlightType.Parsing].concat(parsing);
-    this.callbacks.sendHighlightUpdates(highlights);
+  private updateHighlights(parsing: Range[] = [], now = false) {
+    this.feedback.updateHighlights(() => {
+      const highlights = this.createHighlights();
+      highlights.ranges[thmProto.HighlightType.Parsing].concat(parsing);
+      return highlights;
+    }, now);
   }
 
   private onCoqStateError(sentenceRange: Range, errorRange: Range, message: string, rich_message?: any) {
@@ -272,8 +289,8 @@ export class CoqDocument implements TextDocument {
     }, this.clientConsole);
   }
 
-  private onUpdateStmFocus(focus?: Position) {
-    this.callbacks.sendStmFocus(focus);
+  private onUpdateStmFocus(focus: Position) {
+    this.feedback.updateFocus(focus, false);
   }
   
   
@@ -628,11 +645,11 @@ export class CoqDocument implements TextDocument {
   // }
 
 
-  private updateComputingStatus(status: thmProto.ComputingStatus, startTime: [number,number]) {
-    const duration = process.hrtime(startTime);
-    const interval = duration[0] * 1000.0 + (duration[1] / 1000000.0);
-    this.callbacks.sendComputingStatus(status, interval);
-  }
+  // private updateComputingStatus(status: thmProto.ComputingStatus, startTime: [number,number]) {
+  //   const duration = process.hrtime(startTime);
+  //   const interval = duration[0] * 1000.0 + (duration[1] / 1000000.0);
+  //   this.callbacks.sendComputingStatus(status, interval);
+  // }
 
   // private async doCoqOperation<X>(task: ()=>Promise<X>, lazyInitializeCoq? : boolean) {
   //   lazyInitializeCoq = (lazyInitializeCoq===undefined) ? true : lazyInitializeCoq;
@@ -737,6 +754,8 @@ export class CoqDocument implements TextDocument {
       return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
     else if(goal.type === 'interrupted')
       return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
+    else if(goal.type === 'busy')
+      return goal;
 
   //     export type GoalResult = proto.NoProofTag | proto.NotRunningTag |
   // (proto.FailValue & proto.FailureTag) |
@@ -758,18 +777,20 @@ export class CoqDocument implements TextDocument {
 // export type CommandResult = NotRunningTag | FailureResult | ProofViewResult | InterruptedResult | NoProofResult
   }
 
-  private updateDiagnostics() {
-    const diagnostics : Diagnostic[] = [];
-    for(let error of this.stm.getErrors()) {
-      if(error.range) {
-        // this.clientConsole.log("call failure: " + textUtil.rangeToString(error.range) + " of " + textUtil.rangeToString(error.sentence));
-        diagnostics.push(Diagnostic.create(error.range,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
-      } else {
-      // this.clientConsole.log("call failure: " + textUtil.rangeToString(error.sentence));
-        diagnostics.push(Diagnostic.create(error.sentence,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
+  private updateDiagnostics(now = false) {
+    this.feedback.updateDiagnostics(() => {
+      const diagnostics : Diagnostic[] = [];
+      for(let error of this.stm.getErrors()) {
+        if(error.range) {
+          // this.clientConsole.log("call failure: " + textUtil.rangeToString(error.range) + " of " + textUtil.rangeToString(error.sentence));
+          diagnostics.push(Diagnostic.create(error.range,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
+        } else {
+        // this.clientConsole.log("call failure: " + textUtil.rangeToString(error.sentence));
+          diagnostics.push(Diagnostic.create(error.sentence,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
+        }
       }
-    }
-    this.callbacks.sendDiagnostics(diagnostics);
+    return diagnostics;
+    }, now);
   }
 
 
@@ -783,11 +804,10 @@ export class CoqDocument implements TextDocument {
       const error = await this.stm.stepForward(this.commandSequence(true));
       if(error)
         return error
-  this.stm.logDebuggingSentences();
       return this.toGoal(await this.stm.getGoal());
     } finally {
-      this.updateHighlights();      
-      this.updateDiagnostics();
+      this.updateHighlights(undefined,true);      
+      this.updateDiagnostics(true);
     }
   }
 
@@ -795,11 +815,10 @@ export class CoqDocument implements TextDocument {
     this.assertStm();
     try {
     await this.stm.stepBackward();
-this.stm.logDebuggingSentences();
     return this.toGoal(await this.stm.getGoal());
     } finally {
-      this.updateHighlights();      
-      this.updateDiagnostics();
+      this.updateHighlights(undefined,true);      
+      this.updateDiagnostics(true);
     }
   }
 
@@ -808,15 +827,14 @@ this.stm.logDebuggingSentences();
     try {
       const pos = this.positionAt(offset);
 
-      this.updateHighlights([Range.create(this.stm.getFocusedPosition(),pos)]);
+      this.updateHighlights([Range.create(this.stm.getFocusedPosition(),pos)],true);
       const error = await this.stm.interpretToPoint(pos,this.commandSequence(false), token);
       if(error)
         return error;
-  this.stm.logDebuggingSentences();
       return this.toGoal(await this.stm.getGoal());
     } finally {
-      this.updateHighlights();      
-      this.updateDiagnostics();
+      this.updateHighlights(undefined,true);      
+      this.updateDiagnostics(true);
     }
 
   }
@@ -827,11 +845,10 @@ this.stm.logDebuggingSentences();
       const error = await this.interpretToPoint(this.documentText.length,token);
       if(error)
         return error;
-  this.stm.logDebuggingSentences();
       return this.toGoal(await this.stm.getGoal());
     } finally {
-      this.updateHighlights();
-      this.updateDiagnostics();
+      this.updateHighlights(undefined,true);
+      this.updateDiagnostics(true);
     }
   }
 
@@ -841,7 +858,7 @@ this.stm.logDebuggingSentences();
     try {
       return this.toGoal(await this.stm.getGoal());
     } finally {
-      this.updateDiagnostics();
+      this.updateDiagnostics(true);
     }
 
   }

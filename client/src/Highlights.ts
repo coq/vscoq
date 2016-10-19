@@ -112,6 +112,7 @@ export class Highlights {
   }
 
   private applyCurrent(editors: Iterable<TextEditor>) {
+    console.time("setDecorations");
     for(let editor of editors) {
       editor.setDecorations(stateErrorTextDecoration , this.current.ranges[proto.HighlightType.StateError]);
       editor.setDecorations(parsingTextDecoration    , this.current.ranges[proto.HighlightType.Parsing]);
@@ -120,7 +121,8 @@ export class Highlights {
       editor.setDecorations(completeTextDecoration   , this.current.ranges[proto.HighlightType.Complete]);
       editor.setDecorations(inProgressTextDecoration , this.current.ranges[proto.HighlightType.InProgress]);
       editor.setDecorations(processedTextDecoration  , this.current.ranges[proto.HighlightType.Processed]); 
-    }    
+    }
+    console.timeEnd("setDecorations");    
   }
 
   // public updateHighlights(editors: TextEditor[], params: proto.Highlights) {
