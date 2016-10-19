@@ -561,21 +561,16 @@ export class CoqStateMachine {
    */
   private async handleCallFailure(error: coqtop.CallFailure, command: {range: Range, text: string}) : Promise<proto.FailValue> {
     let errorRange : Range = undefined;
-    if(error.range) {
-        errorRange = vscode.Range.create(
-          textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.start)
-        , textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.stop)
-        );
-      // this.console.log("call failure: " + `${error.range.start}-${error.range.stop}=` + textUtil.rangeToString(errorRange) + " of " + textUtil.rangeToString(command.range) + " (" + command.text + ")");
-      this.currentError = {message: error.message, range: errorRange, sentence: command.range}
-    } else {
-      // this.console.log("call failure: " + textUtil.rangeToString(command.range) + " (" + command.text + ")");
-    }
+    if(error.range)
+      errorRange = vscode.Range.create(
+        textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.start)
+      , textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.stop)
+      );
 
     this.currentError = {message: error.message, range: errorRange, sentence: command.range}
 
     // Some errors tell us the new state to assume
-    if(error.stateId)
+    if(error.stateId !== undefined && error.stateId != 0)
       await this.gotoErrorFallbackState(error.stateId);
     
     return {message: error.message, range: errorRange, sentence: command.range}

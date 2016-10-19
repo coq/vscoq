@@ -1,5 +1,4 @@
 'use strict';
-
 import {Position, Range} from 'vscode-languageserver';
 
 // 'sticky' flag is not yet supported :()
@@ -204,7 +203,7 @@ export function positionAtRelative(start: Position, text: string, offset: number
     // match[0] -- characters plus newline
     // match[1] -- characters up to newline
     // match[2] -- newline (\n, \r, or \r\n)
-    if(currentOffset + match[1].length >= offset)
+    if(!match || match[0].length === 0 || currentOffset + match[1].length >= offset)
       return Position.create(line, lineOffset + Math.max(offset - currentOffset, 0))
     currentOffset+= match[0].length;
     lineOffset = 0;
@@ -230,7 +229,7 @@ export function positionAtRelativeCNL(start: Position, text: string, offset: num
     // match[0] -- characters plus newline
     // match[1] -- characters up to newline
     // match[2] -- newline (\n, \r, or \r\n)
-    if(match[1].length >= offset)
+    if(!match || match[0].length === 0 || match[1].length >= offset)
       return Position.create(line, lineOffset + offset)
     currentOffset+= match[0].length;
     offset -= match[1].length + (match[2]===undefined ? 0 : 1);
