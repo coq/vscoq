@@ -82,9 +82,9 @@ export class CoqLanguageServer {
     this.server.onNotification(proto.CoqResetNotification.type, listener);
   }
 
-  public onUpdateComputingStatus(listener: (params: proto.NotifyComputingStatusParams) => void) {
-    this.server.onNotification(proto.CoqComputingStatusNotification.type, listener);
-  }
+  // public onUpdateComputingStatus(listener: (params: proto.NotifyComputingStatusParams) => void) {
+  //   this.server.onNotification(proto.CoqComputingStatusNotification.type, listener);
+  // }
 
   public onUpdateCoqStmFocus(listener: (params: proto.NotifyCoqStmFocusParams) => void) {
     this.server.onNotification(proto.CoqStmFocusNotification.type, listener);

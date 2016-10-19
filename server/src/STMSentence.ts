@@ -42,7 +42,7 @@ export class Sentence {
   private computeTimeMS: number;
   private error?: SentenceError = undefined;
 
-  constructor
+  private constructor
     ( private commandText: string
     , private stateId: StateId
     , private textRange: Range

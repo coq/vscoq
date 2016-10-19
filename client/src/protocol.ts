@@ -91,13 +91,16 @@
   export type FailureTag = {type: 'failure'}
   export type ProofViewTag = {type: 'proof-view'}
   export type InterruptedTag = {type: 'interrupted'}
+  export type BusyTag = {type: 'busy'}
   export type NotRunningResult = NotRunningTag
+  export type BusyResult = BusyTag
   export type NoProofResult = NoProofTag
   export type FailureResult = FailValue & FailureTag
   export type ProofViewResult = ProofView & ProofViewTag
   export type InterruptedResult = CommandInterrupted & InterruptedTag
   export type CommandResult =
     NotRunningResult |
+    BusyResult |
     (FailureResult & FocusPosition) |
     (ProofViewResult & FocusPosition) |
     (InterruptedResult & FocusPosition) |
@@ -238,7 +241,7 @@
   } 
 
   export interface NotifyCoqStmFocusParams extends NotificationParams {
-    focus?: vscode.Position;
+    focus: vscode.Position;
   }
 
   export namespace CoqStmFocusNotification { 
@@ -249,15 +252,15 @@
 
 
   export enum ComputingStatus {Finished, Computing, Interrupted}
-  export interface NotifyComputingStatusParams extends NotificationParams {
-    status: ComputingStatus;
-    computeTimeMS: number;
-  }
-  export namespace CoqComputingStatusNotification { 
-    export const type: NotificationType<NotifyComputingStatusParams> =
-    { get method() { return 'coqtop/computingStatus' }
-    , _:undefined }; 
-  } 
+  // export interface NotifyComputingStatusParams extends NotificationParams {
+  //   status: ComputingStatus;
+  //   computeTimeMS: number;
+  // }
+  // export namespace CoqComputingStatusNotification { 
+  //   export const type: NotificationType<NotifyComputingStatusParams> =
+  //   { get method() { return 'coqtop/computingStatus' }
+  //   , _:undefined }; 
+  // } 
 
   export interface NotifyLtacProfResultsParams extends NotificationParams {
     results: LtacProfResults

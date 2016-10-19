@@ -65,7 +65,7 @@ export class CoqDocument implements vscode.Disposable {
     this.langServer.onMessage((p) => this.onCoqMessage(p));
     this.langServer.onReset((p) => { if (p.uri == this.documentUri) this.onCoqReset(); });
     this.langServer.onUpdateCoqStmFocus((p) => { if (p.uri == this.documentUri) this.updateFocus(p.focus) });
-    this.langServer.onUpdateComputingStatus((p) => { if (p.uri == this.documentUri) this.onUpdateComputingStatus(p); });
+    // this.langServer.onUpdateComputingStatus((p) => { if (p.uri == this.documentUri) this.onUpdateComputingStatus(p); });
     this.langServer.onLtacProfResults((p) => { if (p.uri == this.documentUri) this.onLtacProfResults(p); });
 
     context.subscriptions.push(this.langServer.start());
@@ -113,9 +113,9 @@ export class CoqDocument implements vscode.Disposable {
   }
   
   
-  private onUpdateComputingStatus(params: proto.NotifyComputingStatusParams) {
-    this.statusBar.setStateComputing(params.status);
-  }
+  // private onUpdateComputingStatus(params: proto.NotifyComputingStatusParams) {
+  //   this.statusBar.setStateComputing(params.status);
+  // }
   
   private onCoqMessage(params: proto.NotifyMessageParams) {
     switch(params.level) {
@@ -228,7 +228,11 @@ export class CoqDocument implements vscode.Disposable {
       this.rememberCursors();
       const value = await this.langServer.stepForward(this.documentUri);
       this.view.update(value);
-      if(value.type !== 'not-running')
+      if(value.type === 'busy')
+        return;
+      if(value.type === 'not-running')
+        this.updateFocus(undefined, false);
+      else
         this.updateFocus(value.focus, true);
       if(value.type === 'interrupted')
         this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
@@ -243,7 +247,11 @@ export class CoqDocument implements vscode.Disposable {
       this.rememberCursors();
       const value = await this.langServer.stepBackward(this.documentUri);
       this.view.update(value);
-      if(value.type !== 'not-running')
+      if(value.type === 'busy')
+        return;
+      if(value.type === 'not-running')
+        this.updateFocus(undefined, false);
+      else
         this.updateFocus(value.focus, true)
       if(value.type === 'interrupted')
         this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
@@ -260,7 +268,11 @@ export class CoqDocument implements vscode.Disposable {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
       const value = await this.langServer.interpretToPoint(this.documentUri, editor.document.offsetAt(editor.selection.active));
-      if(value.type !== 'not-running')
+      if(value.type === 'busy')
+        return;
+      if(value.type === 'not-running')
+        this.updateFocus(undefined, false);
+      else
         this.updateFocus(value.focus);
       if(value.type === 'interrupted')
         this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
@@ -276,7 +288,11 @@ export class CoqDocument implements vscode.Disposable {
     try {
       const params = { uri: this.documentUri };
       const value = await this.langServer.interpretToEnd(this.documentUri);
-      if(value.type !== 'not-running')
+      if(value.type === 'busy')
+        return;
+      if(value.type === 'not-running')
+        this.updateFocus(undefined, false);
+      else
         this.updateFocus(value.focus,true);
       if(value.type === 'interrupted')
         this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)

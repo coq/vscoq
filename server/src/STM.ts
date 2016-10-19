@@ -33,7 +33,7 @@ export interface StateMachineCallbacks {
 export type CommandIterator = (begin: Position, end?: Position) => Iterable<{text: string, range: Range}>;
 
 export type GoalErrorResult = proto.NotRunningResult | proto.FailureResult | proto.InterruptedResult
-export type GoalResult = proto.NoProofResult | proto.NotRunningResult |
+export type GoalResult = proto.NoProofResult | proto.NotRunningResult | proto.BusyResult |
   proto.FailureResult |
   proto.ProofViewResult |
   proto.InterruptedResult
@@ -51,6 +51,12 @@ class AddCommandFailure implements proto.FailValue {
     public sentence: vscode.Range)
   {} 
 }
+
+class CommandIsBusy {
+
+}
+
+enum STMStatus { Ready, Busy, Interrupting, Shutdown }
 
 /**
  * Manages the parts of the proof script that have been interpreted and processed by coqtop
@@ -77,11 +83,11 @@ export class CoqStateMachine {
   // feedback may arrive before a sentence is assigned a stateId; buffer feedback messages for later
   private bufferedFeedback: BufferedFeedback[] = [];
   private documentVersion: number;
-  private running = true;
   // When it is not prudent to interrupt Coq, e.g. cancelling a sentence:
   private disableInterrupt = false;
   /** The error from the most recent Coq command (`null` if none) */
-  private currentError : proto.FailValue = null; 
+  private currentError : proto.FailValue = null;
+  private status = STMStatus.Ready;  
 
   constructor(private settings: proto.CoqTopSettings
     , private scriptFile: string
@@ -102,9 +108,9 @@ export class CoqStateMachine {
   }
 
   public dispose() {
-    if(this.running)
+    if(this.status === STMStatus.Shutdown)
       this.console.warn("The STM manager is being disposed before being shut down");
-    this.running = false;
+    this.status = STMStatus.Shutdown;
     this.sentences = undefined;
     this.bufferedFeedback = undefined;
     this.console = undefined;
@@ -115,25 +121,36 @@ export class CoqStateMachine {
   }
 
   public async shutdown() {
-    if(!this.running)
+    if(this.isShutdown())
       return;
+    this.status = STMStatus.Shutdown;
     await this.coqtop.coqQuit();
     this.dispose();
   }
 
+  /**
+   * 
+  */
   public async interrupt() : Promise<void> {
+    if(!this.isBusy() || this.isShutdown())
+      return;
+    else
+      this.status = STMStatus.Interrupting;
     try {
       await this.coqtop.coqInterrupt();
     } catch(err) {
       // this will fail on user interrupt
       this.console.error('Exception thrown while interrupting Coq: ' + err.toString());
+    } finally {
+      // The command being interrupted should update this.status
+      // If not, then it is probably best to kill coqtop via this.shutdown()
+      // this.status = STMStatus.Ready
     }
   }
 
   public isRunning() {
-    return this.running;
+    return this.status !== STMStatus.Shutdown;
   }
-
 
   /**
    * @returns the document position that Coqtop considers "focused"; use this to update the cursor position or
@@ -145,46 +162,13 @@ export class CoqStateMachine {
     return this.focusedSentence.getRange().end;
   }
 
-  /**
-   * Adds the next command
-   * @param verbose - generate feedback messages with more info
-   * @throw proto.FailValue if advancing failed
-   */
-  public async stepForward(commandSequence: CommandIterator, verbose: boolean = false) : Promise<(proto.FailureResult & proto.FocusPosition)|null>  {
-    await this.validateState(true);
-    const currentFocus = this.getFocusedPosition();
-    try {
-    // Advance one statement: the one that starts at the current focus
-    await this.iterateAdvanceFocus(
-      { iterateCondition: (command,contiguousFocus) => textUtil.positionIsEqual(command.range.start, currentFocus)
-      , commandSequence: commandSequence
-      , verbose: verbose
-      });
-    } catch (error) {
-      if(error instanceof AddCommandFailure)
-        return Object.assign(Object.assign(error, <proto.FailureTag>{type: 'failure'}), <proto.FocusPosition>{focus: this.getFocusedPosition()});
-      else
-        throw error;
-    }
-  }
-
-  /**
-   * Steps back from the currently focused sentence
-   * @param verbose - generate feedback messages with more info
-   * @throw proto.FailValue if advancing failed
-   */
-  public async stepBackward() : Promise<void>  {
-    await this.validateState(false);
-    await this.cancelSentence(this.focusedSentence);
-  }
-
 
   /** Adjust sentence ranges and cancel any sentences that are invalidated by the edit
    * @param isInvalidated: a function to determine whether an intersecting change is passive (i.e. changes the meaning of a sentence); returns true if the change invalidates the sentence.
    * @returns `true` if no sentences were cancelled
   */
   public async applyChanges(changes: TextDocumentContentChangeEvent[], newVersion: number) : Promise<boolean> {
-    if(!this.running || changes.length == 0 || this.root === null)
+    if(!this.isRunning() || changes.length == 0 || this.root === null)
       return true;
 
     // sort the edits such that later edits are processed first
@@ -215,6 +199,8 @@ export class CoqStateMachine {
         // apply the changes
         const preserved = sent.applyTextChanges(sortedChanges,deltas);
         if(!preserved) {
+          if(this.status === STMStatus.Busy)
+            await this.interrupt();
 // this.console.log("cancelling: " + createDebuggingSentence(sent));
           cancellations.push(this.cancelSentence(sent));
         }
@@ -232,6 +218,52 @@ export class CoqStateMachine {
     // this.logDebuggingSentences(this.debuggingGetSentences())
 
   }
+
+
+  /**
+   * Adds the next command
+   * @param verbose - generate feedback messages with more info
+   * @throw proto.FailValue if advancing failed
+   */
+  public async stepForward(commandSequence: CommandIterator, verbose: boolean = false) : Promise<(proto.FailureResult & proto.FocusPosition)|null>  {
+    if(!this.startCommand())
+      return null;
+    try {
+      await this.validateState(true);
+      const currentFocus = this.getFocusedPosition();
+      // Advance one statement: the one that starts at the current focus
+      await this.iterateAdvanceFocus(
+        { iterateCondition: (command,contiguousFocus) => textUtil.positionIsEqual(command.range.start, currentFocus)
+        , commandSequence: commandSequence
+        , verbose: verbose
+        });
+      return null;
+    } catch (error) {
+      if(error instanceof AddCommandFailure)
+        return Object.assign(Object.assign(error, <proto.FailureTag>{type: 'failure'}), <proto.FocusPosition>{focus: this.getFocusedPosition()});
+      else
+        throw error;
+    } finally {
+      this.endCommand();
+    }
+  }
+
+  /**
+   * Steps back from the currently focused sentence
+   * @param verbose - generate feedback messages with more info
+   * @throw proto.FailValue if advancing failed
+   */
+  public async stepBackward() : Promise<void>  {
+    if(!this.startCommand())
+      return;
+    try {
+      await this.validateState(false);
+      await this.cancelSentence(this.focusedSentence);
+    } finally {
+      this.endCommand();
+    }
+  }
+
 
   private convertCoqTopError(err) : GoalErrorResult {
     if(err instanceof coqtop.Interrupted)
@@ -255,18 +287,21 @@ export class CoqStateMachine {
   public async getGoal() : Promise<GoalResult> {
     if(!this.isCoqReady())
       return {type: 'not-running'}
+    else if(!this.startCommand())
+      return {type: 'busy'};
     try {
       const result = await this.coqtop.coqGoal();
       return this.convertGoals(result);
     } catch(error) {
-      this.console.log("getGoal error: " + util.inspect(error,false,undefined));
+      // this.console.log("getGoal error: " + util.inspect(error,false,undefined));
       if(error instanceof coqtop.CallFailure) {
-      this.console.log("is coqtop.CallFailure");
         const sent = this.focusedSentence;
         const failure = await this.handleCallFailure(error, {range: sent.getRange(), text: sent.getText() });
         return Object.assign(failure, <proto.FailureTag>{type: 'failure'})
       } else
         return this.convertCoqTopError(error)
+    } finally {
+      this.endCommand();
     }
   }
 
@@ -276,8 +311,10 @@ export class CoqStateMachine {
    * @throw proto.FailValue if advancing failed
    */
   public async interpretToPoint(position: Position, commandSequence: CommandIterator, token: CancellationToken) : Promise<(proto.FailureResult & proto.FocusPosition)|null> {
-    await this.validateState(true);
+    if(!this.startCommand())
+      return null;
     try {
+      await this.validateState(true);
       // Advance the focus until we reach or exceed the location
       await this.iterateAdvanceFocus(
         { iterateCondition: (command,contiguousFocus) =>
@@ -293,39 +330,56 @@ export class CoqStateMachine {
         // We exceeded the desired position
         await this.focusSentence(this.getParentSentence(position));
       }
+
+      return null;
     } catch (error) {
       if(error instanceof AddCommandFailure)
         return Object.assign(Object.assign(error, <proto.FailureTag>{type: 'failure'}), <proto.FocusPosition>{focus: this.getFocusedPosition()});
       else
         throw error;
+    } finally {
+      this.endCommand();
     }
   }
 
   public async doQuery(query: string, position?: Position) : Promise<string> {
-    if(!this.isCoqReady())
+    if(!this.isCoqReady() || !this.startCommand())
       return "";
-    let state: StateId = undefined;
-    if(position)
-      state = this.getParentSentence(position).getStateId();
-    return await this.coqtop.coqQuery(query, state)
+    try {
+      let state: StateId = undefined;
+      if(position)
+        state = this.getParentSentence(position).getStateId();
+      return await this.coqtop.coqQuery(query, state)
+    } finally {
+      this.endCommand();
+    }
   }
 
   public async setWrappingWidth(columns: number) : Promise<void> {
-    if(this.isCoqReady())
+    if(!this.isCoqReady() || !this.startCommand())
+      return;
+    try {
       this.coqtop.coqResizeWindow(columns);
+    } catch(error) {
+      this.endCommand();
+    }
   }
 
   public async requestLtacProfResults(position?: Position) : Promise<void> {
-    if(!this.isCoqReady())
+    if(!this.isCoqReady() || !this.startCommand())
       return;
-    if(position !== undefined) {
-      const sent = this.getSentence(position);
-      if(sent) {
-        await this.coqtop.coqLtacProfilingResults(sent.getStateId());
-        return;
+    try {
+      if(position !== undefined) {
+        const sent = this.getSentence(position);
+        if(sent) {
+          await this.coqtop.coqLtacProfilingResults(sent.getStateId());
+          return;
+        }
       }
+      await this.coqtop.coqLtacProfilingResults();
+    } finally {
+      this.endCommand();
     }
-    await this.coqtop.coqLtacProfilingResults();
   }
   //     ltacProfResults: (offset?: number) => this.enqueueCoqOperation(async () => {
   //       if(offset) {
@@ -337,14 +391,14 @@ export class CoqStateMachine {
   
 
   public *getSentences() : Iterable<{range: Range, status: SentenceState}> {
-    if(!this.running || this.root===null)
+    if(!this.isRunning() || this.root===null)
       return;
     for(let sent of this.root.descendants())
       yield { range: sent.getRange(), status: sent.getState()}
   }
 
   public *getSentenceErrors() : Iterable<SentenceError> {
-    if(!this.running || this.root===null)
+    if(!this.isRunning() || this.root===null)
       return;
     for(let sent of this.root.descendants()) {
       if(sent.getError())
@@ -353,7 +407,7 @@ export class CoqStateMachine {
   }
 
   public *getErrors() : Iterable<SentenceError> {
-    if(!this.running || this.root===null)
+    if(!this.isRunning() || this.root===null)
       return;
     yield *this.getSentenceErrors();
     if(this.currentError !== null)
@@ -381,7 +435,7 @@ export class CoqStateMachine {
   private initialize(rootStateId: StateId) {
     if(this.root != null)
       throw "STM is already initialized."
-    if(!this.running)
+    if(!this.isRunning())
       throw "Cannot reinitialize the STM once it has died; create a new one."
     this.root = Sentence.newRoot(rootStateId);
     this.sentences = new Map<StateId,Sentence>([ [this.root.getStateId(),this.root] ]);
@@ -394,7 +448,7 @@ export class CoqStateMachine {
    * @returns true if it is safe to communicate with coq
   */
   private isCoqReady() : boolean {
-    return this.running && this.coqtop.isRunning();
+    return this.isRunning() && this.coqtop.isRunning();
   }
 
   /** Assert that we are in a "running"" state
@@ -402,9 +456,9 @@ export class CoqStateMachine {
    * @returns true if it is safe to communicate with coq
   */
   private async validateState(initialize: boolean) : Promise<boolean> {
-    if(!this.running && initialize)
+    if(!this.isRunning() && initialize)
       throw "Cannot perform operation: coq STM manager has been shut down."
-    else if(!this.running)
+    else if(!this.isRunning())
       return false;
     else if(this.coqtop.isRunning())
       return true;
@@ -512,10 +566,10 @@ export class CoqStateMachine {
           textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.start)
         , textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.stop)
         );
-      this.console.log("call failure: " + `${error.range.start}-${error.range.stop}=` + textUtil.rangeToString(errorRange) + " of " + textUtil.rangeToString(command.range) + " (" + command.text + ")");
+      // this.console.log("call failure: " + `${error.range.start}-${error.range.stop}=` + textUtil.rangeToString(errorRange) + " of " + textUtil.rangeToString(command.range) + " (" + command.text + ")");
       this.currentError = {message: error.message, range: errorRange, sentence: command.range}
     } else {
-      this.console.log("call failure: " + textUtil.rangeToString(command.range) + " (" + command.text + ")");
+      // this.console.log("call failure: " + textUtil.rangeToString(command.range) + " (" + command.text + ")");
     }
 
     this.currentError = {message: error.message, range: errorRange, sentence: command.range}
@@ -682,8 +736,8 @@ export class CoqStateMachine {
   private onCoqStateError(stateId: number, route: number, message: string, location?: coqProto.Location) {
     const sent = this.sentences.get(stateId);
     if(sent) {
-      if(location)
-        this.console.log(`CoqStateError: ${location.start}-${location.stop}`);
+      // if(location)
+      //   this.console.log(`CoqStateError: ${location.start}-${location.stop}`);
       sent.setError(message, location);
       this.callbacks.error(sent.getRange(), sent.getError().range, message);
     } else {
@@ -726,11 +780,34 @@ export class CoqStateMachine {
  
   /** recieved from coqtop controller */
   private async onCoqClosed(error?: string) {
-    if(!error || !this.running)
+    if(!error || !this.isRunning())
       return;
     this.console.log(`onCoqClosed(${error})`);
     this.dispose();
     this.callbacks.coqDied(error);
+  }
+
+  private startCommand() {
+    if(this.isBusy())
+      return false
+    this.status = STMStatus.Busy;
+    return true;
+  }
+
+  private endCommand() {
+    this.status = STMStatus.Ready;
+  }
+
+  private isBusy() {
+    return this.status === STMStatus.Busy || this.status === STMStatus.Interrupting
+  }
+
+  private isShutdown() {
+    return this.status === STMStatus.Shutdown
+  }
+
+  private isInterrupting() {
+    return this.status === STMStatus.Interrupting
   }
 
   private debuggingGetSentences(params?: {begin?: Sentence|string, end?: Sentence|string}) {

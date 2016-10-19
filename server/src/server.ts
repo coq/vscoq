@@ -45,6 +45,13 @@ connection.onInitialize((params): InitializeResult => {
   // connection.console.log('coq path: ' + currentSettings.coqPath);
 	workspaceRoot = params.rootPath;
   
+  // let x: vscodeLangServer.RemoteConsole = {
+  //   log: (x) => {},
+  //   error: (x) => {},
+  //   warn: (x) => {},
+  //   info: (x) => {}
+  // }
+  // project = new CoqProject(params.rootPath, x);
   project = new CoqProject(params.rootPath, connection.console);
   
   // var x : ServerCapabilities;
@@ -202,9 +209,6 @@ connection.onRequest(coqproto.LtacProfResultsRequest.type, (params: coqproto.Coq
 
 
 function sendHighlightUpdates(documentUri: string, highlights: coqproto.Highlights) {
-  // for(let h of highlights) {
-  //   connection.console.log(`highlighting ${rangeToString(h.range)} as ${coqproto.HighlightType[h.style]}`);
-  // }
   connection.sendNotification(coqproto.UpdateHighlightsNotification.type,
     Object.assign(highlights, {uri: documentUri}));
 }
@@ -245,8 +249,6 @@ connection.onDidOpenTextDocument((params) => {
       connection.sendNotification(coqproto.CoqResetNotification.type, {uri: uri}),
     sendStmFocus: (focus: Position) =>
       connection.sendNotification(coqproto.CoqStmFocusNotification.type, {uri: uri, focus: focus}),
-    sendComputingStatus : (status: coqproto.ComputingStatus, computeTimeMS: number) =>
-      connection.sendNotification(coqproto.CoqComputingStatusNotification.type, {uri: uri, status: status, computeTimeMS: computeTimeMS}),      
     sendLtacProfResults: (results: coqproto.LtacProfResults) =>
       connection.sendNotification(coqproto.CoqLtacProfResultsNotification.type, {uri: uri, results: results}),
   });

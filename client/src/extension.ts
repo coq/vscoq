@@ -66,11 +66,18 @@ export function activate(context: ExtensionContext) {
 //   
 // }
 
-function withDoc<T>(editor: TextEditor, callback: (doc: CoqDocument) => T) : void {
+// function withDoc<T>(editor: TextEditor, callback: (doc: CoqDocument) => T) : void {
+//   const doc = documents.get(editor.document.uri.toString());
+//   if(doc)
+//     callback(doc);
+// }
+
+async function withDocAsync<T>(editor: TextEditor, callback: (doc: CoqDocument) => Promise<T>) : Promise<void> {
   const doc = documents.get(editor.document.uri.toString());
   if(doc)
-    callback(doc);
+    await callback(doc);
 }
+
 
 async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {
   let placeHolder = editor.document.getText(editor.selection);
@@ -92,122 +99,122 @@ async function queryStringFromPosition(prompt: string, editor: TextEditor) {
     return query;
 }
 
-async function queryCheck(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.check(await queryStringFromPlaceholder("Check:", editor))
+function queryCheck(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.check(await queryStringFromPlaceholder("Check:", editor))
   )
 }
 
-async function queryLocate(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.locate(await queryStringFromPlaceholder("Locate:", editor))
+function queryLocate(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.locate(await queryStringFromPlaceholder("Locate:", editor))
   )
 }
 
-async function querySearch(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.search(await queryStringFromPlaceholder("Search:", editor))
+function querySearch(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.search(await queryStringFromPlaceholder("Search:", editor))
   )
 }
 
-async function querySearchAbout(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.searchAbout(await queryStringFromPlaceholder("Search About:", editor))
+function querySearchAbout(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.searchAbout(await queryStringFromPlaceholder("Search About:", editor))
   )
 }
 
-async function queryPrint(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.print(await queryStringFromPlaceholder("Print:", editor))
+function queryPrint(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.print(await queryStringFromPlaceholder("Print:", editor))
   )
 }
 
-async function check(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.check(await queryStringFromPosition("Check:", editor))
+function check(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.check(await queryStringFromPosition("Check:", editor))
   )
 }
 
-async function locate(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.locate(await queryStringFromPosition("Locate:", editor))
+function locate(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.locate(await queryStringFromPosition("Locate:", editor))
   )
 }
 
-async function search(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.search(await queryStringFromPosition("Search:", editor))
+function search(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.search(await queryStringFromPosition("Search:", editor))
   )
 }
 
-async function searchAbout(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.searchAbout(await queryStringFromPosition("Search About:", editor))
+function searchAbout(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.searchAbout(await queryStringFromPosition("Search About:", editor))
   )
 }
 
-async function print(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.print(await queryStringFromPosition("Search About:", editor))
+function print(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.print(await queryStringFromPosition("Search About:", editor))
   )
 }
 
-async function quitCoq(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
-    await doc.quitCoq(editor)
+function quitCoq(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.quitCoq(editor)
   )
 }
 
 function resetCoq(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
+  return withDocAsync(editor, async (doc) =>
     doc.resetCoq(editor)
   )
 }
 
 function interruptCoq(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
+  return withDocAsync(editor, async (doc) =>
     doc.interruptCoq()
   )
 }
 
 function stepForward(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
+  return withDocAsync(editor, async (doc) =>
     doc.stepForward(editor)
   )
 }
 
 function stepBackward(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
+  return withDocAsync(editor, async (doc) =>
     doc.stepBackward(editor)
   )
 }
 
 function interpretToPoint(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
+  return withDocAsync(editor, async (doc) =>
     doc.interpretToCursorPosition(editor)
   )
 }
 
 function interpretToEnd(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, (doc) =>
+  return withDocAsync(editor, async (doc) =>
     doc.interpretToEnd(editor)
   )
 }
 
 function viewGoalState(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
+  return withDocAsync(editor, async (doc) =>
     doc.viewGoalState(editor,false)
   )
 }
 
 function viewGoalStateExternal(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
+  return withDocAsync(editor, async (doc) =>
     doc.viewGoalState(editor,true)
   )
 }
 
 function ltacProfGetResults(editor: TextEditor, edit: TextEditorEdit) {
-  withDoc(editor, async (doc) =>
+  return withDocAsync(editor, async (doc) =>
     doc.ltacProfGetResults(editor)
   )
 }
