@@ -1,4 +1,4 @@
-import {Position, Diagnostic} from 'vscode-languageserver';
+import {Range, Position, Diagnostic} from 'vscode-languageserver';
 import {Highlights} from './protocol';
 
 export interface DocumentFeedbackCallbacks {
@@ -26,7 +26,7 @@ export class FeedbackSync {
     if(this.diagnostics)
       this.callbacks.sendDiagnostics(this.diagnostics());
     if(this.highlights)
-      this.callbacks.sendHighlightUpdates(this.highlights());    
+      this.callbacks.sendHighlightUpdates(this.highlights());
     this.focus = null;
     this.diagnostics = null;
     this.highlights = null;

@@ -64,6 +64,8 @@ export class CoqDocument implements TextDocument {
   private cancelProcessing = new CancellationSignal();
   private coqtopSettings : thmProto.CoqTopSettings;
   private feedback : FeedbackSync;
+
+  private parsingRanges : Range[] = [];
   // private interactionCommands = new AsyncWorkQueue();
   // private interactionLoopStatus = InteractionLoopStatus.Idle;
   // we'll use this as a callback, so protect it with an arrow function so it gets the correct "this" pointer
@@ -215,7 +217,7 @@ export class CoqDocument implements TextDocument {
       }
       ++count1;
     }
-    this.clientConsole.log(`Highlights: ${count1} sentences --> ${count2} ranges`)
+    // this.clientConsole.log(`Highlights: ${count1} sentences --> ${count2} ranges`)
     return highlights;
   }
 
@@ -241,10 +243,11 @@ export class CoqDocument implements TextDocument {
     // this.updateHighlights();
   }
 
-  private updateHighlights(parsing: Range[] = [], now = false) {
+  private updateHighlights(now = false) {
     this.feedback.updateHighlights(() => {
       const highlights = this.createHighlights();
-      highlights.ranges[thmProto.HighlightType.Parsing].concat(parsing);
+      const parsingRanges = highlights.ranges[thmProto.HighlightType.Parsing];
+      Array.prototype.push.apply(parsingRanges, this.parsingRanges);
       return highlights;
     }, now);
   }
@@ -316,8 +319,6 @@ export class CoqDocument implements TextDocument {
     if(currentOffset >= endOffset)
       return;
 
-    const parsingRanges : Range[] = [];
-
     while(true) {
       const commandLength = coqParser.parseSentence(this.documentText.substr(currentOffset, endOffset))
       const nextOffset = currentOffset + commandLength;
@@ -329,8 +330,9 @@ export class CoqDocument implements TextDocument {
         yield result;
         // only highlight if the command was accepted (i.e. another is going to be request; i.e. after yield)
         if (highlight) {// Preliminary "parsing" highlight
-          parsingRanges.push(result.range);
-          this.updateHighlights(parsingRanges);
+          this.parsingRanges.push(result.range);
+
+          this.updateHighlights();
         }
       } else
         return;
@@ -339,7 +341,7 @@ export class CoqDocument implements TextDocument {
   }
 
   private commandSequence(highlight=false) {
-    return (begin,end?) => this.commandSequenceGenerator(begin,end);
+    return (begin,end?) => this.commandSequenceGenerator(begin,end,highlight);
   }
 
   // /**
@@ -801,12 +803,14 @@ export class CoqDocument implements TextDocument {
     //     { style: thmProto.HighlightType.Parsing, textBegin: startOffset, textEnd: stopPos }
     //     ];
     //   this.callbacks.sendHighlightUpdates(parsingHighlights);
+      this.parsingRanges = [];
       const error = await this.stm.stepForward(this.commandSequence(true));
       if(error)
         return error
       return this.toGoal(await this.stm.getGoal());
     } finally {
-      this.updateHighlights(undefined,true);      
+      this.parsingRanges = [];
+      this.updateHighlights(true);      
       this.updateDiagnostics(true);
     }
   }
@@ -817,7 +821,7 @@ export class CoqDocument implements TextDocument {
     await this.stm.stepBackward();
     return this.toGoal(await this.stm.getGoal());
     } finally {
-      this.updateHighlights(undefined,true);      
+      this.updateHighlights(true);      
       this.updateDiagnostics(true);
     }
   }
@@ -827,29 +831,22 @@ export class CoqDocument implements TextDocument {
     try {
       const pos = this.positionAt(offset);
 
-      this.updateHighlights([Range.create(this.stm.getFocusedPosition(),pos)],true);
+      this.parsingRanges = [Range.create(this.stm.getFocusedPosition(),pos)];
+      this.updateHighlights(true);
       const error = await this.stm.interpretToPoint(pos,this.commandSequence(false), token);
       if(error)
         return error;
       return this.toGoal(await this.stm.getGoal());
     } finally {
-      this.updateHighlights(undefined,true);      
+      this.parsingRanges = [];
+      this.updateHighlights(true);      
       this.updateDiagnostics(true);
     }
 
   }
 
   public async interpretToEnd(token: CancellationToken) : Promise<thmProto.CommandResult> {
-    this.assertStm();
-    try {
-      const error = await this.interpretToPoint(this.documentText.length,token);
-      if(error)
-        return error;
-      return this.toGoal(await this.stm.getGoal());
-    } finally {
-      this.updateHighlights(undefined,true);
-      this.updateDiagnostics(true);
-    }
+    return await this.interpretToPoint(this.documentText.length,token);
   }
 
   public async getGoal() : Promise<thmProto.CommandResult> {
