@@ -1,6 +1,95 @@
 'use strict';
+// import * as peg from 'pegjs'
+import * as util from 'util'
 import * as textUtil from './text-util'
 import {Range, Position} from 'vscode-languageserver'
+import * as server from './server'
+// const peg = require("pegjs")
+import * as peg from 'pegjs'
+
+
+const sentenceParser = peg.generate(`
+FirstSentence
+  = Sentence { throw text().length; } / "" {return error("Not a sentence")}
+
+Sentence "sentence"
+  = (_ (Bullet / (Command _ "." EndOfSentence)))
+
+EndOfSentence
+  = &Blank / !.
+
+Command
+  = (_ (LBr _ CommandP _ RBr / LBs _ CommandP _ RBs / String / CommandText))*
+/* Once we're nested, commands may have periods */
+CommandP
+  = (_ (LBr _ CommandP _ RBr / LBs _ CommandP _ RBs / String / CommandTextP))*
+
+CommandText
+  = ([^()[\\]." \\t\\n\\r] / ("." !EndOfSentence))+
+CommandTextP
+  = [^()[\\]" \\t\\n\\r]+
+
+String "string"
+  = ["] ([^"] / "\\"\\"")* ["]
+
+Bullet "bullet"
+  = ( "*"+ / "+"+ / "-"+ / "{" / "}" )
+
+_ "whitespace"
+  = Blank* (Comment _)?
+
+Blank "blank"
+  = [ \\t\\n\\r]
+
+LBr = [(] ![*]
+RBr = [)]
+LBs = [[]
+RBs = [\\]]
+LBc = "(*"
+RBc = "*)"
+
+Comment "comment"
+  = LBc CommentText RBc
+
+CommentText "commentText"
+  = (String / Comment / ([^"*(] / ("(" !"*") / ("*" !")"))+ )*
+`,{output: "parser"});
+
+export function parseSentence(str: string) : number {
+  try {
+    sentenceParser.parse(str, {startRule: "FirstSentence", tracer: undefined}) as string;
+    return -1;
+  } catch(error) {
+    if(typeof error === 'number')
+      return error;
+    else
+      return -1;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // const skipSentenceRE = /^(?:[^.("]|[.][^\s(]|[.][^\s]\([^*]|\([^*])*([.]|\(\*|")/;
 // const skipSentenceRE = /^(?:[^.("]|[.][^\s]|\([^*])*([.]|\(\*|")/;
 
@@ -8,9 +97,9 @@ import {Range, Position} from 'vscode-languageserver'
 // comment: ([^()]|\([^*])*(\(\*)
 // string: ([^"])*"
 // bullet: \s*[*]
-// match up to 1) the first period (followed by but not including white whitespace), 2) the start of a comment or quote, 3) a bullet or 4) the end of the string.
-const skipSentenceOrBulletRE = /^(?:\s*)(?:([*\-+{}])|((?:[^.("]|[.](?!\s)|\((?!\*))*)([.]|\(\*|"|$))/;
-const skipSentenceRE = /^(?:[^.("]|[.](?!\s)|\((?!\*))*([.]|\(\*|"|$)/
+// match up to 1) the first period (followed by but not including whitespace), 2) the start of a bracket ( or [, 3) the start of a comment or quote, 4) a bullet or 5) the end of the string.
+const skipSentenceOrBulletRE = /^(?:\s*)(?:([*\-+{}])|((?:[^.(["]|[.](?!\s))*)([.[(]|\(\*|"|$))/;
+const skipSentenceRE = /^(?:[^.(["]|[.](?!\s))*([.[(]|\(\*|"|$)/
 // match up to the end of a quote
 const skipStringRE = /^[^"]*("|$)/;
 // match up to 1) the end of a comment or 2) the beginning of a (nested) comment
@@ -57,54 +146,67 @@ function doSkipComment(str:string, idx:number) : SentenceSkip {
 function doSkipString(str:string, idx:number) : SentenceSkip {
   return doSimpleSkip(str,idx,skipStringRE);
 }
-  
+
+function doSkipSubexpr() {
+
+}
+
 /**
  * @returns the length of the parsed command or -1 if there is no [full] command
+ * 
+ * S::= BULLET  |  COMMENT S  |  P .
+ * P::= ( P )  |  [ P ]  |  " P "  | TEXT P
+ * COMMENT::= (* CSTUFF *) 
+ * CSTUFF::= TEXT (* CSTUFF *) |
+ * 
  */
-export function parseSentence(str: string) : number {
-  // Assume we are starting outside of a comment or parentheses
-  // match everything up to a period or beginning of a comment or string
-  let idx = 0;
-  let allowBullet = true; // whether a bullet may be expected (becomes false after the first non-whitespace)
+// export function parseSentence(str: string) : number {
+//   // Assume we are starting outside of a comment or parentheses
+//   // match everything up to a period or beginning of a comment or string
+//   let idx = 0;
+//   let allowBullet = true; // whether a bullet may be expected (becomes false after the first non-whitespace)
   
-  while(true) {
-    const skipSen = doSkipSentence(str,idx,allowBullet);
-    idx+= skipSen.skip;
+//   while(true) {
+//     const skipSen = doSkipSentence(str,idx,allowBullet);
+//     idx+= skipSen.skip;
 
-    if(allowBullet && skipSen.bullet!=undefined)
-      break;
-    else if (allowBullet && !skipSen.isPreWhitespace)
-      allowBullet = false; // Some non-whitespace has appeared so we are no longer looking for  bullets
-    else if(!allowBullet && skipSen.bullet!=undefined)
-      continue; // saw a bullet, but we are only looking for periods -- move on
+//     if(allowBullet && skipSen.bullet!=undefined)
+//       break;
+//     else if (allowBullet && !skipSen.isPreWhitespace)
+//       allowBullet = false; // Some non-whitespace has appeared so we are no longer looking for bullets
+//     else if(!allowBullet && skipSen.bullet!=undefined)
+//       continue; // saw a bullet, but we are only looking for periods -- move on
     
       
-    if(skipSen.terminator === '.')
-      break; // we found the end of the sentence
-    else if(skipSen.terminator === '(*') {
-      // skip through [nested] comments
-      let nesting = 1;
-      while(nesting > 0) {
-        const skipCom = doSkipComment(str,idx);
-        idx+= skipCom.skip;
-        if(skipCom.terminator === '*)')
-          --nesting; // leaving a comment
-        else if(skipCom.terminator === '(*')
-          ++nesting; // need to recurse
-        else
-          throw "bad regex";
-      }
-    }
-    else if(skipSen.terminator === '"') {
-      // skip through string
-      idx+= doSkipString(str,idx).skip;
-    }
-    else if(skipSen.terminator === "") {
-      return -1; // end of string
-    }
-  }
-  return idx;
-}
+//     if(skipSen.terminator === '.')
+//       break; // we found the end of the sentence
+//     else if (skipSen.terminator === '(') {
+//     } else if (skipSen.terminator === '[') {
+      
+//     } else if(skipSen.terminator === '(*') {
+//       // skip through [nested] comments
+//       let nesting = 1;
+//       while(nesting > 0) {
+//         const skipCom = doSkipComment(str,idx);
+//         idx+= skipCom.skip;
+//         if(skipCom.terminator === '*)')
+//           --nesting; // leaving a comment
+//         else if(skipCom.terminator === '(*')
+//           ++nesting; // need to recurse
+//         else
+//           throw "bad regex";
+//       }
+//     }
+//     else if(skipSen.terminator === '"') {
+//       // skip through string
+//       idx+= doSkipString(str,idx).skip;
+//     }
+//     else if(skipSen.terminator === "") {
+//       return -1; // end of string
+//     }
+//   }
+//   return idx;
+// }
 
 // function isPassiveWhitespaceEdit(documentText: string, beginOffset: number, endOffset: number, changeText: string) : boolean {
 //   const surroundingWS =
