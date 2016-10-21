@@ -81,6 +81,7 @@
     "keybindings": [
         {"command": "extension.coq.reset", "key": "Ctrl+Alt+Home", "when": "editorTextFocus && editorLangId == coq"},
         {"command": "extension.coq.interrupt", "key": "Ctrl+Alt+`", "when": "editorTextFocus && editorLangId == coq"},
+        {"command": "extension.coq.interrupt", "key": "Ctrl+Alt+Break", "when": "editorTextFocus && editorLangId == coq"},
         {"command": "extension.coq.stepForward", "key": "Ctrl+Alt+Down", "when": "editorTextFocus && editorLangId == coq"},
         {"command": "extension.coq.stepBackward", "key": "Ctrl+Alt+Up", "when": "editorTextFocus && editorLangId == coq"},
         {"command": "extension.coq.interpretToPoint", "key": "Ctrl+Alt+Right", "when": "editorTextFocus && editorLangId == coq"},
