@@ -4,9 +4,7 @@ import * as util from 'util'
 import * as textUtil from './text-util'
 import {Range, Position} from 'vscode-languageserver'
 import * as server from './server'
-// const peg = require("pegjs")
 import * as peg from 'pegjs'
-
 
 const sentenceParser = peg.generate(`
 FirstSentence
@@ -98,8 +96,8 @@ export function parseSentence(str: string) : number {
 // string: ([^"])*"
 // bullet: \s*[*]
 // match up to 1) the first period (followed by but not including whitespace), 2) the start of a bracket ( or [, 3) the start of a comment or quote, 4) a bullet or 5) the end of the string.
-const skipSentenceOrBulletRE = /^(?:\s*)(?:([*\-+{}])|((?:[^.(["]|[.](?!\s))*)([.[(]|\(\*|"|$))/;
-const skipSentenceRE = /^(?:[^.(["]|[.](?!\s))*([.[(]|\(\*|"|$)/
+// const skipSentenceOrBulletRE = /^(?:\s*)(?:([*\-+{}])|((?:[^.(["]|[.](?!\s))*)([.[(]|\(\*|"|$))/;
+// const skipSentenceRE = /^(?:[^.(["]|[.](?!\s))*([.[(]|\(\*|"|$)/
 // match up to the end of a quote
 const skipStringRE = /^[^"]*("|$)/;
 // match up to 1) the end of a comment or 2) the beginning of a (nested) comment
@@ -123,33 +121,30 @@ function doSimpleSkip(str:string, idx:number, re: RegExp) : SentenceSkip {
   };
 }
 
-function doSkipSentence(str:string, idx:number, allowBullet : boolean) : SentenceSkip {
-  if(allowBullet) {
-    const match = skipSentenceOrBulletRE.exec(str.substr(idx));
-    if(!match || match.length===0)
-      throw 'anomaly: bad regex';
-    // update our position to after the matched text
-    return {
-      skip: match[0].length,
-      bullet: match[1],
-      isPreWhitespace: match[2]===undefined || match[2].length === 0,
-      terminator: match[3]
-    };
-  } else
-    return doSimpleSkip(str,idx,skipSentenceRE);
-}
+// function doSkipSentence(str:string, idx:number, allowBullet : boolean) : SentenceSkip {
+//   if(allowBullet) {
+//     const match = skipSentenceOrBulletRE.exec(str.substr(idx));
+//     if(!match || match.length===0)
+//       throw 'anomaly: bad regex';
+//     // update our position to after the matched text
+//     return {
+//       skip: match[0].length,
+//       bullet: match[1],
+//       isPreWhitespace: match[2]===undefined || match[2].length === 0,
+//       terminator: match[3]
+//     };
+//   } else
+//     return doSimpleSkip(str,idx,skipSentenceRE);
+// }
 
 function doSkipComment(str:string, idx:number) : SentenceSkip {
   return doSimpleSkip(str,idx,skipCommentRE);
 }
 
-function doSkipString(str:string, idx:number) : SentenceSkip {
-  return doSimpleSkip(str,idx,skipStringRE);
-}
+// function doSkipString(str:string, idx:number) : SentenceSkip {
+//   return doSimpleSkip(str,idx,skipStringRE);
+// }
 
-function doSkipSubexpr() {
-
-}
 
 /**
  * @returns the length of the parsed command or -1 if there is no [full] command
