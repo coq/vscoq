@@ -115,25 +115,14 @@ export class CoqDocument implements TextDocument {
     }
 
     for(const change of sortedChanges) {
-      // this.clientConsole.log(`Change: ${rangeToString(change.range)} (${change.rangeLength}) --> ${change.text}`);
-      // Remove diagnostics for any text that has been modified
-      // this.removeDiagnosticsIntersecting(change.range, false);
-
-      // Find offsets for change-range
       const beginOffset = this.offsetAt(change.range.start);
-
       this.applyEditToDocument(beginOffset, change);
-      
-      // And also adjust the diagnostic locations
-      // this.shiftDiagnostics(textUtil.toRangeDelta(change.range, change.text));
     }
 
     this.version = newVersion;
 
    this.updateHighlights();
-    // send the updated diagnostics
-// TODO
-    // this.callbacks.sendDiagnostics(this.diagnostics);
+   this.updateDiagnostics();
   }
   
   public offsetAt(pos: Position) : number {
