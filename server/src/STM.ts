@@ -11,7 +11,12 @@ import * as coqtop from './coqtop';
 import {ProofView, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './protocol';
 import * as coqParser from './coq-parser';
 import {Sentence, SentenceError, SentenceState} from './STMSentence';
+import {Mutex} from './Mutex';
+
+
 export {SentenceState} from './STMSentence';
+
+
 type StateId = number;
 
 interface BufferedFeedback {
@@ -90,6 +95,10 @@ export class CoqStateMachine {
   private status = STMStatus.Ready;
   /** The current state of coq options */
   private currentCoqOptions : coqtop.CoqOptions = {};
+  /** Prevent concurrent calls to coqtop */
+  private coqLock = new Mutex();
+  /** Sequentialize edits */
+  private editLock = new Mutex();
 
 
   constructor(private settings: proto.CoqTopSettings
@@ -127,7 +136,7 @@ export class CoqStateMachine {
     if(this.isShutdown())
       return;
     this.status = STMStatus.Shutdown;
-    await this.coqtop.coqQuit();
+    await this.acquireCoq(async () => await this.coqtop.coqQuit());
     this.dispose();
   }
 
@@ -184,6 +193,7 @@ export class CoqStateMachine {
     // this.console.log(`Sentences before:`);
     // this.logDebuggingSentences(this.debuggingGetSentences())
 
+    const releaseLock = await this.editLock.lock();
     try {
       const cancellations : Promise<void>[] = [];
 
@@ -202,9 +212,10 @@ export class CoqStateMachine {
         // apply the changes
         const preserved = sent.applyTextChanges(sortedChanges,deltas);
         if(!preserved) {
-          if(this.status === STMStatus.Busy)
+          if(this.status === STMStatus.Busy) {
             await this.interrupt();
-// this.console.log("cancelling: " + createDebuggingSentence(sent));
+            // now, this.status === STMStatus.Interrupting until the busy task is cancelled, then it will become STMStatus.Ready
+          }
           cancellations.push(this.cancelSentence(sent));
         }
 
@@ -216,9 +227,9 @@ export class CoqStateMachine {
     } catch(err) {
       this.handleInconsistentState(err);
       return false;
+    } finally {
+      releaseLock();
     }
-    // this.console.log("Sentences After:");
-    // this.logDebuggingSentences(this.debuggingGetSentences())
 
   }
 
@@ -229,8 +240,9 @@ export class CoqStateMachine {
    * @throw proto.FailValue if advancing failed
    */
   public async stepForward(commandSequence: CommandIterator, verbose: boolean = false) : Promise<(proto.FailureResult & proto.FocusPosition)|null>  {
-    if(!this.startCommand())
-      return null;
+    const endCommand = await this.startCommand();
+    if(!endCommand)
+      return;
     try {
       await this.validateState(true);
       const currentFocus = this.getFocusedPosition();
@@ -247,7 +259,7 @@ export class CoqStateMachine {
       else
         throw error;
     } finally {
-      this.endCommand();
+      endCommand();
     }
   }
 
@@ -257,13 +269,14 @@ export class CoqStateMachine {
    * @throw proto.FailValue if advancing failed
    */
   public async stepBackward() : Promise<void>  {
-    if(!this.startCommand())
+    const endCommand = await this.startCommand();
+    if(!endCommand)
       return;
     try {
       await this.validateState(false);
       await this.cancelSentence(this.focusedSentence);
     } finally {
-      this.endCommand();
+      endCommand();
     }
   }
 
@@ -290,7 +303,8 @@ export class CoqStateMachine {
   public async getGoal() : Promise<GoalResult> {
     if(!this.isCoqReady())
       return {type: 'not-running'}
-    else if(!this.startCommand())
+    const endCommand = await this.startCommand();
+    if(!endCommand)
       return {type: 'busy'};
     try {
       const result = await this.coqtop.coqGoal();
@@ -304,7 +318,7 @@ export class CoqStateMachine {
       } else
         return this.convertCoqTopError(error)
     } finally {
-      this.endCommand();
+      endCommand();
     }
   }
 
@@ -314,8 +328,9 @@ export class CoqStateMachine {
    * @throw proto.FailValue if advancing failed
    */
   public async interpretToPoint(position: Position, commandSequence: CommandIterator, token: CancellationToken) : Promise<(proto.FailureResult & proto.FocusPosition)|null> {
-    if(!this.startCommand())
-      return null;
+    const endCommand = await this.startCommand();
+    if(!endCommand)
+      return;
     try {
       await this.validateState(true);
       // Advance the focus until we reach or exceed the location
@@ -341,12 +356,15 @@ export class CoqStateMachine {
       else
         throw error;
     } finally {
-      this.endCommand();
+      endCommand();
     }
   }
 
   public async doQuery(query: string, position?: Position) : Promise<string> {
-    if(!this.isCoqReady() || !this.startCommand())
+    if(!this.isCoqReady())
+      return "";
+    const endCommand = await this.startCommand();
+    if(!endCommand)
       return "";
     try {
       let state: StateId = undefined;
@@ -354,22 +372,28 @@ export class CoqStateMachine {
         state = this.getParentSentence(position).getStateId();
       return await this.coqtop.coqQuery(query, state)
     } finally {
-      this.endCommand();
+      endCommand();
     }
   }
 
   public async setWrappingWidth(columns: number) : Promise<void> {
-    if(!this.isCoqReady() || !this.startCommand())
+    if(!this.isCoqReady())
+      return;
+    const endCommand = await this.startCommand();
+    if(!endCommand)
       return;
     try {
       this.coqtop.coqResizeWindow(columns);
     } catch(error) {
-      this.endCommand();
+      endCommand();
     }
   }
 
   public async requestLtacProfResults(position?: Position) : Promise<void> {
-    if(!this.isCoqReady() || !this.startCommand())
+    if(!this.isCoqReady())
+      return;
+    const endCommand = await this.startCommand();
+    if(!endCommand)
       return;
     try {
       if(position !== undefined) {
@@ -381,7 +405,7 @@ export class CoqStateMachine {
       }
       await this.coqtop.coqLtacProfilingResults();
     } finally {
-      this.endCommand();
+      endCommand();
     }
   }
   //     ltacProfResults: (offset?: number) => this.enqueueCoqOperation(async () => {
@@ -685,8 +709,8 @@ export class CoqStateMachine {
   /**
    * Focuses the sentence; a new sentence may be appended to it
    */
-  private async focusSentence(sentence: Sentence) {
-    if(sentence == this.focusedSentence)
+  private async focusSentence(sentence?: Sentence) {
+    if(!sentence || sentence == this.focusedSentence)
       return;
     try {
       const result = await this.coqtop.coqEditAt(sentence.getStateId());
@@ -825,19 +849,19 @@ export class CoqStateMachine {
     this.callbacks.coqDied(error);
   }
 
-  private startCommand() {
+  private async startCommand() : Promise<false | (()=>void)> {
     if(this.isBusy())
       return false
+    const release = await this.coqLock.lock();
     this.status = STMStatus.Busy;
-    return true;
-  }
-
-  private endCommand() {
-    this.status = STMStatus.Ready;
+    return () => {
+      this.status = STMStatus.Ready
+      release();
+    };
   }
 
   private isBusy() {
-    return this.status === STMStatus.Busy || this.status === STMStatus.Interrupting
+    return this.status === STMStatus.Busy || this.status === STMStatus.Interrupting || this.editLock.isLocked();
   }
 
   private isShutdown() {
@@ -846,6 +870,15 @@ export class CoqStateMachine {
 
   private isInterrupting() {
     return this.status === STMStatus.Interrupting
+  }
+
+  private async acquireCoq<T>(callback: () => T): Promise<T> {
+    const release = await this.coqLock.lock();
+    try {
+      return callback();
+    } finally {
+      release();
+    }
   }
 
   private debuggingGetSentences(params?: {begin?: Sentence|string, end?: Sentence|string}) {

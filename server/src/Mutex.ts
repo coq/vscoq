@@ -25,7 +25,7 @@ export class Mutex {
   
   private nextId = 0;
   
-  constructor() {
+  public constructor() {
   }
 
   public isLocked() : boolean {
