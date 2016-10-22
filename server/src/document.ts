@@ -130,6 +130,7 @@ export class CoqDocument implements TextDocument {
 
     this.version = newVersion;
 
+   this.updateHighlights();
     // send the updated diagnostics
 // TODO
     // this.callbacks.sendDiagnostics(this.diagnostics);

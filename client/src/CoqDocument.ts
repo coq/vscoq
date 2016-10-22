@@ -32,6 +32,7 @@ export class CoqDocument implements vscode.Disposable {
   private queryOut: vscode.OutputChannel;
   private noticeOut: vscode.OutputChannel;
   private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
+  private focus: vscode.Position;
   private focusDecoration : vscode.TextEditorDecorationType;
   private focusBeforeDecoration : vscode.TextEditorDecorationType;
 
@@ -142,10 +143,7 @@ export class CoqDocument implements vscode.Disposable {
 
 
   public onDidChangeTextDocument(params: vscode.TextDocumentChangeEvent) {
-    // for (const change of params.contentChanges) {
-    //   const changeRange = textUtil.toRangeDelta(change.range, change.text);
-    //   this.highlights.applyEdit(changeRange);
-    // }
+    this.updateFocus(this.focus, false);
   }
 
 
@@ -200,20 +198,21 @@ export class CoqDocument implements vscode.Disposable {
 
   private updateFocus(focus?: vscodeTypes.Position, moveCursor = false) {
     if(focus) {
-      const focusPos = new vscode.Position(focus.line,focus.character);
+      this.focus = new vscode.Position(focus.line,focus.character);
       if(moveCursor) {
         for(let editor of this.cursorUnmovedSinceCommandInitiated)
-          editor.selections = [new vscode.Selection(focusPos, focusPos)]
+          editor.selections = [new vscode.Selection(this.focus, this.focus)]
       }
-      if(focusPos.line === 0 && focus.character === 0) {
+      const focusRange = new vscode.Range(this.focus.line,0,this.focus.line,1);
+      if(this.focus.line === 0 && focus.character === 0) {
         for(let editor of this.allEditors()) {
-          editor.setDecorations(this.focusBeforeDecoration, [new vscode.Range(focusPos,focusPos.translate(0,1))]);
+          editor.setDecorations(this.focusBeforeDecoration, [focusRange]);
           editor.setDecorations(this.focusDecoration, []);
         }
       } else {
         for(let editor of this.allEditors()) {
           editor.setDecorations(this.focusBeforeDecoration, []);
-          editor.setDecorations(this.focusDecoration, [new vscode.Range(focusPos,focusPos.translate(0,1))]);
+          editor.setDecorations(this.focusDecoration, [focusRange]);
         }
       }
     } else {
