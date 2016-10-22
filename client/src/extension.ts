@@ -29,26 +29,38 @@ export var extensionContext : ExtensionContext;
 export function activate(context: ExtensionContext) {
   extensionContext = context;
   documents = new CoqDocumentListener(context);
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.quit', quitCoq));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.reset', resetCoq));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.interrupt', interruptCoq));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.stepForward', stepForward));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.stepBackward', stepBackward));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.interpretToPoint', interpretToPoint));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.interpretToEnd', interpretToEnd));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.check', check));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.locate', locate));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.search', search));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.searchAbout', searchAbout)); 
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.print', print)); 
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.queryCheck', queryCheck));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.queryLocate', queryLocate));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.querySearch', querySearch));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.querySearchAbout', querySearchAbout)); 
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.queryPrint', queryPrint)); 
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.viewGoalState', viewGoalState)); 
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.viewGoalStateExternal', viewGoalStateExternal));
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.ltacProfGetResults', ltacProfGetResults));
+  function regTCmd(command, callback) {
+    context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.'+command, callback));
+  }
+
+  regTCmd('quit', quitCoq);
+  regTCmd('reset', resetCoq);
+  regTCmd('interrupt', interruptCoq);
+  regTCmd('stepForward', stepForward);
+  regTCmd('stepBackward', stepBackward);
+  regTCmd('interpretToPoint', interpretToPoint);
+  regTCmd('interpretToEnd', interpretToEnd);
+  regTCmd('check', check);
+  regTCmd('locate', locate);
+  regTCmd('search', search);
+  regTCmd('searchAbout', searchAbout); 
+  regTCmd('print', print); 
+  regTCmd('queryCheck', queryCheck);
+  regTCmd('queryLocate', queryLocate);
+  regTCmd('querySearch', querySearch);
+  regTCmd('querySearchAbout', querySearchAbout); 
+  regTCmd('queryPrint', queryPrint);
+  regTCmd('viewGoalState', viewGoalState); 
+  regTCmd('viewGoalStateExternal', viewGoalStateExternal);
+  regTCmd('ltacProfGetResults', ltacProfGetResults);
+  regTCmd('toggleDisplayImplicitArguments', (t,e) => setDisplayOption(t,e,proto.DisplayOption.ImplicitArguments, proto.SetDisplayOption.Toggle)); 
+  regTCmd('toggleDisplayCoercions', (t,e) => setDisplayOption(t,e,proto.DisplayOption.Coercions, proto.SetDisplayOption.Toggle)); 
+  regTCmd('toggleDisplayRawMatchingExpressions', (t,e) => setDisplayOption(t,e,proto.DisplayOption.RawMatchingExpressions, proto.SetDisplayOption.Toggle)); 
+  regTCmd('toggleDisplayNotations', (t,e) => setDisplayOption(t,e,proto.DisplayOption.Notations, proto.SetDisplayOption.Toggle)); 
+  regTCmd('toggleDisplayAllBasicLowLevelContents', (t,e) => setDisplayOption(t,e,proto.DisplayOption.AllBasicLowLevelContents, proto.SetDisplayOption.Toggle)); 
+  regTCmd('toggleDisplayExistentialVariableInstances', (t,e) => setDisplayOption(t,e,proto.DisplayOption.ExistentialVariableInstances, proto.SetDisplayOption.Toggle)); 
+  regTCmd('toggleDisplayUniverseLevels', (t,e) => setDisplayOption(t,e,proto.DisplayOption.UniverseLevels, proto.SetDisplayOption.Toggle)); 
+  regTCmd('toggleDisplayAllLowLevelContents', (t,e) => setDisplayOption(t,e,proto.DisplayOption.AllLowLevelContents, proto.SetDisplayOption.Toggle)); 
 
   // vscode.languages.registerCompletionItemProvider('coq', {provideCompletionItems: provideOptionCompletions}, 'X');
 }
@@ -218,3 +230,10 @@ function ltacProfGetResults(editor: TextEditor, edit: TextEditorEdit) {
     doc.ltacProfGetResults(editor)
   )
 }
+
+function setDisplayOption(editor: TextEditor, edit: TextEditorEdit, item: proto.DisplayOption, value: proto.SetDisplayOption) {
+  return withDocAsync(editor, async (doc) =>
+    doc.setDisplayOption(item, value)
+  )
+}
+

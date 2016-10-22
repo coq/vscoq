@@ -917,6 +917,10 @@ export class CoqDocument implements TextDocument {
     this.stm = null;
   }
 
+  public async setDisplayOptions(options: {item: thmProto.DisplayOption, value: thmProto.SetDisplayOption}[]) {
+    this.stm.setDisplayOptions(options);
+  }
+
   // private coqInterface = {
   //     stepForward: () => this.enqueueCoqOperation(async () => await this.stepForward(), true),
   //     stepBackward: () => this.enqueueCoqOperation(() => this.stepBackward(), true),

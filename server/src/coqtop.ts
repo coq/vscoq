@@ -15,6 +15,8 @@ import {CoqTopSettings, LtacProfTactic, LtacProfResults} from './protocol';
 import * as fs from 'fs';
 import * as os from 'os';
 import {asyncWithTimeout} from './CancellationSignal';
+import * as xmlTypes from './CoqXmlProtocolTypes';
+
 // import entities = require('entities'); 
 // const spawn = require('child_process').spawn;
 
@@ -96,125 +98,6 @@ export type ProofModeResult = ProofModeTag & ProofView
 export type GoalResult = NoProofResult | ProofModeResult
   
 
-
-export interface CoqOptions {
-  asymmetricPatterns: boolean;
-  atomicLoad: boolean;
-  automaticCoercionsImport: boolean;
-  automaticIntroduction: boolean;
-  booleanEqualitySchemes: boolean;
-  bracketingLastIntroductionPattern: boolean;
-  bulletBehavior: string; // enum {Strict}
-  subproofsCaseAnalysisSchemes: boolean;
-  compatNotations: boolean;
-  congruenceDepth: number;
-  congruenceVerbose: boolean;
-  contextualImplicit: boolean;
-  debugAuto: boolean;
-  debugEauto: boolean;
-  debugRAKAM: boolean;
-  debugTacticUnification: boolean;
-  debugTrivial: boolean;
-  debugUnification: boolean;
-  decidableEqualitySchemes: boolean;
-  defaultClearingUsedHypotheses: boolean;
-  defaultGoalSelector: number;
-  defaultProofMode: string; // enum {Classic}
-  defaultProofUsing: any;
-  defaultTimeout: number;
-  dependentPropositionsElimination: boolean;
-  discriminateIntroduction: boolean;
-  dumpBytecode: boolean;
-  eliminationSchemes: boolean;
-  equalityScheme: boolean;
-  extractionAutoInline: boolean;
-  extractionConservativeTypes: boolean;
-  extractionFileComment: string;
-  extractionFlag: number;
-  extractionKeepSingleton: boolean;
-  extractionOptimize: boolean;
-  extractionSafeImplicits: boolean;
-  extractionTypeExpand: boolean;
-  firstorderDepth: number;
-  hideObligations: boolean;
-  implicitArguments: boolean;
-  infoAuto: boolean;
-  infoEauto: boolean;
-  infoLevel: any;
-  infoTrivial: boolean;
-  injectionL2RPatternOrder: boolean;
-  injectionOnProofs: boolean;
-  inlineLevel: number;
-  intuitionIffUnfolding: boolean;
-  intuitionNegationUnfolding: boolean;
-  kernelTermSharing: boolean;
-  keyedUnification: boolean;
-  looseHintBehavior: string; // enum {Lax}
-  maximalImplicitInsertion: boolean;
-  nonrecursiveEliminationSchemes: boolean;
-  parsingExplicit: boolean;
-  primitiveProjections: boolean;
-  printingAll: boolean;
-  printingCoercions: boolean;
-  printingDepth: number;
-  printingExistentialInstances: boolean;
-  printingImplicit: boolean;
-  printingImplicitDefensive: boolean;
-  printingMatching: boolean;
-  printingNotations: boolean;
-  printingPrimitiveProjectionCompatibility: boolean;
-  printingPrimitiveProjectionParameters: boolean;
-  printingProjections: boolean;
-  printingRecords: boolean;
-  printingSynth: boolean;
-  printingUniverses: boolean;
-  printingWidth: number;
-  printingWildcard: boolean;
-  programMode: boolean;
-  proofUsingClearUnused: boolean;
-  recordEliminationSchemes: boolean;
-  regularSubstTactic: boolean;
-  reversiblePatternImplicit: boolean;
-  rewritingSchemes: boolean;
-  shortModulePrinting: boolean;
-  shrinkObligations: boolean;
-  simplIsCbn: boolean;
-  standardPropositionEliminationNames: boolean;
-  strictImplicit: boolean;
-  strictProofs: boolean;
-  strictUniverseDeclaration: boolean;
-  stronglyStrictImplicit: boolean;
-  suggestProofUsing: boolean;
-  tacticCompatContext: boolean;
-  tacticEvarsPatternUnification: boolean;
-  transparentObligations: boolean;
-  typeclassResolutionAfterApply: boolean;
-  typeclassResolutionForConversion: boolean;
-  typeclassesDebug: boolean;
-  typeclassesDependencyOrder: boolean;
-  typeclassesDepth: any;
-  yypeclassesModuloEta: boolean;
-  typeclassesStrictResolution: boolean;
-  typeclassesUniqueInstances: boolean;
-  typeclassesUniqueSolutions: boolean;
-  universalLemmaUnderConjunction: boolean;
-  universeMinimizationToSet: boolean;
-  universePolymorphism: boolean;
-  verboseCompatNotations: boolean;
-  // Asynchronous options:
-  function_debug: boolean;
-  function_raw_tcc: boolean;
-  functionalInductionRewriteDependent: boolean;
-  hypsLimit: any;
-  ltacDebug: boolean;
-  silent: boolean;
-  undo: any
-  // [DEPRECATED] Tables: Search Blacklist Printing Coercion Printing If Printing Let Printing Record Printing Constructor
-  // [DEPRECATED] Extraction AccessOpaque: boolean;
-  // [DEPRECATED] Refine Instance Mode: boolean;
-  // [DEPRECATED] Tactic Pattern Unification: boolean;
-
-}
 
 // export interface CoqOptions {
 // Asymmetric Patterns: false;
@@ -390,8 +273,9 @@ export class CoqTop extends events.EventEmitter {
       
     if (this.settings.wrapper && this.settings.wrapper != "" && fs.existsSync(this.settings.wrapper))
       await this.setupCoqTop(true);
-    else if(os.platform() === 'linux')
-      await this.setupCoqTop(false);
+    // else if(false && os.platform() === 'linux')
+    //   await this.setupCoqTop(false);
+    // else
     else
       await this.setupCoqTopWindows();
     
@@ -1035,6 +919,47 @@ export class CoqTop extends events.EventEmitter {
   }
 
 
+  public async coqGetOptions(options: CoqOptions) : Promise<void> {
+    this.checkState();
+
+    const coqResult = this.coqGetResultOnce('GetOptions');
+    const coqMessageResult = this.coqGetMessageOnce();
+    this.console.log('--------------------------------');
+    this.console.log(`Call GetOptions()`);
+    this.mainChannelW.write(`<call val="GetOptions"><unit/></call>`);    
+
+    const values = await coqResult;
+    this.console.log(`GetOptions: () --> ...`);
+
+    for(let option of values as {fst: string[], snd: {}}[]) {
+
+    }
+  }
+
+  public async coqSetOptions(options: CoqOptions) : Promise<void> {
+    this.checkState();
+    let xmlOptions: xmlTypes.ProtocolSimpleType[] = [];
+    for(let optionKey in options) {
+      const rawOptionsName = CoqOptionsMapping[optionKey];
+      const rawOptionsValue = options[optionKey];
+      if(rawOptionsValue!==undefined && typeof rawOptionsName === 'string') {
+        const optionName = rawOptionsName.split(' ');
+        xmlOptions.push(new xmlTypes.Pair(optionName, new xmlTypes.OptionValue(rawOptionsValue)))
+      }
+    }
+    this.console.log('Set Options: ' + xmlTypes.encode(xmlOptions));
+
+    const coqResult = this.coqGetResultOnce('SetOptions');
+    const coqMessageResult = this.coqGetMessageOnce();
+    this.console.log('--------------------------------');
+    this.console.log(`Call SetOptions(...)`);
+    this.mainChannelW.write(`<call val="SetOptions">${xmlTypes.encode(xmlOptions)}</call>`);    
+
+    const values = await coqResult;
+    this.console.log(`SetOptions: (...) --> ...`);
+  }
+
+
 //   public async coqStatus(stateId: number) : Promise<EditAtResult> {
 //     const coqResult = this.coqGetResultOnce('EditAt');
 //     this.console.log('--------------------------------');
@@ -1057,5 +982,251 @@ export class CoqTop extends events.EventEmitter {
 //     return result;
 //   }
 
+
+}
+
+
+
+
+
+
+
+
+
+export interface CoqOptions {
+  asymmetricPatterns?: boolean,
+  atomicLoad?: boolean,
+  automaticCoercionsImport?: boolean,
+  automaticIntroduction?: boolean,
+  booleanEqualitySchemes?: boolean,
+  bracketingLastIntroductionPattern?: boolean,
+  bulletBehavior?: string; // enum {Strict,
+  subproofsCaseAnalysisSchemes?: boolean,
+  compatNotations?: boolean,
+  congruenceDepth?: number,
+  congruenceVerbose?: boolean,
+  contextualImplicit?: boolean,
+  debugAuto?: boolean,
+  debugEauto?: boolean,
+  debugRAKAM?: boolean,
+  debugTacticUnification?: boolean,
+  debugTrivial?: boolean,
+  debugUnification?: boolean,
+  decidableEqualitySchemes?: boolean,
+  defaultClearingUsedHypotheses?: boolean,
+  defaultGoalSelector?: number,
+  defaultProofMode?: string; // enum {Classic,
+  defaultProofUsing?: any,
+  defaultTimeout?: number,
+  dependentPropositionsElimination?: boolean,
+  discriminateIntroduction?: boolean,
+  dumpBytecode?: boolean,
+  eliminationSchemes?: boolean,
+  equalityScheme?: boolean,
+  extractionAutoInline?: boolean,
+  extractionConservativeTypes?: boolean,
+  extractionFileComment?: string,
+  extractionFlag?: number,
+  extractionKeepSingleton?: boolean,
+  extractionOptimize?: boolean,
+  extractionSafeImplicits?: boolean,
+  extractionTypeExpand?: boolean,
+  firstorderDepth?: number,
+  hideObligations?: boolean,
+  implicitArguments?: boolean,
+  infoAuto?: boolean,
+  infoEauto?: boolean,
+  infoLevel?: any,
+  infoTrivial?: boolean,
+  injectionL2RPatternOrder?: boolean,
+  injectionOnProofs?: boolean,
+  inlineLevel?: number,
+  intuitionIffUnfolding?: boolean,
+  intuitionNegationUnfolding?: boolean,
+  kernelTermSharing?: boolean,
+  keyedUnification?: boolean,
+  looseHintBehavior?: string; // enum {Lax,
+  maximalImplicitInsertion?: boolean,
+  nonrecursiveEliminationSchemes?: boolean,
+  parsingExplicit?: boolean,
+  primitiveProjections?: boolean,
+  printingAll?: boolean,
+  printingCoercions?: boolean,
+  printingDepth?: number,
+  printingExistentialInstances?: boolean,
+  printingImplicit?: boolean,
+  printingImplicitDefensive?: boolean,
+  printingMatching?: boolean,
+  printingNotations?: boolean,
+  printingPrimitiveProjectionCompatibility?: boolean,
+  printingPrimitiveProjectionParameters?: boolean,
+  printingProjections?: boolean,
+  printingRecords?: boolean,
+  printingSynth?: boolean,
+  printingUniverses?: boolean,
+  printingWidth?: number,
+  printingWildcard?: boolean,
+  programMode?: boolean,
+  proofUsingClearUnused?: boolean,
+  recordEliminationSchemes?: boolean,
+  regularSubstTactic?: boolean,
+  reversiblePatternImplicit?: boolean,
+  rewritingSchemes?: boolean,
+  shortModulePrinting?: boolean,
+  shrinkObligations?: boolean,
+  simplIsCbn?: boolean,
+  standardPropositionEliminationNames?: boolean,
+  strictImplicit?: boolean,
+  strictProofs?: boolean,
+  strictUniverseDeclaration?: boolean,
+  stronglyStrictImplicit?: boolean,
+  suggestProofUsing?: boolean,
+  tacticCompatContext?: boolean,
+  tacticEvarsPatternUnification?: boolean,
+  transparentObligations?: boolean,
+  typeclassResolutionAfterApply?: boolean,
+  typeclassResolutionForConversion?: boolean,
+  typeclassesDebug?: boolean,
+  typeclassesDependencyOrder?: boolean,
+  typeclassesDepth?: any,
+  typeclassesModuloEta?: boolean,
+  typeclassesStrictResolution?: boolean,
+  typeclassesUniqueInstances?: boolean,
+  typeclassesUniqueSolutions?: boolean,
+  universalLemmaUnderConjunction?: boolean,
+  universeMinimizationToSet?: boolean,
+  universePolymorphism?: boolean,
+  verboseCompatNotations?: boolean,
+  // Asynchronous options:
+  function_debug?: boolean,
+  function_raw_tcc?: boolean,
+  functionalInductionRewriteDependent?: boolean,
+  hypsLimit?: any,
+  ltacDebug?: boolean,
+  silent?: boolean,
+  undo?: any,
+  // [DEPRECATED] Tables: Search Blacklist Printing Coercion Printing If Printing Let Printing Record Printing Constructor
+  // [DEPRECATED] Extraction AccessOpaque: boolean;
+  // [DEPRECATED] Refine Instance Mode: boolean;
+  // [DEPRECATED] Tactic Pattern Unification: boolean;
+
+}
+
+const CoqOptionsMapping = {
+  asymmetricPatterns:                       "Asymmetric Patterns",
+  atomicLoad:                               "Atomic Load",
+  automaticCoercionsImport:                 "Automatic Coercions Import",
+  automaticIntroduction:                    "Automatic Introduction",
+  booleanEqualitySchemes:                   "Boolean Equality Schemes",
+  bracketingLastIntroductionPattern:        "Bracketing Last Introduction Pattern",
+  bulletBehavior:                           "Bullet Behavior",
+  subproofsCaseAnalysisSchemes:             "Subproofs Case Analysis Schemes",
+  compatNotations:                          "Compat Notations",
+  congruenceDepth:                          "Congruence Depth",
+  congruenceVerbose:                        "Congruence Verbose",
+  contextualImplicit:                       "Contextual Implicit",
+  debugAuto:                                "Debug Auto",
+  debugEauto:                               "Debug Eauto",
+  debugRAKAM:                               "Debug Rakam",
+  debugTacticUnification:                   "Debug Tactic Unification",
+  debugTrivial:                             "Debug Trivial",
+  debugUnification:                         "Debug Unification",
+  decidableEqualitySchemes:                 "Decidable Equality Schemes",
+  defaultClearingUsedHypotheses:            "Default Clearing Used Hypotheses",
+  defaultGoalSelector:                      "Default Goal Selector",
+  defaultProofMode:                         "Default Proof Mode",
+  defaultProofUsing:                        "Default Proof Using",
+  defaultTimeout:                           "Default Timeout",
+  dependentPropositionsElimination:         "Dependent Propositions Elimination",
+  discriminateIntroduction:                 "Discriminate Introduction",
+  dumpBytecode:                             "Dump Bytecode",
+  eliminationSchemes:                       "Elimination Schemes",
+  equalityScheme:                           "Equality Scheme",
+  extractionAutoInline:                     "Extraction Auto Inline",
+  extractionConservativeTypes:              "Extraction Conservative Types",
+  extractionFileComment:                    "Extraction File Comment",
+  extractionFlag:                           "Extraction Flag",
+  extractionKeepSingleton:                  "Extraction Keep Singleton",
+  extractionOptimize:                       "Extraction Optimize",
+  extractionSafeImplicits:                  "Extraction Safe Implicits",
+  extractionTypeExpand:                     "Extraction Type Expand",
+  firstorderDepth:                          "Firstorder Depth",
+  hideObligations:                          "Hide Obligations",
+  implicitArguments:                        "Implicit Arguments",
+  infoAuto:                                 "Info Auto",
+  infoEauto:                                "Info Eauto",
+  infoLevel:                                "Info Level",
+  infoTrivial:                              "Info Trivial",
+  injectionL2RPatternOrder:                 "Injection L2 Rpattern Order",
+  injectionOnProofs:                        "Injection On Proofs",
+  inlineLevel:                              "Inline Level",
+  intuitionIffUnfolding:                    "Intuition Iff Unfolding",
+  intuitionNegationUnfolding:               "Intuition Negation Unfolding",
+  kernelTermSharing:                        "Kernel Term Sharing",
+  keyedUnification:                         "Keyed Unification",
+  looseHintBehavior:                        "Loose Hint Behavior",
+  maximalImplicitInsertion:                 "Maximal Implicit Insertion",
+  nonrecursiveEliminationSchemes:           "Nonrecursive Elimination Schemes",
+  parsingExplicit:                          "Parsing Explicit",
+  primitiveProjections:                     "Primitive Projections",
+  printingAll:                              "Printing All",
+  printingCoercions:                        "Printing Coercions",
+  printingDepth:                            "Printing Depth",
+  printingExistentialInstances:             "Printing Existential Instances",
+  printingImplicit:                         "Printing Implicit",
+  printingImplicitDefensive:                "Printing Implicit Defensive",
+  printingMatching:                         "Printing Matching",
+  printingNotations:                        "Printing Notations",
+  printingPrimitiveProjectionCompatibility: "Printing Primitive Projection Compatibility",
+  printingPrimitiveProjectionParameters:    "Printing Primitive Projection Parameters",
+  printingProjections:                      "Printing Projections",
+  printingRecords:                          "Printing Records",
+  printingSynth:                            "Printing Synth",
+  printingUniverses:                        "Printing Universes",
+  printingWidth:                            "Printing Width",
+  printingWildcard:                         "Printing Wildcard",
+  programMode:                              "Program Mode",
+  proofUsingClearUnused:                    "Proof Using Clear Unused",
+  recordEliminationSchemes:                 "Record Elimination Schemes",
+  regularSubstTactic:                       "Regular Subst Tactic",
+  reversiblePatternImplicit:                "Reversible Pattern Implicit",
+  rewritingSchemes:                         "Rewriting Schemes",
+  shortModulePrinting:                      "Short Module Printing",
+  shrinkObligations:                        "Shrink Obligations",
+  simplIsCbn:                               "Simpl Is Cbn",
+  standardPropositionEliminationNames:      "Standard Proposition Elimination Names",
+  strictImplicit:                           "Strict Implicit",
+  strictProofs:                             "Strict Proofs",
+  strictUniverseDeclaration:                "Strict Universe Declaration",
+  stronglyStrictImplicit:                   "Strongly Strict Implicit",
+  suggestProofUsing:                        "Suggest Proof Using",
+  tacticCompatContext:                      "Tactic Compat Context",
+  tacticEvarsPatternUnification:            "Tactic Evars Pattern Unification",
+  transparentObligations:                   "Transparent Obligations",
+  typeclassResolutionAfterApply:            "Typeclass Resolution After Apply",
+  typeclassResolutionForConversion:         "Typeclass Resolution For Conversion",
+  typeclassesDebug:                         "Typeclasses Debug",
+  typeclassesDependencyOrder:               "Typeclasses Dependency Order",
+  typeclassesDepth:                         "Typeclasses Depth",
+  typeclassesModuloEta:                     "Typeclasses Modulo Eta",
+  typeclassesStrictResolution:              "Typeclasses Strict Resolution",
+  typeclassesUniqueInstances:               "Typeclasses Unique Instances",
+  typeclassesUniqueSolutions:               "Typeclasses Unique Solutions",
+  universalLemmaUnderConjunction:           "Universal Lemma Under Conjunction",
+  universeMinimizationToSet:                "Universe Minimization To Set",
+  universePolymorphism:                     "Universe Polymorphism",
+  verboseCompatNotations:                   "Verbose Compat Notations",
+  // Asynchronous options:
+  // function_debug: boolean;
+  // function_raw_tcc: boolean;
+  // functionalInductionRewriteDependent: boolean;
+  // hypsLimit: any;
+  // ltacDebug: boolean;
+  // silent: boolean;
+  // undo: any
+  // [DEPRECATED] Tables: Search Blacklist Printing Coercion Printing If Printing Let Printing Record Printing Constructor
+  // [DEPRECATED] Extraction AccessOpaque: boolean;
+  // [DEPRECATED] Refine Instance Mode: boolean;
+  // [DEPRECATED] Tactic Pattern Unification: boolean;
 
 }

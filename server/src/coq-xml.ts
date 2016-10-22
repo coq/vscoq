@@ -81,6 +81,26 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
         case 'in_r': return <coqProto.Union<any,any>>{inr: value.$children};
       }
       break;
+    case 'option_value': {
+      if(value.$['val'] === 'intvalue')
+        return value['option'].$['val'] === 'some' ? value['option'].$children[0] : undefined
+      else if(value.$['val'] === 'stringoptvalue')
+        return value['option'].$['val'] === 'some' ? value['option'].$children[0] : undefined
+      else if(value.$['val'] === 'boolvalue')
+        return value['bool'].$['val']
+      else if(value.$['val'] === 'stringvalue')
+        return value.$children[0]
+      else
+        break 
+    }
+    case 'option_state': {
+      return {
+        sync: value.$children[0],
+        depr: value.$children[1],
+        name: value.$children[2],
+        value: value.$children[3],
+      }
+    }
     case 'goal':
       return <coqProto.Goal>{
         id: +value.$children[0],

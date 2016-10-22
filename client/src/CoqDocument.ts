@@ -405,4 +405,11 @@ export class CoqDocument implements vscode.Disposable {
   public async doOnSwitchActiveEditor(oldEditor: TextEditor, newEditor: TextEditor) {
     this.highlights.refresh([newEditor]);
   }
+
+  public async setDisplayOption(item: proto.DisplayOption, value: proto.SetDisplayOption) {
+    await this.langServer.setDisplayOptions(this.documentUri, [{item: item, value: value}]);
+    const proofview = await this.langServer.getGoal(this.documentUri);
+    this.view.update(proofview);
+ }
+  
 }

@@ -87,7 +87,10 @@ export class CoqStateMachine {
   private disableInterrupt = false;
   /** The error from the most recent Coq command (`null` if none) */
   private currentError : proto.FailValue = null;
-  private status = STMStatus.Ready;  
+  private status = STMStatus.Ready;
+  /** The current state of coq options */
+  private currentCoqOptions : coqtop.CoqOptions = {};
+
 
   constructor(private settings: proto.CoqTopSettings
     , private scriptFile: string
@@ -388,7 +391,47 @@ export class CoqStateMachine {
   //       } else
   //         return this.coqTop.coqLtacProfilingResults();
   //     }, true),
-  
+
+
+  public async setDisplayOptions(options: {item: proto.DisplayOption, value: proto.SetDisplayOption}[]) {
+    function set(old: boolean, change: proto.SetDisplayOption) : boolean {
+      switch(change) {
+        case proto.SetDisplayOption.On: return true;
+        case proto.SetDisplayOption.Off: return false;
+        case proto.SetDisplayOption.Toggle: return !old;
+      }
+    }
+    for(let option of options) {
+      switch(option.item) {
+        case proto.DisplayOption.AllBasicLowLevelContents:
+          this.currentCoqOptions.printingAll = set(this.currentCoqOptions.printingAll, option.value);
+          break; 
+        case proto.DisplayOption.AllLowLevelContents:
+          this.currentCoqOptions.printingAll = set(this.currentCoqOptions.printingAll, option.value);
+          break; 
+        case proto.DisplayOption.Coercions:
+          this.currentCoqOptions.printingCoercions = set(this.currentCoqOptions.printingCoercions, option.value);
+          break; 
+        case proto.DisplayOption.ExistentialVariableInstances:
+          this.currentCoqOptions.printingExistentialInstances = set(this.currentCoqOptions.printingExistentialInstances, option.value);
+          break; 
+        case proto.DisplayOption.ImplicitArguments:
+          this.currentCoqOptions.printingImplicit = set(this.currentCoqOptions.printingImplicit, option.value);
+          break; 
+        case proto.DisplayOption.Notations:
+          this.currentCoqOptions.printingNotations = set(this.currentCoqOptions.printingNotations, option.value);
+          break; 
+        case proto.DisplayOption.RawMatchingExpressions:
+          this.currentCoqOptions.printingMatching = set(this.currentCoqOptions.printingMatching, option.value);
+          break; 
+        case proto.DisplayOption.UniverseLevels:
+          this.currentCoqOptions.printingUniverses = set(this.currentCoqOptions.printingUniverses, option.value);
+          break; 
+      }
+    }
+    await this.coqtop.coqSetOptions(this.currentCoqOptions);
+  }
+
 
   public *getSentences() : Iterable<{range: Range, status: SentenceState}> {
     if(!this.isRunning() || this.root===null)

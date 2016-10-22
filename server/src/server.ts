@@ -207,6 +207,12 @@ connection.onRequest(coqproto.LtacProfResultsRequest.type, (params: coqproto.Coq
     .requestLtacProfResults(params.offset);
 });
 
+connection.onRequest(coqproto.SetDisplayOptionsRequest.type, (params: coqproto.CoqTopSetDisplayOptionsParams, token: CancellationToken) => {
+  return project.lookup(params.uri)
+    .setDisplayOptions(params.options);
+});
+
+
 
 function sendHighlightUpdates(documentUri: string, highlights: coqproto.Highlights) {
   connection.sendNotification(coqproto.UpdateHighlightsNotification.type,

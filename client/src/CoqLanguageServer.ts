@@ -188,4 +188,12 @@ export class CoqLanguageServer {
     },this.cancelRequest.token);
   }
 
+  public setDisplayOptions(uri: string, options: {item: proto.DisplayOption, value: proto.SetDisplayOption}[]) : Thenable<void>{
+    return this.server.sendRequest(proto.SetDisplayOptionsRequest.type, <proto.CoqTopSetDisplayOptionsParams>{
+      uri: uri,
+      options: options
+    },this.cancelRequest.token);
+  }
+
+
 }
