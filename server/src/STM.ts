@@ -13,7 +13,6 @@ import * as coqParser from './coq-parser';
 import {Sentence, SentenceError, SentenceState} from './STMSentence';
 import {Mutex} from './Mutex';
 
-
 export {SentenceState} from './STMSentence';
 
 
@@ -175,28 +174,14 @@ export class CoqStateMachine {
   }
 
 
-  /** Adjust sentence ranges and cancel any sentences that are invalidated by the edit
-   * @param isInvalidated: a function to determine whether an intersecting change is passive (i.e. changes the meaning of a sentence); returns true if the change invalidates the sentence.
-   * @returns `true` if no sentences were cancelled
-  */
-  public async applyChanges(changes: TextDocumentContentChangeEvent[], newVersion: number) : Promise<boolean> {
-    if(!this.isRunning() || changes.length == 0 || this.root === null)
-      return true;
+  /**
+   * Applies the changes to the sentences
+   * @return a list of invalidated sentences -- these need to be cancelled
+   */
+  private applyChangesToSentences(sortedChanges: TextDocumentContentChangeEvent[], updatedDocumentText: string) : Sentence[] {
+    const invalidatedSentences : Sentence[] = [];
 
-    // sort the edits such that later edits are processed first
-    // this way, we do not have to adjust the change position as we modify the document
-    // vscode guarantees that no changes overlap
-    let sortedChanges =
-      changes.sort((change1, change2) =>
-        textUtil.positionIsAfter(change1.range.start, change2.range.start) ? -1 : 1)
-
-    // this.console.log(`Sentences before:`);
-    // this.logDebuggingSentences(this.debuggingGetSentences())
-
-    const releaseLock = await this.editLock.lock();
     try {
-      const cancellations : Promise<void>[] = [];
-
       const deltas = sortedChanges.map((c) => textUtil.toRangeDelta(c.range,c.text))
 
       for (let sent of this.lastSentence.backwards()) {
@@ -210,27 +195,65 @@ export class CoqStateMachine {
         //   break sent; // sent
 
         // apply the changes
-        const preserved = sent.applyTextChanges(sortedChanges,deltas);
+        const preserved = sent.applyTextChanges(sortedChanges,deltas, updatedDocumentText);
         if(!preserved) {
-          if(this.status === STMStatus.Busy) {
-            await this.interrupt();
-            // now, this.status === STMStatus.Interrupting until the busy task is cancelled, then it will become STMStatus.Ready
-          }
-          cancellations.push(this.cancelSentence(sent));
+          invalidatedSentences.push(sent);
         }
 
       } // for sent in ancestors of last sentence
-
-      await this.noInterrupt(() => Promise.all(cancellations));
-      this.version = newVersion;
-      return cancellations.length === 0;
+      return invalidatedSentences;
     } catch(err) {
       this.handleInconsistentState(err);
-      return false;
+      return [];
+    }
+  }
+
+  /** Cancel a list of sentences that have (presumably) been invalidated.
+   * This will attempt to place the focus just before the topmost cancellation. 
+   * @param invalidatedSentences -- assumed to be sorted in descending order (bottom first)
+   */
+  private async cancelInvalidatedSentences(invalidatedSentences: Sentence[]) : Promise<void> {
+    if(invalidatedSentences.length <= 0)
+      return;
+    // Cancel the invalidated sentences
+    const releaseLock = await this.editLock.lock();
+    try {
+      if(this.status === STMStatus.Busy)
+        await this.interrupt();
+          // now, this.status === STMStatus.Interrupting until the busy task is cancelled, then it will become STMStatus.Ready
+
+      // Cancel sentences in the *forward* direction
+      // // E.g. cancelling the first invalidated sentence may cancel all subsequent sentences,
+      // // in which case, the remaining cancellations will become NOOPs
+      // for(let idx = invalidatedSentences.length - 1; idx >= 0; --idx) {
+      //   const sent = invalidatedSentences[idx];
+      for(let sent of invalidatedSentences) {
+        await this.cancelSentence(sent);
+      }
+      // The focus should be at the topmost cancelled sentences 
+      this.focusSentence(invalidatedSentences[invalidatedSentences.length-1].getParent());
+    } catch(err) {
+      this.handleInconsistentState(err);
     } finally {
       releaseLock();
     }
+  }
 
+  /** Adjust sentence ranges and cancel any sentences that are invalidated by the edit
+   * @param sortedChanges -- a list of changes, sorted by their start position in descending order: later change in doc appears first
+   * @returns `true` if no sentences were cancelled
+  */
+  public applyChanges(sortedChanges: TextDocumentContentChangeEvent[], newVersion: number, updatedDocumentText: string) : boolean {
+    if(!this.isRunning() || sortedChanges.length == 0 || this.root === null)
+      return true;
+
+    const invalidatedSentences = this.applyChangesToSentences(sortedChanges, updatedDocumentText);
+    this.version = newVersion;
+    if(invalidatedSentences.length === 0)
+      return true;
+    // We do not bother to await this async function
+    this.cancelInvalidatedSentences(invalidatedSentences);
+    return false;
   }
 
 
@@ -310,7 +333,6 @@ export class CoqStateMachine {
       const result = await this.coqtop.coqGoal();
       return this.convertGoals(result);
     } catch(error) {
-      // this.console.log("getGoal error: " + util.inspect(error,false,undefined));
       if(error instanceof coqtop.CallFailure) {
         const sent = this.focusedSentence;
         const failure = await this.handleCallFailure(error, {range: sent.getRange(), text: sent.getText() });
@@ -707,11 +729,13 @@ export class CoqStateMachine {
   }
 
   /**
-   * Focuses the sentence; a new sentence may be appended to it
+   * Focuses the sentence; a new sentence may be appended to it.
+   * @param sentence -- does nothing if null, already the focus, or its state ID does not exist
    */
   private async focusSentence(sentence?: Sentence) {
-    if(!sentence || sentence == this.focusedSentence)
+    if(!sentence || sentence == this.focusedSentence || !this.sentences.has(sentence.getStateId()))
       return;
+this.console.log("focusing " + sentence.getText());
     try {
       const result = await this.coqtop.coqEditAt(sentence.getStateId());
       if(result.enterFocus) {
@@ -734,6 +758,8 @@ export class CoqStateMachine {
 
 
   private async cancelSentence(sentence: Sentence) {
+    if(!this.sentences.has(sentence.getStateId()))
+      return;
     await this.focusSentence(sentence.getParent());
   }
 

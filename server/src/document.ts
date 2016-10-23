@@ -106,17 +106,17 @@ export class CoqDocument implements TextDocument {
       changes.sort((change1,change2) =>
         textUtil.positionIsAfter(change1.range.start, change2.range.start) ? -1 : 1)
 
-    try {
-      const passive = await this.stm.applyChanges(sortedChanges, newVersion);
-      if(!passive)
-        this.updateHighlights();
-    } catch (err) {
-      this.clientConsole.error("STM crashed while applying text edit: " + err.toString())
-    }
-
     for(const change of sortedChanges) {
       const beginOffset = this.offsetAt(change.range.start);
       this.applyEditToDocument(beginOffset, change);
+    }
+
+    try {
+      const passive = this.stm.applyChanges(sortedChanges, newVersion, this.documentText);
+      // if(!passive)
+      //   this.updateHighlights();
+    } catch (err) {
+      this.clientConsole.error("STM crashed while applying text edit: " + err.toString())
     }
 
     this.version = newVersion;

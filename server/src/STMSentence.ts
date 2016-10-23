@@ -188,9 +188,10 @@ export class Sentence {
    * 1:4-1:7
    * @1:3-1:3 insert "_"
    */
-  public applyTextChanges(changes: vscode.TextDocumentContentChangeEvent[], deltas: textUtil.RangeDelta[]  /*, console: vscode.RemoteConsole*/ ) : boolean {
+  public applyTextChanges(changes: vscode.TextDocumentContentChangeEvent[], deltas: textUtil.RangeDelta[], updatedDocumentText: string) : boolean {
     let newText = this.commandText;
     let newRange = this.textRange;
+    let touchesEnd = false; // indicates whether a change has touched the end of this sentence
     change: for(let idx = 0; idx < changes.length; ++ idx) {
       const change = changes[idx];
       const delta = deltas[idx];
@@ -199,17 +200,16 @@ export class Sentence {
           newRange = textUtil.rangeTranslate(newRange,delta);
           continue change;
         case parser.SentenceRangeContainment.After:
+          if(textUtil.positionIsEqual(this.textRange.end, change.range.start))
+            touchesEnd = true;
           continue change; // ignore this change
         case parser.SentenceRangeContainment.Crosses:
-  // console.log(`Crosses: ${change.range.start.line}:${change.range.start.character}-${change.range.end.line}:${change.range.end.character}`)
           return false; // give up; this sentence is toast (invalidated; needs to be cancelled)
         case parser.SentenceRangeContainment.Contains:
           // the change falls within this sentence
           const beginOffset = textUtil.relativeOffsetAtAbsolutePosition(newText, newRange.start, change.range.start);
-// console.log("offset: "+beginOffset);          
           if(beginOffset == -1)
             continue change;
-
           newText =
             newText.substring(0,beginOffset)
             + change.text
@@ -217,13 +217,21 @@ export class Sentence {
           newRange = Range.create(newRange.start,textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta));
       } // switch
     } // change: for
+
+    if(touchesEnd) {
+      // We need to reparse the sentence to make sure the end of the sentence has not changed
+      const endOffset = textUtil.offsetAt(updatedDocumentText, newRange.end);
+      // The problem is if a non-blank [ \r\n] is now contacting the end-period of this sentence; we need only check one more character
+      const newEnd = parser.parseSentence(newText + updatedDocumentText.substr(endOffset, 1));
+      if(newEnd === -1 || newEnd !== newText.length)
+        return false; // invalidate: bad or changed syntax   
+    }
+    
     if(parser.isPassiveDifference(this.commandText, newText)) {
-// console.log(`'${this.commandText}' == '${newText}'`);
       this.commandText = newText;
       this.textRange = newRange;
       return true;
     } else
-// console.log(`'${this.commandText}' <> '${newText}'`);
       return false;
   }
 

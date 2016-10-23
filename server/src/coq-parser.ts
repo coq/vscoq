@@ -371,14 +371,14 @@ export function isPassiveDifference(cmd1: string, cmd2: string) : boolean {
 
 
 export enum SentenceRangeContainment {
-  /** The range is contained by the sentence (range may be empty at the beginning, but not at the end and empty). */
+  /** The range is contained by the sentence (range may be empty at the beginning, but not at the end and empty). Adjust sentence; check for invalidation */
   Contains,
-  /** The range is before the sentence */
+  /** The range is before the sentence. Adjust sentence position */
   Before,
-  /** The range is after the sentence */
+  /** The range is after the sentence. Ignore change. */
   After,
-  /** The change crosses the sentence boundary */
-  Crosses
+  /** The change crosses the sentence boundary. Invalidate sentence. */
+  Crosses,
 }
 /** Determines whether a Coq sentence range should contain the range
  * A sentence contains a range if the range is nonempty and is completely within the sentence
@@ -388,11 +388,11 @@ export enum SentenceRangeContainment {
 export function sentenceRangeContainment(sentRange: Range, range: Range) : SentenceRangeContainment {
   if(textUtil.positionIsAfter(sentRange.start,range.end))
     return SentenceRangeContainment.Before; // change is strictly before sentence
-  if(textUtil.positionIsBeforeOrEqual(sentRange.end,range.start))
+  else if(textUtil.positionIsBeforeOrEqual(sentRange.end,range.start))
     return SentenceRangeContainment.After; // change is after sentence
   else if(textUtil.positionIsBeforeOrEqual(sentRange.start, range.start) && textUtil.positionIsAfterOrEqual(sentRange.end, range.end))
     return SentenceRangeContainment.Contains; // change is inside the sentence
-  if(textUtil.positionIsAfterOrEqual(sentRange.start,range.end))
+  else if(textUtil.positionIsAfterOrEqual(sentRange.start,range.end))
     return SentenceRangeContainment.Before; // change is before sentence (maybe touching) and nonempty
   else
     return SentenceRangeContainment.Crosses;
