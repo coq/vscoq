@@ -249,11 +249,15 @@ export class CoqStateMachine {
 
     const invalidatedSentences = this.applyChangesToSentences(sortedChanges, updatedDocumentText);
     this.version = newVersion;
-    if(invalidatedSentences.length === 0)
+
+    if(invalidatedSentences.length === 0) {
+      this.callbacks.updateStmFocus(this.getFocusedPosition())
       return true;
-    // We do not bother to await this async function
-    this.cancelInvalidatedSentences(invalidatedSentences);
-    return false;
+    } else {
+      // We do not bother to await this async function
+      this.cancelInvalidatedSentences(invalidatedSentences);
+      return false;
+    }
   }
 
 
