@@ -411,6 +411,8 @@ export class CoqStateMachine {
     try {
       this.coqtop.coqResizeWindow(columns);
     } catch(error) {
+      this.console.warn("error resizing window: " + error.toString())
+    } finally {
       endCommand();
     }
   }
