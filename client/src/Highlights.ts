@@ -38,12 +38,16 @@ const processingTextDecoration: vscode.TextEditorDecorationType = vscode.window.
     dark: {backgroundColor: 'rgba(0,0,255,0.3)'},
   });
 const stateErrorTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    outlineWidth: '1px',
-    outlineStyle: 'solid', 
-    light: {outlineColor: 'rgba(255,0,0,0.5)'},
-    dark: {outlineColor: 'rgba(255,0,0,0.5)'},
-    // light: {backgroundColor: 'lightred'},
-    // dark: {backgroundColor: 'darkred'},
+    borderWidth: '1px',
+    borderStyle: 'solid', 
+    light:
+      { borderColor: 'rgba(255,0,0,0.5)'
+      , backgroundColor: 'rgba(255,0,0,0.25)'
+      },
+    dark:
+      {borderColor: 'rgba(255,0,0,0.5)'
+      , backgroundColor: 'rgba(255,0,0,0.25)'
+      },
   });
 
 const processedTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
