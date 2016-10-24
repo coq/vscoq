@@ -363,7 +363,11 @@ export function normalizeText(str: string) : string {
  */
 export function isPassiveDifference(cmd1: string, cmd2: string) : boolean {
   try {
-    return normalizeText(cmd1) === normalizeText(cmd2);
+    // normalize: remove comments and collapse whitespace
+    // special: it's okay for whitespace to be introduced or removed around closing period and at the beginning of a sentence 
+    const normalized1 = normalizeText(' ' + cmd1.replace(/[.]\s*$/, ' . '));
+    const normalized2 = normalizeText(' ' + cmd2.replace(/[.]\s*$/, ' . '));
+    return normalized1 === normalized2;
   } catch(err) {
     return false;
   }

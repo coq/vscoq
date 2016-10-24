@@ -186,14 +186,11 @@ export class Sentence {
   /**
    * Applies the textual changes to the sentence
    * @return false if the change has invalidated the sentence; true if preserved
-   * 
-   * +++***
-   * +++_***
-   * 1:0-1:3
-   * 1:4-1:7
-   * @1:3-1:3 insert "_"
    */
   public applyTextChanges(changes: vscode.TextDocumentContentChangeEvent[], deltas: textUtil.RangeDelta[], updatedDocumentText: string) : boolean {
+    if(this.isRoot())
+      return true;
+
     let newText = this.commandText;
     let newRange = this.textRange;
     let newErrorRange = undefined;
