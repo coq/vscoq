@@ -3,3 +3,5 @@ server
 node_modules
 html_views
 typings
+*.vsix
+*.zip
