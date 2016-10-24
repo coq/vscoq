@@ -56,14 +56,42 @@ function onWindowResize(event: UIEvent) {
   }
 }
 
+function getVSCodeTheme() : 'vscode-dark'|'vscode-light'|'vscode-high-contrast'|null {
+  switch($(parent.document.body).attr('class')) {
+    case 'vscode-dark': return 'vscode-dark'
+    case 'vscode-light': return 'vscode-light'
+    case 'vscode-high-contrast': return 'vscode-high-contrast'
+    default:
+      return null;
+  }
+}
+
+const observer = new MutationObserver(function(mutations) {
+    inheritStyles(parent.parent);
+    $(document.body).attr('class',getVSCodeTheme());
+    // mutations.forEach(function(mutationRecord) {
+    //   console.log(`{name: ${mutationRecord.attributeName}, old: ${mutationRecord.oldValue}, new: ${$(mutationRecord.target).attr('class')} }`);
+    // });    
+});
+
 var connection : WebSocket = null;
 function load() {
   window.onresize = throttleEventHandler(onWindowResize);
 
-  if(parent.parent === parent)
+  if(parent.parent === parent) {
     $(document.body).css({backgroundColor: 'black'});
+  } else {
+    try {
+      observer.observe(parent.document.body, { attributes : true, attributeFilter: ['class'] });
+      inheritStyles(parent.parent);
+    } catch(error) {
+      $('#stdout').text(error.toString());    
+      $('#error').text(error.toString());
+      return;
+    }
+  }
 
-  var address = `ws://${getQueryStringValue('host')}:${getQueryStringValue('port')}`; 
+  const address = `ws://${getQueryStringValue('host')}:${getQueryStringValue('port')}`; 
   connection = new WebSocket(address);
   connection.onopen = function (event) {
     $('#stdout').text("connected");

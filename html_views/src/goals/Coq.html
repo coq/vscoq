@@ -2,7 +2,6 @@
 <head>
   <title>Coq</title>
   <style>
-    /*html {background-color: black;}*/
     html, body {
       width:100%;
       height:100%;
@@ -16,8 +15,11 @@
       bottom:0px;
       }
     body {      
-      color: white;
-      font-family: 'Segoe WPC','Segoe UI',SFUIText-Light,HelveticaNeue-Light,sans-serif,'Droid Sans Fallback';
+      background-color: var(--background-color, black);
+      color: var(--color, white);
+      font-family: var(--font-family,"'Segoe WPC','Segoe UI',SFUIText-Light,HelveticaNeue-Light,sans-serif,'Droid Sans Fallback'");
+      font-weight: var(--font-weight);
+      font-size: var(--font-size);
     }
     #messages {
       color: white
@@ -35,6 +37,9 @@
       border-bottom: 2pt solid white;
       padding: 0pt;
       padding-bottom: 1em;
+    }
+    .vscode-light .hypotheses {
+      border-bottom-color: black;
     }
     .hypotheses .hypothesis .rel {
       margin-right: 1ex;

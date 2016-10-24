@@ -10,6 +10,7 @@ import * as textUtil from './text-util'
 import * as WebSocket from 'ws';
 import * as http from 'http';
 import * as path from 'path';
+import * as util from 'util';
 
 const opener = require('opener');
 
@@ -137,12 +138,16 @@ export class HtmlCoqView implements view.CoqView {
     }    
   }
 
+  public getUri() : vscode.Uri {
+    return this.coqViewUri;
+  }
+
   public async show(preserveFocus: boolean, pane: vscode.ViewColumn) {
     if(!this.coqViewUri)
       await this.createBuffer();
 
     // const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
-    const result = await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, pane, "ProofView: " + path.basename(this.docUri.fsPath));
+    await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, pane, "ProofView: " + path.basename(this.docUri.fsPath));
     // if(preserveFocus && focusedDoc)
     //   await vscode.window.showTextDocument(focusedDoc);
   }
