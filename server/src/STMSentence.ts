@@ -10,13 +10,18 @@ import * as textUtil from './text-util';
 export type StateId = number;
 
 interface SentenceErrorInternal {
+  /** Error message */
   message: string,
+  /** Range of error within this sentence w.r.t. document positions. Is `undefined` if the error applies to the whole sentence */
   range?: Range,
 }
 
 export interface SentenceError extends SentenceErrorInternal {
+  /** Error message */
   message: string,
+  /** Range of error within this sentence w.r.t. document positions. Is `undefined` if the error applies to the whole sentence */
   range?: Range,
+  /** Range of the sentence containing the error */
   sentence: Range,
 }
 
@@ -225,7 +230,7 @@ export class Sentence {
           newRange.end = textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta);
 
           if(newErrorRange)
-            newErrorRange.end = textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta);
+            newErrorRange = textUtil.rangeTranslate(newErrorRange,delta);
       } // switch
     } // change: for
 

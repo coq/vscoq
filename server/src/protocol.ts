@@ -30,9 +30,12 @@ export interface CoqTopSettings {
 }
 
 export interface FailValue {
-  message: string;
-  range?: vscode.Range;
-  sentence: vscode.Range;
+  /** Error message */
+  message: string,
+  /** Range of error within this sentence w.r.t. document positions */
+  range?: vscode.Range,
+  /** Range of the sentence containing the error */
+  sentence: vscode.Range,
 }
 
 export enum SetDisplayOption {
