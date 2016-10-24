@@ -9,7 +9,12 @@ import * as textUtil from './text-util';
 
 export type StateId = number;
 
-export interface SentenceError {
+interface SentenceErrorInternal {
+  message: string,
+  range?: Range,
+}
+
+export interface SentenceError extends SentenceErrorInternal {
   message: string,
   range?: Range,
   sentence: Range,
@@ -40,7 +45,7 @@ export class Sentence {
   private status: coqProto.SentenceStatus;
   // private proofView: CoqTopGoalResult;
   private computeTimeMS: number;
-  private error?: SentenceError = undefined;
+  private error?: SentenceErrorInternal = undefined;
 
   private constructor
     ( private commandText: string
@@ -191,6 +196,9 @@ export class Sentence {
   public applyTextChanges(changes: vscode.TextDocumentContentChangeEvent[], deltas: textUtil.RangeDelta[], updatedDocumentText: string) : boolean {
     let newText = this.commandText;
     let newRange = this.textRange;
+    let newErrorRange = undefined;
+    if(this.error && this.error.range)
+      newErrorRange = this.error.range;
     let touchesEnd = false; // indicates whether a change has touched the end of this sentence
     change: for(let idx = 0; idx < changes.length; ++ idx) {
       const change = changes[idx];
@@ -198,6 +206,8 @@ export class Sentence {
       switch(parser.sentenceRangeContainment(newRange,change.range)) {
         case parser.SentenceRangeContainment.Before:
           newRange = textUtil.rangeTranslate(newRange,delta);
+          if(newErrorRange)
+            newErrorRange = textUtil.rangeTranslate(newErrorRange,delta);
           continue change;
         case parser.SentenceRangeContainment.After:
           if(textUtil.positionIsEqual(this.textRange.end, change.range.start))
@@ -214,9 +224,14 @@ export class Sentence {
             newText.substring(0,beginOffset)
             + change.text
             + newText.substring(beginOffset+change.rangeLength);
-          newRange = Range.create(newRange.start,textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta));
+          // newRange = Range.create(newRange.start,textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta));
+          newRange.end = textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta);
+
+          if(newErrorRange)
+            newErrorRange.end = textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta);
       } // switch
     } // change: for
+
 
     if(touchesEnd) {
       // We need to reparse the sentence to make sure the end of the sentence has not changed
@@ -230,6 +245,8 @@ export class Sentence {
     if(parser.isPassiveDifference(this.commandText, newText)) {
       this.commandText = newText;
       this.textRange = newRange;
+      if(newErrorRange)
+        this.error.range = newErrorRange;
       return true;
     } else
       return false;
@@ -273,7 +290,7 @@ export class Sentence {
    * @param location: optional offset range within the sentence where the error occurred
    */
   public setError(message: string, location?: coqProto.Location) {
-    this.error = {message: message, sentence: this.textRange};
+    this.error = {message: message};
     if(location && location.start !== location.stop) {
       this.error.range =
         Range.create(
@@ -282,8 +299,11 @@ export class Sentence {
     }
   }
 
-  public getError() : SentenceError {
-    return this.error
+  public getError() : SentenceError|null {
+    if(this.error)
+      return Object.assign(this.error, {sentence: this.textRange});
+    else
+      return null;
   }
 
 }

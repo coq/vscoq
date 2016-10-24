@@ -184,6 +184,12 @@ export class CoqStateMachine {
     try {
       const deltas = sortedChanges.map((c) => textUtil.toRangeDelta(c.range,c.text))
 
+      if(this.currentError && this.currentError.range) {
+        for(let idx = 0; idx < sortedChanges.length; ++idx) {
+          this.currentError.range = textUtil.rangeTranslate(this.currentError.range, deltas[idx])
+        }
+      }
+
       for (let sent of this.lastSentence.backwards()) {
         // // optimization: remove any changes that will no longer overlap with the ancestor sentences
         // while (sortedChanges.length > 0 && textUtil.positionIsAfterOrEqual(sortedChanges[0].range.start, sent.getRange().end)) {
