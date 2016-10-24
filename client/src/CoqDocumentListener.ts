@@ -3,6 +3,7 @@
 import * as vscode from 'vscode'
 import {CoqDocument} from './CoqDocument'
 export {CoqDocument} from './CoqDocument'
+import * as util from 'util'
 
 export class CoqDocumentListener implements vscode.Disposable {
   private documents = new Map<string, CoqDocument>();
@@ -71,12 +72,18 @@ export class CoqDocumentListener implements vscode.Disposable {
   }
 
   private onDidChangeActiveTextEditor(editor: vscode.TextEditor) {
+    const oldUri = this.activeEditor ? this.activeEditor.document.uri.toString() : null;
+    const oldDoc = oldUri ? this.documents.get(oldUri) : null;
+
+    if(!editor) {
+      if(oldDoc)
+        oldDoc.doOnLostFocus();
+      return;
+    }
+
     // newly active editor
     const uri = editor.document.uri.toString();
     const doc = this.documents.get(uri);
-
-    const oldUri = this.activeEditor ? this.activeEditor.document.uri.toString() : null;
-    const oldDoc = this.documents.get(oldUri);
 
     if(doc && oldDoc && uri==oldUri)
       doc.doOnSwitchActiveEditor(this.activeEditor, editor);
