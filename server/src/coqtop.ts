@@ -888,7 +888,7 @@ export class CoqTop extends events.EventEmitter {
     const coqResult = this.coqGetResultOnce('Query');
     const coqMessageResult = this.coqGetMessageOnce();
     this.console.log('--------------------------------');
-    this.console.log(`Call Query(stateId: ${stateId}, query: $query})`);
+    this.console.log(`Call Query(stateId: ${stateId}, query: ${query})`);
     this.mainChannelW.write(`<call val="Query"><pair><string>${coqXml.escapeXml(query)}</string><state_id val="${stateId}"/></pair></call>`);    
     // this.mainChannelW.write(`<call val="Query"><pair><string>${entities.encodeXML(query)}</string><state_id val="${stateId}"/></pair></call>`);    
 
