@@ -78,8 +78,8 @@
       {"command": "extension.coq.toggleDisplayExistentialVariableInstances", "title": "Coq: Display Existential Variable Instances"},
       {"command": "extension.coq.toggleDisplayUniverseLevels", "title": "Coq: Display Universe Levels"},
       {"command": "extension.coq.toggleDisplayAllLowLevelContents", "title": "Coq: Display All LowLevel Contents"},
-      {"command": "extension.coq.viewGoalState", "title": "Coq: View goal state"},
-      {"command": "extension.coq.viewGoalStateExternal", "title": "Coq: View goal state in external browser"},
+      {"command": "extension.coq.viewGoalState", "title": "Coq: Open proof view"},
+      {"command": "extension.coq.viewGoalStateExternal", "title": "Coq: Open proof view in external browser"},
       {"command": "extension.coq.ltacProfStart", "title": "Coq: Start/reset Ltac profiling"},
       {"command": "extension.coq.ltacProfStop", "title": "Coq: Stop Ltac profiling"},
       {"command": "extension.coq.ltacProfGetResults", "title": "Coq: Get the results of Ltac profiling"}
