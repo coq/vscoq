@@ -72,7 +72,7 @@ export class CoqDocumentListener implements vscode.Disposable {
   }
 
   private onDidChangeActiveTextEditor(editor: vscode.TextEditor) {
-    const oldUri = this.activeEditor ? this.activeEditor.document.uri.toString() : null;
+    const oldUri = this.activeEditor && this.activeEditor.document ? this.activeEditor.document.uri.toString() : null;
     const oldDoc = oldUri ? this.documents.get(oldUri) : null;
 
     if(!editor) {
@@ -82,7 +82,7 @@ export class CoqDocumentListener implements vscode.Disposable {
     }
 
     // newly active editor
-    const uri = editor.document.uri.toString();
+    const uri = editor.document ? editor.document.uri.toString() : null;
     const doc = this.documents.get(uri);
 
     if(doc && oldDoc && uri==oldUri)
