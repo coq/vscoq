@@ -21,6 +21,28 @@ import {StatusBar} from './StatusBar';
 const STM_FOCUS_IMAGE = "./images/stm-focus.svg";
 const STM_FOCUS_IMAGE_BEFORE = "./images/stm-focus-before.svg";
 
+namespace DisplayOptionPicks {
+  type T = vscode.QuickPickItem & {displayItem: number};
+  export const ImplicitArguments : T =
+  { label: "Implicit Arguments", description: "toggle display of *implicit arguments*", detail: "some detail", displayItem: proto.DisplayOption.ImplicitArguments };
+  export const Coercions : T =
+  { label: "Coercions", description: "toggle display of *coercions*", displayItem: proto.DisplayOption.Coercions };
+  export const RawMatchingExpressions : T =
+  { label: "Raw Matching Expressions", description: "toggle display of *raw matching expressions*", displayItem: proto.DisplayOption.RawMatchingExpressions };
+  export const Notations : T =
+  { label: "Notations", description: "toggle display of notations", displayItem: proto.DisplayOption.Notations };
+  export const AllBasicLowLevelContents : T =
+  { label: "All Basic Low Level Contents", description: "toggle display of ", displayItem: proto.DisplayOption.AllBasicLowLevelContents };
+  export const ExistentialVariableInstances : T =
+  { label: "Existential Variable Instances", description: "toggle display of ", displayItem: proto.DisplayOption.ExistentialVariableInstances };
+  export const UniverseLevels : T =
+  { label: "Universe Levels", description: "toggle display of ", displayItem: proto.DisplayOption.UniverseLevels };
+  export const AllLowLevelContents : T =
+  { label: "All Low Level Contents", description: "toggle display of ", displayItem: proto.DisplayOption.AllLowLevelContents };
+  export const allPicks = [ImplicitArguments, Coercions, RawMatchingExpressions, Notations, AllBasicLowLevelContents, ExistentialVariableInstances, UniverseLevels, AllLowLevelContents];
+}
+
+
 export class CoqDocument implements vscode.Disposable {
   private statusBar: StatusBar;
   public documentUri: string;
@@ -417,7 +439,19 @@ export class CoqDocument implements vscode.Disposable {
     this.highlights.refresh([newEditor]);
   }
 
-  public async setDisplayOption(item: proto.DisplayOption, value: proto.SetDisplayOption) {
+  private async queryDisplayOptionChange() : Promise<proto.DisplayOption|null> {
+      const result = await vscode.window.showQuickPick(DisplayOptionPicks.allPicks);
+      return result.displayItem;
+  }
+
+  public async setDisplayOption(item?: proto.DisplayOption, value?: proto.SetDisplayOption) {
+    if(!item && !value) {
+      item = await this.queryDisplayOptionChange();
+      if(!item)
+        return;
+      value = proto.SetDisplayOption.Toggle
+    }
+
     await this.langServer.setDisplayOptions(this.documentUri, [{item: item, value: value}]);
     const proofview = await this.langServer.getGoal(this.documentUri);
     this.view.update(proofview);

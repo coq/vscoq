@@ -60,7 +60,8 @@ export function activate(context: ExtensionContext) {
   regTCmd('toggleDisplayAllBasicLowLevelContents', (t,e) => setDisplayOption(t,e,proto.DisplayOption.AllBasicLowLevelContents, proto.SetDisplayOption.Toggle)); 
   regTCmd('toggleDisplayExistentialVariableInstances', (t,e) => setDisplayOption(t,e,proto.DisplayOption.ExistentialVariableInstances, proto.SetDisplayOption.Toggle)); 
   regTCmd('toggleDisplayUniverseLevels', (t,e) => setDisplayOption(t,e,proto.DisplayOption.UniverseLevels, proto.SetDisplayOption.Toggle)); 
-  regTCmd('toggleDisplayAllLowLevelContents', (t,e) => setDisplayOption(t,e,proto.DisplayOption.AllLowLevelContents, proto.SetDisplayOption.Toggle)); 
+  regTCmd('toggleDisplayAllLowLevelContents', (t,e) => setDisplayOption(t,e,proto.DisplayOption.AllLowLevelContents, proto.SetDisplayOption.Toggle));
+  regTCmd('toggleDisplay', (t,e) => setDisplayOption(t,e));
 
   // vscode.languages.registerCompletionItemProvider('coq', {provideCompletionItems: provideOptionCompletions}, 'X');
 }
@@ -231,8 +232,8 @@ function ltacProfGetResults(editor: TextEditor, edit: TextEditorEdit) {
   )
 }
 
-function setDisplayOption(editor: TextEditor, edit: TextEditorEdit, item: proto.DisplayOption, value: proto.SetDisplayOption) {
-  return withDocAsync(editor, async (doc) =>
+function setDisplayOption(editor: TextEditor, edit: TextEditorEdit, item?: proto.DisplayOption, value?: proto.SetDisplayOption) : void {
+  withDocAsync(editor, async (doc) =>
     doc.setDisplayOption(item, value)
   )
 }
