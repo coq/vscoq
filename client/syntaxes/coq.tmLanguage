@@ -179,7 +179,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(match|fun|with|returns|end|let|in|if|then|else)\b</string>
+            <string>\b(match|lazymatch|multimatch|fun|with|returns|end|let|in|if|then|else)\b</string>
             <key>comment</key>
             <string>Gallina keywords</string>
             <key>name</key>
