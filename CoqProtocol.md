@@ -1,3 +1,6 @@
+#*This documentation is moving to the [project wiki](https://github.com/siegebell/vscoq/wiki)*.
+
+
 #CoqTop XML Protocol#
 
 This documentation aims to provide a "hands on" description of the XML protocol that coqtop and coqide use to communicate.
