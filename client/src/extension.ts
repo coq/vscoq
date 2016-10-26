@@ -4,8 +4,6 @@ import * as vscode from 'vscode';
 import * as util from 'util';
 import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } from 'vscode-languageclient';
-
-
 import * as proto from './protocol';
 import {CoqDocumentListener, CoqDocument} from './CoqDocumentListener';
 
@@ -15,12 +13,10 @@ vscode.Position.prototype.toString = function positionToString() {return `{${thi
 
 console.log(`Coq Extension: process.version: ${process.version}, process.arch: ${process.arch}}`);
 
-
 // from 'vscode-languageserver'
 // export interface TextDocumentIdentifier {
 //     uri: string;
 // } 
-
 
 let documents : CoqDocumentListener;
 
