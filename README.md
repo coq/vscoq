@@ -25,6 +25,7 @@ Support for the [Coq Proof Assistant](https://coq.inria.fr/) in [Visual Studio C
 
 ## Tips
 * use the [prettify-symbols-mode](https://marketplace.visualstudio.com/items?itemName=siegebell.prettify-symbols-mode) extension to support fancy notation.
+* Ubuntu + vnc/rdp & can't run vscode? See: https://github.com/Microsoft/vscode/issues/3451
 
 ## Screenshots
 <img alt="Screenshot of Proof Goal" src="https://cloud.githubusercontent.com/assets/16118166/15950935/9c8537dc-2e81-11e6-9954-5eefeac23a7a.png" width="45%"/> <img alt="Screenshot of LtacProf results" src="https://cloud.githubusercontent.com/assets/16118166/15950939/a00a8e02-2e81-11e6-98c4-9425bf6ab9c9.png" width="45%"/>
