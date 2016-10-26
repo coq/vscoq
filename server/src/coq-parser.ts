@@ -7,7 +7,7 @@ import * as server from './server'
 import * as peg from 'pegjs'
 
 const sentenceParser = peg.generate(`
-FirstSentence
+SentenceLength
   = Sentence { throw text().length; } / "" {return error("Not a sentence")}
 
 Sentence "sentence"
@@ -53,9 +53,9 @@ CommentText "commentText"
   = (String / Comment / ([^"*(] / ("(" !"*") / ("*" !")"))+ )*
 `,{output: "parser"});
 
-export function parseSentence(str: string) : number {
+export function parseSentenceLength(str: string) : number {
   try {
-    sentenceParser.parse(str, {startRule: "FirstSentence", tracer: undefined}) as string;
+    sentenceParser.parse(str, {startRule: "SentenceLength", tracer: undefined}) as string;
     return -1;
   } catch(error) {
     if(typeof error === 'number')

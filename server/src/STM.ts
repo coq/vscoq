@@ -10,22 +10,36 @@ import * as textUtil from './text-util';
 import * as coqtop from './coqtop';
 import {ProofView, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './protocol';
 import * as coqParser from './coq-parser';
-import {Sentence, SentenceError, SentenceState} from './STMSentence';
+import {State, StatusError, StateStatus} from './STMState';
+import {LoadModule, SentenceSemantics} from './SentenceSemantics';
 import {Mutex} from './Mutex';
 
-export {SentenceState} from './STMSentence';
+export {StateStatus} from './STMState';
 
 
 type StateId = number;
 
-interface BufferedFeedback {
+interface BufferedFeedbackBase {
   stateId: number,
-  status: coqProto.SentenceStatus,
-  worker: string
 }
 
+interface BufferedFeedbackStatus extends BufferedFeedbackBase {
+  type: "status",
+  status: coqProto.SentenceStatus,
+  worker: string,
+}
+
+interface BufferedFeedbackFileLoaded extends BufferedFeedbackBase {
+  type: "fileLoaded",
+  filename: string,
+  module: string,
+}
+
+
+type BufferedFeedback = BufferedFeedbackStatus | BufferedFeedbackFileLoaded;
+
 export interface StateMachineCallbacks {
-  sentenceStatusUpdate(range: Range, status: SentenceState) : void;
+  sentenceStatusUpdate(range: Range, status: StateStatus) : void;
   clearSentence(range: Range) : void;
   updateStmFocus(focus: Position): void;
   error(sentenceRange: Range, errorRange: Range, message: string, rich_message?: any) : void;
@@ -75,13 +89,13 @@ enum STMStatus { Ready, Busy, Interrupting, Shutdown }
 export class CoqStateMachine {
   private version = 0;
   // lazy init
-  private root : Sentence = null;
+  private root : State = null;
   // map id to sentence; lazy init  
-  private sentences : Map<StateId,Sentence> = null;
+  private sentences : Map<StateId,State> = null;
   // The sentence that coqtop considers "focused"; lazy init
-  private focusedSentence : Sentence = null;
+  private focusedSentence : State = null;
   // The sentence that is closest to the end of the document; lazy init
-  private lastSentence : Sentence = null;
+  private lastSentence : State = null;
   // Handles communication with coqtop
   private coqtop : coqtop.CoqTop;
   // feedback may arrive before a sentence is assigned a stateId; buffer feedback messages for later
@@ -178,8 +192,8 @@ export class CoqStateMachine {
    * Applies the changes to the sentences
    * @return a list of invalidated sentences -- these need to be cancelled
    */
-  private applyChangesToSentences(sortedChanges: TextDocumentContentChangeEvent[], updatedDocumentText: string) : Sentence[] {
-    const invalidatedSentences : Sentence[] = [];
+  private applyChangesToSentences(sortedChanges: TextDocumentContentChangeEvent[], updatedDocumentText: string) : State[] {
+    const invalidatedSentences : State[] = [];
 
     try {
       const deltas = sortedChanges.map((c) => textUtil.toRangeDelta(c.range,c.text))
@@ -218,7 +232,7 @@ export class CoqStateMachine {
    * This will attempt to place the focus just before the topmost cancellation. 
    * @param invalidatedSentences -- assumed to be sorted in descending order (bottom first)
    */
-  private async cancelInvalidatedSentences(invalidatedSentences: Sentence[]) : Promise<void> {
+  private async cancelInvalidatedSentences(invalidatedSentences: State[]) : Promise<void> {
     if(invalidatedSentences.length <= 0)
       return;
     // Cancel the invalidated sentences
@@ -491,14 +505,14 @@ export class CoqStateMachine {
   }
 
 
-  public *getSentences() : Iterable<{range: Range, status: SentenceState}> {
+  public *getSentences() : Iterable<{range: Range, status: StateStatus}> {
     if(!this.isRunning() || this.root===null)
       return;
     for(let sent of this.root.descendants())
-      yield { range: sent.getRange(), status: sent.getState()}
+      yield { range: sent.getRange(), status: sent.getStatus()}
   }
 
-  public *getSentenceErrors() : Iterable<SentenceError> {
+  public *getSentenceErrors() : Iterable<StatusError> {
     if(!this.isRunning() || this.root===null)
       return;
     for(let sent of this.root.descendants()) {
@@ -507,7 +521,7 @@ export class CoqStateMachine {
     }
   }
 
-  public *getErrors() : Iterable<SentenceError> {
+  public *getErrors() : Iterable<StatusError> {
     if(!this.isRunning() || this.root===null)
       return;
     yield *this.getSentenceErrors();
@@ -515,7 +529,7 @@ export class CoqStateMachine {
       yield this.currentError;
   }
 
-  private getParentSentence(position: Position) : Sentence {
+  private getParentSentence(position: Position) : State {
     for(let sentence of this.root.descendants()) {
       if(!sentence.isBefore(position))
         return sentence.getParent();
@@ -524,7 +538,7 @@ export class CoqStateMachine {
     return this.root;
   }
 
-  private getSentence(position: Position) : Sentence {
+  private getSentence(position: Position) : State {
     for(let sentence of this.root.descendants()) {
       if(sentence.contains(position))
         return sentence;
@@ -538,8 +552,8 @@ export class CoqStateMachine {
       throw "STM is already initialized."
     if(!this.isRunning())
       throw "Cannot reinitialize the STM once it has died; create a new one."
-    this.root = Sentence.newRoot(rootStateId);
-    this.sentences = new Map<StateId,Sentence>([ [this.root.getStateId(),this.root] ]);
+    this.root = State.newRoot(rootStateId);
+    this.sentences = new Map<StateId,State>([ [this.root.getStateId(),this.root] ]);
     this.lastSentence = this.root;
     this.setFocusedSentence(this.root);
   }
@@ -614,7 +628,7 @@ export class CoqStateMachine {
   /**
    * Adds a command; assumes that it is adjacent to the current focus
   */
-  private async addCommand(command: {text: string, range: Range}, verbose: boolean) : Promise<{sentence: Sentence, unfocused: boolean}> {
+  private async addCommand(command: {text: string, range: Range}, verbose: boolean) : Promise<{sentence: State, unfocused: boolean}> {
     try {
       this.currentError = null;
 
@@ -624,7 +638,7 @@ export class CoqStateMachine {
         this.throwInconsistentState("Can only add a comand to the current focus");
 
       const value = await this.coqtop.coqAddCommand(command.text,this.version,parent.getStateId(),verbose);
-      const newSentence = Sentence.add(parent, command.text, value.stateId, command.range, startTime);
+      const newSentence = State.add(parent, command.text, value.stateId, command.range, startTime);
       this.sentences.set(newSentence.getStateId(),newSentence);
       // some feedback messages may have arrived before we get here
       this.applyBufferedFeedback();
@@ -744,7 +758,7 @@ export class CoqStateMachine {
    * Focuses the sentence; a new sentence may be appended to it.
    * @param sentence -- does nothing if null, already the focus, or its state ID does not exist
    */
-  private async focusSentence(sentence?: Sentence) {
+  private async focusSentence(sentence?: State) {
     if(!sentence || sentence == this.focusedSentence || !this.sentences.has(sentence.getStateId()))
       return;
 this.console.log("focusing " + sentence.getText());
@@ -769,25 +783,25 @@ this.console.log("focusing " + sentence.getText());
   }
 
 
-  private async cancelSentence(sentence: Sentence) {
+  private async cancelSentence(sentence: State) {
     if(!this.sentences.has(sentence.getStateId()))
       return;
     await this.focusSentence(sentence.getParent());
   }
 
-  private deleteSentence(sent: Sentence) {
+  private deleteSentence(sent: State) {
     this.callbacks.clearSentence(sent.getRange());
     this.sentences.delete(sent.getStateId());
   }
 
   /** Removes sentences from range (start,end), exclusive; assumes coqtop has already cancelled the sentences  */
-  private rewindRange(start: Sentence, end: Sentence) {
+  private rewindRange(start: State, end: State) {
     for(let sent of start.removeDescendentsUntil(end))
       this.deleteSentence(sent);
   }
 
   /** Rewind the entire document to this sentence, range (newLast, ..]; assumes coqtop has already cancelled the sentences  */
-  private rewindTo(newLast: Sentence) {
+  private rewindTo(newLast: State) {
     for(let sent of newLast.descendants())
       this.deleteSentence(sent);
     newLast.truncate();
@@ -802,16 +816,21 @@ this.console.log("focusing " + sentence.getText());
       .forEach((feedback,i,a) => {
         const sent = this.sentences.get(feedback.stateId);
         if(!sent) {
-          this.console.warn("Received buffered feedback for unknown stateId");
+          this.console.warn("Received buffered feedback for unknown stateId: " + feedback.stateId);
           return;
         }
-        sent.updateStatus(feedback.status);
-        this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getState())
+        if(feedback.type === "status") {
+          sent.updateStatus(feedback.status);
+          this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getStatus())
+        } else if(feedback.type === "fileLoaded") {
+          // if(sent.getText().includes(feedback.module))
+          //   sent.addSemantics(new LoadModule(feedback.filename, feedback.module));
+        }
       });
     this.bufferedFeedback = [];
   }
 
-  private setFocusedSentence(sent?: Sentence) {
+  private setFocusedSentence(sent?: State) {
     if(sent === this.focusedSentence)
       return;
     this.focusedSentence = sent;
@@ -822,11 +841,11 @@ this.console.log("focusing " + sentence.getText());
     const sent = this.sentences.get(stateId);
     if(sent) {
       sent.updateStatus(status);
-      this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getState())
+      this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getStatus())
     } else {
       // Sometimes, feedback will be received before CoqTop has given us the new stateId,
       // So we will buffer these messages until we get the next 'value' response.
-      this.bufferedFeedback.push({stateId: stateId, status: status, worker: worker});
+      this.bufferedFeedback.push({stateId: stateId, type: "status", status: status, worker: worker});
     }
   }
 
@@ -867,6 +886,13 @@ this.console.log("focusing " + sentence.getText());
   }
 
   private onCoqStateFileLoaded(stateId: number, route: number, status: coqProto.FileLoaded) {
+    // const sent = this.sentences.get(stateId);
+    // if(sent) {
+    //   if(sent.getText().includes(status.module))
+    //     sent.addSemantics(new LoadModule(status.filename, status.module));
+    // } else {
+    //   this.bufferedFeedback.push({stateId: stateId, type: "fileLoaded", filename: status.filename, module: status.module});
+    // }
   }
   
   private onCoqStateLtacProf(stateId: number, route: number, results: coqProto.LtacProfResults) {
@@ -919,21 +945,21 @@ this.console.log("focusing " + sentence.getText());
     }
   }
 
-  private debuggingGetSentences(params?: {begin?: Sentence|string, end?: Sentence|string}) {
-    let begin : Sentence, end : Sentence;
+  private debuggingGetSentences(params?: {begin?: State|string, end?: State|string}) {
+    let begin : State, end : State;
     if(params && params.begin === 'focus')
       begin = this.focusedSentence;
     if(!params || !params.begin || typeof params.begin === 'string')
       begin = this.root;
     else
-      begin = <Sentence>params.begin;
+      begin = <State>params.begin;
 
     if(params && params.end === 'focus')
       end = this.focusedSentence;
     else if(!params || !params.end || typeof params.end === 'string')
       end = this.lastSentence;
     else
-      end = <Sentence>params.end;
+      end = <State>params.end;
 
     const results : DSentence[] = [];
     for(let sent of begin.descendantsUntil(end.getNext())) {
@@ -973,7 +999,7 @@ function abbrString(s:string) {
 }
 
 type DSentence = string;
-function createDebuggingSentence(sent: Sentence) : DSentence {
+function createDebuggingSentence(sent: State) : DSentence {
   return `${sent.getRange().start.line}:${sent.getRange().start.character}-${sent.getRange().end.line}:${sent.getRange().end.character} -- ${abbrString(sent.getText().trim())}`;
 }
 

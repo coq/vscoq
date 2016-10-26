@@ -28,7 +28,7 @@ import {CoqProject} from './CoqProject';
 export let connection: IConnection = createConnection(process.stdin, process.stdout);
 
 
-let project : CoqProject = null;
+export let project : CoqProject = null;
 
 // // Create a simple text document manager. The text document manager
 // // supports full document sync only
@@ -56,12 +56,15 @@ connection.onInitialize((params): InitializeResult => {
   
   // var x : ServerCapabilities;
 	return {
-		capabilities: {
+		capabilities: <ServerCapabilities>{
 			textDocumentSync: TextDocumentSyncKind.Incremental,
 			// Tell the client that the server support code complete
 			completionProvider: {
 				resolveProvider: true
-			}
+			},
+      documentLinkProvider: {
+        resolveProvider: true
+      }
 		}
 	}
 });
@@ -237,6 +240,24 @@ connection.onCodeLens((params:CodeLensParams) => {
 connection.onCodeLensResolve((params:CodeLens) => {
   return params;
 });
+
+export interface DocumentLinkParams {
+    /**
+     * The document to provide document links for.
+     */
+    textDocument: TextDocumentIdentifier;
+}
+
+connection.onDocumentLinks((p:DocumentLinkParams,token: CancellationToken) : Promise<vscodeLangServer.DocumentLink[]> => {
+connection.console.log("onDocumentLinks");  
+  return project.lookup(p.textDocument.uri)
+    .provideDocumentLinks(token);
+})
+
+connection.onDocumentLinkResolve((link: vscodeLangServer.DocumentLink,token: CancellationToken) : vscodeLangServer.DocumentLink => {
+  connection.console.log("onDocumentLinkResolve: " + link);
+  return link;  
+})
 
 
 connection.onDidOpenTextDocument((params) => {

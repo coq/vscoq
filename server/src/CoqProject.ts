@@ -26,6 +26,10 @@ export class CoqProject {
     this.workspaceRoot = workspaceRoot;
     this.console = console;
   }
+
+  public getWorkspaceRoot() : string {
+      return this.workspaceRoot;
+  }
   
   public lookup(uri: string) : CoqDocument {
     var doc = this.coqInstances[uri];

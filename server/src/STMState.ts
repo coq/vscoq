@@ -5,18 +5,19 @@ import * as vscode from 'vscode-languageserver';
 import * as coqProto from './coq-proto';
 import * as parser from './coq-parser';
 import * as textUtil from './text-util';
+import {Sentence} from './Sentence';
 // import {CoqTopGoalResult} from './protocol';
 
 export type StateId = number;
 
-interface SentenceErrorInternal {
+interface StatusErrorInternal {
   /** Error message */
   message: string,
   /** Range of error within this sentence w.r.t. document positions. Is `undefined` if the error applies to the whole sentence */
   range?: Range,
 }
 
-export interface SentenceError extends SentenceErrorInternal {
+export interface StatusError extends StatusErrorInternal {
   /** Error message */
   message: string,
   /** Range of error within this sentence w.r.t. document positions. Is `undefined` if the error applies to the whole sentence */
@@ -25,7 +26,7 @@ export interface SentenceError extends SentenceErrorInternal {
   sentence: Range,
 }
 
-export enum SentenceState {
+export enum StateStatus {
   Parsing,
   ProcessingInput,
   Processed,
@@ -35,29 +36,31 @@ export enum SentenceState {
   Error
 }
 
-function statusToState(status: coqProto.SentenceStatus) : SentenceState {
+function convertStatus(status: coqProto.SentenceStatus) : StateStatus {
   switch(status) {
-    case coqProto.SentenceStatus.Parsing:          return SentenceState.Parsing;
-    case coqProto.SentenceStatus.ProcessingInput:  return SentenceState.ProcessingInput;
-    case coqProto.SentenceStatus.Processed:        return SentenceState.Processed;
-    case coqProto.SentenceStatus.InProgress:       return SentenceState.InProgress;
-    case coqProto.SentenceStatus.Incomplete:       return SentenceState.Incomplete;
-    case coqProto.SentenceStatus.Complete:         return SentenceState.Complete;
+    case coqProto.SentenceStatus.Parsing:          return StateStatus.Parsing;
+    case coqProto.SentenceStatus.ProcessingInput:  return StateStatus.ProcessingInput;
+    case coqProto.SentenceStatus.Processed:        return StateStatus.Processed;
+    case coqProto.SentenceStatus.InProgress:       return StateStatus.InProgress;
+    case coqProto.SentenceStatus.Incomplete:       return StateStatus.Incomplete;
+    case coqProto.SentenceStatus.Complete:         return StateStatus.Complete;
   }
 }
 
-export class Sentence {
-  private status: coqProto.SentenceStatus;
+export class State {
+  private status: coqProto.SentenceStatus|null;
   // private proofView: CoqTopGoalResult;
   private computeTimeMS: number;
-  private error?: SentenceErrorInternal = undefined;
+  private error?: StatusErrorInternal = undefined;
+  // set to true when a document change has invalidated the meaning of the associated sentence; this state needs to be cancelled
+  private markedInvalidated = false;
 
   private constructor
     ( private commandText: string
     , private stateId: StateId
     , private textRange: Range
-    , private prev: Sentence | null
-    , private next: Sentence | null
+    , private prev: State | null
+    , private next: State | null
     , private computeStart: [number,number] = [0,0]
   ) {
     this.status = coqProto.SentenceStatus.Parsing;
@@ -65,17 +68,17 @@ export class Sentence {
     this.computeTimeMS = 0;
   }
 
-  public static newRoot(stateId: StateId) : Sentence {
-    return new Sentence("",stateId,Range.create(0,0,0,0),null,null,[0,0]);
+  public static newRoot(stateId: StateId) : State {
+    return new State("",stateId,Range.create(0,0,0,0),null,null,[0,0]);
   }
 
-  public static add(parent: Sentence, command: string, stateId: number, range: Range, computeStart : [number,number]) : Sentence {
+  public static add(parent: State, command: string, stateId: number, range: Range, computeStart : [number,number]) : State {
     // This implies a strict order of descendents by document position
     // To support comments that are not added as sentences,
     // this could be loosened to if(textUtil.isBefore(range.start,parent.textRange.end)).
     if(!textUtil.positionIsEqual(range.start, parent.textRange.end))
       throw "New sentence is expected to be adjacent to its parent";
-    const result = new Sentence(command,stateId,range,parent,parent.next,computeStart);
+    const result = new State(command,stateId,range,parent,parent.next,computeStart);
     parent.next = result;
     return result;
   }
@@ -94,67 +97,54 @@ export class Sentence {
   public getText() : string {
     return this.commandText;
   }
-
-  public contains(position: Position) : boolean {
-    return textUtil.rangeContains(this.textRange, position);
-  }
-
-  public intersects(range: Range) : boolean {
-    return textUtil.rangeIntersects(this.textRange, range);
-  }
-
-  public isBefore(position: Position) : boolean {
-    return textUtil.positionIsBeforeOrEqual(this.textRange.end, position);
-  }
-
   public getStateId() : StateId {
     return this.stateId;
   }
 
-  /** Iterates all parent senteces */
-  public *ancestors() : Iterable<Sentence> {
-    let sentence = this.prev;
-    while(sentence != null) {
-      yield sentence;
-      sentence = sentence.prev;
+  /** Iterates all parent states */
+  public *ancestors() : Iterable<State> {
+    let state = this.prev;
+    while(state != null) {
+      yield state;
+      state = state.prev;
     }
   }
 
-  /** Iterates all decendent sentences */
-  public *descendants() : Iterable<Sentence> {
-    let sentence = this.next;
-    while(sentence != null) {
-      yield sentence;
-      sentence = sentence.next;
+  /** Iterates all decendent states */
+  public *descendants() : Iterable<State> {
+    let state = this.next;
+    while(state != null) {
+      yield state;
+      state = state.next;
     }
   }
 
-  /** Iterates all decendent sentences until. and not including, end */
-  public *descendantsUntil(end: StateId|Sentence) : Iterable<Sentence> {
-    let sentence = this.next;
-    while(sentence != null && sentence.stateId !== end && sentence !== end) {
-      yield sentence;
-      sentence = sentence.next;
+  /** Iterates all decendent states until, and not including, end */
+  public *descendantsUntil(end: StateId|State) : Iterable<State> {
+    let state = this.next;
+    while(state != null && state.stateId !== end && state !== end) {
+      yield state;
+      state = state.next;
     }
   }
 
-  /** Iterates this and all ancestor sentences in the order they appear in the document */
-  public *backwards() : Iterable<Sentence> {
+  /** Iterates this and all ancestor states in the order they appear in the document */
+  public *backwards() : Iterable<State> {
     yield this;
     yield *this.ancestors();
   }
 
-  /** Iterates this and all decentant sentences in the order they appear in the document */
-  public *forwards() : Iterable<Sentence> {
+  /** Iterates this and all decentant states in the order they appear in the document */
+  public *forwards() : Iterable<State> {
     yield this;
     yield *this.descendants();
   }
 
-  public getParent() : Sentence {
+  public getParent() : State {
     return this.prev;
   }
 
-  public getNext() : Sentence {
+  public getNext() : State {
     return this.next;
   }
 
@@ -239,7 +229,7 @@ export class Sentence {
       // We need to reparse the sentence to make sure the end of the sentence has not changed
       const endOffset = textUtil.offsetAt(updatedDocumentText, newRange.end);
       // The problem is if a non-blank [ \r\n] is now contacting the end-period of this sentence; we need only check one more character
-      const newEnd = parser.parseSentence(newText + updatedDocumentText.substr(endOffset, 1));
+      const newEnd = parser.parseSentenceLength(newText + updatedDocumentText.substr(endOffset, 1));
       if(newEnd === -1 || newEnd !== newText.length)
         return false; // invalidate: bad or changed syntax   
     }
@@ -258,23 +248,31 @@ export class Sentence {
     return this.prev === null;
   }
 
+  public markInvalid() : void {
+    this.markedInvalidated = true;
+  }
+
+  public isInvalidated() : boolean {
+    return this.markedInvalidated;
+  }
+
   /** Removes descendents until (and not including) state end */
-  public *removeDescendentsUntil(end: Sentence) : Iterable<Sentence> {
-    for(let sent of this.descendantsUntil(end.stateId))
-        yield sent;
+  public *removeDescendentsUntil(end: State) : Iterable<State> {
+    for(let state of this.descendantsUntil(end.stateId))
+      yield state;
     // unlink the traversed sentences
     this.next = end;
     end.prev = this;
   }
 
-  public getState() : SentenceState {
+  public getStatus() : StateStatus {
     if(this.error)
-      return SentenceState.Error;
+      return StateStatus.Error;
     else
-      return statusToState(this.status);
+      return convertStatus(this.status);
   }
 
-  public setStatus(status: coqProto.SentenceStatus) {
+  public setStatus(status: coqProto.SentenceStatus) : void {
     if(this.status > status)
       return;
     else {
@@ -288,23 +286,53 @@ export class Sentence {
     }
   }
 
+  /** @returns `true` if this sentence appears strictly before `position` */
+  public isBefore(position: Position) : boolean {
+    return textUtil.positionIsBeforeOrEqual(this.textRange.end, position);
+  }
+
+  /** @returns `true` if this sentence appears before or contains `position` */
+  public isBeforeOrAt(position: Position) : boolean {
+    return textUtil.positionIsBeforeOrEqual(this.textRange.end, position) || textUtil.positionIsBeforeOrEqual(this.textRange.start, position);
+  }
+
+  /** @returns `true` if this sentence appears strictly after `position`. */
+  public isAfter(position: Position) : boolean {
+    return textUtil.positionIsAfter(this.textRange.start, position);
+  }
+
+  /** @returns `true` if this sentence appears after or contains `position`. */
+  public isAfterOrAt(position: Position) : boolean {
+    return textUtil.positionIsAfterOrEqual(this.textRange.start, position) ||
+      textUtil.positionIsAfter(this.textRange.end, position);
+  }
+  
+  /** @returns `true` if this sentence contains `position`. */
+  public contains(position: Position) : boolean {
+    return textUtil.positionIsBeforeOrEqual(this.textRange.start, position) &&
+      textUtil.positionIsAfter(this.textRange.end, position);
+  }
+
   /** This sentence has reached an error state
    * @param location: optional offset range within the sentence where the error occurred
    */
-  public setError(message: string, location?: coqProto.Location) {
+  public setError(message: string, location?: coqProto.Location) : void {
     this.error = {message: message};
     if(location && location.start !== location.stop) {
+      const sentRange = this.getRange();
+      const sentText = this.getText();
       this.error.range =
         Range.create(
-          textUtil.positionAtRelativeCNL(this.textRange.start,this.commandText, location.start),
-          textUtil.positionAtRelativeCNL(this.textRange.start,this.commandText, location.stop))
+          textUtil.positionAtRelativeCNL(sentRange.start, sentText, location.start),
+          textUtil.positionAtRelativeCNL(sentRange.start, sentText, location.stop))
     }
   }
 
-  public getError() : SentenceError|null {
-    if(this.error)
-      return Object.assign(this.error, {sentence: this.textRange});
-    else
+  public getError() : StatusError|null {
+    if(this.error) {
+      const range = this.getRange();
+      return Object.assign(this.error, {sentence: range});
+    } else
       return null;
   }
 

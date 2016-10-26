@@ -2,6 +2,7 @@
 
 import * as util from 'util';
 import {TextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic, DiagnosticSeverity} from 'vscode-languageserver';
+import * as vscode from 'vscode-languageserver';
 import {CancellationToken} from 'vscode-jsonrpc';
 import {Interrupted, CoqtopError, CallFailure, AddResult, EditAtResult} from './coqtop';
 import * as thmProto from './protocol';
@@ -13,8 +14,9 @@ import {Mutex} from './Mutex';
 import {CancellationSignal, asyncWithTimeout} from './CancellationSignal';
 import {AsyncWorkQueue} from './AsyncQueue';
 import {richppToMarkdown} from './RichPP';
-import {CommandIterator, CoqStateMachine, GoalResult, SentenceState} from './STM';
+import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './STM';
 import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
+import * as sentSem from './SentenceSemantics';
 
 function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
 function positionToString(p:Position) {return `{${p.line}@${p.character}}`}
@@ -179,15 +181,15 @@ export class CoqDocument implements TextDocument {
   //   return { style: type, range: sentence };
   // }
 
-  private sentenceToHighlightType(status: SentenceState) : thmProto.HighlightType {
+  private sentenceToHighlightType(status: StateStatus) : thmProto.HighlightType {
     switch(status) {
-      case SentenceState.Error:           return thmProto.HighlightType.StateError;
-      case SentenceState.Parsing:         return thmProto.HighlightType.Parsing;
-      case SentenceState.ProcessingInput: return thmProto.HighlightType.Processing;
-      case SentenceState.Incomplete:      return thmProto.HighlightType.Incomplete;
-      case SentenceState.Complete:        return thmProto.HighlightType.Complete;
-      case SentenceState.InProgress:      return thmProto.HighlightType.InProgress;
-      case SentenceState.Processed:       return thmProto.HighlightType.Processed;
+      case StateStatus.Error:           return thmProto.HighlightType.StateError;
+      case StateStatus.Parsing:         return thmProto.HighlightType.Parsing;
+      case StateStatus.ProcessingInput: return thmProto.HighlightType.Processing;
+      case StateStatus.Incomplete:      return thmProto.HighlightType.Incomplete;
+      case StateStatus.Complete:        return thmProto.HighlightType.Complete;
+      case StateStatus.InProgress:      return thmProto.HighlightType.InProgress;
+      case StateStatus.Processed:       return thmProto.HighlightType.Processed;
     }    
   }
 
@@ -225,7 +227,7 @@ export class CoqDocument implements TextDocument {
     return diagnostics;
   }
 
-  private onCoqStateStatusUpdate(range: Range, status: SentenceState) {
+  private onCoqStateStatusUpdate(range: Range, status: StateStatus) {
     this.updateHighlights();
   }
   
@@ -310,7 +312,7 @@ export class CoqDocument implements TextDocument {
       return;
 
     while(true) {
-      const commandLength = coqParser.parseSentence(this.documentText.substr(currentOffset, endOffset))
+      const commandLength = coqParser.parseSentenceLength(this.documentText.substr(currentOffset, endOffset))
       const nextOffset = currentOffset + commandLength;
       if(commandLength > 0 || nextOffset > endOffset) {
         let result =
@@ -908,7 +910,29 @@ export class CoqDocument implements TextDocument {
   }
 
   public async setDisplayOptions(options: {item: thmProto.DisplayOption, value: thmProto.SetDisplayOption}[]) {
+    if(!this.stm || !this.stm.isRunning())
+      return;
     this.stm.setDisplayOptions(options);
+  }
+
+  public async provideDocumentLinks(token: CancellationToken) : Promise<vscode.DocumentLink[]> {
+    return [];
+    // if(!this.stm || !this.stm.isRunning())
+    //   return;
+    // const results : vscode.DocumentLink[] = [];
+    // for(let sent of this.stm.getSentences()) {
+    //   sem: for(let sem of sent.getSemantics()) {
+    //     if(sem instanceof sentSem.LoadModule) {
+    //       if(!sem.getSourceFileName())
+    //         continue sem;
+    //       const link = new vscode.DocumentLink();
+    //       link.range = sent.range;
+    //       link.target = sem.getSourceFileName();
+    //       results.push(link)
+    //     }
+    //   }
+    // }
+    // return results;
   }
 
   // private coqInterface = {
