@@ -304,10 +304,28 @@ export function positionRangeDeltaTranslateEnd(pos: Position, delta: RangeDelta)
     return Position.create(pos.line + delta.linesDelta, pos.character);
 }
 
-export function rangeTranslate(range: Range, delta: RangeDelta) {
+export function rangeDeltaTranslate(range: Range, delta: RangeDelta) {
   return Range.create(
     positionRangeDeltaTranslate(range.start, delta),
     positionRangeDeltaTranslateEnd(range.end, delta)
   )
 }
 
+/** Sums the two positions. In effect, gets the absolute position of `relPos`.
+ * @param absPos -- position at which `relPos` is relative to
+ * @param relPos -- a relative position
+ */
+export function positionTranslateRelative(absPos: Position, relPos: Position) {
+  if(relPos.line === 0)
+    return Position.create(absPos.line, absPos.character+relPos.character);
+  else
+    return Position.create(absPos.line+relPos.line, relPos.character);
+}
+
+/** Converts `relRange` from a relative range w.r.t. `absPos` to an absolute range.
+ * @param absPos -- position at which `relRange` is relative to
+ * @param relRange -- a range, relative to absPos
+ */
+export function rangeTranslateRelative(absPos: Position, relRange: Range) {
+  return Range.create(positionTranslateRelative(absPos, relRange.start), positionTranslateRelative(absPos, relRange.end))
+}

@@ -173,7 +173,7 @@ export class State {
    * @returns true if the delta intersects this sentence
   */
   private shift(delta: textUtil.RangeDelta) : boolean {
-    this.textRange = textUtil.rangeTranslate(this.textRange, delta);
+    this.textRange = textUtil.rangeDeltaTranslate(this.textRange, delta);
     // invalidate if there is an intersection
     return textUtil.rangeIntersects(this.textRange, Range.create(delta.start,delta.end));
   }
@@ -197,9 +197,9 @@ export class State {
       const delta = deltas[idx];
       switch(parser.sentenceRangeContainment(newRange,change.range)) {
         case parser.SentenceRangeContainment.Before:
-          newRange = textUtil.rangeTranslate(newRange,delta);
+          newRange = textUtil.rangeDeltaTranslate(newRange,delta);
           if(newErrorRange)
-            newErrorRange = textUtil.rangeTranslate(newErrorRange,delta);
+            newErrorRange = textUtil.rangeDeltaTranslate(newErrorRange,delta);
           continue change;
         case parser.SentenceRangeContainment.After:
           if(textUtil.positionIsEqual(this.textRange.end, change.range.start))
@@ -220,7 +220,7 @@ export class State {
           newRange.end = textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta);
 
           if(newErrorRange)
-            newErrorRange = textUtil.rangeTranslate(newErrorRange,delta);
+            newErrorRange = textUtil.rangeDeltaTranslate(newErrorRange,delta);
       } // switch
     } // change: for
 

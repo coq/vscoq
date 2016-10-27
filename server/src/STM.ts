@@ -200,7 +200,7 @@ export class CoqStateMachine {
 
       if(this.currentError && this.currentError.range) {
         for(let idx = 0; idx < sortedChanges.length; ++idx) {
-          this.currentError.range = textUtil.rangeTranslate(this.currentError.range, deltas[idx])
+          this.currentError.range = textUtil.rangeDeltaTranslate(this.currentError.range, deltas[idx])
         }
       }
 
