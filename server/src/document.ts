@@ -17,9 +17,21 @@ import {richppToMarkdown} from './RichPP';
 import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './STM';
 import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
 import * as sentSem from './SentenceSemantics';
+import {SentenceCollection} from './SentenceCollection';
 
 function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
 function positionToString(p:Position) {return `{${p.line}@${p.character}}`}
+
+
+/** vscode needs to export this class */
+export interface TextDocumentItem {
+    uri: string;
+    languageId: string;
+    version: number;
+    text: string;
+}
+
+
 
 interface MessageCallback {
   sendMessage(level: string, message: string, rich_message?: any) : void;
@@ -46,25 +58,21 @@ const lineEndingRE = /[^\r\n]*(\r\n|\r|\n)?/;
 
 export class CoqDocument implements TextDocument {
   // TextDocument
-  public uri: string;
-  public languageId: string = 'coq';
-  public version: number;
+  public get uri() { return this.document.uri };
+  public get languageId() { return this.document.languageId };
+  public get version() { return this.document.version };
+  public get lineCount() { return this.document.lineCount };
   public getText() {
-    return this.documentText;
+    return this.document.getText();;
   }
-  public lineCount: number;
 
 
   private stm: CoqStateMachine;
   private clientConsole: RemoteConsole;
-  // private document: TextDocument;
   private callbacks : MessageCallback & ResetCallback & LtacProfCallback;
-  private diagnostics : Diagnostic[] = [];
-  private documentText: string;
-  private processingLock = new Mutex();
-  private resettingLock = new Mutex();
-  private cancelProcessing = new CancellationSignal();
+  private document: SentenceCollection = null;
   private coqtopSettings : thmProto.CoqTopSettings;
+  // Feedback destined for the extension client/view
   private feedback : FeedbackSync;
 
   private parsingRanges : Range[] = [];
@@ -72,10 +80,9 @@ export class CoqDocument implements TextDocument {
   // private interactionLoopStatus = InteractionLoopStatus.Idle;
   // we'll use this as a callback, so protect it with an arrow function so it gets the correct "this" pointer
 
-  constructor(coqtopSettings : thmProto.CoqTopSettings, uri: string, text: string, clientConsole: RemoteConsole, callbacks: DocumentCallbacks) {
+  constructor(coqtopSettings : thmProto.CoqTopSettings, document: TextDocumentItem, clientConsole: RemoteConsole, callbacks: DocumentCallbacks) {
     this.clientConsole = clientConsole;
-    this.documentText = text;
-    this.uri = uri;
+    this.document = new SentenceCollection(document);
     this.callbacks = callbacks;
     this.coqtopSettings = coqtopSettings;
     this.feedback = new FeedbackSync(callbacks, 200);
@@ -88,17 +95,10 @@ export class CoqDocument implements TextDocument {
   }
 
 
-  private applyEditToDocument(begin: number, change: TextDocumentContentChangeEvent) : void {
-    this.documentText =
-      this.documentText.substring(0,begin)
-      + change.text
-      + this.documentText.substring(begin+change.rangeLength);
-  }
-  
   private getTextOfRange(range: Range) {
     const start = this.offsetAt(range.start);
     const end = this.offsetAt(range.end);
-    return this.documentText.substring(start,end);
+    return this.document.getText().substring(start,end);
   }
 
 
@@ -107,35 +107,29 @@ export class CoqDocument implements TextDocument {
     let sortedChanges =
       changes.sort((change1,change2) =>
         textUtil.positionIsAfter(change1.range.start, change2.range.start) ? -1 : 1)
-
-    for(const change of sortedChanges) {
-      const beginOffset = this.offsetAt(change.range.start);
-      this.applyEditToDocument(beginOffset, change);
-    }
+      this.document.applyTextChanges(newVersion, changes);
 
     try {
-      const passive = this.stm.applyChanges(sortedChanges, newVersion, this.documentText);
+      const passive = this.stm.applyChanges(sortedChanges, newVersion, this.document.getText());
       // if(!passive)
       //   this.updateHighlights();
     } catch (err) {
       this.clientConsole.error("STM crashed while applying text edit: " + err.toString())
     }
 
-    this.version = newVersion;
-
    this.updateHighlights();
    this.updateDiagnostics();
   }
   
   public offsetAt(pos: Position) : number {
-    return textUtil.offsetAt(this.documentText,pos);
+    return this.document.offsetAt(pos);
   }
 
   /**
    * @returns the Position (line, column) for the location (character position)
    */
   public positionAt(offset: number) : Position {
-    return textUtil.positionAt(this.documentText, offset);
+    return this.document.positionAt(offset);
   }
 
   
@@ -301,22 +295,23 @@ export class CoqDocument implements TextDocument {
    * @param endOffset: if specified, stop at the last command to not exceed the offset
    */
   private *commandSequenceGenerator(begin: Position, end?: Position, highlight: boolean = false) : IterableIterator<{text: string, range: Range}> {
+    const documentText = this.document.getText();
     let endOffset : number;
     if(end == undefined)
-      endOffset = this.documentText.length;
+      endOffset = documentText.length;
     else
-      endOffset = Math.min(this.offsetAt(end), this.documentText.length);
+      endOffset = Math.min(this.offsetAt(end), documentText.length);
 
     let currentOffset = this.offsetAt(begin);
     if(currentOffset >= endOffset)
       return;
 
     while(true) {
-      const commandLength = coqParser.parseSentenceLength(this.documentText.substr(currentOffset, endOffset))
+      const commandLength = coqParser.parseSentenceLength(documentText.substr(currentOffset, endOffset))
       const nextOffset = currentOffset + commandLength;
       if(commandLength > 0 || nextOffset > endOffset) {
         let result =
-          { text: this.documentText.substring(currentOffset, nextOffset)
+          { text: documentText.substring(currentOffset, nextOffset)
           , range: Range.create(this.positionAt(currentOffset),this.positionAt(nextOffset))
           };
         yield result;
@@ -838,7 +833,7 @@ export class CoqDocument implements TextDocument {
   }
 
   public async interpretToEnd(token: CancellationToken) : Promise<thmProto.CommandResult> {
-    return await this.interpretToPoint(this.documentText.length,token);
+    return await this.interpretToPoint(this.document.getText().length,token);
   }
 
   public async getGoal() : Promise<thmProto.CommandResult> {

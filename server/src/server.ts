@@ -22,7 +22,6 @@ import * as coqproto from './protocol';
 import {CoqTopSettings, Settings} from './protocol';
 import {CoqProject} from './CoqProject';
 
-
 // Create a connection for the server. The connection uses 
 // stdin / stdout for message passing
 export let connection: IConnection = createConnection(process.stdin, process.stdout);
@@ -42,6 +41,8 @@ export let project : CoqProject = null;
 let workspaceRoot: string;
 connection.onInitialize((params): InitializeResult => {
   connection.console.log(`Coq Language Server: process.version: ${process.version}, process.arch: ${process.arch}}`);
+  connection.console.log(`execArgv: ${process.execArgv.join(' ')}`);
+  connection.console.log(`argv: ${process.argv.join(' ')}`);
   // connection.console.log('coq path: ' + currentSettings.coqPath);
 	workspaceRoot = params.rootPath;
 
@@ -249,20 +250,21 @@ export interface DocumentLinkParams {
 }
 
 connection.onDocumentLinks((p:DocumentLinkParams,token: CancellationToken) : Promise<vscodeLangServer.DocumentLink[]> => {
-connection.console.log("onDocumentLinks");  
-  return project.lookup(p.textDocument.uri)
-    .provideDocumentLinks(token);
+  return Promise.resolve([]);
+  // return project.lookup(p.textDocument.uri)
+    // .provideDocumentLinks(token);
 })
 
 connection.onDocumentLinkResolve((link: vscodeLangServer.DocumentLink,token: CancellationToken) : vscodeLangServer.DocumentLink => {
-  connection.console.log("onDocumentLinkResolve: " + link);
-  return link;  
+return link;
+  // connection.console.log("onDocumentLinkResolve: " + link);
+  // return link;  
 })
 
 
-connection.onDidOpenTextDocument((params) => {
-  const uri = params.textDocument.uri;
-  project.open(uri, params.textDocument.text, {
+connection.onDidOpenTextDocument((params: vscodeLangServer.DidOpenTextDocumentParams) => {
+  const uri = params.textDocument.uri; 
+  project.open(params.textDocument, {
     sendHighlightUpdates: (h) => sendHighlightUpdates(uri, h),
     sendDiagnostics: (diagnostics) => sendDiagnostics(uri, diagnostics),
     sendMessage: (level, message: string, rich_message?: any) =>

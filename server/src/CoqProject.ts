@@ -1,5 +1,5 @@
 
-import {CoqDocument, DocumentCallbacks} from './document';
+import {CoqDocument, DocumentCallbacks, TextDocumentItem} from './document';
 import {CoqTopSettings, Settings} from './protocol';
 import * as vscode from 'vscode-languageserver';
 import * as path from 'path';
@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as readline from 'readline';
 
 const coqProjectFileName = '_CoqProject';
+
 
 export class CoqProject {
   private coqInstances : { [uri: string] : CoqDocument } = {};
@@ -58,10 +59,10 @@ export class CoqProject {
     this.ready.signal();
   }
   
-  public async open(uri: string, text: string, callbacks: DocumentCallbacks): Promise<CoqDocument> {
+  public async open(textDocument: TextDocumentItem, callbacks: DocumentCallbacks): Promise<CoqDocument> {
     await this.ready.event;
-    const doc = new CoqDocument(this.currentSettings.coqtop, uri, text, this.console, callbacks);
-    this.coqInstances[uri] = doc;
+    const doc = new CoqDocument(this.currentSettings.coqtop, textDocument, this.console, callbacks);
+    this.coqInstances[doc.uri] = doc;
     return doc;
   }
   

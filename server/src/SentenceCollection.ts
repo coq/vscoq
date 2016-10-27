@@ -3,17 +3,33 @@ import {Position, Range} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
 import {Sentence} from './Sentence';
 import * as parser from './coq-parser';
+import {TextDocumentItem} from './document'
+import * as server from './server'
 
 
 export type SentencesInvalidatedCallback = (invalidatedSentences: Sentence[]) => void; 
 
 
-export class SentenceCollection {
+export class SentenceCollection implements vscode.TextDocument {
   private sentences: Sentence[] = [];
   private sentencesInvalidatedCallbacks = new Set<SentencesInvalidatedCallback>();
+  
+  public languageId: string = 'coq';
+  public lineCount : number = 0;
+  public uri: string;
+  public version: number;
+  private documentText: string;
 
-  public constructor(private documentText: string) {
-    this.reparseSentences(0);
+  public constructor(document: TextDocumentItem) {
+    this.uri = document.uri;
+    this.version = document.version;
+    this.documentText = document.text;
+    this.lineCount = textUtil.positionAt(document.text, document.text.length-1).line;
+    try {
+      this.reparseSentences(0);
+    } catch(err) {
+      server.connection.console.error(err);
+    }
   }
 
   private applyChangesToDocumentText(sortedChanges: vscode.TextDocumentContentChangeEvent[]) : void {
@@ -23,7 +39,33 @@ export class SentenceCollection {
         this.documentText.substring(0,beginOffset)
         + change.text
         + this.documentText.substring(beginOffset+change.rangeLength);
+
+      const delta = textUtil.toRangeDelta(change.range, change.text);
+      this.lineCount += delta.linesDelta;
     }
+  }
+
+  public getText() : string {
+    return this.documentText;
+  }
+
+  public positionAt(offset: number) : Position {
+    for(let sent of this.sentences) {
+      const sentOffset = sent.getDocumentEndOffset();
+      if(sent.getDocumentOffset() <= offset && offset < sentOffset) {
+        return sent.positionAt(offset - sentOffset);
+      }
+    }
+    // Can't find the offset in a sentence, so calculate the position from the whole document
+    return textUtil.positionAt(this.documentText, offset);
+  }
+
+  public offsetAt(position: Position) : number {
+    const sentIdx = this.getSentenceIndexBeforeOrAt(position);
+    if(sentIdx < 0 || this.sentences[sentIdx].isBefore(position))
+      return textUtil.offsetAt(this.documentText, position);
+    else
+      return this.sentences[sentIdx].documentOffsetAt(position);
   }
 
   public onSentencesInvalidated(handler: SentencesInvalidatedCallback) : { dispose: () => void } {
@@ -62,7 +104,7 @@ export class SentenceCollection {
    * Applies text changes to the sentences; adjusting ranges and possibly invalidating sentences.
    * Invalidated sentences will be automatically reparsed.
    */
-  public applyTextChanges(changes: vscode.TextDocumentContentChangeEvent[]) {
+  public applyTextChanges(newVersion: number, changes: vscode.TextDocumentContentChangeEvent[]) {
     // sort the edits such that later edits are processed first
     let sortedChanges =
       changes.sort((change1,change2) =>
@@ -72,7 +114,7 @@ export class SentenceCollection {
 
     const invalidatedSentences : number[] = [];
     const deltas = sortedChanges.map((c) => textUtil.toRangeDelta(c.range,c.text))
-    for(let sentIdx = this.sentences.length; sentIdx >= 0; --sentIdx) {
+    for(let sentIdx = this.sentences.length-1; sentIdx >= 0; --sentIdx) {
       const sent = this.sentences[sentIdx];
 
       const preserved = sent.applyTextChanges(sortedChanges,deltas,this.documentText);
@@ -81,8 +123,9 @@ export class SentenceCollection {
       }
     }
 
-    const {removed:removed} = this.reparseSentencesByIndices(invalidatedSentences);
-    this.sentencesInvalidatedCallbacks.forEach((handler) => handler(removed));
+    this.version = newVersion;
+    const removed = this.reparseSentencesByIndices(invalidatedSentences);
+    this.sentencesInvalidatedCallbacks.forEach((handler) => handler(removed.removed));
   }
 
 
@@ -90,36 +133,36 @@ export class SentenceCollection {
    * @param count -- minimum number of sentences to reparse
    * @return reparsed sentences
    */
-  private reparseSentencesByIndices(indices: number[]) : {removed: Sentence[]} {
+  private reparseSentencesByIndices(indices: number[]) : {removed: Sentence[], added: Sentence[]} {
     if(indices.length <= 0)
-      return {removed: [] };
+      return {removed: [], added: [] };
 
     // sort in ascending order
     indices = indices.sort();
 
     const removed : Sentence[] = [];
+    const added : Sentence[] = [];
     let shift = 0;
     for(let idx = 0; idx < indices.length; ++idx) {
       const sentIdx = shift + indices[idx];
-      const {removed: removedPatch, reparsed: reparsedPatch, endOfSentences: isEnd}
-        = this.reparseSentences(sentIdx);
+      const patch = this.reparseSentences(sentIdx);
+      removed.push(...patch.removed);
+      added.push(...patch.added);
 
-      removed.push(...removedPatch);
-
-      if(isEnd)
+      if(patch.endOfSentences)
         break;
 
       // skip past any indices that were reparsed in this patch
-      while(idx < indices.length && shift+indices[idx] < sentIdx + removedPatch.length)
+      while(idx < indices.length && shift+indices[idx] < sentIdx + patch.removed.length)
         ++idx;
 
       // removing & inserting parsed sentences will cause `indices` to drift w.r.t. `this.sentences`
       // this tracks the adjustments for indices past our current point
       // (but is not accurate for `< idx`)
-      shift+= reparsedPatch.length - removedPatch.length;
+      shift+= patch.added.length - patch.removed.length;
     }
 
-    return {removed: removed}
+    return {removed: removed, added: added}
   }
 
 //   /**
@@ -204,7 +247,7 @@ export class SentenceCollection {
    * @param count -- minimum number of sentences to reparse
    * @return removed sentences
    */
-  private reparseSentences(start: number, minCount: number = 0) : {removed: Sentence[], reparsed: Sentence[], endOfSentences: boolean} {
+  private reparseSentences(start: number, minCount: number = 0) : {removed: Sentence[], added: Sentence[], endOfSentences: boolean} {
     if(start < 0 || start > this.sentences.length)
       throw new RangeError("sentence index out of range");
     else if(minCount > this.sentences.length - start)
@@ -212,7 +255,10 @@ export class SentenceCollection {
 
     let currentPosition : Position;
     let currentOffset : number;
-    if(start < this.sentences.length) {
+    if(this.sentences.length === 0) {
+      currentPosition = Position.create(0,0);
+      currentOffset = 0;
+    } else if(start < this.sentences.length) {
       currentPosition = this.sentences[start].getRange().start;
       currentOffset = this.sentences[start].getDocumentOffset();
     } else {
@@ -224,18 +270,19 @@ export class SentenceCollection {
     for(let idx = 0; /**/; ++idx) {
       const parseText = this.documentText.substring(currentOffset);
       const len = parser.parseSentenceLength(parseText);
+
       if(len <= 0) {
         // end of parsable sentences
         // treat the rest of the document as unparsed
         const removed = this.sentences.splice(start, this.sentences.length - start, ...reparsed)
         removed.forEach((sent) => sent.dispose());
-        return {removed: removed, reparsed: reparsed, endOfSentences: true};
+        return {removed: removed, added: reparsed, endOfSentences: true};
       }
       else if(idx >= minCount && start+idx < this.sentences.length && currentOffset+len === this.sentences[start+idx].getDocumentEndOffset()) {
         // no need to parse further; keep remaining sentences
         const removed = this.sentences.splice(start, idx, ...reparsed)
         removed.forEach((sent) => sent.dispose());
-        return {removed: removed, reparsed: reparsed, endOfSentences: false};
+        return {removed: removed, added: reparsed, endOfSentences: false};
       }
 
       const command = parseText.substring(0, len);

@@ -43,6 +43,30 @@ export class Sentence {
     return this.documentOffset + this.text.length;
   }
 
+  /**
+   * @param localOffset -- character offset into this sentence
+   * @return the position w.r.t. the whole document
+   */
+  public positionAt(localOffset: number) : Position {
+    return textUtil.positionAtRelative(this.documentRange.start, this.text, localOffset);
+  }
+
+  /**
+   * @param position -- position w.r.t. the whole document
+   * @return the offset w.r.t. this sentence, or -1 if the position is not contained by this sentence
+   */
+  public offsetAt(position: Position) : number {
+    return textUtil.relativeOffsetAtAbsolutePosition(this.text, this.documentRange.start, position);
+  }
+
+  /**
+   * @param position -- position w.r.t. the whole document
+   * @return the offset w.r.t. this sentence, or -1 if the position is not contained by this sentence
+   */
+  public documentOffsetAt(position: Position) : number {
+    return this.documentOffset + textUtil.relativeOffsetAtAbsolutePosition(this.text, this.documentRange.start, position);
+  }
+
   public contains(position: Position) : boolean {
     return textUtil.rangeContains(this.documentRange, position);
   }
@@ -118,6 +142,7 @@ export class Sentence {
       const delta = deltas[idx];
       switch(parser.sentenceRangeContainment(newRange,change.range)) {
         case parser.SentenceRangeContainment.Before:
+          this.documentOffset+= change.text.length - change.rangeLength;
           newRange = textUtil.rangeTranslate(newRange,delta);
           if(newErrorRange)
             newErrorRange = textUtil.rangeTranslate(newErrorRange,delta);
@@ -139,7 +164,6 @@ export class Sentence {
             + change.text
             + newText.substring(beginOffset+change.rangeLength);
           newRange.end = textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta);
-
       } // switch
     } // change: for
 
