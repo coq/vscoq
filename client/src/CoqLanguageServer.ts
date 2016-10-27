@@ -16,6 +16,7 @@ import {CoqDocument} from './CoqDocument';
 
 import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } from 'vscode-languageclient';
+import * as vscodeClient from 'vscode-languageclient';
 
 function createServerProcess(serverModule: string, debugOptions: string[]): ServerOptions {
     let nodejsPath = workspace.getConfiguration('nodejs')['path'] || '';
@@ -31,10 +32,11 @@ function createServerProcess(serverModule: string, debugOptions: string[]): Serv
   }
 
 function createServerLocalExtension(serverModule: string, debugOptions: string[]): ServerOptions {
-    return {
+    const options : { run: vscodeClient.NodeModule; debug: vscodeClient.NodeModule } = {
       run: { module: serverModule },
       debug: { module: serverModule, options: { execArgv: debugOptions } }
     }
+    return options;
   }
 
 export class CoqLanguageServer {
@@ -47,8 +49,8 @@ export class CoqLanguageServer {
     // The debug options for the server
     let debugOptions = ["--nolazy", "--debug=6004"];
 
-    // let serverOptions = createServerProcess(serverModule, debugOptions);
-    let serverOptions = createServerLocalExtension(serverModule, debugOptions);
+    let serverOptions = createServerProcess(serverModule, debugOptions);
+    // let serverOptions = createServerLocalExtension(serverModule, debugOptions);
     
     // Options to control the language client
     let clientOptions: LanguageClientOptions = {
@@ -62,8 +64,20 @@ export class CoqLanguageServer {
       }
     }
 
+/** TODO: remove this once vscode-languageclient 3.0.0alpha.3 comes out, fixing #106 */
+    function startedInDebugMode(): boolean {
+      let args = (process as any).execArgv;
+      if (args) {
+        return args.some((arg) => /^--debug=?/.test(arg) || /^--debug-brk=?/.test(arg));
+      };
+      return false;
+    }
+
     // Create the language client and start the client.
-    this.server = new LanguageClient('Coq Language Server', serverOptions, clientOptions);
+    this.server = new LanguageClient('Coq Language Server', serverOptions, clientOptions, startedInDebugMode());
+    this.server.onReady()
+      .then(() => console.log("Coq language server ready"))
+      .catch((reason) => console.log("Coq language server failed to load: " + reason.toString()))
   }
   
   public start() : vscode.Disposable {

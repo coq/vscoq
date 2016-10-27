@@ -9,11 +9,12 @@
 	"publisher": "siegebell",
   "license": "MIT license (MIT)",
   "engines": {
- 		"vscode": "^1.5.3"
+ 		"vscode": "^1.5.3",
+    "node": "*"
   },
   "dependencies": {
-    "vscode-jsonrpc": "^3.0.0-alpha.3",
-    "vscode-languageserver": "^3.0.0-alpha.1",
+    "vscode-jsonrpc": "3.0.0-alpha.3",
+    "vscode-languageserver": "3.0.0-alpha.1",
     "sax": "1.2.1",
     "xml2js": "^0.4.17",
     "async": "2.0.1",
