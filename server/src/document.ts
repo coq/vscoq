@@ -107,7 +107,8 @@ export class CoqDocument implements TextDocument {
     let sortedChanges =
       changes.sort((change1,change2) =>
         textUtil.positionIsAfter(change1.range.start, change2.range.start) ? -1 : 1)
-      this.document.applyTextChanges(newVersion, changes);
+
+    this.document.applyTextChanges(newVersion, changes);
 
     try {
       const passive = this.stm.applyChanges(sortedChanges, newVersion, this.document.getText());
@@ -778,6 +779,8 @@ export class CoqDocument implements TextDocument {
           diagnostics.push(Diagnostic.create(error.sentence,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
         }
       }
+
+      diagnostics.push(...Array.from(this.document.getErrors()));
     return diagnostics;
     }, now);
   }
@@ -908,6 +911,14 @@ export class CoqDocument implements TextDocument {
     if(!this.stm || !this.stm.isRunning())
       return;
     this.stm.setDisplayOptions(options);
+  }
+
+  public provideSymbols() : vscode.SymbolInformation[] {
+    const results : vscode.SymbolInformation[] = [];
+    for(let sent of this.document.getSentences()) {
+      results.push(...sent.getSymbols());
+    }
+    return results;
   }
 
   public async provideDocumentLinks(token: CancellationToken) : Promise<vscode.DocumentLink[]> {

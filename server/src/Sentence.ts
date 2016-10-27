@@ -7,12 +7,12 @@ import * as parser from './coq-parser';
 
 export class Sentence {
   private state: State = undefined;
-  private semantics: SentenceSemantics[] = undefined;
 
   public constructor(
     private text: string,
     private documentRange: Range,
     private documentOffset: number,
+    private symbols?: vscode.SymbolInformation[],
   ) {}
 
   public dispose() {
@@ -106,18 +106,22 @@ export class Sentence {
       return "contains";
   }
 
-  public addSemantics(sem: SentenceSemantics) {
-    if(this.semantics) {
-      if (this.semantics.every((x) => !x.isEqual(sem)))
-        this.semantics.push(sem);
-    } else
-      this.semantics = [sem];
+  public getSymbols() {
+    return this.symbols;
   }
 
-  public *getSemantics() : Iterable<SentenceSemantics> {
-    if(this.semantics)
-      yield* this.semantics;
-  }
+  // public addSemantics(sem: SentenceSemantics) {
+  //   if(this.semantics) {
+  //     if (this.semantics.every((x) => !x.isEqual(sem)))
+  //       this.semantics.push(sem);
+  //   } else
+  //     this.semantics = [sem];
+  // }
+
+  // public *getSemantics() : Iterable<SentenceSemantics> {
+  //   if(this.semantics)
+  //     yield* this.semantics;
+  // }
 
   public toString() : string {
     return this.text;
@@ -143,9 +147,9 @@ export class Sentence {
       switch(parser.sentenceRangeContainment(newRange,change.range)) {
         case parser.SentenceRangeContainment.Before:
           this.documentOffset+= change.text.length - change.rangeLength;
-          newRange = textUtil.rangeTranslate(newRange,delta);
+          newRange = textUtil.rangeDeltaTranslate(newRange,delta);
           if(newErrorRange)
-            newErrorRange = textUtil.rangeTranslate(newErrorRange,delta);
+            newErrorRange = textUtil.rangeDeltaTranslate(newErrorRange,delta);
           continue change;
         case parser.SentenceRangeContainment.After:
           if(textUtil.positionIsEqual(newRange.end, change.range.start))

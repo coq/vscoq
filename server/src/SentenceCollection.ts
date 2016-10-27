@@ -1,10 +1,12 @@
 import * as textUtil from './text-util'
 import {Position, Range} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
+import * as sem from './SentenceSemantics';
 import {Sentence} from './Sentence';
 import * as parser from './coq-parser';
 import {TextDocumentItem} from './document'
 import * as server from './server'
+import * as util from 'util'
 
 
 export type SentencesInvalidatedCallback = (invalidatedSentences: Sentence[]) => void; 
@@ -19,6 +21,7 @@ export class SentenceCollection implements vscode.TextDocument {
   public uri: string;
   public version: number;
   private documentText: string;
+  private currentError: vscode.Diagnostic|null = null;
 
   public constructor(document: TextDocumentItem) {
     this.uri = document.uri;
@@ -105,6 +108,8 @@ export class SentenceCollection implements vscode.TextDocument {
    * Invalidated sentences will be automatically reparsed.
    */
   public applyTextChanges(newVersion: number, changes: vscode.TextDocumentContentChangeEvent[]) {
+    this.currentError = null;
+
     // sort the edits such that later edits are processed first
     let sortedChanges =
       changes.sort((change1,change2) =>
@@ -113,6 +118,14 @@ export class SentenceCollection implements vscode.TextDocument {
     this.applyChangesToDocumentText(changes);
 
     const invalidatedSentences : number[] = [];
+
+    for(let change of changes) {
+      if(textUtil.positionIsAfter(change.range.end, this.getLastPosition())) {
+        invalidatedSentences.push(this.sentences.length);
+        break;
+      }
+    }
+
     const deltas = sortedChanges.map((c) => textUtil.toRangeDelta(c.range,c.text))
     for(let sentIdx = this.sentences.length-1; sentIdx >= 0; --sentIdx) {
       const sent = this.sentences[sentIdx];
@@ -126,6 +139,51 @@ export class SentenceCollection implements vscode.TextDocument {
     this.version = newVersion;
     const removed = this.reparseSentencesByIndices(invalidatedSentences);
     this.sentencesInvalidatedCallbacks.forEach((handler) => handler(removed.removed));
+  }
+
+  public *getErrors() : Iterable<vscode.Diagnostic> {
+    if(this.currentError)
+      yield this.currentError;
+  }
+
+  private getSentencePosition(sentenceIndex: number) : Position {
+    if(this.sentences.length === 0) {
+      return Position.create(0,0);
+    } else if(sentenceIndex < this.sentences.length) {
+      return this.sentences[sentenceIndex].getRange().start;
+    } else {
+      return this.sentences[this.sentences.length-1].getRange().end;
+    }
+  }
+
+  private getSentenceOffset(sentenceIndex: number) : number {
+    if(this.sentences.length === 0) {
+      return 0;
+    } else if(sentenceIndex < this.sentences.length) {
+      return this.sentences[sentenceIndex].getDocumentOffset();
+    } else {
+      return this.sentences[this.sentences.length-1].getDocumentEndOffset()
+    }
+  }
+
+  private getLastPosition() : Position {
+    if(this.sentences.length === 0) {
+      return Position.create(0,0);
+    } else {
+      return this.sentences[this.sentences.length-1].getRange().end;
+    }
+  }
+
+  private getLastOffset() : number {
+    if(this.sentences.length === 0) {
+      return 0;
+    } else {
+      return this.sentences[this.sentences.length-1].getDocumentEndOffset()
+    }
+  }
+
+  public getSentences() {
+    return this.sentences;
   }
 
 
@@ -165,84 +223,6 @@ export class SentenceCollection implements vscode.TextDocument {
     return {removed: removed, added: added}
   }
 
-//   /**
-//    * @param count -- minimum number of sentences to reparse
-//    * @return reparsed sentences
-//    */
-//   private reparseSentencesByIndices(indices: number[]) : Sentence[] {
-//     if(indices.length <= 0)
-//       return [];
-
-//     // sort in ascending order
-//     indices = indices.sort();
-//     let indicesIdx = 0;
-
-//     let startIdx = indices[indicesIdx]; 
-
-//     let indexShift = 0;
-
-//     // position of next sentence to be reparsed
-//     let currentPosition = this.sentences[startIdx].getRange().end;
-//     // offset of next sentence to be reparsed
-//     let currentOffset = this.sentences[startIdx].getDocumentOffset();
-//     // New sentences
-//     let reparsed : Sentence[] = [];
-//     // all sentences that have been removed
-//     const removed : Sentence[] = [];
-//     //
-//     let compareNextIdx = startIdx+1;
-//     // start at the first index and reparse all subsequent indices;
-//     // if no reparse is necessary, then jump to the next unreparsed index in `indices`
-//     for(let idx = startIdx; idx < this.sentences.length; ++idx) {
-//       // Advance to the next existing sentence that we may traverse next
-//       // we will use this to determine if we can stop reparsing sentences
-//       while(compareNextIdx < this.sentences.length && currentOffset >= this.sentences[compareNextIdx].getDocumentOffset())
-//         ++compareNextIdx;
-
-//       const parseText = this.documentText.substring(currentOffset);
-//       const len = parser.parseSentence(parseText);
-
-//       if(len <= 0) {
-//         // end of parsable sentences
-//         // treat the rest of the document as unparsed
-//         const removedPatch = this.sentences.splice(startIdx, this.sentences.length - startIdx, ...reparsed);
-//         removed.push(...removedPatch);
-//         return removed;
-//       }
-//       else if(compareNextIdx < this.sentences.length && currentOffset+len === this.sentences[compareNextIdx].getDocumentOffset()) {
-//         // no need to parse further.. try the next index in indices
-//         // replace reparsed sentences
-//         // keep remaining sentences until next index in `indices`
-
-//         // advance to the next index in indices
-//         // skip past any that we may already reparsed
-//         while(indicesIdx < indices.length && idx >= indexShift+indices[indicesIdx])
-//           ++indicesIdx;
-
-//         // replace the sentence patch with what we've reparsed them as
-//         const removedPatch = this.sentences.splice(startIdx, idx-startIdx, ...reparsed)
-//         // indices in `indices` need to be shifted to properly map to elements
-//         // in `this.sentences`
-//         indexShift += reparsed.length - removedPatch.length;
-//         removed.push(...removedPatch);
-// //sdfasdfasdfasdfasdfasdf
-
-//         if(indicesIdx >= indices.length) {
-
-//         } else
-//           startIdx = indexShift+indices[indicesIdx]; 
-//       }
-
-//       const command = parseText.substring(0, len);
-//       const range = Range.create(currentPosition, textUtil.positionAtRelative(currentPosition, command, len));
-//       reparsed.push(new Sentence(command, range, currentOffset));
-//       currentPosition = range.end;
-//       currentOffset+= len;
-
-//     }
-//   }
-
-
   /**
    * @param count -- minimum number of sentences to reparse
    * @return removed sentences
@@ -253,45 +233,44 @@ export class SentenceCollection implements vscode.TextDocument {
     else if(minCount > this.sentences.length - start)
       minCount = this.sentences.length - start;
 
-    let currentPosition : Position;
-    let currentOffset : number;
-    if(this.sentences.length === 0) {
-      currentPosition = Position.create(0,0);
-      currentOffset = 0;
-    } else if(start < this.sentences.length) {
-      currentPosition = this.sentences[start].getRange().start;
-      currentOffset = this.sentences[start].getDocumentOffset();
-    } else {
-      currentPosition = this.sentences[this.sentences.length-1].getRange().end;
-      currentOffset = this.sentences[this.sentences.length-1].getDocumentOffset() + this.sentences[this.sentences.length-1].getText().length;
-    }
+    let currentPosition = this.getSentencePosition(start);
+    let currentOffset = this.getSentenceOffset(start);
 
     const reparsed : Sentence[] = [];
-    for(let idx = 0; /**/; ++idx) {
-      const parseText = this.documentText.substring(currentOffset);
-      const len = parser.parseSentenceLength(parseText);
 
-      if(len <= 0) {
+    try {
+      for(let idx = 0; /**/; ++idx) {
+        const parseText = this.documentText.substring(currentOffset);
+        const sent = parser.parseSentence(parseText);
+
+        if(sent.type === "EOF") {// end of document
+          const removed = this.sentences.splice(start, this.sentences.length - start, ...reparsed)
+          removed.forEach((sent) => sent.dispose());
+          return {removed: removed, added: reparsed, endOfSentences: true};
+        } if(idx >= minCount && start+idx < this.sentences.length && currentOffset+sent.text.length === this.sentences[start+idx].getDocumentEndOffset()) {
+          // no need to parse further; keep remaining sentences
+          const removed = this.sentences.splice(start, idx, ...reparsed)
+          removed.forEach((sent) => sent.dispose());
+          return {removed: removed, added: reparsed, endOfSentences: false};
+        }
+
+        const command = sent.text;
+        const range = Range.create(currentPosition, textUtil.positionAtRelative(currentPosition, command, sent.text.length));
+        reparsed.push(new Sentence(command, range, currentOffset, sem.parseAstForSymbols(sent, currentPosition)));
+        currentPosition = range.end;
+        currentOffset+= sent.text.length;
+      }
+    } catch(error) {
+      if(error instanceof parser.SyntaxError) {
+        this.currentError = vscode.Diagnostic.create(textUtil.rangeTranslateRelative(currentPosition,error.range), error.message, vscode.DiagnosticSeverity.Error, undefined, "parser");
         // end of parsable sentences
         // treat the rest of the document as unparsed
         const removed = this.sentences.splice(start, this.sentences.length - start, ...reparsed)
         removed.forEach((sent) => sent.dispose());
         return {removed: removed, added: reparsed, endOfSentences: true};
-      }
-      else if(idx >= minCount && start+idx < this.sentences.length && currentOffset+len === this.sentences[start+idx].getDocumentEndOffset()) {
-        // no need to parse further; keep remaining sentences
-        const removed = this.sentences.splice(start, idx, ...reparsed)
-        removed.forEach((sent) => sent.dispose());
-        return {removed: removed, added: reparsed, endOfSentences: false};
-      }
-
-      const command = parseText.substring(0, len);
-      const range = Range.create(currentPosition, textUtil.positionAtRelative(currentPosition, command, len));
-      reparsed.push(new Sentence(command, range, currentOffset));
-      currentPosition = range.end;
-      currentOffset+= len;
+      } else
+      server.connection.console.warn("syntax error: " + util.inspect(error,false,undefined))
+        throw error;
     }
-
   }
-
 }

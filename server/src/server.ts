@@ -54,7 +54,7 @@ connection.onInitialize((params): InitializeResult => {
   // }
   // project = new CoqProject(params.rootPath, x);
   project = new CoqProject(params.rootPath, connection.console);
-  
+
   // var x : ServerCapabilities;
 	return {
 		capabilities: <ServerCapabilities>{
@@ -65,7 +65,9 @@ connection.onInitialize((params): InitializeResult => {
 			},
       documentLinkProvider: {
         resolveProvider: true
-      }
+      },
+      documentSymbolProvider: true,
+      // definitionProvider: true,
 		}
 	}
 });
@@ -248,6 +250,19 @@ export interface DocumentLinkParams {
      */
     textDocument: TextDocumentIdentifier;
 }
+
+// connection.onDefinition((params: vscodeLangServer.TextDocumentPositionParams) : vscodeLangServer.Location|vscodeLangServer.Location[] => {
+//   params.
+//   return [];
+// })
+
+connection.onDocumentSymbol((params:vscodeLangServer.DocumentSymbolParams) : vscodeLangServer.SymbolInformation[] => {
+  const doc = project.lookup(params.textDocument.uri);
+  if(!doc)
+    return [];
+  else
+    return doc.provideSymbols();
+})
 
 connection.onDocumentLinks((p:DocumentLinkParams,token: CancellationToken) : Promise<vscodeLangServer.DocumentLink[]> => {
   return Promise.resolve([]);
