@@ -5,44 +5,184 @@ import * as textUtil from './text-util'
 import {Range, Position} from 'vscode-languageserver'
 import * as server from './server'
 import * as peg from 'pegjs'
+import {ExpectedItem} from 'pegjs';
+export {ExpectedItem} from 'pegjs';
 
-const sentenceParser = peg.generate(`
+export interface SentenceBase {
+  text: string,
+  rest: string,
+}
+
+export interface EOF {
+  type: "EOF"
+}
+
+export interface Identifier {
+  text: string,
+  loc: peg.LocationRange,
+}
+
+export interface SAny extends SentenceBase {
+  type: "any"
+}
+
+export interface Bullet extends SentenceBase {
+  type: "bullet",
+  bullet: string
+}
+
+export interface SRequire extends SentenceBase {
+  type: "require",
+  intro: string|null
+  modules: string[]
+}
+
+export interface SDefinition extends SentenceBase {
+  type: "definition",
+  kind: string,
+  ident: Identifier,
+  stmt: string,
+}
+
+export interface SInductive extends SentenceBase {
+  type: "inductive",
+  kind: string,
+  ident: Identifier,
+  stuff: string,
+  constructors: string,
+}
+
+export interface SLtacDef extends SentenceBase {
+  type: "ltacdef",
+  ident: Identifier,
+  ltac: string
+}
+
+
+export type Sentence = EOF | Bullet | SRequire | SDefinition | SInductive | SLtacDef;
+
+const sentenceParser = peg.generate(String.raw `
+{
+  function errorUnclosedBracket(lb, end) {
+    error("unclosed bracket '" + lb.text + "'", {start: lb.loc.start, end: end})
+  } 
+}
+
 SentenceLength
-  = Sentence { throw text().length; } / "" {return error("Not a sentence")}
+  = NoMoreSentences / Sentence {
+    throw text().length;
+  }
 
-Sentence "sentence"
-  = (_ (Bullet / (Command _ "." EndOfSentence)))
+TrySentence = OneSentence / NoMoreSentences
+
+OneSentence
+  = sent:Sentence rest:$.* {
+    return Object.assign(sent, {rest: rest} )    
+  }
+
+AllSentences
+  = Sentence* NoMoreSentences
+
+NoMoreSentences
+  = Blank* !. { return {type: "EOF", text: text(), rest: ""} }
+
+Sentence
+  = sent:(Bullet / SRequire / SDefinition / SInductive / SLtacDef / SAny) {
+    return Object.assign(sent, {text: text()})
+  }
+
+SRequire
+  = _ "Require" __ intro:("Import"/"Export")? modules:ModuleNameList _ EndOfSentence {
+  	return { type: "require", intro: intro, modules: modules }
+  }
+
+SLtacDef
+  = _ "Ltac" __ ident:Identifier _ (":="/"::=") _ ltac:$Command _ EndOfSentence {
+  	return { type: "ltacdef", ident: ident, ltac: ltac }
+  }
+  
+SDefinition
+  = _ kind:DefKind __ ident:Identifier stmt:$Command _ EndOfSentence
+    { return {type: "definition", kind: kind, ident: ident, stmt: stmt} }
+DefKind
+  = $(("Program" __)? "Lemma" / "Theorem" / "Example" / "Definition" / "Definition" / "Fixpoint")
+
+SInductive
+  = _ kind:TypeInd __ ident:Identifier stuff:$(!":=" .)* ":=" constructors:$Command _ EndOfSentence
+    { return {type: "inductive", kind: kind, ident: ident, stuff: stuff, constructors: constructors} }
+TypeInd
+  = "Inductive" / "CoInductive"
+
+
+SAny
+  = Command _ EndOfSentence {return {type: "any"}}
+
+ModuleNameList
+  = list:(_ ModuleName)+ {
+    return list.map((x) => x[1])
+  }
+
+ModuleName
+  = Identifier ("." Identifier)* {
+    return text()
+  }
+
+Identifier
+  = ([A-Za-z_] [0-9A-Za-z_]*)
+  { return { text: text(), loc: location() }}
 
 EndOfSentence
+  = "." IsEndOfSentence
+IsEndOfSentence
   = &Blank / !.
 
 Command
-  = (_ (LBr _ CommandP _ RBr / LBs _ CommandP _ RBs / String / CommandText))*
+  = (_ (RoundParenCommand / SquareParenCommand / CurlyParenCommand / String / CommandText))*
 /* Once we're nested, commands may have periods */
-CommandP
-  = (_ (LBr _ CommandP _ RBr / LBs _ CommandP _ RBs / String / CommandTextP))*
+CommandP "command"
+  = (_ (RoundParenCommand / SquareParenCommand / CurlyParenCommand / String / CommandTextP))*
 
-CommandText
-  = ([^()[\\]." \\t\\n\\r] / ("." !EndOfSentence))+
+RoundParenCommand
+  = lb:LBround _
+  ((CommandP _ RBround) / end:TryFindSentenceEnd { errorUnclosedBracket(lb,end) })
+SquareParenCommand
+  = lb:LBsquare _
+  ((CommandP _ RBsquare) / end:TryFindSentenceEnd { errorUnclosedBracket(lb,end) })
+CurlyParenCommand
+  = lb:LBcurly _
+  ((CommandP _ RBcurly) / end:TryFindSentenceEnd { errorUnclosedBracket(lb,end) })
+
+CommandText "sentence"
+  = ([^(){}[\]."] / Blank / ("." !IsEndOfSentence))+
 CommandTextP
-  = [^()[\\]" \\t\\n\\r]+
+  = ([^(){}[\]"] / Blank)+
+
+TryFindSentenceEnd
+  = ([^.] / ("." !IsEndOfSentence))* { return location().end }
 
 String "string"
-  = ["] ([^"] / "\\"\\"")* ["]
+  = ["] ([^"] / "\"\"")* ["]
 
 Bullet "bullet"
-  = ( "*"+ / "+"+ / "-"+ / "{" / "}" )
+  = _ b:$( "*"+ / "+"+ / "-"+ / "{" / "}" ) {
+    return { type: "bullet", bullet: b }
+  }
 
 _ "whitespace"
   = Blank* (Comment _)?
 
-Blank "blank"
-  = [ \\t\\n\\r]
+__ "whitespace"
+  = Blank+ (Comment _)?
 
-LBr = [(] ![*]
-RBr = [)]
-LBs = [[]
-RBs = [\\]]
+Blank "blank"
+  = [ \t\n\r]
+
+LBround = "(" ![*] {return {text: text(), loc:location()}}
+RBround = ")" {return {text: text(), loc:location()}}
+LBsquare = "[" {return {text: text(), loc:location()}}
+RBsquare = "]" {return {text: text(), loc:location()}}
+LBcurly = "{" {return {text: text(), loc:location()}}
+RBcurly = "}" {return {text: text(), loc:location()}}
 LBc = "(*"
 RBc = "*)"
 
@@ -51,7 +191,41 @@ Comment "comment"
 
 CommentText "commentText"
   = (String / Comment / ([^"*(] / ("(" !"*") / ("*" !")"))+ )*
-`,{output: "parser"});
+`,{output: "parser", allowedStartRules: ["SentenceLength", "TrySentence"]});
+
+
+export function locationRangeToRange(loc: peg.LocationRange) {
+  return Range.create(loc.start.line-1,loc.start.column-1,loc.end.line-1,loc.end.column-1);
+}
+
+export class SyntaxError extends Error {
+  constructor(
+    public readonly name: string,
+    message: string,
+    public readonly range: Range,
+    public readonly startOffset: number,
+    public readonly endOffset: number,
+    public readonly found?: any,
+    public readonly expected?: ExpectedItem[],
+    public readonly stack?: any)
+    { super(message); }
+
+  public static fromPegjsError(error: peg.PegjsError) {
+    const loc = error.location;
+    if(!loc)
+      server.connection.console.log(util.inspect(error, false, undefined));
+    const range = locationRangeToRange(loc);
+
+    let result = new SyntaxError(error.name, error.message, range, loc.start.offset, loc.end.offset, error.found, error.expected, error.stack);
+    return result;
+  }
+
+  public static unknown(parseStr: string) {
+    const range = Range.create(textUtil.positionAt(parseStr, 0), textUtil.positionAt(parseStr, parseStr.length));
+    let result = new SyntaxError("unknown", "Unexpected parse error", range, 0, parseStr.length);
+    return result;
+  }
+}
 
 export function parseSentenceLength(str: string) : number {
   try {
@@ -65,7 +239,13 @@ export function parseSentenceLength(str: string) : number {
   }
 }
 
-
+export function parseSentence(str: string) : Sentence {
+  try {
+    return sentenceParser.parse(str, {startRule: "TrySentence", tracer: undefined}) as Sentence;
+  } catch(error) {
+    throw SyntaxError.fromPegjsError(error);
+  }
+}
 
 
 
@@ -402,4 +582,9 @@ export function sentenceRangeContainment(sentRange: Range, range: Range) : Sente
     return SentenceRangeContainment.Crosses;
     
 }
+
+
+
+
+
 
