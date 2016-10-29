@@ -14,7 +14,7 @@ import {Mutex} from './Mutex';
 import {CancellationSignal, asyncWithTimeout} from './CancellationSignal';
 import {AsyncWorkQueue} from './AsyncQueue';
 import {richppToMarkdown} from './RichPP';
-import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './STM';
+import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './stm/STM';
 import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
 import * as sentSem from './parsing/SentenceSemantics';
 import {SentenceCollection} from './SentenceCollection';
