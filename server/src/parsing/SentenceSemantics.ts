@@ -1,11 +1,8 @@
 import * as vscode from 'vscode-languageserver';
-import * as project from './CoqProject';
-import * as server from './server';
 import * as parser from './coq-parser';
-import * as textUtil from './text-util';
+import * as textUtil from './../text-util';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as util from 'util';
 
 export abstract class SentenceSemantics {
   public abstract isEqual(x: SentenceSemantics) : boolean;
