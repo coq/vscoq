@@ -95,11 +95,11 @@
         {"command": "extension.coq.stepBackward", "key": "Ctrl+Alt+Up", "when": "editorTextFocus && editorLangId == coq"},
         {"command": "extension.coq.interpretToPoint", "key": "Ctrl+Alt+Right", "when": "editorTextFocus && editorLangId == coq"},
         {"command": "extension.coq.interpretToEnd", "key": "Ctrl+Alt+End", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.about", "key": "ctrl+shift+a", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.searchAbout", "key": "ctrl+shift+k", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.locate", "key": "ctrl+shift+l", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.check", "key": "ctrl+shift+c", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.print", "key": "ctrl+shift+p", "when": "editorTextFocus && editorLangId == coq"}
+        {"command": "extension.coq.query.about", "key": "ctrl+shift+a", "when": "editorTextFocus && editorLangId == coq"},
+        {"command": "extension.coq.query.searchAbout", "key": "ctrl+shift+k", "when": "editorTextFocus && editorLangId == coq"},
+        {"command": "extension.coq.query.locate", "key": "ctrl+shift+l", "when": "editorTextFocus && editorLangId == coq"},
+        {"command": "extension.coq.query.check", "key": "ctrl+shift+c", "when": "editorTextFocus && editorLangId == coq"},
+        {"command": "extension.coq.query.print", "key": "ctrl+shift+p", "when": "editorTextFocus && editorLangId == coq"}
     ],
     "menus": {
       "editor/context": [
@@ -108,19 +108,19 @@
         , "group": "navigation"
         },
         { "when": "resourceLangId == coq"
-        , "command": "extension.coq.check"
+        , "command": "extension.coq.query.check"
         , "group": "queries"
         },
         { "when": "resourceLangId == coq"
-        , "command": "extension.coq.print"
+        , "command": "extension.coq.query.print"
         , "group": "queries"
         },
         { "when": "resourceLangId == coq"
-        , "command": "extension.coq.searchAbout"
+        , "command": "extension.coq.query.searchAbout"
         , "group": "queries"
         },
         { "when": "resourceLangId == coq"
-        , "command": "extension.coq.locate"
+        , "command": "extension.coq.query.locate"
         , "group": "queries"
         }
       ]
