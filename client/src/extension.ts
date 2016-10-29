@@ -39,6 +39,7 @@ export function activate(context: ExtensionContext) {
   regTCmd('stepBackward', stepBackward);
   regTCmd('interpretToPoint', interpretToPoint);
   regTCmd('interpretToEnd', interpretToEnd);
+  regTCmd('moveCursorToFocus', moveCursorToFocus);
   regTCmd('query.check', check);
   regTCmd('query.locate', locate);
   regTCmd('query.search', search);
@@ -210,6 +211,12 @@ function interpretToPoint(editor: TextEditor, edit: TextEditorEdit) {
 function interpretToEnd(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
     doc.interpretToEnd(editor)
+  )
+}
+
+function moveCursorToFocus(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.moveCursorToFocus(editor)
   )
 }
 

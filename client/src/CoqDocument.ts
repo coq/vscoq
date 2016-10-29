@@ -218,22 +218,26 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateReady();
   }
 
+  /** Bring the focus into the editor's view, but only scroll rightward
+   * if the focus is not at the end of a line
+   * */
+  public moveCursorToFocus(editor: vscode.TextEditor, scroll: boolean = true) {
+    editor.selections = [new vscode.Selection(this.focus, this.focus)]
+    if(scroll) {
+      if (textUtil.positionIsBefore(this.focus, this.viewDoc.lineAt(this.focus.line).range.end))
+        editor.revealRange(new vscode.Range(this.focus, this.focus), vscode.TextEditorRevealType.Default)
+      else
+        editor.revealRange(new vscode.Range(this.focus.line, 0, this.focus.line + 1, 0), vscode.TextEditorRevealType.Default)
+    }
+  }
+
   private updateFocus(focus?: vscodeTypes.Position, moveCursor = false) {
     if(focus) {
       this.focus = new vscode.Position(focus.line,focus.character);
       if(moveCursor) {
         // adjust the cursor position
-        for(let editor of this.cursorUnmovedSinceCommandInitiated) {
-          editor.selections = [new vscode.Selection(this.focus, this.focus)]
-          if(editor === vscode.window.activeTextEditor) {
-            // Bring the focus into the editor's view,
-            // but only scroll rightward if the focus is not at the end of a line
-            if(textUtil.positionIsBefore(this.focus, this.viewDoc.lineAt(this.focus.line).range.end))
-              editor.revealRange(new vscode.Range(this.focus,this.focus), vscode.TextEditorRevealType.Default)
-            else
-              editor.revealRange(new vscode.Range(this.focus.line,0,this.focus.line+1,0), vscode.TextEditorRevealType.Default)
-          }
-        }
+        for(let editor of this.cursorUnmovedSinceCommandInitiated)
+          this.moveCursorToFocus(editor, editor === vscode.window.activeTextEditor);
       }
 
       // update the focus decoration
