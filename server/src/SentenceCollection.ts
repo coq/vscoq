@@ -1,9 +1,9 @@
 import * as textUtil from './text-util'
 import {Position, Range} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
-import * as sem from './SentenceSemantics';
+import * as sem from './parsing/SentenceSemantics';
 import {Sentence} from './Sentence';
-import * as parser from './coq-parser';
+import * as parser from './parsing/coq-parser';
 import {TextDocumentItem} from './document'
 import * as server from './server'
 import * as util from 'util'

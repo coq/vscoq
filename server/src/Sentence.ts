@@ -1,9 +1,9 @@
 import * as textUtil from './text-util'
 import {Position, Range} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
-import {SentenceSemantics} from './SentenceSemantics';
+import {SentenceSemantics} from './parsing/SentenceSemantics';
 import {State} from './STMState'
-import * as parser from './coq-parser';
+import * as parser from './parsing/coq-parser';
 
 export class Sentence {
   private state: State = undefined;

@@ -7,7 +7,7 @@ import {CancellationToken} from 'vscode-jsonrpc';
 import {Interrupted, CoqtopError, CallFailure, AddResult, EditAtResult} from './coqtop';
 import * as thmProto from './protocol';
 import * as coqProto from './coq-proto';
-import * as coqParser from './coq-parser';
+import * as coqParser from './parsing/coq-parser';
 // import {Sentence, Sentences} from './sentences';
 import * as textUtil from './text-util';
 import {Mutex} from './Mutex';
@@ -16,7 +16,7 @@ import {AsyncWorkQueue} from './AsyncQueue';
 import {richppToMarkdown} from './RichPP';
 import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './STM';
 import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
-import * as sentSem from './SentenceSemantics';
+import * as sentSem from './parsing/SentenceSemantics';
 import {SentenceCollection} from './SentenceCollection';
 
 function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}

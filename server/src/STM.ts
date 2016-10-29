@@ -9,9 +9,9 @@ import * as proto from './protocol';
 import * as textUtil from './text-util';
 import * as coqtop from './coqtop';
 import {ProofView, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './protocol';
-import * as coqParser from './coq-parser';
+import * as coqParser from './parsing/coq-parser';
 import {State, StatusError, StateStatus} from './STMState';
-import {LoadModule, SentenceSemantics} from './SentenceSemantics';
+import {LoadModule, SentenceSemantics} from './parsing/SentenceSemantics';
 import {Mutex} from './Mutex';
 
 export {StateStatus} from './STMState';
