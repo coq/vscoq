@@ -6,13 +6,13 @@ import * as vscode from 'vscode-languageserver';
 import * as coqProto from './../coq-proto';
 import * as util from 'util';
 import * as proto from './../protocol';
-import * as textUtil from './../text-util';
+import * as textUtil from './../util/text-util';
 import * as coqtop from './../coqtop';
 import {ProofView, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './../protocol';
 import * as coqParser from './../parsing/coq-parser';
 import {State, StatusError, StateStatus} from './State';
 import {LoadModule, SentenceSemantics} from './../parsing/SentenceSemantics';
-import {Mutex} from './../Mutex';
+import {Mutex} from './../util/Mutex';
 
 export {StateStatus} from './State';
 

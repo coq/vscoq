@@ -1,6 +1,6 @@
 import * as vscode from 'vscode-languageserver';
 import * as parser from './coq-parser';
-import * as textUtil from './../text-util';
+import * as textUtil from './../util/text-util';
 import * as path from 'path';
 import * as fs from 'fs';
 

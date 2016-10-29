@@ -1,4 +1,4 @@
-import * as textUtil from './text-util'
+import * as textUtil from './util/text-util'
 import {Position, Range} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
 import * as sem from './parsing/SentenceSemantics';

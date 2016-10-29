@@ -14,7 +14,7 @@ import {ChildProcess, exec, spawn} from 'child_process';
 import {CoqTopSettings, LtacProfTactic, LtacProfResults} from './protocol';
 import * as fs from 'fs';
 import * as os from 'os';
-import {asyncWithTimeout} from './CancellationSignal';
+import {asyncWithTimeout} from './util/CancellationSignal';
 import * as xmlTypes from './CoqXmlProtocolTypes';
 
 // import entities = require('entities'); 
