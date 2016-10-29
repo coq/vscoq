@@ -12,7 +12,7 @@ import * as coqParser from './parsing/coq-parser';
 import * as textUtil from './util/text-util';
 import {Mutex} from './util/Mutex';
 import {AsyncWorkQueue} from './util/AsyncQueue';
-import {richppToMarkdown} from './coqtop/RichPP';
+// import {richppToMarkdown} from './coqtop/RichPP';
 import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './stm/STM';
 import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
 import * as sentSem from './parsing/SentenceSemantics';
