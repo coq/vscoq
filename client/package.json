@@ -88,18 +88,21 @@
       {"command": "extension.coq.ltacProf.getResults", "title": "Get the results of Ltac profiling", "category": "Coq"}
     ],
     "keybindings": [
-        {"command": "extension.coq.reset", "key": "Ctrl+Alt+Home", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.interrupt", "key": "Ctrl+Alt+`", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.interrupt", "key": "Ctrl+Alt+Break", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.stepForward", "key": "Ctrl+Alt+Down", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.stepBackward", "key": "Ctrl+Alt+Up", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.interpretToPoint", "key": "Ctrl+Alt+Right", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.interpretToEnd", "key": "Ctrl+Alt+End", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.query.about", "key": "ctrl+shift+a", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.query.searchAbout", "key": "ctrl+shift+k", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.query.locate", "key": "ctrl+shift+l", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.query.check", "key": "ctrl+shift+c", "when": "editorTextFocus && editorLangId == coq"},
-        {"command": "extension.coq.query.print", "key": "ctrl+shift+p", "when": "editorTextFocus && editorLangId == coq"}
+      {"command": "extension.coq.reset", "key": "Ctrl+Alt+Home", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.interrupt", "key": "Ctrl+Alt+`", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.interrupt", "key": "Ctrl+Alt+Break", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.stepForward", "key": "Ctrl+Alt+Down", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.stepBackward", "key": "Ctrl+Alt+Up", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.interpretToPoint", "key": "Ctrl+Alt+Right", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.interpretToEnd", "key": "Ctrl+Alt+End", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.query.about", "key": "ctrl+shift+a", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.query.searchAbout", "key": "ctrl+shift+k", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.query.locate", "key": "ctrl+shift+l", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.query.check", "key": "ctrl+shift+c", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.query.print", "key": "ctrl+shift+p", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.display.toggle.implicitArguments", "key": "ctrl+shift+i", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.display.toggle.coercions", "key": "ctrl+shift+c", "when": "editorTextFocus && editorLangId == coq"},
+      {"command": "extension.coq.display.toggle.notations", "key": "ctrl+shift+n", "when": "editorTextFocus && editorLangId == coq"},
     ],
     "menus": {
       "editor/context": [
