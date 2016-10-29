@@ -68,29 +68,70 @@ export class Inductive implements SentenceSemantics {
   }
 }
 
-
-export function parseAst(ast: parser.Sentence, pos: vscode.Position) : SentenceSemantics[] {
-  switch(ast.type) {
-  case "definition":
-    return [new Definition(ast.ident.text, textUtil.rangeTranslateRelative(pos,parser.locationRangeToRange(ast.ident.loc)))]  
-  case "inductive":
-    return [new Inductive(ast.ident.text, textUtil.rangeTranslateRelative(pos,parser.locationRangeToRange(ast.ident.loc)))]  
+namespace parseAstSymbols {
+  function identToSymbol(ident: parser.Identifier, kind: vscode.SymbolKind, pos: vscode.Position) : vscode.SymbolInformation {
+    return vscode.SymbolInformation.create(ident.text, vscode.SymbolKind.Variable, textUtil.rangeTranslateRelative(pos,parser.locationRangeToRange(ident.loc)));  
   }
-  return []
+
+  export function definition(ast: parser.SDefinition, pos: vscode.Position) : vscode.SymbolInformation[] {
+    return [identToSymbol(ast.ident, vscode.SymbolKind.Variable, pos)]
+  }
+  export function inductive(ast: parser.SInductive, pos: vscode.Position) : vscode.SymbolInformation[] {
+    return Array.prototype.concat(
+      ...ast.bodies.map((indBody) =>
+        [ identToSymbol(indBody.ident, vscode.SymbolKind.Class, pos)
+        , ...indBody.constructors
+          .map((c) => identToSymbol(c.ident, vscode.SymbolKind.Constructor, pos))
+        ])
+    )
+  }
+  export function ltacDef(ast: parser.SLtacDef, pos: vscode.Position) : vscode.SymbolInformation[] {
+    return [identToSymbol(ast.ident, vscode.SymbolKind.Function, pos)]
+  }
+  export function assumptions(ast: parser.SAssumptions, pos: vscode.Position) : vscode.SymbolInformation[] {
+    return ast.assumptions.map((id) => identToSymbol(id, vscode.SymbolKind.Variable, pos))
+  }
+  export function section(ast: parser.SSection, pos: vscode.Position) : vscode.SymbolInformation[] {
+    return [identToSymbol(ast.ident, vscode.SymbolKind.Namespace, pos)]
+  }
+  export function module(ast: parser.SModule, pos: vscode.Position) : vscode.SymbolInformation[] {
+    return [ ast.ident, ...Array.prototype.concat(...ast.bindings.map((b) => b.idents)) ]
+      .map((id) => identToSymbol(id, vscode.SymbolKind.Module, pos))
+  }
+  export function moduleType(ast: parser.SModuleType, pos: vscode.Position) : vscode.SymbolInformation[] {
+    return [ ast.ident, ...Array.prototype.concat(...ast.bindings.map((b) => b.idents)) ]
+      .map((id) => identToSymbol(id, vscode.SymbolKind.Module, pos))
+  }
+  export function moduleBind(ast: parser.SModuleBind, pos: vscode.Position) : vscode.SymbolInformation[] {
+    return [ identToSymbol(ast.ident, vscode.SymbolKind.Module, pos) ]
+  }
+  export function moduleTypeBind(ast: parser.SModuleTypeBind, pos: vscode.Position) : vscode.SymbolInformation[] {
+    return [ identToSymbol(ast.ident, vscode.SymbolKind.Module, pos) ]
+  }
 }
 
+// export function parseAst(ast: parser.Sentence, pos: vscode.Position) : SentenceSemantics[] {
+//   switch(ast.type) {
+//   case "definition": return parseAstDefinition(ast,pos);
+//   case "inductive": return parseAstInductive(ast,pos);
+//   default:
+//     return []
+//   }
+// }
 
-function identToSymbol(ident: parser.Identifier, kind: vscode.SymbolKind, pos: vscode.Position) : vscode.SymbolInformation {
-  return vscode.SymbolInformation.create(ident.text, vscode.SymbolKind.Variable, textUtil.rangeTranslateRelative(pos,parser.locationRangeToRange(ident.loc)));  
-}
+
 export function parseAstForSymbols(ast: parser.Sentence, pos: vscode.Position) : vscode.SymbolInformation[] {
   switch(ast.type) {
-  case "definition":
-    return [identToSymbol(ast.ident, vscode.SymbolKind.Variable, pos)]  
-  case "inductive":
-    return [identToSymbol(ast.ident, vscode.SymbolKind.Class, pos)]  
-  case "ltacdef":
-    return [identToSymbol(ast.ident, vscode.SymbolKind.Function, pos)]  
+  case "assumptions": return parseAstSymbols.assumptions(ast,pos);
+  case "definition": return parseAstSymbols.definition(ast,pos);
+  case "inductive": return parseAstSymbols.inductive(ast,pos);
+  case "ltacdef": return parseAstSymbols.ltacDef(ast,pos);
+  case "section": return parseAstSymbols.section(ast,pos);
+  case "module": return parseAstSymbols.module(ast,pos);
+  case "module-bind": return parseAstSymbols.moduleBind(ast,pos);
+  case "module-type": return parseAstSymbols.moduleType(ast,pos);
+  case "module-type-bind": return parseAstSymbols.moduleTypeBind(ast,pos);
+  default:  
+    return []
   }
-  return []
 }
