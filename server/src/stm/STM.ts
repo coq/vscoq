@@ -10,11 +10,11 @@ import * as textUtil from './../text-util';
 import * as coqtop from './../coqtop';
 import {ProofView, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './../protocol';
 import * as coqParser from './../parsing/coq-parser';
-import {State, StatusError, StateStatus} from './STMState';
+import {State, StatusError, StateStatus} from './State';
 import {LoadModule, SentenceSemantics} from './../parsing/SentenceSemantics';
 import {Mutex} from './../Mutex';
 
-export {StateStatus} from './STMState';
+export {StateStatus} from './State';
 
 
 type StateId = number;
