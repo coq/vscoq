@@ -3,11 +3,11 @@
 import {Position, Range, TextDocumentContentChangeEvent, TextDocument, RemoteConsole} from 'vscode-languageserver';
 import {CancellationToken} from 'vscode-jsonrpc';
 import * as vscode from 'vscode-languageserver';
-import * as coqProto from './../coq-proto';
+import * as coqProto from './../coqtop/coq-proto';
 import * as util from 'util';
 import * as proto from './../protocol';
 import * as textUtil from './../util/text-util';
-import * as coqtop from './../coqtop';
+import * as coqtop from './../coqtop/coqtop';
 import {ProofView, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './../protocol';
 import * as coqParser from './../parsing/coq-parser';
 import {State, StatusError, StateStatus} from './State';

@@ -1,9 +1,9 @@
 import {Position, Range} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
-import * as coqProto from './../coq-proto';
+import * as coqProto from './../coqtop/coq-proto';
 import * as parser from './../parsing/coq-parser';
 import * as textUtil from './../util/text-util';
-import {Sentence} from './../Sentence';
+import {Sentence} from './../sentence-model/Sentence';
 // import {CoqTopGoalResult} from './protocol';
 
 export type StateId = number;

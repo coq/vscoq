@@ -4,19 +4,19 @@ import * as util from 'util';
 import {TextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic, DiagnosticSeverity} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
 import {CancellationToken} from 'vscode-jsonrpc';
-import {Interrupted, CoqtopError, CallFailure, AddResult, EditAtResult} from './coqtop';
+import {Interrupted, CoqtopError, CallFailure, AddResult, EditAtResult} from './coqtop/coqtop';
 import * as thmProto from './protocol';
-import * as coqProto from './coq-proto';
+import * as coqProto from './coqtop/coq-proto';
 import * as coqParser from './parsing/coq-parser';
 // import {Sentence, Sentences} from './sentences';
 import * as textUtil from './util/text-util';
 import {Mutex} from './util/Mutex';
 import {AsyncWorkQueue} from './util/AsyncQueue';
-import {richppToMarkdown} from './RichPP';
+import {richppToMarkdown} from './coqtop/RichPP';
 import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './stm/STM';
 import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
 import * as sentSem from './parsing/SentenceSemantics';
-import {SentenceCollection} from './SentenceCollection';
+import {SentenceCollection} from './sentence-model/SentenceCollection';
 
 function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
 function positionToString(p:Position) {return `{${p.line}@${p.character}}`}

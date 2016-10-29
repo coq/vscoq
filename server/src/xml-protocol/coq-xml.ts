@@ -1,7 +1,7 @@
 'use strict';
 import * as events from 'events';
 import * as sax from 'sax';
-import * as coqProto from './coq-proto';
+import * as coqProto from '../coqtop/coq-proto';
 // var entities = require('entities'); 
 
 export interface EventCallbacks {
