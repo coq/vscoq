@@ -44,6 +44,8 @@ namespace DisplayOptionPicks {
 
 
 export class CoqDocument implements vscode.Disposable {
+  /** A list of things to dispose */
+  private subscriptions : Disposable[] = []
   private statusBar: StatusBar;
   public documentUri: string;
   public highlights = new Highlights();
@@ -57,6 +59,8 @@ export class CoqDocument implements vscode.Disposable {
   private focus: vscode.Position;
   private focusDecoration : vscode.TextEditorDecorationType;
   private focusBeforeDecoration : vscode.TextEditorDecorationType;
+  /** If true, the active editor's cursor will be set to the current STM focus when stepping forward or backward */
+  private moveCursorToFocus = vscode.workspace.getConfiguration("coq").get("moveCursorWhenSteppingForwardOrBackward") as boolean;
 
   constructor(uri: vscode.Uri, context: ExtensionContext) {
     this.statusBar = new StatusBar();
@@ -91,7 +95,7 @@ export class CoqDocument implements vscode.Disposable {
     // this.langServer.onUpdateComputingStatus((p) => { if (p.uri == this.documentUri) this.onUpdateComputingStatus(p); });
     this.langServer.onLtacProfResults((p) => { if (p.uri == this.documentUri) this.onLtacProfResults(p); });
 
-    context.subscriptions.push(this.langServer.start());
+    this.subscriptions.push(this.langServer.start());
 
     this.view.onresize = async (columns:number) => {
       await this.langServer.resizeView(this.documentUri,Math.floor(columns));
@@ -99,10 +103,13 @@ export class CoqDocument implements vscode.Disposable {
       this.view.update(value);
     };
 
-    vscode.window.onDidChangeTextEditorSelection((e:vscode.TextEditorSelectionChangeEvent) => {
+    this.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((e:vscode.TextEditorSelectionChangeEvent) => {
       if(this.cursorUnmovedSinceCommandInitiated.has(e.textEditor))
         this.cursorUnmovedSinceCommandInitiated.delete(e.textEditor);
-    })
+    }));
+
+    this.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) =>
+      this.moveCursorToFocus = vscode.workspace.getConfiguration("coq").get("moveCursorToFocus") as boolean));
     
     if(vscode.window.activeTextEditor.document.uri.toString() == this.documentUri)
       this.statusBar.focus();
@@ -118,6 +125,7 @@ export class CoqDocument implements vscode.Disposable {
     this.view.dispose();
     this.focusDecoration.dispose();
     this.focusBeforeDecoration.dispose();
+    this.subscriptions.forEach((d) => d.dispose());
   }
 
   private reset() {
@@ -221,7 +229,7 @@ export class CoqDocument implements vscode.Disposable {
   /** Bring the focus into the editor's view, but only scroll rightward
    * if the focus is not at the end of a line
    * */
-  public moveCursorToFocus(editor: vscode.TextEditor, scroll: boolean = true) {
+  public setCursorToFocus(editor: vscode.TextEditor, scroll: boolean = true) {
     editor.selections = [new vscode.Selection(this.focus, this.focus)]
     if(scroll) {
       if (textUtil.positionIsBefore(this.focus, this.viewDoc.lineAt(this.focus.line).range.end))
@@ -237,7 +245,7 @@ export class CoqDocument implements vscode.Disposable {
       if(moveCursor) {
         // adjust the cursor position
         for(let editor of this.cursorUnmovedSinceCommandInitiated)
-          this.moveCursorToFocus(editor, editor === vscode.window.activeTextEditor);
+          this.setCursorToFocus(editor, editor === vscode.window.activeTextEditor);
       }
 
       // update the focus decoration
@@ -270,7 +278,7 @@ export class CoqDocument implements vscode.Disposable {
       if(value.type === 'not-running')
         this.updateFocus(undefined, false);
       else
-        this.updateFocus(value.focus, true);
+        this.updateFocus(value.focus, this.moveCursorToFocus);
       if(value.type === 'interrupted')
         this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
     } catch (err) {
@@ -289,7 +297,7 @@ export class CoqDocument implements vscode.Disposable {
       if(value.type === 'not-running')
         this.updateFocus(undefined, false);
       else
-        this.updateFocus(value.focus, true)
+        this.updateFocus(value.focus, this.moveCursorToFocus)
       if(value.type === 'interrupted')
         this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
       // const range = new vscode.Range(editor.document.positionAt(value.commandStart), editor.document.positionAt(value.commandEnd));

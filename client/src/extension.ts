@@ -216,7 +216,7 @@ function interpretToEnd(editor: TextEditor, edit: TextEditorEdit) {
 
 function moveCursorToFocus(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.moveCursorToFocus(editor)
+    doc.setCursorToFocus(editor)
   )
 }
 

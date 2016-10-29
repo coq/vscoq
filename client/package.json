@@ -49,7 +49,12 @@
 					"default": true,
 					"description": "If true, load settings from _CoqProject, if found at the root of the Code project"
 				},
-        "nodejs.path": {"type": "string", "default": "C:/Program Files/nodejs/", "description": "Path to Node.js"}
+        "coq.moveCursorToFocus": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true, the current editor's cursor position will move as Coq interactively steps forward/backward a command"
+        }
+        // "nodejs.path": {"type": "string", "default": "C:/Program Files/nodejs/", "description": "Path to Node.js"}
 			}
 		},
     "commands": [
