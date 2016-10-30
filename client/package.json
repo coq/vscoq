@@ -19,8 +19,8 @@
 	],
 	"main": "./out/src/extension",
 	"contributes": {
-		"languages": [{
-			"id": "coq",
+		"languages": [
+    { "id": "coq",
 			"aliases": ["Coq", "coq", "Gallina", "gallina"],
 			"extensions": [".v"],
 			"configuration": "./coq.configuration.json"
@@ -109,7 +109,20 @@
       {"command": "extension.coq.query.print", "key": "ctrl+shift+p", "when": "editorTextFocus && editorLangId == coq"},
       {"command": "extension.coq.display.toggle.implicitArguments", "key": "ctrl+shift+i", "when": "editorTextFocus && editorLangId == coq"},
       {"command": "extension.coq.display.toggle.coercions", "key": "ctrl+shift+c", "when": "editorTextFocus && editorLangId == coq"},
-      {"command": "extension.coq.display.toggle.notations", "key": "ctrl+shift+n", "when": "editorTextFocus && editorLangId == coq"}
+      {"command": "extension.coq.display.toggle.notations", "key": "ctrl+shift+n", "when": "editorTextFocus && editorLangId == coq"},
+
+      {"command": "extension.coq.reset", "key": "Ctrl+Alt+Home", "when": "resourceScheme==coq-view"},
+      {"command": "extension.coq.interrupt", "key": "Ctrl+Alt+`", "when": "resourceScheme==coq-view"},
+      {"command": "extension.coq.interrupt", "key": "Ctrl+Alt+Break", "when": "resourceScheme==coq-view"},
+      {"command": "extension.coq.stepForward", "key": "Ctrl+Alt+Down", "when": "resourceScheme==coq-view"},
+      {"command": "extension.coq.stepBackward", "key": "Ctrl+Alt+Up", "when": "resourceScheme==coq-view"},
+      {"command": "extension.coq.interpretToPoint", "key": "Ctrl+Alt+Right", "when": "resourceScheme==coq-view"},
+      {"command": "extension.coq.interpretToEnd", "key": "Ctrl+Alt+End", "when": "resourceScheme==coq-view"},
+      {"command": "extension.coq.display.toggle.implicitArguments", "key": "ctrl+shift+i", "when": "resourceScheme==coq-view"},
+      {"command": "extension.coq.display.toggle.coercions", "key": "ctrl+shift+c", "when": "resourceScheme==coq-view"},
+      {"command": "extension.coq.display.toggle.notations", "key": "ctrl+shift+n", "when": "resourceScheme==coq-view"}
+
+
     ],
     "menus": {
       "editor/context": [

@@ -11,6 +11,7 @@ import * as WebSocket from 'ws';
 import * as http from 'http';
 import * as path from 'path';
 import * as util from 'util';
+import * as docs from './CoqDocumentListener';
 
 const opener = require('opener');
 
@@ -120,6 +121,10 @@ export class HtmlCoqView implements view.CoqView {
     switch(message.eventName) {
       case 'resize':
         this.handleClientResize(message.params);
+        return;
+      case 'focus':
+        docs.CoqDocumentListener.getInstance().setActiveDoc(this.docUri);
+        return;        
     }
   }
   
