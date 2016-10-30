@@ -49,7 +49,7 @@ export class CoqDocument implements vscode.Disposable {
   private statusBar: StatusBar;
   public documentUri: string;
   public highlights = new Highlights();
-  private viewDoc: vscode.TextDocument = null;
+  private document: vscode.TextDocument = null;
   private langServer: CoqDocumentLanguageServer;
   private view : CoqView;
   private infoOut: vscode.OutputChannel;
@@ -62,18 +62,19 @@ export class CoqDocument implements vscode.Disposable {
   /** If true, the active editor's cursor will be set to the current STM focus when stepping forward or backward */
   private moveCursorToFocus = vscode.workspace.getConfiguration("coq").get("moveCursorWhenSteppingForwardOrBackward") as boolean;
 
-  constructor(uri: vscode.Uri, context: ExtensionContext) {
+  constructor(document: vscode.TextDocument, context: ExtensionContext) {
     this.statusBar = new StatusBar();
-    this.viewDoc = vscode.workspace.textDocuments.find((doc) => doc.uri === uri);
+    this.document = document;
+    // this.document = vscode.workspace.textDocuments.find((doc) => doc.uri === uri);
 
-    this.documentUri = uri.toString();
-    this.langServer = new CoqDocumentLanguageServer(uri.toString());
+    this.documentUri = document.uri.toString();
+    this.langServer = new CoqDocumentLanguageServer(document.uri.toString());
 
     this.infoOut = vscode.window.createOutputChannel('Info');
     this.queryOut = vscode.window.createOutputChannel('Query Results');
     this.noticeOut = vscode.window.createOutputChannel('Notices');
     
-    this.view = new HtmlCoqView(uri, context);
+    this.view = new HtmlCoqView(document.uri, context);
     // this.view = new SimpleCoqView(uri.toString());
     // this.view = new MDCoqView(uri);
     this.view.show(true,adjacentPane(this.currentViewColumn()));
@@ -115,6 +116,10 @@ export class CoqDocument implements vscode.Disposable {
   
   public getUri() {
     return this.documentUri;
+  }
+
+  public getDocument() {
+    return this.document;
   }
 
   dispose() {
@@ -229,7 +234,7 @@ export class CoqDocument implements vscode.Disposable {
   public setCursorToFocus(editor: vscode.TextEditor, scroll: boolean = true) {
     editor.selections = [new vscode.Selection(this.focus, this.focus)]
     if(scroll) {
-      if (textUtil.positionIsBefore(this.focus, this.viewDoc.lineAt(this.focus.line).range.end))
+      if (textUtil.positionIsBefore(this.focus, this.document.lineAt(this.focus.line).range.end))
         editor.revealRange(new vscode.Range(this.focus, this.focus), vscode.TextEditorRevealType.Default)
       else
         editor.revealRange(new vscode.Range(this.focus.line, 0, this.focus.line + 1, 0), vscode.TextEditorRevealType.Default)
