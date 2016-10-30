@@ -231,12 +231,12 @@ export class CoqDocument implements vscode.Disposable {
   /** Bring the focus into the editor's view, but only scroll rightward
    * if the focus is not at the end of a line
    * */
-  public setCursorToFocus(editor: vscode.TextEditor, scroll: boolean = true) {
+  public setCursorToFocus(editor: vscode.TextEditor, scroll: boolean = true, scrollHorizontal = false) {
     if(!editor)
       return;
     editor.selections = [new vscode.Selection(this.focus, this.focus)]
     if(scroll) {
-      if (textUtil.positionIsBefore(this.focus, this.document.lineAt(this.focus.line).range.end))
+      if (scrollHorizontal || textUtil.positionIsBefore(this.focus, this.document.lineAt(this.focus.line).range.end))
         editor.revealRange(new vscode.Range(this.focus, this.focus), vscode.TextEditorRevealType.Default)
       else
         editor.revealRange(new vscode.Range(this.focus.line, 0, this.focus.line + 1, 0), vscode.TextEditorRevealType.Default)

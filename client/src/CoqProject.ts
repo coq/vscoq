@@ -204,7 +204,7 @@ export class CoqProject implements vscode.Disposable {
 
   public setCursorToFocus() {
     function helper(this: CoqDocument, editor: vscode.TextEditor) {
-      return Promise.resolve(this.setCursorToFocus(editor,true));
+      return Promise.resolve(this.setCursorToFocus(editor,true,true));
     }
     return this.tryDocumentCommand(helper,false,false);
   }
