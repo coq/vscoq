@@ -56,6 +56,17 @@ function onWindowResize(event: UIEvent) {
   }
 }
 
+function onWindowGetFocus(event: FocusEvent) {
+  try {
+    if(connection)
+      connection.send(JSON.stringify(<ControllerEvent>{
+        eventName: 'focus',
+        params: {}
+      }));  
+  } catch(error) {
+  }
+}
+
 function getVSCodeTheme() : 'vscode-dark'|'vscode-light'|'vscode-high-contrast'|null {
   switch($(parent.document.body).attr('class')) {
     case 'vscode-dark': return 'vscode-dark'
@@ -77,6 +88,7 @@ const observer = new MutationObserver(function(mutations) {
 var connection : WebSocket = null;
 function load() {
   window.onresize = throttleEventHandler(onWindowResize);
+  window.addEventListener("focus", onWindowGetFocus, true);
 
   if(parent.parent === parent) {
     $(document.body).css({backgroundColor: 'black'});
