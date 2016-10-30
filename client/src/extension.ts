@@ -5,7 +5,7 @@ import * as util from 'util';
 import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } from 'vscode-languageclient';
 import * as proto from './protocol';
-import {CoqDocumentListener, CoqDocument} from './CoqDocumentListener';
+import {CoqProject, CoqDocument} from './CoqProject';
 
 
 vscode.Range.prototype.toString = function rangeToString() {return `[${this.start.toString()},${this.end.toString()})`}
@@ -18,7 +18,7 @@ console.log(`Coq Extension: process.version: ${process.version}, process.arch: $
 //     uri: string;
 // } 
 
-let documents : CoqDocumentListener;
+let project : CoqProject;
 
 export var extensionContext : ExtensionContext;
 
@@ -27,7 +27,10 @@ export function activate(context: ExtensionContext) {
   console.log(`execArgv: ${process.execArgv.join(' ')}`);
   console.log(`argv: ${process.argv.join(' ')}`);
   extensionContext = context;
-  documents = CoqDocumentListener.create(context);
+  
+  project = CoqProject.create(context);
+  context.subscriptions.push(project);
+
   function regTCmd(command, callback) {
     context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.'+command, callback));
   }
@@ -89,7 +92,7 @@ export function activate(context: ExtensionContext) {
 // }
 
 async function withDocAsync<T>(editor: TextEditor, callback: (doc: CoqDocument) => Promise<T>) : Promise<void> {
-  const doc = documents.getOrCurrent(editor ? editor.document.uri.toString() : null);
+  const doc = project.getOrCurrent(editor ? editor.document.uri.toString() : null);
   if(doc)
     await callback(doc);
 }

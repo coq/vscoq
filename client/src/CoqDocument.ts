@@ -13,7 +13,7 @@ import {HtmlCoqView} from './HtmlCoqView';
 import {HtmlLtacProf} from './HtmlLtacProf';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
-import {CoqLanguageServer} from './CoqLanguageServer';
+import {CoqDocumentLanguageServer} from './CoqLanguageServer';
 import {adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
 
@@ -50,7 +50,7 @@ export class CoqDocument implements vscode.Disposable {
   public documentUri: string;
   public highlights = new Highlights();
   private viewDoc: vscode.TextDocument = null;
-  private langServer: CoqLanguageServer;
+  private langServer: CoqDocumentLanguageServer;
   private view : CoqView;
   private infoOut: vscode.OutputChannel;
   private queryOut: vscode.OutputChannel;
@@ -67,7 +67,7 @@ export class CoqDocument implements vscode.Disposable {
     this.viewDoc = vscode.workspace.textDocuments.find((doc) => doc.uri === uri);
 
     this.documentUri = uri.toString();
-    this.langServer = new CoqLanguageServer(context);
+    this.langServer = new CoqDocumentLanguageServer(uri.toString());
 
     this.infoOut = vscode.window.createOutputChannel('Info');
     this.queryOut = vscode.window.createOutputChannel('Query Results');
@@ -90,16 +90,13 @@ export class CoqDocument implements vscode.Disposable {
 
     this.langServer.onUpdateHighlights((p) => this.onDidUpdateHighlights(p));
     this.langServer.onMessage((p) => this.onCoqMessage(p));
-    this.langServer.onReset((p) => { if (p.uri == this.documentUri) this.onCoqReset(); });
-    this.langServer.onUpdateCoqStmFocus((p) => { if (p.uri == this.documentUri) this.updateFocus(p.focus) });
-    // this.langServer.onUpdateComputingStatus((p) => { if (p.uri == this.documentUri) this.onUpdateComputingStatus(p); });
-    this.langServer.onLtacProfResults((p) => { if (p.uri == this.documentUri) this.onLtacProfResults(p); });
-
-    this.subscriptions.push(this.langServer.start());
+    this.langServer.onReset((p) => this.onCoqReset());
+    this.langServer.onUpdateCoqStmFocus((p) => this.updateFocus(p.focus));
+    this.langServer.onLtacProfResults((p) => this.onLtacProfResults(p));
 
     this.view.onresize = async (columns:number) => {
-      await this.langServer.resizeView(this.documentUri,Math.floor(columns));
-      const value = await this.langServer.getGoal(this.documentUri);
+      await this.langServer.resizeView(Math.floor(columns));
+      const value = await this.langServer.getGoal();
       this.view.update(value);
     };
 
@@ -180,7 +177,7 @@ export class CoqDocument implements vscode.Disposable {
   public async interruptCoq() {
     this.statusBar.setStateMessage('Killing CoqTop');
     try {
-      await this.langServer.interruptCoq(this.documentUri);
+      await this.langServer.interruptCoq();
     } finally {}
     this.statusBar.setStateReady();
   }
@@ -188,7 +185,7 @@ export class CoqDocument implements vscode.Disposable {
   public async quitCoq(editor: TextEditor) {
     this.statusBar.setStateMessage('Killing CoqTop');
     try {
-      await this.langServer.quitCoq(this.documentUri);
+      await this.langServer.quitCoq();
     } finally {}
     this.reset();
     this.statusBar.setStateReady();
@@ -197,7 +194,7 @@ export class CoqDocument implements vscode.Disposable {
   public async resetCoq(editor: TextEditor) {
     this.statusBar.setStateMessage('Resetting Coq');
     try {
-      await this.langServer.resetCoq(this.documentUri);
+      await this.langServer.resetCoq();
     } finally {}
     this.reset();
     this.statusBar.setStateReady();
@@ -271,7 +268,7 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateWorking('Stepping forward');
     try {
       this.rememberCursors();
-      const value = await this.langServer.stepForward(this.documentUri);
+      const value = await this.langServer.stepForward();
       this.view.update(value);
       if(value.type === 'busy')
         return;
@@ -290,7 +287,7 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateWorking('Stepping backward');
     try {
       this.rememberCursors();
-      const value = await this.langServer.stepBackward(this.documentUri);
+      const value = await this.langServer.stepBackward();
       this.view.update(value);
       if(value.type === 'busy')
         return;
@@ -312,7 +309,7 @@ export class CoqDocument implements vscode.Disposable {
     try {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
-      const value = await this.langServer.interpretToPoint(this.documentUri, editor.document.offsetAt(editor.selection.active));
+      const value = await this.langServer.interpretToPoint(editor.document.offsetAt(editor.selection.active));
       if(value.type === 'busy')
         return;
       if(value.type === 'not-running')
@@ -332,7 +329,7 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateWorking('Interpreting to end');
     try {
       const params = { uri: this.documentUri };
-      const value = await this.langServer.interpretToEnd(this.documentUri);
+      const value = await this.langServer.interpretToEnd();
       if(value.type === 'busy')
         return;
       if(value.type === 'not-running')
@@ -349,7 +346,7 @@ export class CoqDocument implements vscode.Disposable {
   public async check(query: string) {
     this.statusBar.setStateWorking('Running query');
     try {
-      return await this.langServer.check(this.documentUri, query);
+      return await this.langServer.check(query);
     } catch (err) {
     } finally {
       this.statusBar.setStateReady();
@@ -359,7 +356,7 @@ export class CoqDocument implements vscode.Disposable {
   public async print(query: string) {
     this.statusBar.setStateWorking('Running query');
     try {
-      return await this.langServer.print(this.documentUri, query);
+      return await this.langServer.print(query);
     } catch (err) {
     } finally {
       this.statusBar.setStateReady();
@@ -376,7 +373,7 @@ export class CoqDocument implements vscode.Disposable {
   public async locate(query: string) {
     this.statusBar.setStateWorking('Running query');
     try {
-      const results = await this.langServer.locate(this.documentUri, query);
+      const results = await this.langServer.locate(query);
       this.displayQueryResults(results);
     } catch (err) {
     } finally {
@@ -387,7 +384,7 @@ export class CoqDocument implements vscode.Disposable {
   public async search(query: string) {
     this.statusBar.setStateWorking('Running query');
     try {
-      const results = await this.langServer.search(this.documentUri, query);
+      const results = await this.langServer.search(query);
       this.displayQueryResults(results);
     } catch (err) {
     } finally {
@@ -398,7 +395,7 @@ export class CoqDocument implements vscode.Disposable {
   public async searchAbout(query: string) {
     this.statusBar.setStateWorking('Running query');
     try {
-      const results = await this.langServer.searchAbout(this.documentUri, query);
+      const results = await this.langServer.searchAbout(query);
       this.displayQueryResults(results);
     } catch (err) {
     } finally {
@@ -421,7 +418,7 @@ export class CoqDocument implements vscode.Disposable {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
       const offset = editor.document.offsetAt(editor.selection.active);
-      const results = await this.langServer.ltacProfGetResults(this.documentUri,offset);
+      const results = await this.langServer.ltacProfGetResults(offset);
       // const view = new HtmlLtacProf(results); 
       // const out = vscode.window.createOutputChannel("LtacProfiler");
       // results.forEach((value,key) => {
@@ -433,8 +430,8 @@ export class CoqDocument implements vscode.Disposable {
       this.statusBar.setStateReady();
     }
   }
-  private onLtacProfResults(params: proto.NotifyLtacProfResultsParams) {
-    const view = new HtmlLtacProf(params.results); 
+  private onLtacProfResults(results: proto.LtacProfResults) {
+    const view = new HtmlLtacProf(results); 
   }
 
   public async doOnLostFocus() {
@@ -464,8 +461,8 @@ export class CoqDocument implements vscode.Disposable {
       value = proto.SetDisplayOption.Toggle
     }
 
-    await this.langServer.setDisplayOptions(this.documentUri, [{item: item, value: value}]);
-    const proofview = await this.langServer.getGoal(this.documentUri);
+    await this.langServer.setDisplayOptions([{item: item, value: value}]);
+    const proofview = await this.langServer.getGoal();
     this.view.update(proofview);
  }
   

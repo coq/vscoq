@@ -236,7 +236,7 @@ export interface Highlights {
   ranges: [vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[]];
 }
 
-type NotifyHighlightParams = NotificationParams & Highlights;
+export type NotifyHighlightParams = NotificationParams & Highlights;
 
 export namespace UpdateHighlightsNotification { 
   export const type: NotificationType<NotifyHighlightParams> =
