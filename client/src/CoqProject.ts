@@ -163,9 +163,9 @@ export class CoqProject implements vscode.Disposable {
     }
 
     if(doc) {
-      if(makeVisible)
+      if(makeVisible && !vscode.window.visibleTextEditors.some((d) => d.document===doc.getDocument()))
         await vscode.window.showTextDocument(doc.getDocument(), undefined, true);
-        
+
       await command.call(doc,editor);
     }
   }

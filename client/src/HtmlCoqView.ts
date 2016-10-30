@@ -161,7 +161,7 @@ export class HtmlCoqView implements view.CoqView {
     return Promise.resolve(opener(decodeURIComponent(coqViewToFileUri(this.coqViewUri).toString()), {command:"firefox"}));
   }
 
-  dispose() {
+  public dispose() {
     // this.editor.hide();
   }
   

@@ -181,13 +181,6 @@ function print(editor: TextEditor, edit: TextEditorEdit) {
   )
 }
 
-function interpretToPoint() {
-  const editor = vscode.window.activeTextEditor;
-  return withDocAsync(editor, async (doc) =>
-    doc.interpretToCursorPosition(editor)
-  )
-}
-
 function viewGoalState(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
     doc.viewGoalState(editor,false)
