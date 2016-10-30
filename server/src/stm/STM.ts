@@ -116,10 +116,11 @@ export class CoqStateMachine {
 
   constructor(private settings: proto.CoqTopSettings
     , private scriptFile: string
+    , private projectRoot: string
     , private callbacks: StateMachineCallbacks
     , private console: RemoteConsole
   ) {
-    this.coqtop = new coqtop.CoqTop(settings, scriptFile, console, {
+    this.coqtop = new coqtop.CoqTop(settings, scriptFile, projectRoot, console, {
       onStateStatusUpdate: (x1,x2,x3,x4) => this.onCoqStateStatusUpdate(x1,x2,x3,x4),
       onStateError: (x1,x2,x3,x4) => this.onCoqStateError(x1,x2,x3,x4),
       onEditFeedback: (x1,x2) => this.onCoqEditFeedback(x1,x2),

@@ -165,12 +165,14 @@ export class CoqTop extends events.EventEmitter {
   private readyToListen: Thenable<void>[];
   private settings : CoqTopSettings;
   private scriptFile : string;
+  private projectRoot: string;
   private supportsInterruptCall = false;
 
-  constructor(settings : CoqTopSettings, scriptFile: string, console: vscode.RemoteConsole, callbacks?: EventCallbacks) {
+  constructor(settings : CoqTopSettings, scriptFile: string, projectRoot: string, console: vscode.RemoteConsole, callbacks?: EventCallbacks) {
     super();
     this.settings = settings;
     this.scriptFile = scriptFile;
+    this.projectRoot = projectRoot;
     this.console = console;
     this.callbacks = callbacks;
     this.mainChannelServer = net.createServer();
@@ -397,7 +399,7 @@ export class CoqTop extends events.EventEmitter {
       '-async-proofs', 'on'
       ].concat(this.settings.args);
     this.console.log('exec: ' + coqtopModule + ' ' + args.join(' '));
-    return spawn(coqtopModule, args, {detached: false});
+    return spawn(coqtopModule, args, {detached: false, cwd: this.projectRoot});
   }
 
   private spawnCoqTopWrapper(mainAddr : string, controlAddr: string, traceFile?: string) : ChildProcess {
@@ -416,7 +418,7 @@ export class CoqTop extends events.EventEmitter {
       .concat(traceFile ? ['-tracefile', traceFile] : [])
       .concat(this.settings.args);
     this.console.log('exec: ' + coqtopModule + ' ' + args.join(' '));
-    return spawn(coqtopModule, args, {detached: false});
+    return spawn(coqtopModule, args, {detached: false, cwd: this.projectRoot});
   }
 // 
 //   private spawnCoqTop() {

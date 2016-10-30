@@ -61,7 +61,7 @@ export class CoqProject {
   
   public async open(textDocument: TextDocumentItem, callbacks: DocumentCallbacks): Promise<CoqDocument> {
     await this.ready.event;
-    const doc = new CoqDocument(this.currentSettings.coqtop, textDocument, this.console, callbacks);
+    const doc = new CoqDocument(this.currentSettings.coqtop, textDocument, this.getWorkspaceRoot(), this.console, callbacks);
     this.coqInstances[doc.uri] = doc;
     return doc;
   }

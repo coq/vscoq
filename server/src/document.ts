@@ -12,7 +12,6 @@ import * as coqParser from './parsing/coq-parser';
 import * as textUtil from './util/text-util';
 import {Mutex} from './util/Mutex';
 import {AsyncWorkQueue} from './util/AsyncQueue';
-// import {richppToMarkdown} from './coqtop/RichPP';
 import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './stm/STM';
 import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
 import * as sentSem from './parsing/SentenceSemantics';
@@ -73,15 +72,18 @@ export class CoqDocument implements TextDocument {
   private coqtopSettings : thmProto.CoqTopSettings;
   // Feedback destined for the extension client/view
   private feedback : FeedbackSync;
+  /** */
+  private projectRoot : string;
 
   private parsingRanges : Range[] = [];
   // private interactionCommands = new AsyncWorkQueue();
   // private interactionLoopStatus = InteractionLoopStatus.Idle;
   // we'll use this as a callback, so protect it with an arrow function so it gets the correct "this" pointer
 
-  constructor(coqtopSettings : thmProto.CoqTopSettings, document: TextDocumentItem, clientConsole: RemoteConsole, callbacks: DocumentCallbacks) {
+  constructor(coqtopSettings : thmProto.CoqTopSettings, document: TextDocumentItem, projectRoot: string, clientConsole: RemoteConsole, callbacks: DocumentCallbacks) {
     this.clientConsole = clientConsole;
     this.document = new SentenceCollection(document);
+    this.projectRoot = projectRoot;
     this.callbacks = callbacks;
     this.coqtopSettings = coqtopSettings;
     this.feedback = new FeedbackSync(callbacks, 200);
@@ -267,7 +269,7 @@ export class CoqDocument implements TextDocument {
   public async resetCoq() {
     if(this.stm && this.stm.isRunning())
       this.stm.shutdown(); // Don't bother awaiting
-    this.stm = new CoqStateMachine(this.coqtopSettings, this.uri, {
+    this.stm = new CoqStateMachine(this.coqtopSettings, this.uri, this.projectRoot, {
       sentenceStatusUpdate: (x1,x2) => this.onCoqStateStatusUpdate(x1,x2),
       clearSentence: (x1) => this.onClearSentence(x1),
       updateStmFocus: (x1) => this.onUpdateStmFocus(x1),
