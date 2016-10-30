@@ -232,6 +232,8 @@ export class CoqDocument implements vscode.Disposable {
    * if the focus is not at the end of a line
    * */
   public setCursorToFocus(editor: vscode.TextEditor, scroll: boolean = true) {
+    if(!editor)
+      return;
     editor.selections = [new vscode.Selection(this.focus, this.focus)]
     if(scroll) {
       if (textUtil.positionIsBefore(this.focus, this.document.lineAt(this.focus.line).range.end))

@@ -34,18 +34,21 @@ export function activate(context: ExtensionContext) {
   function regTCmd(command, callback) {
     context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.'+command, callback));
   }
-  function regCmd(command, callback) {
-    context.subscriptions.push(vscode.commands.registerCommand('extension.coq.'+command, callback));
+  function regCmd(command, callback, thisArg?: any) {
+    context.subscriptions.push(vscode.commands.registerCommand('extension.coq.'+command, callback, thisArg));
+  }
+  function regProjectCmd(command, callback) {
+    context.subscriptions.push(vscode.commands.registerCommand('extension.coq.'+command, callback, project));
   }
 
-  regTCmd('quit', quitCoq);
-  regTCmd('reset', resetCoq);
-  regCmd('interrupt', interruptCoq);
-  regCmd('stepForward', stepForward);
-  regCmd('stepBackward', stepBackward);
-  regCmd('interpretToPoint', interpretToPoint);
-  regCmd('interpretToEnd', interpretToEnd);
-  regCmd('moveCursorToFocus', moveCursorToFocus);
+  regProjectCmd('quit', project.quitCoq);
+  regProjectCmd('reset', project.resetCoq);
+  regProjectCmd('interrupt', project.interruptCoq);
+  regProjectCmd('stepForward', project.stepForward);
+  regProjectCmd('stepBackward', project.stepBackward);
+  regProjectCmd('interpretToPoint', project.interpretToPoint);
+  regProjectCmd('interpretToEnd', project.interpretToEnd);
+  regProjectCmd('moveCursorToFocus', project.setCursorToFocus);
   regTCmd('query.check', check);
   regTCmd('query.locate', locate);
   regTCmd('query.search', search);
@@ -58,16 +61,16 @@ export function activate(context: ExtensionContext) {
   regTCmd('query.prompt.print', queryPrint);
   regTCmd('proofView.open', viewGoalState); 
   regTCmd('proofView.openExternal', viewGoalStateExternal);
-  regCmd('ltacProf.getResults', ltacProfGetResults);
-  regCmd('display.toggle.implicitArguments', () => setDisplayOption(proto.DisplayOption.ImplicitArguments, proto.SetDisplayOption.Toggle)); 
-  regCmd('display.toggle.coercions', () => setDisplayOption(proto.DisplayOption.Coercions, proto.SetDisplayOption.Toggle)); 
-  regCmd('display.toggle.rawMatchingExpressions', () => setDisplayOption(proto.DisplayOption.RawMatchingExpressions, proto.SetDisplayOption.Toggle)); 
-  regCmd('display.toggle.notations', () => setDisplayOption(proto.DisplayOption.Notations, proto.SetDisplayOption.Toggle)); 
-  regCmd('display.toggle.allBasicLowLevelContents', () => setDisplayOption(proto.DisplayOption.AllBasicLowLevelContents, proto.SetDisplayOption.Toggle)); 
-  regCmd('display.toggle.existentialVariableInstances', () => setDisplayOption(proto.DisplayOption.ExistentialVariableInstances, proto.SetDisplayOption.Toggle)); 
-  regCmd('display.toggle.universeLevels', () => setDisplayOption(proto.DisplayOption.UniverseLevels, proto.SetDisplayOption.Toggle)); 
-  regCmd('display.toggle.allLowLevelContents', () => setDisplayOption(proto.DisplayOption.AllLowLevelContents, proto.SetDisplayOption.Toggle));
-  regCmd('display.toggle', () => setDisplayOption());
+  regCmd('ltacProf.getResults', project.ltacProfGetResults);
+  regCmd('display.toggle.implicitArguments', () => project.setDisplayOption(proto.DisplayOption.ImplicitArguments, proto.SetDisplayOption.Toggle)); 
+  regCmd('display.toggle.coercions', () => project.setDisplayOption(proto.DisplayOption.Coercions, proto.SetDisplayOption.Toggle)); 
+  regCmd('display.toggle.rawMatchingExpressions', () => project.setDisplayOption(proto.DisplayOption.RawMatchingExpressions, proto.SetDisplayOption.Toggle)); 
+  regCmd('display.toggle.notations', () => project.setDisplayOption(proto.DisplayOption.Notations, proto.SetDisplayOption.Toggle)); 
+  regCmd('display.toggle.allBasicLowLevelContents', () => project.setDisplayOption(proto.DisplayOption.AllBasicLowLevelContents, proto.SetDisplayOption.Toggle)); 
+  regCmd('display.toggle.existentialVariableInstances', () => project.setDisplayOption(proto.DisplayOption.ExistentialVariableInstances, proto.SetDisplayOption.Toggle)); 
+  regCmd('display.toggle.universeLevels', () => project.setDisplayOption(proto.DisplayOption.UniverseLevels, proto.SetDisplayOption.Toggle)); 
+  regCmd('display.toggle.allLowLevelContents', () => project.setDisplayOption(proto.DisplayOption.AllLowLevelContents, proto.SetDisplayOption.Toggle));
+  regCmd('display.toggle', () => project.setDisplayOption());
 
   // vscode.languages.registerCompletionItemProvider('coq', {provideCompletionItems: provideOptionCompletions}, 'X');
 }
@@ -178,56 +181,10 @@ function print(editor: TextEditor, edit: TextEditorEdit) {
   )
 }
 
-function quitCoq(editor: TextEditor, edit: TextEditorEdit) {
-  return withDocAsync(editor, async (doc) =>
-    doc.quitCoq(editor)
-  )
-}
-
-function resetCoq(editor: TextEditor, edit: TextEditorEdit) {
-  return withDocAsync(editor, async (doc) =>
-    doc.resetCoq(editor)
-  )
-}
-
-function interruptCoq() {
-  return withDocAsync(vscode.window.activeTextEditor, async (doc) =>
-    doc.interruptCoq()
-  )
-}
-
-function stepForward() {
-  const editor = vscode.window.activeTextEditor;
-  return withDocAsync(editor, async (doc) =>
-    doc.stepForward(editor)
-  )
-}
-
-function stepBackward() {
-  const editor = vscode.window.activeTextEditor;
-  return withDocAsync(editor, async (doc) =>
-    doc.stepBackward(editor)
-  )
-}
-
 function interpretToPoint() {
   const editor = vscode.window.activeTextEditor;
   return withDocAsync(editor, async (doc) =>
     doc.interpretToCursorPosition(editor)
-  )
-}
-
-function interpretToEnd() {
-  const editor = vscode.window.activeTextEditor;
-  return withDocAsync(editor, async (doc) =>
-    doc.interpretToEnd(editor)
-  )
-}
-
-function moveCursorToFocus() {
-  const editor = vscode.window.activeTextEditor;
-  return withDocAsync(editor, async (doc) =>
-    doc.setCursorToFocus(editor)
   )
 }
 
@@ -242,18 +199,3 @@ function viewGoalStateExternal(editor: TextEditor, edit: TextEditorEdit) {
     doc.viewGoalState(editor,true)
   )
 }
-
-function ltacProfGetResults() {
-  const editor = vscode.window.activeTextEditor;
-  return withDocAsync(editor, async (doc) =>
-    doc.ltacProfGetResults(editor)
-  )
-}
-
-function setDisplayOption(item?: proto.DisplayOption, value?: proto.SetDisplayOption) : void {
-  const editor = vscode.window.activeTextEditor;
-  withDocAsync(editor, async (doc) =>
-    doc.setDisplayOption(item, value)
-  )
-}
-

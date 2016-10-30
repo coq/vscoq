@@ -1,6 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode'
+import * as proto from './protocol'
 import {CoqDocument} from './CoqDocument'
 export {CoqDocument} from './CoqDocument'
 import {CoqLanguageServer} from './CoqLanguageServer'
@@ -72,7 +73,7 @@ export class CoqProject implements vscode.Disposable {
     // console.log("try load coq doc: " + textDoc.uri.fsPath);
     const uri = textDoc.uri.toString();
     if(!this.documents.has(uri)) {
-      this.documents.set(uri, new CoqDocument(textDoc.uri, this.context));
+      this.documents.set(uri, new CoqDocument(textDoc, this.context));
       // console.log("new coq doc: " + textDoc.uri.fsPath);
     }
 
@@ -147,6 +148,71 @@ export class CoqProject implements vscode.Disposable {
     }
 
     this.activeEditor = editor;
- }
+  }
 
+  private async tryDocumentCommand(command: (editor: vscode.TextEditor) => Promise<void>, useActive=true, makeVisible = true) {
+    let editor = vscode.window.activeTextEditor;
+    let doc : CoqDocument;
+    try {
+      doc = this.documents.get(editor ? editor.document.uri.toString() : null);
+    } catch(err) {}
+
+    if(!doc && useActive) {
+      doc = this.activeDoc;
+      editor = this.activeEditor;
+    }
+
+    if(doc) {
+      if(makeVisible)
+        await vscode.window.showTextDocument(doc.getDocument(), undefined, true);
+        
+      await command.call(doc,editor);
+    }
+  }
+
+  public quitCoq() {
+    return this.tryDocumentCommand(CoqDocument.prototype.quitCoq,false,false);
+  }
+
+  public resetCoq() {
+    return this.tryDocumentCommand(CoqDocument.prototype.resetCoq,false,false);
+  }
+
+  public stepForward() {
+    return this.tryDocumentCommand(CoqDocument.prototype.stepForward);
+  }
+
+  public stepBackward() {
+    return this.tryDocumentCommand(CoqDocument.prototype.stepBackward);
+  }
+
+  public interpretToPoint() {
+    return this.tryDocumentCommand(CoqDocument.prototype.interpretToCursorPosition,false,false);
+  }
+
+  public interpretToEnd() {
+    return this.tryDocumentCommand(CoqDocument.prototype.interpretToEnd,false,false);
+  }
+
+  public interruptCoq() {
+    return this.tryDocumentCommand(CoqDocument.prototype.interruptCoq);
+  }
+
+  public ltacProfGetResults() {
+    return this.tryDocumentCommand(CoqDocument.prototype.ltacProfGetResults);
+  }
+
+  public setCursorToFocus() {
+    function helper(this: CoqDocument, editor: vscode.TextEditor) {
+      return Promise.resolve(this.setCursorToFocus(editor,true));
+    }
+    return this.tryDocumentCommand(helper,false,false);
+  }
+
+  public setDisplayOption(item?: proto.DisplayOption, value?: proto.SetDisplayOption) {
+    function setDisplayOption(this: CoqDocument, editor: vscode.TextEditor) {
+      return Promise.resolve(this.setDisplayOption(item, value));
+    }
+    return this.tryDocumentCommand(setDisplayOption,true,false);
+  }
 }
