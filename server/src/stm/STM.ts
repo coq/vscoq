@@ -723,12 +723,14 @@ export class CoqStateMachine {
       case 'no-proof':
         return {type: 'no-proof'}
       case 'proof':
-        return {type: 'proof-view',
+        const result : GoalResult = {type: 'proof-view',
           goals: goals.goals.map(this.parseConvertGoal),
           backgroundGoals: this.convertUnfocusedGoals(goals.backgroundGoals),
           shelvedGoals: goals.shelvedGoals.map(this.parseConvertGoal),
           abandonedGoals: goals.abandonedGoals.map(this.parseConvertGoal),
         };
+        this.focusedSentence.setGoal(result);
+        return result;
       default:
         this.console.warn("Goal returned an unexpected value: " + util.inspect(goals,false,undefined));
     }

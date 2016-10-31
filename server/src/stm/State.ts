@@ -4,7 +4,8 @@ import * as coqProto from './../coqtop/coq-proto';
 import * as parser from './../parsing/coq-parser';
 import * as textUtil from './../util/text-util';
 import {Sentence} from './../sentence-model/Sentence';
-// import {CoqTopGoalResult} from './protocol';
+import {ProofView} from '../protocol';
+import * as diff from './DiffProofView';
 
 export type StateId = number;
 
@@ -52,6 +53,7 @@ export class State {
   private error?: StatusErrorInternal = undefined;
   // set to true when a document change has invalidated the meaning of the associated sentence; this state needs to be cancelled
   private markedInvalidated = false;
+  private goal : ProofView | null = null; 
 
   private constructor
     ( private commandText: string
@@ -166,6 +168,16 @@ export class State {
   public getRange() : Range {
     return this.textRange;
   }
+
+  public setGoal(goal: ProofView) {
+    this.goal = goal;
+    if(this.prev && this.prev.goal)
+      diff.diffProofView(this.prev.goal, this.goal)
+  }
+
+  public getGoal() : ProofView {
+    return this.goal;
+  }  
 
   /** Adjust's this sentence by the change
    * @returns true if the delta intersects this sentence
