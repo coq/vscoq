@@ -24,6 +24,24 @@ interface ResizeEvent {
   columns: number;
 }
 
+interface GoalUpdate {
+  command: 'goal-update',
+  goal: proto.CommandResult
+}
+
+interface SettingsUpdate extends SettingsState {
+  command: 'settings-update'
+}
+
+interface SettingsState {
+  fontFamily?: string,
+  fontSize?: string,
+  fontWeight?: string,
+}
+
+
+type ProofViewProtocol = GoalUpdate | SettingsUpdate;
+
 function createFile(path: string) : Promise<number> {
   return new Promise<number>((resolve,reject) => {
     fs.open(path, 'w', (err: any, fd: number) => {
@@ -84,13 +102,15 @@ export class HtmlCoqView implements view.CoqView {
   private serverReady : Promise<void>;
   private currentState : proto.CommandResult = {type: 'not-running'}; 
   public onresize: (columns: number) => Thenable<void> = null;
-  private coqViewUri : vscode.Uri; 
+  private coqViewUri : vscode.Uri;
+  private currentSettings : SettingsState = {}; 
   
   constructor(uri: vscode.Uri, context: vscode.ExtensionContext) {
     if(coqViewProvider===null) {    
       coqViewProvider = new IFrameDocumentProvider();
       var registration = vscode.workspace.registerTextDocumentContentProvider('coq-view', coqViewProvider);
       context.subscriptions.push(registration);
+      context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(() => this.updateSettings()))
     }
     
     this.docUri = uri;
@@ -107,7 +127,8 @@ export class HtmlCoqView implements view.CoqView {
     this.server = new WebSocket.Server({server: httpServer});
     this.server.on('connection', (ws: WebSocket) => {
       ws.onmessage = (event) => this.handleClientMessage(event);
-      ws.send(JSON.stringify(this.currentState));
+      this.updateSettings([ws]);
+      this.sendMessage({command: 'goal-update', goal: this.currentState}, [ws]);
     })
   }
   
@@ -164,15 +185,25 @@ export class HtmlCoqView implements view.CoqView {
   public dispose() {
     // this.editor.hide();
   }
-  
-  public async update(state: proto.CommandResult) {
-    this.currentState = state;
+
+  private sendMessage(message: ProofViewProtocol, clients = this.server.clients) {
     for(const connection of this.server.clients) {
       try {
-      connection.send(JSON.stringify(state));
+        connection.send(JSON.stringify(message));
       } catch(error) {}
     }
-
   }
   
+  public async update(state: proto.CommandResult, clients = this.server.clients) {
+    this.currentState = state;
+    this.sendMessage({command: 'goal-update', goal: state}, clients);
+  }
+  
+
+  private updateSettings(clients = this.server.clients) {
+    this.currentSettings.fontFamily = vscode.workspace.getConfiguration("editor").get("fontFamily") as string;
+    this.currentSettings.fontSize = `${vscode.workspace.getConfiguration("editor").get("fontSize") as number}px`;
+    this.currentSettings.fontWeight = vscode.workspace.getConfiguration("editor").get("fontWeight") as string;
+    this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>(this.currentSettings,{command: 'settings-update'}), clients);
+  }
 }

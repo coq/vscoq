@@ -129,7 +129,9 @@
       display: none;
     }
     .hypothesese, .hypothesis, .goal, #stdout, #textMeasurer, #measureTest {
-      font-family: Consolas, Courier New, Courier, monospace;
+      font-family: var(--code-font-family);
+      font-weight: var(--code-font-weight);
+      font-size: var(--code-font-size);
     }
 
     .goalsList {
@@ -164,7 +166,7 @@
       min-width: 1.5em;
       color: green;
       padding: 0pt;
-      font-size: 8pt;
+      font-size: 0.7em;
     } 
   </style>
   <script type="text/javascript" src="../jquery/jquery-2.2.4.min.js"></script>

@@ -16,6 +16,23 @@ function getQueryStringValue(key) {
 
 const stateModel = new StateModel();
 
+interface GoalUpdate {
+  command: 'goal-update',
+  goal: CommandResult
+}
+
+interface SettingsUpdate extends SettingsState {
+  command: 'settings-update'
+}
+
+interface SettingsState {
+  fontFamily?: string,
+  fontSize?: string,
+  fontWeight?: string,
+}
+
+type ProofViewProtocol = GoalUpdate | SettingsUpdate;
+
 var throttleTimeout = null;
 var throttleTimeoutCount = 0;
 var throttleEventHandler = <X>(handler: (X) => void) => (event:X) => {
@@ -117,8 +134,26 @@ function load() {
     $('#stdout').text("connection error");
   }
   connection.onmessage = function (event) {
-    const state = <CommandResult>JSON.parse(event.data);
-    stateModel.updateState(state);
+    const message = <ProofViewProtocol>JSON.parse(event.data);
+    handleMessage(message);
   }
 
+}
+
+function updateSettings(settings: SettingsState) : void {
+  if(settings.fontFamily)
+    document.documentElement.style.setProperty(`--code-font-family`, settings.fontFamily);
+  if(settings.fontSize)
+    document.documentElement.style.setProperty(`--code-font-size`, settings.fontSize);
+  if(settings.fontWeight)
+    document.documentElement.style.setProperty(`--code-font-weight`, settings.fontWeight);
+}
+
+function handleMessage(message: ProofViewProtocol) : void {
+  switch(message.command) {
+    case 'goal-update':
+      return stateModel.updateState(message.goal);
+    case 'settings-update':
+      updateSettings(message);  
+  }  
 }
