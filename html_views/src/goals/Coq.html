@@ -94,7 +94,6 @@
     .goal .goalId {
       color: lightblue;
       /*display: block;*/
-      font-size: 9pt;
       margin-right: 1ex; 
     }
     .goal .goalId:before {
@@ -105,6 +104,7 @@
     }
     .goal {
       list-style-type: none;
+      white-space: pre;
     }
     .goal .expr {
       display: block;
@@ -128,9 +128,8 @@
     .goal .expr .charsRemoved {
       display: none;
     }
-    .hypothesese, .hypothesis, .goal, #textMeasurer, #stdout {
-      font-family: Courier New, Courier, monospace;
-      font-size: 9pt;
+    .hypothesese, .hypothesis, .goal, #stdout, #textMeasurer, #measureTest {
+      font-family: Consolas, Courier New, Courier, monospace;
     }
 
     .goalsList {
@@ -148,6 +147,9 @@
     }
     .goalsList li:last-child {
       padding-bottom: 0em;
+    }
+    #measureTest {
+      display: none;
     }
 
     #toolbar {
@@ -172,6 +174,7 @@
   <div id="toolbar">
     <button value="R" onclick="location.reload(true)">Refresh</button>
   </div>
+  <div id="measureTest"></div>
   <canvas id="textMeasurer" style="display: none"></canvas>
   <div id="states">
     <div class="focusedState">

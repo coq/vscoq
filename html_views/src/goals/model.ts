@@ -39,13 +39,14 @@ var throttleEventHandler = <X>(handler: (X) => void) => (event:X) => {
 
 function onWindowResize(event: UIEvent) {
   try {
-    const stateView = document.body;
-    const ctx = (<HTMLCanvasElement>$('#textMeasurer')[0]).getContext("2d");
+    const stateView = $('#states')[0];
+    const ctx = ($('#textMeasurer')[0] as HTMLCanvasElement).getContext("2d");
+    ctx.font = getComputedStyle($('#textMeasurer')[0]).font;
     let widthChars = Math.floor(stateView.clientWidth / ctx.measureText("O").width);
     if (widthChars === Number.POSITIVE_INFINITY)
       widthChars = 1;
-    // document.getElementById('stdout').innerHTML = ">" + widthChars;
-    // document.getElementById('stdout').innerHTML = widthChars + '<br>' + new Array(Math.max(0,widthChars)+1).join('0');
+    widthChars = Math.max(widthChars,5);
+    $('#measureTest').text("<" + "-".repeat(widthChars-2) + ">")
     if(connection)
       connection.send(JSON.stringify(<ControllerEvent>{
         eventName: 'resize',
@@ -87,13 +88,13 @@ const observer = new MutationObserver(function(mutations) {
 
 var connection : WebSocket = null;
 function load() {
-  window.onresize = throttleEventHandler(onWindowResize);
-  window.addEventListener("focus", onWindowGetFocus, true);
 
   if(parent.parent === parent) {
     $(document.body).css({backgroundColor: 'black'});
   } else {
     try {
+      window.onresize = throttleEventHandler(onWindowResize);
+      window.addEventListener("focus", onWindowGetFocus, true);
       observer.observe(parent.document.body, { attributes : true, attributeFilter: ['class'] });
       inheritStyles(parent.parent);
     } catch(error) {
@@ -107,6 +108,7 @@ function load() {
   connection = new WebSocket(address);
   connection.onopen = function (event) {
     $('#stdout').text("connected");
+    onWindowResize(null);
   }
   connection.onclose = function (event) {
     $('#stdout').text("connection closed");
