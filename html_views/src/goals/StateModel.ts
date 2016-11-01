@@ -1,68 +1,6 @@
 /// <reference path="../../typings/index.d.ts" />
-/// <reference path="ui-util.ts" />
-
-
-enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
-enum TextDifference { None, Added, Removed }
-interface TextPartDifference {
-  text: string;
-  change: TextDifference;
-}
-interface Hypothesis {
-  identifier: string;
-  relation: string;
-  expression: string;
-  diffExpression?: TextPartDifference[];
-  diff: HypothesisDifference;
-}
-interface Goal {
-  id: number;
-  hypotheses: Hypothesis[];
-  goal: string|{string:string};
-  diffGoal?: TextPartDifference[];
-}
-interface UnfocusedGoalStack {
-  // subgoals that appear before the focus
-  before: Goal[];
-  // reference to the more-focused background goals
-  next?: UnfocusedGoalStack
-  // subgoals that appear after the focus
-  after: Goal[];
-}
-
-interface FailValue {
-  message: string;
-  location?: Location;
-}
-
-interface ProofView {
-  goals: Goal[];
-  backgroundGoals: UnfocusedGoalStack,
-  shelvedGoals: Goal[],
-  abandonedGoals: Goal[],
-}
-
-interface CommandInterrupted {
-  range: any
-}
-
-type FocusPosition = {focus: any}
-type NotRunningTag = {type: 'not-running'}
-type NoProofTag = {type: 'no-proof'}
-type FailureTag = {type: 'failure'}
-type ProofViewTag = {type: 'proof-view'}
-type InterruptedTag = {type: 'interrupted'}
-type NotRunningResult = NotRunningTag
-type NoProofResult = NoProofTag
-type FailureResult = FailValue & FailureTag
-type ProofViewResult = ProofView & ProofViewTag
-type InterruptedResult = CommandInterrupted & InterruptedTag
-type CommandResult =
-  NotRunningTag |
-  (FailureResult & FocusPosition) |
-  (ProofViewResult & FocusPosition) |
-  (InterruptedResult & FocusPosition) |
-  (NoProofResult & FocusPosition);
+/// <reference path="./ui-util.ts" />
+/// <reference path="./protocol.ts" />
 
 
 enum DisplayState {
@@ -114,21 +52,32 @@ function getDifferenceClass(diff: HypothesisDifference) {
   }
 }
 
-function getTextDiffClass(diff: TextDifference) : string {
-  switch(diff) {
-    case TextDifference.Added: return 'charsAdded'
-    case TextDifference.Removed: return 'charsRemoved'
-    default: return ''
-  }
+function getTextDiffClass(diff?: TextDifference) : string {
+  if(diff === "added")
+    return 'charsAdded'
+  else
+    return ''
 }
 
-function createDiffText(parts: TextPartDifference[]) : Node[] {
-  return parts.map((part) =>
-    $('<span>')
-    .addClass(getTextDiffClass(part.change))
-    .append(makeBreakingText(part.text))
-    [0]
-    );
+function isScopedText(text: AnnotatedText): text is ScopedText {
+  return text.hasOwnProperty('scope');
+}
+
+function createAnnotatedText(text: AnnotatedText) : Node[] {
+  if(typeof text === 'string')
+    return makeBreakingText(text)
+  else if(text instanceof Array)
+    return Array.prototype.concat(...text.map(createAnnotatedText))
+  else if(isScopedText(text))
+    return [$('<span>')
+      .addClass('scope' + text.scope)
+      .append(createAnnotatedText(text.text))
+      .get(0)];
+  else // TextAnnotation
+    return [$('<span>')
+      .addClass(getTextDiffClass(text.diff))
+      .append(makeBreakingText(text.text))
+      .get(0)];
 }
 
 function onDoubleClickBreakableText(event: JQueryMouseEventObject) {
@@ -139,6 +88,7 @@ function onDoubleClickBreakableText(event: JQueryMouseEventObject) {
   }
 }
 
+
 function createHypothesis(hyp: Hypothesis) : JQuery {
   return $('<li>')
     .addClass('hypothesis')
@@ -148,9 +98,7 @@ function createHypothesis(hyp: Hypothesis) : JQuery {
       [ $('<span>').addClass('ident').text(hyp.identifier)
       , $('<span>').addClass('rel').text(hyp.relation)
       , $('<span>').addClass('expr')
-        .append(hyp.diffExpression
-            ? $(createDiffText(hyp.diffExpression))
-            : $(makeBreakingText(hyp.expression)))
+        .append($(createAnnotatedText(hyp.expression)))
       ])
     .on('dblclick', onDoubleClickBreakableText)
 
@@ -164,12 +112,8 @@ function createHypotheses(hyps: Hypothesis[]) {
 
 function createGoal(goal: Goal, idx:number, count:number) {
   let expr = $('<span>').addClass('expr');
-  if(goal.diffGoal)
-    expr.append(createDiffText(goal.diffGoal))
-  else if(typeof goal.goal === 'string')
-    expr.text(goal.goal)
-  else
-    expr.text((<{string:string}>goal.goal).string)
+  expr.append($(createAnnotatedText(goal.goal)))
+
   return $('<li>')
     .addClass('goal')
     .append(
@@ -193,16 +137,14 @@ function createFocusedGoals(goals: Goal[]) : JQuery {
   //   createGoal(g, idx, goals.length)));
 }
 
-
-
-
-
 class StateModel {
+
   private static hypothesesNodeClass = '.hypotheses';
   private static goalNodeClass = '.goal';
   private static focusedStateClass = '.focusedState';
   private focusedState = 0;
   private coqState : ProofView;
+
 
   constructor() {
   }
@@ -264,4 +206,5 @@ class StateModel {
       this.setMessage(err);
     }
   }
+
 }

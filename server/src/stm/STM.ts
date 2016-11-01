@@ -8,7 +8,6 @@ import * as util from 'util';
 import * as proto from './../protocol';
 import * as textUtil from './../util/text-util';
 import * as coqtop from './../coqtop/coqtop';
-import {ProofView, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from './../protocol';
 import * as coqParser from './../parsing/coq-parser';
 import {State, StatusError, StateStatus} from './State';
 import {LoadModule, SentenceSemantics} from './../parsing/SentenceSemantics';
@@ -696,13 +695,8 @@ export class CoqStateMachine {
     return <proto.Goal>{
       goal: goal.goal,
       hypotheses: goal.hypotheses.map((hyp) => {
-        if(hyp.$name === 'richpp') {
-          let h = hyp._.$text.split(/(:=|:)([^]*)/);
-          return {identifier: h[0].trim(), relation: h[1].trim(), expression: hyp._.$children[0]};
-        } else {
-          let h = hyp.split(/(:=|:)([^]*)/);
-          return {identifier: h[0].trim(), relation: h[1].trim(), expression: h[2].trim()};
-        }
+        let h = (hyp as string).split(/(:=|:)([^]*)/);
+        return {identifier: h[0].trim(), relation: h[1].trim(), expression: h[2].trim()};
       })
     };
   }

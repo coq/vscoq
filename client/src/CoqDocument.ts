@@ -17,7 +17,6 @@ import {CoqDocumentLanguageServer} from './CoqLanguageServer';
 import {adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
 
-
 const STM_FOCUS_IMAGE = "./images/stm-focus.svg";
 const STM_FOCUS_IMAGE_BEFORE = "./images/stm-focus-before.svg";
 

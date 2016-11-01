@@ -1,14 +1,7 @@
 /// <reference path="../../typings/index.d.ts" />
 /// <reference path="./ui-util.ts" />
 /// <reference path="./StateModel.ts" />
-
-interface ControllerEvent {
-  eventName: string;
-  params: ResizeEvent // | | | | | ;
-}
-interface ResizeEvent {
-  columns: number;
-}
+/// <reference path="./protocol.ts" />
 
 function getQueryStringValue(key) {
     return decodeURI(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURI(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
@@ -16,22 +9,6 @@ function getQueryStringValue(key) {
 
 const stateModel = new StateModel();
 
-interface GoalUpdate {
-  command: 'goal-update',
-  goal: CommandResult
-}
-
-interface SettingsUpdate extends SettingsState {
-  command: 'settings-update'
-}
-
-interface SettingsState {
-  fontFamily?: string,
-  fontSize?: string,
-  fontWeight?: string,
-}
-
-type ProofViewProtocol = GoalUpdate | SettingsUpdate;
 
 var throttleTimeout = null;
 var throttleTimeoutCount = 0;

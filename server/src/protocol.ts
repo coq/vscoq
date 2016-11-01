@@ -20,6 +20,7 @@ export interface Settings {
   coqtop: CoqTopSettings;
 }
 
+
 // These are the example settings we defined in the client's package.json
 // file
 export interface CoqTopSettings {
@@ -52,32 +53,46 @@ export enum DisplayOption {
 export interface CoqTopParams {
   uri: string;
 }
-// export interface CoqTopStepForwardResult {
-//   processingStart: number;
-//   processingEnd: number;
-// }
-// export interface CoqTopStepBackwardResult {
-//   commandStart: number;
-//   commandEnd: number;
-// }
-export enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
-export enum TextDifference { None, Added, Removed }
-export interface TextPartDifference {
-  text: string;
-  change: TextDifference;
+
+export interface Substitution {
+	ugly: string;        // regular expression describing the text to replace
+	pretty: string;      // plain-text symbol to show instead
+	pre?: string;        // regular expression guard on text before "ugly"
+	post?: string;       // regular expression guard on text after "ugly"
+	style?: any;         // stylings to apply to the "pretty" text, if specified, or else the ugly text
 }
+
+export type TextDifference = "added";
+
+export interface TextAnnotation {
+  /** the relationship this text has to the text of another state */
+  diff?: TextDifference,
+  /** what to display instead of this text */
+  substitution?: string,
+  /** the underlying text, possibly with more annotations */
+  text: string
+}
+
+export interface ScopedText {
+  /** A scope identifier */
+  scope: string,
+  /** the underlying text, possibly with more annotations */
+  text: AnnotatedText
+}
+
+export type AnnotatedText = string | TextAnnotation | ScopedText | (string | TextAnnotation | ScopedText)[];
+
+export enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
 export interface Hypothesis {
   identifier: string;
   relation: string;
-  expression: string;
-  diffExpression?: TextPartDifference[];
+  expression: AnnotatedText;
   diff: HypothesisDifference;
 }
 export interface Goal {
   id: number;
   hypotheses: Hypothesis[];
-  goal: string|{string:string};
-  diffGoal?: TextPartDifference[];  
+  goal: AnnotatedText;
 }
 export interface UnfocusedGoalStack {
   // subgoals that appear before the focus
@@ -89,7 +104,7 @@ export interface UnfocusedGoalStack {
 }
 export interface ProofView {
   goals: Goal[];
-  backgroundGoals: UnfocusedGoalStack,
+  backgroundGoals?: UnfocusedGoalStack,
   shelvedGoals: Goal[],
   abandonedGoals: Goal[],
 }
@@ -236,7 +251,7 @@ export interface Highlights {
   ranges: [vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[]];
 }
 
-type NotifyHighlightParams = NotificationParams & Highlights;
+export type NotifyHighlightParams = NotificationParams & Highlights;
 
 export namespace UpdateHighlightsNotification { 
   export const type: NotificationType<NotifyHighlightParams> =

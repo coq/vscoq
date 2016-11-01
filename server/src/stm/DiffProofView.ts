@@ -1,8 +1,9 @@
 // 'use strict';
 
 import * as coqProto from '../coqtop/coq-proto';
-import {ProofView, Goal, Hypothesis, HypothesisDifference, TextDifference, TextPartDifference} from '../protocol';
-import * as diff from 'diff';
+import {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAnnotation, ScopedText} from '../protocol';
+import * as text from '../util/AnnotatedText';
+
 
 
 function diffHypotheses(oldHyps: Hypothesis[], newHyps: Hypothesis[]) {
@@ -13,22 +14,14 @@ function diffHypotheses(oldHyps: Hypothesis[], newHyps: Hypothesis[]) {
       oldHypIdx = oldHyps.findIndex((h) => h.identifier === hyp.identifier)
       oldHyp = oldHyps[oldHypIdx];
     }
-      
+
     if(oldHyp === undefined)
       hyp.diff = HypothesisDifference.New;
-    else if(oldHyp.expression !== hyp.expression) {
-      hyp.diff = HypothesisDifference.Changed
-      var difference = diff.diffWords(oldHyp.expression, hyp.expression);
-      hyp.diffExpression = difference.map((d,idx) => {
-        if(d.added)
-          return {text: d.value, change: TextDifference.Added};
-        else if(d.removed)
-          return {text: d.value, change: TextDifference.Removed};
-        else
-          return {text: d.value, change: TextDifference.None};          
-      });
-    } else
-      hyp.diff = HypothesisDifference.None
+    else {
+      const diff = text.diffText(oldHyp.expression,hyp.expression);
+      hyp.expression = diff.text;
+      hyp.diff = diff.different ? HypothesisDifference.Changed : HypothesisDifference.None
+    }
   })
 }
 
@@ -37,19 +30,8 @@ function diffGoals(oldGoals: Goal[], newGoals: Goal[]) {
     return;
   newGoals.forEach((g,idxGoal) => {
     if(oldGoals[idxGoal] !== undefined) {
-      diffHypotheses(oldGoals[idxGoal].hypotheses, g.hypotheses)
-      const oldGoal = oldGoals[idxGoal].goal.hasOwnProperty('string') ? oldGoals[idxGoal].goal['string'] : oldGoals[idxGoal].goal
-      if(typeof g.goal === 'string' && g.goal !== oldGoal) {
-        var difference = diff.diffWords(oldGoal, g.goal);
-        g.diffGoal = difference.map((d,idx) => {
-          if(d.added)
-            return {text: d.value, change: TextDifference.Added};
-          else if(d.removed)
-            return {text: d.value, change: TextDifference.Removed};
-          else
-            return {text: d.value, change: TextDifference.None};          
-        });
-      }
+      diffHypotheses(oldGoals[idxGoal].hypotheses, g.hypotheses);
+      g.goal = text.diffText(oldGoals[idxGoal].goal,g.goal).text;
     }
   })
 

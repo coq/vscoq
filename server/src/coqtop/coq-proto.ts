@@ -1,5 +1,6 @@
 'use strict';
 import {Position, Range} from 'vscode-languageserver';
+import {AnnotatedText} from '../protocol';
 
 export type CoqValue = any;
 
@@ -102,8 +103,8 @@ export interface EditFeedback {
 
 export interface Goal {
   id: number;
-  hypotheses: any[];
-  goal: any;
+  hypotheses: AnnotatedText[];
+  goal: AnnotatedText;
 }
 
 export interface UnfocusedGoalStack {

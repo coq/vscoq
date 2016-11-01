@@ -33,7 +33,7 @@ function createServerLocalExtension(serverModule: string, debugOptions: string[]
   }
   return options;
 }
-
+var x: vscode.DocumentSelector;
 export class CoqLanguageServer implements vscode.Disposable {
   private static instance: CoqLanguageServer | null = null;
   private subscriptions: vscode.Disposable[] = [];
@@ -42,7 +42,7 @@ export class CoqLanguageServer implements vscode.Disposable {
 
   private constructor(context: ExtensionContext) {
     // The server is implemented in node
-    let serverModule = context.asAbsolutePath(path.join('server', 'server.js'));
+    let serverModule = context.asAbsolutePath(path.join('server/src', 'server.js'));
     // The debug options for the server
     let debugOptions = ["--nolazy", "--debug=6004"];
 
@@ -55,7 +55,7 @@ export class CoqLanguageServer implements vscode.Disposable {
       documentSelector: ['coq'],
       synchronize: {
         // Synchronize the setting section 'languageServerExample' to the server
-        configurationSection: 'coqtop',
+        configurationSection: ['coqtop', 'prettifySymbolsMode'],
         // Notify the server about file changes to '.clientrc files contain in the workspace
         fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
       }

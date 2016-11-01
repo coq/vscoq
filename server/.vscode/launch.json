@@ -8,17 +8,14 @@
 			"request": "attach",
 			"port": 6004,
 			"sourceMaps": true,
-			"outDir": "${workspaceRoot}/../client/server",
-			"outFiles": [
-				"${workspaceRoot}/../client/server/**/*.js"
-			]
+			"outDir": "${workspaceRoot}/../client/server"
 		},
 		{
-			"name": "Attach Mocha Tests",
+			"name": "Debug Mocha Tests",
 			"type": "node",
+			"sourceMaps": true,
 			"request": "attach",
 			"port": 5858,
-			"sourceMaps": true,
 			"outFiles": [
 				"${workspaceRoot}/../client/server/**/*.js"
 			],
