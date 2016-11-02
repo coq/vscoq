@@ -135,9 +135,9 @@ function tryCombineText(text1: string|TextAnnotation|ScopedText, text2: string|T
     return text1 + text2;
   else if(isScopedText(text1) && isScopedText(text2) && text1.scope === text2.scope)
     return {scope: text1.scope, text: normalizeText(concatText(text1.text,text2.text))};
-  else if(isTextAnnotation(text1) && isTextAnnotation(text2) && compatibleAnnotations(text1,text2))
-    return {diff: text1.diff, substitution: text1.substitution||text2.substitution, text: text1.text+text2.text};
-  else
+  else if(isTextAnnotation(text1) && isTextAnnotation(text2) && compatibleAnnotations(text1,text2)) {
+    return normalizeTextAnnotationOrString({diff: text1.diff, substitution: text1.substitution||text2.substitution, text: text1.text+text2.text});
+  } else
     return undefined
 }
 
@@ -147,10 +147,14 @@ export function normalizeTextAnnotationOrString(text: TextAnnotation|string) : T
   } else {// TextAnnotation
     let count = 0;
     for(let key in text) {
-      if(text.hasOwnProperty(key) && key!='text' && text[key] !== undefined)
+      if(text.hasOwnProperty(key) && text[key] !== undefined)
         ++count;
     }
-    if(count > 0) // has annotations
+    for(let key in text) {
+      if(text.hasOwnProperty(key) && text[key] === undefined)
+        delete text[key];
+    }
+    if(count > 1) // has annotations
       return text;
     else
       return text.text
@@ -204,8 +208,10 @@ export function normalizeText(text: AnnotatedText) : AnnotatedText {
   } else {// TextAnnotation
     let count = 0;
     for(let key in text) {
-      if(text.hasOwnProperty(key) && key!='text' && text[key] !== undefined)
+      if(text.hasOwnProperty(key) && text[key] !== undefined)
         ++count;
+      else if(text.hasOwnProperty(key) && text[key] === undefined)
+        delete text[key];
     }
     if(count > 1) // has annotations
       return text;
@@ -220,10 +226,6 @@ export function combineAnnotationText(text: TextAnnotation|string, baseAnn: Anno
     result = Object.assign(copyAnnotation(baseAnn), {text:text});
   else
     result = Object.assign(copyAnnotation(baseAnn), text);
-  for(let key in result) {
-    if(result[key] === undefined)
-      delete result[key]
-  }
   return normalizeTextAnnotationOrString(result);
 }
 
@@ -231,18 +233,22 @@ function annotateDiff(text: AnnotatedText, differences: diff.IDiffResult[], diff
   let idx = 0; // the current diff
   let offset = 0; // position of current diff w.r.t. textToString() (not textToDisplayString())
   let diffOffset = 0; // the offset into the current diff; used when a diff spans multiple text parts
+  // we're only interested in added or unchanged parts
+  differences = differences.filter((d) => !d.removed);
   const result = mapAnnotation(text, (plainText, annotation, startOffset, startDisplayOffset) => {
     let text: string;
     let start: number;
     let doSubst = false;
+    if(diffSubstitutions)
+      start = startDisplayOffset;
+    else
+      start = startOffset;
+
     if(annotation.substitution && diffSubstitutions) {
       text = annotation.substitution;
-      start = startDisplayOffset;
       doSubst = true;
-    } else {
+    } else
       text = plainText;
-      start = startOffset;
-    }
 
     if(offset+diffOffset != start)
       throw "invalid diff: does not line up with text position";
@@ -250,10 +256,6 @@ function annotateDiff(text: AnnotatedText, differences: diff.IDiffResult[], diff
     const parts: (TextAnnotation|string)[] = [];
     for(; idx < differences.length && offset+differences[idx].value.length <= start + text.length; ++idx) {
       const diff = differences[idx];
-      if(diff.removed) {
-        diffOffset = 0;
-        continue;
-      }
       if(doSubst) {
         parts.push(combineAnnotationText({ text: plainText
           , substitution: diff.value.substr(diffOffset)
@@ -262,7 +264,7 @@ function annotateDiff(text: AnnotatedText, differences: diff.IDiffResult[], diff
         plainText = ""; // remaining parts will have empty text
       } else
         parts.push(combineAnnotationText({text: diff.value.substr(diffOffset), diff: diff.added ? "added" : undefined},annotation))
-      offset+= diff.value.length - diffOffset;
+      offset+= diff.value.length;
       // In case we are breaking a substitution into multiple parts,
       // we only want the first part to apply the full substitution;
       // the rest will be substituted with the empty string
@@ -271,9 +273,6 @@ function annotateDiff(text: AnnotatedText, differences: diff.IDiffResult[], diff
 
       diffOffset = 0;
     }
-
-    while(idx < differences.length && differences[idx].removed)
-      ++idx;
 
     // The diff spans this text and the next; add the *this* part
     if(idx < differences.length && offset < start+text.length) {
@@ -306,9 +305,13 @@ function annotateDiff(text: AnnotatedText, differences: diff.IDiffResult[], diff
   return result;
 }
 
-export function diffText(oldText: AnnotatedText, newText: AnnotatedText) : {text: AnnotatedText, different: boolean} {
+export function diffText(oldText: AnnotatedText, newText: AnnotatedText, normalize = true) : {text: AnnotatedText, different: boolean} {
   if(!oldText)
     return {text: newText, different: false};
   const difference = diff.diffWords(textToDisplayString(oldText), textToDisplayString(newText));
-  return {text: annotateDiff(newText, difference, true), different: difference.length > 1 }
+  const result = annotateDiff(newText, difference, true);
+  if(normalize)
+    return {text: normalizeText(result), different: difference.length > 1 }
+  else
+    return {text: result, different: difference.length > 1 }
 }

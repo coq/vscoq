@@ -15,6 +15,8 @@ suite("AnnotatedText", () => {
     assert.equal(text.textToString([{scope:"aa",text:"foo"},"bar"]), "foobar");
     assert.equal(text.textToString([{scope:"aa",text:["foo","!!"]},"bar"]), "foo!!bar");
     assert.equal(text.textToString([{substitution:"FOO",diff:"added",text:"foo"},"bar"]), "foobar");
+    assert.equal(text.textToString([{substitution:"∀", text:"forall"}," x : nat, x = x ",{substitution:"∨", text:"\\/"}," ",{substitution:"⊥", text:"False"}]), "forall x : nat, x = x \\/ False");
+    assert.equal(text.textToString(["0 = 0 ",{substitution:"∨",text:"\\/"}," ",{substitution:"⊥",text:"False"}]), "0 = 0 \\/ False");
   }));
 
   test("textToDisplayString", (() => {
@@ -23,6 +25,8 @@ suite("AnnotatedText", () => {
     assert.equal(text.textToDisplayString([{scope:"aa",text:"foo"},"bar"]), "foobar");
     assert.equal(text.textToDisplayString([{scope:"aa",text:["foo","!!"]},"bar"]), "foo!!bar");
     assert.equal(text.textToDisplayString([{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]), "FOO!!bar");
+    assert.equal(text.textToDisplayString([{substitution:"∀", text:"forall"}," x : nat, x = x ",{substitution:"∨", text:"\\/"}," ",{substitution:"⊥", text:"False"}]), "∀ x : nat, x = x ∨ ⊥");
+    assert.equal(text.textToDisplayString(["0 = 0 ",{substitution:"∨",text:"\\/"}," ",{substitution:"⊥",text:"False"}]), "0 = 0 ∨ ⊥");
   }));
 
   test("textLength", (() => {
@@ -50,6 +54,7 @@ suite("AnnotatedText", () => {
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:["foo","!!"]},{scope:"aa",text:["bar"]}]), {scope:"aa",text:"foo!!bar"});
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:{scope:"",text:["foo","!!"]}},"bar"]), [{scope:"aa",text:"foo!!"},"bar"]);
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:{scope:"",text:["foo","!!"]}},{scope:"aa",text:["bar"]}]), {scope:"aa",text:"foo!!bar"});
+    assert.deepStrictEqual(text.normalizeText({diff:"added",text:"aabbaa"}),{diff:"added",text:"aabbaa"});
   }));
 
   test("mapAnnotation", (() => {    
@@ -74,22 +79,32 @@ suite("AnnotatedText", () => {
   }));
 
   test("diffText", (() => {
-    assert.deepStrictEqual(text.diffText("aaaa","aabbaa").text, {diff:"added",text:"aabbaa"},"1: A");
-    assert.deepStrictEqual(text.diffText("aa aa","aa bb aa").text, ["aa ",{diff:"added",text:"bb "},"aa"], "2: -A-");
-    assert.deepStrictEqual(text.diffText("aa bb aa","aa aa").text, ["aa ","aa"], "3: -R-");
-    assert.deepStrictEqual(text.diffText(["aa","aa"],["aa","bb","aa"]).text, [{diff:"added",text:"aa"},{diff:"added",text:"bb"},{diff:"added",text:"aa"}], "4: -A-");
-    assert.deepStrictEqual(text.diffText({scope: "foo", text:"aa bb aa"},{scope: "bar", text: "aa aa"}).text, {scope: "bar", text: ["aa ","aa"]}, "5: -R-");
-    assert.deepStrictEqual(text.diffText({diff: "added", text:"aa bb aa"},{scope: "bar", text: "aa aa"}).text, {scope: "bar", text: ["aa ","aa"]}, "6: -R-");
-    assert.deepStrictEqual(text.diffText("aa bb aa",{scope: "bar", text: "aa aa"}).text, {scope: "bar", text: ["aa ","aa"]}, "7: -R-");
-    assert.deepStrictEqual(text.diffText({substitution: "AA", text: "aa"},{substitution: "BBB", text: "aa"}).text, {diff: "added", substitution: "BBB", text: "aa"}, "8: subst A");
+    assert.deepStrictEqual(text.diffText("aaaa","aabbaa").text, {diff:"added",text:"aabbaa"});
+    assert.deepStrictEqual(text.diffText("aa aa","aa bb aa").text, ["aa ",{diff:"added",text:"bb "},"aa"]);
+    assert.deepStrictEqual(text.diffText("aa bb aa","aa aa",false).text, ["aa ","aa"]);
+    assert.deepStrictEqual(text.diffText("aa bb aa","aa aa").text, "aa aa");
+    assert.deepStrictEqual(text.diffText(["aa","aa"],["aa","bb","aa"],false).text, [{diff:"added",text:"aa"},{diff:"added",text:"bb"},{diff:"added",text:"aa"}]);
+    assert.deepStrictEqual(text.diffText(["aa","aa"],["aa","bb","aa"]).text, {diff:"added",text:"aabbaa"});
+    assert.deepStrictEqual(text.diffText({scope: "foo", text:"aa bb aa"},{scope: "bar", text: "aa aa"},false).text, {scope: "bar", text: ["aa ","aa"]});
+    assert.deepStrictEqual(text.diffText({scope: "foo", text:"aa bb aa"},{scope: "bar", text: "aa aa"}).text, {scope: "bar", text: "aa aa"});
+    assert.deepStrictEqual(text.diffText({diff: "added", text:"aa bb aa"},{scope: "bar", text: "aa aa"},false).text, {scope: "bar", text: ["aa ","aa"]});
+    assert.deepStrictEqual(text.diffText({diff: "added", text:"aa bb aa"},{scope: "bar", text: "aa aa"}).text, {scope: "bar", text: "aa aa"});
+    assert.deepStrictEqual(text.diffText("aa bb aa",{scope: "bar", text: "aa aa"},false).text, {scope: "bar", text: ["aa ","aa"]});
+    assert.deepStrictEqual(text.diffText("aa bb aa",{scope: "bar", text: "aa aa"}).text, {scope: "bar", text: "aa aa"});
+    assert.deepStrictEqual(text.diffText({substitution: "AA", text: "aa"},{substitution: "BBB", text: "aa"}).text, {diff: "added", substitution: "BBB", text: "aa"});
     assert.deepStrictEqual(text.diffText(
       {substitution: "AA AA", text:"aa aa"},
       {substitution: "AA BB AA", text: "aa bb aa"}).text,
-      [{substitution:"AA ",text:"aa bb aa"},{diff:"added",substitution:"BB ",text:""},{substitution:"AA", text:""}], "9: subst -R-");
+      [{substitution:"AA ",text:"aa bb aa"},{diff:"added",substitution:"BB ",text:""},{substitution:"AA", text:""}]);
     assert.deepStrictEqual(text.diffText(
       [{substitution: "AA", text:"aa"},{substitution: "AA", text:"aa"}],
       [{substitution: "AA", text:"aa"},{substitution: "BB", text:"bb"},{substitution: "AA", text:"aa"}]).text,
-      [{diff:"added", substitution: "AA", text:"aa"},{diff:"added", substitution: "BB", text:"bb"},{diff:"added", substitution: "AA", text:"aa"}], "10: subst -A-");
+      [{diff:"added", substitution: "AA", text:"aa"},{diff:"added", substitution: "BB", text:"bb"},{diff:"added", substitution: "AA", text:"aa"}]);
+    /////
+    let x = [{substitution:"∀", text:"forall"}," x : nat, x = x ",{substitution:"∨", text:"\\/"}," ",{substitution:"⊥", text:"False"}];   // "∀ x : nat, x = x ∨ ⊥"
+    let y = ["0 = 0 ",{substitution:"∨",text:"\\/"}," ",{substitution:"⊥",text:"False"}];   // "0 = 0 \\/ False" ~~ "0 = 0 ∨ ⊥"
+    // "[∀]<0> [x : nat, x ]= [x]<0> ∨ ⊥"  --> "<0> = <0> ∨ ⊥"
+    assert.deepStrictEqual(text.diffText(x,y).text,[{diff: "added", text: "0"}, " = ", {diff: "added", text: "0"}, " ", {substitution:"∨", text:"\\/"}, " ", {substitution:"⊥", text:"False"}]);
   }));
 
   // test("cancelAll: three lockers", asyncTest (async () => {

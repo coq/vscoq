@@ -92,7 +92,7 @@ connection.onInitialize((params): InitializeResult => {
 // The settings have changed. Is send on server activation
 // as well.
 connection.onDidChangeConfiguration((change) => {
-	let settings = <Settings>change.settings;
+	let settings = change.settings as Settings;
 	project.updateSettings(settings);
 	connection.console.log('Changed path to: ' + project.settings.coqtop.coqPath);
 	// Revalidate any open text documents

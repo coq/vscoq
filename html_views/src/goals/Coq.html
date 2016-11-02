@@ -33,6 +33,16 @@
     .hidden {
       display: none;
     }
+
+    span .substitution::before {
+      content: attr(subst);
+      font-size: 1000em;
+    }
+    span .substitution {
+      content: attr(subst);
+      font-size: 0.001em;
+    }
+
     .hypotheses {
       border-bottom: 2pt solid white;
       padding: 0pt;
@@ -117,6 +127,7 @@
     } 
     .hypotheses .expr .charsAdded {
       color: lightgreen;
+      font-style: italic;
     } 
     .hypotheses .expr .charsRemoved {
       display: none;

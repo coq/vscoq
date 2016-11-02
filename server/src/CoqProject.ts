@@ -1,10 +1,11 @@
 
 import {CoqDocument, DocumentCallbacks, TextDocumentItem} from './document';
-import {CoqTopSettings, Settings} from './protocol';
+import {CoqTopSettings, Settings, DocumentSelector} from './protocol';
 import * as vscode from 'vscode-languageserver';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as readline from 'readline';
+import {PrettifySymbolsMode} from './util/PrettifySymbols';
 
 const coqProjectFileName = '_CoqProject';
 
@@ -22,6 +23,7 @@ export class CoqProject {
   private settingsCoqTopArgs: string[] = [];
   private coqProjectArgs: string[] = [];
   private ready = {event: Promise.resolve<{}>({}), signal: ()=>{} };
+  private psm = new PrettifySymbolsMode([]);
   
   constructor(workspaceRoot: string, console: vscode.RemoteConsole) {
     this.workspaceRoot = workspaceRoot;
@@ -39,6 +41,7 @@ export class CoqProject {
     return doc;
   }
   
+  /** reset the ready promise */
   private notReady() {
      this.ready.event = new Promise<{}>((resolve) => {
        this.ready.signal = () => {
@@ -47,7 +50,20 @@ export class CoqProject {
         };
      });
   }
+
+  public getPrettifySymbols() : PrettifySymbolsMode {
+    return this.psm;
+  }
   
+  private matchesCoq(selector: DocumentSelector) {
+    if(typeof selector === 'string')
+      return selector === 'coq';
+    else if(selector instanceof Array)
+      return selector.some((s) => this.matchesCoq(s));
+    else
+      return selector.language === 'coq';
+  }
+
   public async updateSettings(newSettings: Settings) {
     this.notReady();
     this.settingsCoqTopArgs = newSettings.coqtop.args;
@@ -55,6 +71,14 @@ export class CoqProject {
     if(newSettings.coqtop.loadCoqProject) {
       this.watchCoqProject();
       await this.loadCoqProject();
+    }
+    if(newSettings.prettifySymbolsMode && newSettings.prettifySymbolsMode.substitutions) {
+      for(let entry of newSettings.prettifySymbolsMode.substitutions) {
+        if(this.matchesCoq(entry.language)) {
+          this.psm = new PrettifySymbolsMode(entry.substitutions);
+          break;
+        }
+      }
     }
     this.ready.signal();
   }

@@ -12,6 +12,7 @@ import * as coqParser from './../parsing/coq-parser';
 import {State, StatusError, StateStatus} from './State';
 import {LoadModule, SentenceSemantics} from './../parsing/SentenceSemantics';
 import {Mutex} from './../util/Mutex';
+import * as server from '../server';
 
 export {StateStatus} from './State';
 
@@ -693,10 +694,10 @@ export class CoqStateMachine {
 
   private parseConvertGoal(goal: coqProto.Goal) : proto.Goal {
     return <proto.Goal>{
-      goal: goal.goal,
+      goal: server.project.getPrettifySymbols().prettify(goal.goal),
       hypotheses: goal.hypotheses.map((hyp) => {
         let h = (hyp as string).split(/(:=|:)([^]*)/);
-        return {identifier: h[0].trim(), relation: h[1].trim(), expression: h[2].trim()};
+        return {identifier: h[0].trim(), relation: h[1].trim(), expression: server.project.getPrettifySymbols().prettify(h[2].trim())};
       })
     };
   }

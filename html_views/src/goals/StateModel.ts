@@ -73,6 +73,13 @@ function createAnnotatedText(text: AnnotatedText) : Node[] {
       .addClass('scope' + text.scope)
       .append(createAnnotatedText(text.text))
       .get(0)];
+  else if(text.substitution) // TextAnnotation
+    return [$('<span>')
+      .addClass('substitution')
+      .addClass(getTextDiffClass(text.diff))
+      .attr("subst",text.substitution)
+      .append(makeBreakingText(text.text))
+      .get(0)];
   else // TextAnnotation
     return [$('<span>')
       .addClass(getTextDiffClass(text.diff))

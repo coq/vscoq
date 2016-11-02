@@ -65,7 +65,9 @@ export class PrettifySymbolsMode {
         return text;
       try {
         const subst = this.getMatchSubst(match, text);
-        if(subst)
+        if(subst && currentIdx===subst.start)
+          newText.push(combineAnnotationText({substitution: subst.pretty, text: subst.ugly},baseAnn));
+        else if(subst)
           newText.push(combineAnnotationText(text.substring(currentIdx, subst.start),baseAnn), combineAnnotationText({substitution: subst.pretty, text: subst.ugly},baseAnn));
         else
           newText.push(combineAnnotationText(match[0],baseAnn));
@@ -74,6 +76,9 @@ export class PrettifySymbolsMode {
       }
       currentIdx = this.regex.lastIndex;
     }
+    // add the rest of the text (no substitutions found)
+    if(currentIdx < text.length)
+      newText.push(text.substring(currentIdx));
     return newText;
   }
 

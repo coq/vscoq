@@ -2,22 +2,29 @@
 import { RequestType, NotificationType } from 'vscode-jsonrpc';
 import * as vscode from 'vscode-languageserver-types';
 
-// 
-// // import { RequestType, NotificationType, ResponseEror } from 'vscode-jsonrpc';
-// import {
-// 	createConnection, IConnection, TextDocumentSyncKind,
-// 	TextDocuments, ITextDocument, Diagnostic, DiagnosticSeverity,
-// 	InitializeParams, InitializeResult, TextDocumentIdentifier,
-// 	CompletionItem, CompletionItemKind
-// } from 'vscode-languageserver';
-// 
-// export namespace StepForwardRequest { 
-//   export const type: RequestType<void, void, void> = { get method() { return 'coqtop/stepForward'; } }; 
-// } 
+export interface DocumentFilter {
+  language?: string,
+  pattern?: string,
+  scheme?: string,
+}
+export type DocumentSelector = string | DocumentFilter | (string | DocumentFilter)[];
+
+/** The substitution settings for a language (or group of languages) */
+export interface LanguageEntry {
+  /** language(s) to apply these substitutions on */
+  language:  DocumentSelector;
+  /** substitution rules */
+  substitutions: Substitution[];
+}
+
+export interface PrettifySymbolsModeSettings {
+  substitutions: LanguageEntry[],
+}
 
 // The settings interface describe the server relevant settings part
 export interface Settings {
   coqtop: CoqTopSettings;
+  prettifySymbolsMode: PrettifySymbolsModeSettings;
 }
 
 
