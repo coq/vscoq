@@ -22,10 +22,10 @@ function toRange(range: {start: {line: number, character: number}, end: {line: n
 const parsingTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     outlineWidth: '1px',
     outlineStyle: 'solid', 
-    overviewRulerColor: 'lightblue', 
+    overviewRulerColor: 'yellow', 
     overviewRulerLane: vscode.OverviewRulerLane.Right,
-    light: {outlineColor: 'darkblue'},
-    dark: {outlineColor: 'lightblue'},
+    light: {outlineColor: 'rgba(218, 165, 32,0.7)', backgroundColor: 'rgba(255, 255, 0,0.2)'},
+    dark: {outlineColor: 'rgba(218, 165, 32,0.7)', backgroundColor: 'rgba(255, 255, 0,0.2)'},
   });
 const processingTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
     overviewRulerColor: 'blue', 

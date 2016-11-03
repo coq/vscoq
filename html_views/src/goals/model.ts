@@ -62,13 +62,13 @@ function onWindowGetFocus(event: FocusEvent) {
   }
 }
 
-function getVSCodeTheme() : 'vscode-dark'|'vscode-light'|'vscode-high-contrast'|null {
+function getVSCodeTheme() : 'vscode-dark'|'vscode-light'|'vscode-high-contrast'|'' {
   switch($(parent.document.body).attr('class')) {
     case 'vscode-dark': return 'vscode-dark'
     case 'vscode-light': return 'vscode-light'
     case 'vscode-high-contrast': return 'vscode-high-contrast'
     default:
-      return null;
+      return '';
   }
 }
 
@@ -91,6 +91,7 @@ function load() {
       window.addEventListener("focus", onWindowGetFocus, true);
       observer.observe(parent.document.body, { attributes : true, attributeFilter: ['class'] });
       inheritStyles(parent.parent);
+      $(document.body).attr('class',getVSCodeTheme());
     } catch(error) {
       $('#stdout').text(error.toString());    
       $('#error').text(error.toString());
