@@ -314,7 +314,7 @@ export class CoqStateMachine {
   /**
    * Steps back from the currently focused sentence
    * @param verbose - generate feedback messages with more info
-   * @throw proto.FailValue if advancing failed
+   * @throws proto.FailValue if advancing failed
    */
   public async stepBackward() : Promise<void>  {
     const endCommand = await this.startCommand();
@@ -355,6 +355,7 @@ export class CoqStateMachine {
     if(!endCommand)
       return {type: 'busy'};
     try {
+      await this.refreshOptions();
       const result = await this.coqtop.coqGoal();
       return this.convertGoals(result);
     } catch(error) {
@@ -372,7 +373,7 @@ export class CoqStateMachine {
   /** Interpret to point
    * Tell Coq to process the proof script up to the given point
    * This may not fully process everything, or it may rewind the state.
-   * @throw proto.FailValue if advancing failed
+   * @throws proto.FailValue if advancing failed
    */
   public async interpretToPoint(position: Position, commandSequence: CommandIterator, token: CancellationToken) : Promise<(proto.FailureResult & proto.FocusPosition)|null> {
     const endCommand = await this.startCommand();
@@ -417,6 +418,7 @@ export class CoqStateMachine {
       let state: StateId = undefined;
       if(position)
         state = this.getParentSentence(position).getStateId();
+      await this.refreshOptions();
       return await this.coqtop.coqQuery(query, state)
     } finally {
       endCommand();
@@ -476,10 +478,15 @@ export class CoqStateMachine {
     }
     for(let option of options) {
       switch(option.item) {
+        case proto.DisplayOption.AllLowLevelContents: {
+          // for toggle: on-->off iff all are on; off->on iff any are off
+          const value = set(this.currentCoqOptions.printingAll && this.currentCoqOptions.printingExistentialInstances && this.currentCoqOptions.printingUniverses, option.value)
+          this.currentCoqOptions.printingAll = value;
+          this.currentCoqOptions.printingExistentialInstances = value;
+          this.currentCoqOptions.printingUniverses = value;
+          break;
+        }
         case proto.DisplayOption.AllBasicLowLevelContents:
-          this.currentCoqOptions.printingAll = set(this.currentCoqOptions.printingAll, option.value);
-          break; 
-        case proto.DisplayOption.AllLowLevelContents:
           this.currentCoqOptions.printingAll = set(this.currentCoqOptions.printingAll, option.value);
           break; 
         case proto.DisplayOption.Coercions:
@@ -502,7 +509,20 @@ export class CoqStateMachine {
           break; 
       }
     }
-    await this.coqtop.coqSetOptions(this.currentCoqOptions);
+    //await this.setCoqOptions(this.currentCoqOptions);
+  }
+
+  private async setCoqOptions(options: coqtop.CoqOptions) {
+    if(!this.isCoqReady())
+      return;
+    const endCommand = await this.startCommand();
+    if(!endCommand)
+      return;
+    try {
+      await this.coqtop.coqSetOptions(options);
+    } finally {
+      endCommand();
+    }
   }
 
 
@@ -759,7 +779,6 @@ export class CoqStateMachine {
   private async focusSentence(sentence?: State) {
     if(!sentence || sentence == this.focusedSentence || !this.sentences.has(sentence.getStateId()))
       return;
-this.console.log("focusing " + sentence.getText());
     try {
       const result = await this.coqtop.coqEditAt(sentence.getStateId());
       if(result.enterFocus) {
@@ -967,13 +986,25 @@ this.console.log("focusing " + sentence.getText());
     return results;
   }
 
+  private async refreshOptions() : Promise<void> {
+    let options : coqtop.CoqOptions = {};
+    options.printingWidth = this.currentCoqOptions.printingWidth;
+    options.printingCoercions = this.currentCoqOptions.printingCoercions;
+    options.printingMatching = this.currentCoqOptions.printingMatching;
+    options.printingNotations = this.currentCoqOptions.printingNotations;
+    options.printingExistentialInstances = this.currentCoqOptions.printingExistentialInstances;
+    options.printingImplicit = this.currentCoqOptions.printingImplicit;
+    options.printingAll = this.currentCoqOptions.printingAll;
+    options.printingUniverses = this.currentCoqOptions.printingUniverses;
+    await this.coqtop.coqSetOptions(options);
+  }
 
 
-public logDebuggingSentences(ds?: DSentence[], indent: string = '\t') {
-  if(!ds)
-    ds = this.debuggingGetSentences()
-  this.console.log(ds.map((s,idx) => '  ' + (1+idx) + ':\t' + s).join('\n'));  
-}
+  public logDebuggingSentences(ds?: DSentence[], indent: string = '\t') {
+    if(!ds)
+      ds = this.debuggingGetSentences()
+    this.console.log(ds.map((s,idx) => '  ' + (1+idx) + ':\t' + s).join('\n'));  
+  }
 
 }
 
@@ -1000,7 +1031,6 @@ type DSentence = string;
 function createDebuggingSentence(sent: State) : DSentence {
   return `${sent.getRange().start.line}:${sent.getRange().start.character}-${sent.getRange().end.line}:${sent.getRange().end.character} -- ${abbrString(sent.getText().trim())}`;
 }
-
 
 
 
