@@ -265,25 +265,36 @@ export class CoqTop extends events.EventEmitter {
     });
   }
   
+  private findWrapper() : string|null {
+    const autoWrapper = path.join(__dirname, '../../../', 'coqtopw.exe');
+
+    if(this.settings.wrapper && this.settings.wrapper !== "" && fs.existsSync(this.settings.wrapper))
+      return this.settings.wrapper;
+    else if(this.settings.autoUseWrapper && os.platform() === 'win32' && fs.existsSync(autoWrapper)) {
+      this.console.log("Using wrapper: " + autoWrapper + " from " + __dirname);
+      return autoWrapper;
+    } else
+      return null;
+  }
   
   public async resetCoq() : Promise<InitResult> {    
     this.console.log('reset');
     this.cleanup(undefined);
 
     // await this.setupCoqTopWindows();
-      
-    if (this.settings.wrapper && this.settings.wrapper != "" && fs.existsSync(this.settings.wrapper))
-      await this.setupCoqTop(true);
+    const wrapper = this.findWrapper();
+    if (wrapper !== null)
+      await this.setupCoqTop(wrapper);
     // else if(false && os.platform() === 'linux')
     //   await this.setupCoqTop(false);
     // else
     else
-      await this.setupCoqTopWindows();
+      await this.setupCoqTopReadAndWritePorts();
     
     return await this.coqInit();
   }
 
-  public async setupCoqTop(useWrapper: boolean) : Promise<void> {
+  public async setupCoqTop(wrapper: string|null) : Promise<void> {
     await Promise.all(this.readyToListen);
 
     var mainAddr = this.mainChannelServer.address();
@@ -293,9 +304,9 @@ export class CoqTop extends events.EventEmitter {
 
     try {
       const scriptUri = decodeURIComponent(this.scriptFile); 
-      if(useWrapper && scriptUri.startsWith("file:///")) {
+      if(wrapper !==null && scriptUri.startsWith("file:///")) {
         const traceFile = this.settings.traceXmlProtocol? scriptUri.substring("file:///".length) + ".coq-trace.xml" : undefined;
-        this.startCoqTop(this.spawnCoqTopWrapper(mainAddressArg, controlAddressArg, traceFile));
+        this.startCoqTop(this.spawnCoqTopWrapper(wrapper, mainAddressArg, controlAddressArg, traceFile));
       } else
         this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
     } catch(error) {
@@ -323,7 +334,10 @@ export class CoqTop extends events.EventEmitter {
     // this.mainChannelR.on('data', (data) => this.onMainChannelR(data));
   }
   
-  public async setupCoqTopWindows() : Promise<void> {    
+  /** Start coqtop.
+   * Use two ports: one for reading & one for writing; i.e. HOST:READPORT:WRITEPORT
+   */
+  public async setupCoqTopReadAndWritePorts() : Promise<void> {    
     await Promise.all(this.readyToListen);
 
     var mainAddr = this.mainChannelServer.address();
@@ -402,10 +416,10 @@ export class CoqTop extends events.EventEmitter {
     return spawn(coqtopModule, args, {detached: false, cwd: this.projectRoot});
   }
 
-  private spawnCoqTopWrapper(mainAddr : string, controlAddr: string, traceFile?: string) : ChildProcess {
+  private spawnCoqTopWrapper(wrapper: string, mainAddr : string, controlAddr: string, traceFile?: string) : ChildProcess {
     // var coqtopModule = this.coqPath + '/coqtop';
     this.supportsInterruptCall = true;
-    var coqtopModule = this.settings.wrapper;
+    var coqtopModule = wrapper;
     // var coqtopModule = 'cmd';
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',

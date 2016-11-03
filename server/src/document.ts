@@ -16,6 +16,7 @@ import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './stm/S
 import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
 import * as sentSem from './parsing/SentenceSemantics';
 import {SentenceCollection} from './sentence-model/SentenceCollection';
+import {CoqProject} from './CoqProject';
 
 function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
 function positionToString(p:Position) {return `{${p.line}@${p.character}}`}
@@ -64,12 +65,13 @@ export class CoqDocument implements TextDocument {
     return this.document.getText();;
   }
 
+  private project: CoqProject;
+
 
   private stm: CoqStateMachine;
   private clientConsole: RemoteConsole;
   private callbacks : MessageCallback & ResetCallback & LtacProfCallback;
   private document: SentenceCollection = null;
-  private coqtopSettings : thmProto.CoqTopSettings;
   // Feedback destined for the extension client/view
   private feedback : FeedbackSync;
   /** */
@@ -80,12 +82,12 @@ export class CoqDocument implements TextDocument {
   // private interactionLoopStatus = InteractionLoopStatus.Idle;
   // we'll use this as a callback, so protect it with an arrow function so it gets the correct "this" pointer
 
-  constructor(coqtopSettings : thmProto.CoqTopSettings, document: TextDocumentItem, projectRoot: string, clientConsole: RemoteConsole, callbacks: DocumentCallbacks) {
+  constructor(project : CoqProject, document: TextDocumentItem, projectRoot: string, clientConsole: RemoteConsole, callbacks: DocumentCallbacks) {
     this.clientConsole = clientConsole;
     this.document = new SentenceCollection(document);
     this.projectRoot = projectRoot;
     this.callbacks = callbacks;
-    this.coqtopSettings = coqtopSettings;
+    this.project = project;
     this.feedback = new FeedbackSync(callbacks, 200);
 
     this.resetCoq();
@@ -269,7 +271,7 @@ export class CoqDocument implements TextDocument {
   public async resetCoq() {
     if(this.stm && this.stm.isRunning())
       this.stm.shutdown(); // Don't bother awaiting
-    this.stm = new CoqStateMachine(this.coqtopSettings, this.uri, this.projectRoot, {
+    this.stm = new CoqStateMachine(this.project.settings.coqtop, this.uri, this.projectRoot, {
       sentenceStatusUpdate: (x1,x2) => this.onCoqStateStatusUpdate(x1,x2),
       clearSentence: (x1) => this.onClearSentence(x1),
       updateStmFocus: (x1) => this.onUpdateStmFocus(x1),

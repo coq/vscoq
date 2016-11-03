@@ -5,7 +5,7 @@
     "name": "Christian J. Bell",
     "email": "siegebell@gmail.com"
   },
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"publisher": "siegebell",
   "license": "MIT license (MIT)",
 	"engines": {
@@ -14,6 +14,9 @@
 	"categories": [
 		"Languages"
 	],
+  "keywords": [
+    "coq", "theorem prover"
+  ],
 	"activationEvents": [
 		"onLanguage:coq"
 	],
@@ -44,6 +47,11 @@
 					"default": [],
 					"description": "A list of arguments to send to coqtop."
 				},
+        "coqtop.autoUseWrapper": {
+          "type": "boolean",
+          "default": true,
+          "description": "On Windows: if `coqtop.wrapper` is not specified or the file does not exist, attempt to automatically find and use a wrapper for coqtop."
+        },
         "coqtop.wrapper": {
           "type": "string",
           "default": "",
@@ -165,7 +173,8 @@
     ]    
 	},	
 	"scripts": {
-		"vscode:prepublish": "npm run compile-server && npm run compile-html-view && npm run compile",
+		"vscode:prepublish": "npm run cp-coqtopw && npm run compile-server && npm run compile-html-view && npm run compile",
+    "cp-coqtopw": "copyfiles -f ../coqtopw/bin/Release/coqtopw.exe .",
 		"compile-server": "cd ../server && npm run compile && cd ../client",
 		"compile-html-view": "cd ../html_views && npm run compile && cd ../client",
 		"compile": "tsc -p ./",
@@ -175,6 +184,7 @@
 	"devDependencies": {
     "typescript": "^2.0.3",
     "vscode": "^1.0.0",
+    "copyfiles": "1.0.0",
 		"@types/node": "^6.0.40"
 	},
 	"dependencies": {
