@@ -55,7 +55,7 @@ export class CoqLanguageServer implements vscode.Disposable {
       documentSelector: ['coq'],
       synchronize: {
         // Synchronize the setting section 'languageServerExample' to the server
-        configurationSection: ['coqtop', 'prettifySymbolsMode'],
+        configurationSection: ['coqtop', 'coq', 'prettifySymbolsMode'],
         // Notify the server about file changes to '.clientrc files contain in the workspace
         fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
       }

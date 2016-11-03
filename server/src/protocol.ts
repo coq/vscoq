@@ -23,18 +23,28 @@ export interface PrettifySymbolsModeSettings {
 
 // The settings interface describe the server relevant settings part
 export interface Settings {
-  coqtop: CoqTopSettings;
-  prettifySymbolsMode: PrettifySymbolsModeSettings;
+  coqtop: CoqTopSettings,
+  coq: CoqSettings,
+  prettifySymbolsMode: PrettifySymbolsModeSettings,
 }
 
 
-// These are the example settings we defined in the client's package.json
-// file
 export interface CoqTopSettings {
-  coqPath: string;
+  /** Path to coqc and coqtop binaries. @default `""` */
+  binPath: string;
+  /** The filename of an executable to act as an intermediary between coqtop and this extension. It should support an additional `<call val="Interrupt"><unit/></call>` command to send SIGNIT to coqtop and support HOST:PORT addresses (one port number -- not two). */
   wrapper: string;
+  /** A list of arguments to send to coqtop. @default `[]` */
   args: string[];
-  loadCoqProject: boolean;
+  /** If using the coqtop-wrapper, instruct it to generate a trace file of its xml-protocol interactions. The trace file will be located adjacent to the Coq script with extension `.coq-trace.xml`. @default `false` */
+  traceXmlProtocol: boolean;
+}
+
+export interface CoqSettings {
+  /** Load settings from _CoqProject (if found at the root of the Code project). @default `true` */
+  loadCoqProject: boolean,
+  /** Move the editor's cursor position as Coq interactively steps forward/backward a command. @default `true` */
+  moveCursorToFocus : boolean,
 }
 
 export interface FailValue {

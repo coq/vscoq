@@ -15,7 +15,7 @@ import * as util from 'util';
  
 import {CoqDocument} from './document';
 import * as coqproto from './protocol';
-import {CoqTopSettings, Settings} from './protocol';
+import {CoqTopSettings, CoqSettings, Settings} from './protocol';
 import {CoqProject} from './CoqProject';
 
 // Create a connection for the server. The connection uses 
@@ -37,8 +37,8 @@ export let project : CoqProject = null;
 let workspaceRoot: string;
 connection.onInitialize((params): InitializeResult => {
   connection.console.log(`Coq Language Server: process.version: ${process.version}, process.arch: ${process.arch}}`);
-  connection.console.log(`execArgv: ${process.execArgv.join(' ')}`);
-  connection.console.log(`argv: ${process.argv.join(' ')}`);
+  // connection.console.log(`execArgv: ${process.execArgv.join(' ')}`);
+  // connection.console.log(`argv: ${process.argv.join(' ')}`);
   // connection.console.log('coq path: ' + currentSettings.coqPath);
 	workspaceRoot = params.rootPath;
 
@@ -94,7 +94,7 @@ connection.onInitialize((params): InitializeResult => {
 connection.onDidChangeConfiguration((change) => {
 	let settings = change.settings as Settings;
 	project.updateSettings(settings);
-	connection.console.log('Changed path to: ' + project.settings.coqtop.coqPath);
+	connection.console.log('Changed path to: ' + project.settings.coqtop.binPath);
 	// Revalidate any open text documents
 	//documents.all().forEach(validateTextDocument);
 });

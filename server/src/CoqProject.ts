@@ -68,7 +68,7 @@ export class CoqProject {
     this.notReady();
     this.settingsCoqTopArgs = newSettings.coqtop.args;
     this.currentSettings = newSettings;
-    if(newSettings.coqtop.loadCoqProject) {
+    if(newSettings.coq.loadCoqProject) {
       this.watchCoqProject();
       await this.loadCoqProject();
     }

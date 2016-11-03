@@ -15,12 +15,13 @@ export function getProject() : CoqProject {
 
 export class CoqProject implements vscode.Disposable {
   private documents = new Map<string, CoqDocument>();
-  private context: vscode.ExtensionContext;
+  public readonly context: vscode.ExtensionContext;
   private activeEditor : vscode.TextEditor|null = null;
   /** the coq-doc that is either active, was the last to be active, or is associated with a helper view (proof-view) */
   private activeDoc : CoqDocument|null = null;
   private static instance : CoqProject|null = null;
   private langServer : CoqLanguageServer;
+  private currentSettings: proto.CoqSettings;
 
   private constructor(context: vscode.ExtensionContext) {
     this.context = context;
@@ -37,6 +38,10 @@ export class CoqProject implements vscode.Disposable {
       .forEach((textDoc) => this.tryLoadDocument(textDoc));
 
     context.subscriptions.push(this);
+
+    this.currentSettings = vscode.workspace.getConfiguration("coq") as any as proto.CoqSettings;
+    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) =>
+      this.currentSettings = vscode.workspace.getConfiguration("coq") as any as proto.CoqSettings));
   }
 
   public static create(context: vscode.ExtensionContext) {
@@ -67,13 +72,17 @@ export class CoqProject implements vscode.Disposable {
     return this.langServer;
   }
 
+  public get settings() : proto.CoqSettings {
+    return this.currentSettings;
+  }
+
   private tryLoadDocument(textDoc: vscode.TextDocument) {
     if(textDoc.languageId !== 'coq')
       return;
     // console.log("try load coq doc: " + textDoc.uri.fsPath);
     const uri = textDoc.uri.toString();
     if(!this.documents.has(uri)) {
-      this.documents.set(uri, new CoqDocument(textDoc, this.context));
+      this.documents.set(uri, new CoqDocument(textDoc, this));
       // console.log("new coq doc: " + textDoc.uri.fsPath);
     }
 

@@ -16,6 +16,7 @@ import * as textUtil from './text-util';
 import {CoqDocumentLanguageServer} from './CoqLanguageServer';
 import {adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
+import {CoqProject} from './CoqProject';
 
 const STM_FOCUS_IMAGE = "./images/stm-focus.svg";
 const STM_FOCUS_IMAGE_BEFORE = "./images/stm-focus-before.svg";
@@ -41,7 +42,6 @@ namespace DisplayOptionPicks {
   export const allPicks = [ImplicitArguments, Coercions, RawMatchingExpressions, Notations, AllBasicLowLevelContents, ExistentialVariableInstances, UniverseLevels, AllLowLevelContents];
 }
 
-
 export class CoqDocument implements vscode.Disposable {
   /** A list of things to dispose */
   private subscriptions : Disposable[] = []
@@ -58,10 +58,9 @@ export class CoqDocument implements vscode.Disposable {
   private focus: vscode.Position;
   private focusDecoration : vscode.TextEditorDecorationType;
   private focusBeforeDecoration : vscode.TextEditorDecorationType;
-  /** If true, the active editor's cursor will be set to the current STM focus when stepping forward or backward */
-  private moveCursorToFocus = vscode.workspace.getConfiguration("coq").get("moveCursorWhenSteppingForwardOrBackward") as boolean;
+  private project: CoqProject;
 
-  constructor(document: vscode.TextDocument, context: ExtensionContext) {
+  constructor(document: vscode.TextDocument, project: CoqProject) {
     this.statusBar = new StatusBar();
     this.document = document;
     // this.document = vscode.workspace.textDocuments.find((doc) => doc.uri === uri);
@@ -73,17 +72,17 @@ export class CoqDocument implements vscode.Disposable {
     this.queryOut = vscode.window.createOutputChannel('Query Results');
     this.noticeOut = vscode.window.createOutputChannel('Notices');
     
-    this.view = new HtmlCoqView(document.uri, context);
+    this.view = new HtmlCoqView(document.uri, project.context);
     // this.view = new SimpleCoqView(uri.toString());
     // this.view = new MDCoqView(uri);
     this.view.show(true,adjacentPane(this.currentViewColumn()));
 
     this.focusDecoration = vscode.window.createTextEditorDecorationType({
-      gutterIconPath: context.asAbsolutePath(STM_FOCUS_IMAGE),
+      gutterIconPath: project.context.asAbsolutePath(STM_FOCUS_IMAGE),
       gutterIconSize: "contain"
     });
     this.focusBeforeDecoration = vscode.window.createTextEditorDecorationType({
-      gutterIconPath: context.asAbsolutePath(STM_FOCUS_IMAGE_BEFORE),
+      gutterIconPath: project.context.asAbsolutePath(STM_FOCUS_IMAGE_BEFORE),
       gutterIconSize: "contain"
     });
 
@@ -107,9 +106,6 @@ export class CoqDocument implements vscode.Disposable {
         this.cursorUnmovedSinceCommandInitiated.delete(e.textEditor);
     }));
 
-    this.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) =>
-      this.moveCursorToFocus = vscode.workspace.getConfiguration("coq").get("moveCursorToFocus") as boolean));
-    
     if(vscode.window.activeTextEditor.document.uri.toString() == this.documentUri)
       this.statusBar.focus();
     this.statusBar.setStateReady();
@@ -283,7 +279,7 @@ export class CoqDocument implements vscode.Disposable {
       if(value.type === 'not-running')
         this.updateFocus(undefined, false);
       else
-        this.updateFocus(value.focus, this.moveCursorToFocus);
+        this.updateFocus(value.focus, this.project.settings.moveCursorToFocus);
       if(value.type === 'interrupted')
         this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
     } catch (err) {
@@ -302,7 +298,7 @@ export class CoqDocument implements vscode.Disposable {
       if(value.type === 'not-running')
         this.updateFocus(undefined, false);
       else
-        this.updateFocus(value.focus, this.moveCursorToFocus)
+        this.updateFocus(value.focus, this.project.settings.moveCursorToFocus)
       if(value.type === 'interrupted')
         this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
       // const range = new vscode.Range(editor.document.positionAt(value.commandStart), editor.document.positionAt(value.commandEnd));

@@ -34,7 +34,7 @@
 			"type": "object",
 			"title": "Coq configuration",
 			"properties": {
-				"coqtop.coqPath": {
+				"coqtop.binPath": {
 					"type": "string",
 					"default": "",
 					"description": "Path to coqc and coqtop binaries."
@@ -44,15 +44,25 @@
 					"default": [],
 					"description": "A list of arguments to send to coqtop."
 				},
-				"coqtop.loadCoqProject": {
+        "coqtop.wrapper": {
+          "type": "string",
+          "default": "",
+          "description": "The filename of an executable to act as an intermediary between coqtop and this extension. It should support an additional `<call val=\"Interrupt\"><unit/></call>` command to send SIGNIT to coqtop and support HOST:PORT addresses (one port number -- not two)."
+        },
+        "coqtop.traceXmlProtocol": {
+          "type": "boolean",
+          "default": false,
+          "description": "If using the coqtop-wrapper, instruct it to generate a trace file of its xml-protocol interactions. The trace file will be located adjacent to the Coq script with extension `.coq-trace.xml`"
+        },
+				"coq.loadCoqProject": {
 					"type": "boolean",
 					"default": true,
-					"description": "If true, load settings from _CoqProject, if found at the root of the Code project"
+					"description": "Load settings from _CoqProject (if found at the root of the Code project)"
 				},
         "coq.moveCursorToFocus": {
           "type": "boolean",
           "default": true,
-          "description": "If true, the current editor's cursor position will move as Coq interactively steps forward/backward a command"
+          "description": "Move the editor's cursor position as Coq interactively steps forward/backward a command"
         }
 			}
 		},

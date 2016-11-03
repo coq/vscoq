@@ -294,7 +294,7 @@ export class CoqTop extends events.EventEmitter {
     try {
       const scriptUri = decodeURIComponent(this.scriptFile); 
       if(useWrapper && scriptUri.startsWith("file:///")) {
-        const traceFile = scriptUri.substring("file:///".length) + ".coq-trace.xml";
+        const traceFile = this.settings.traceXmlProtocol? scriptUri.substring("file:///".length) + ".coq-trace.xml" : undefined;
         this.startCoqTop(this.spawnCoqTopWrapper(mainAddressArg, controlAddressArg, traceFile));
       } else
         this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
@@ -389,7 +389,7 @@ export class CoqTop extends events.EventEmitter {
  }
 
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
-    var coqtopModule = path.join(this.settings.coqPath.trim(), 'coqtop');
+    var coqtopModule = path.join(this.settings.binPath.trim(), 'coqtop');
     // var coqtopModule = 'cmd';
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',
@@ -409,7 +409,7 @@ export class CoqTop extends events.EventEmitter {
     // var coqtopModule = 'cmd';
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',
-      '-coqtopbin', path.join(this.settings.coqPath.trim(), 'coqtop'),
+      '-coqtopbin', path.join(this.settings.binPath.trim(), 'coqtop'),
       '-main-channel', mainAddr,
       '-control-channel', controlAddr,
       '-ideslave',
