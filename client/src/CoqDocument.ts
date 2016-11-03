@@ -95,9 +95,11 @@ export class CoqDocument implements vscode.Disposable {
     this.langServer.onLtacProfResults((p) => this.onLtacProfResults(p));
 
     this.view.onresize = async (columns:number) => {
-      await this.langServer.resizeView(Math.floor(columns));
-      const value = await this.langServer.getGoal();
-      this.view.update(value);
+      try {
+        await this.langServer.resizeView(Math.floor(columns));
+        const value = await this.langServer.getGoal();
+        this.view.update(value);
+      } catch(err) {}
     };
 
     this.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((e:vscode.TextEditorSelectionChangeEvent) => {
@@ -466,10 +468,11 @@ export class CoqDocument implements vscode.Disposable {
         return;
       value = proto.SetDisplayOption.Toggle
     }
-
-    await this.langServer.setDisplayOptions([{item: item, value: value}]);
-    const proofview = await this.langServer.getGoal();
-    this.view.update(proofview);
+    try {
+      await this.langServer.setDisplayOptions([{item: item, value: value}]);
+      const proofview = await this.langServer.getGoal();
+      this.view.update(proofview);
+    } catch(err) { }
  }
   
 }

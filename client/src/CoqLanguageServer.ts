@@ -175,16 +175,8 @@ export class CoqLanguageServer implements vscode.Disposable {
     return this.server.sendRequest(proto.ResizeWindowRequest.type, <proto.CoqTopResizeWindowParams>{ uri: uri, columns: columns }, this.cancelRequest.token);
   }
 
-  // private createLtacProfResultsMap(treelist: {fst:string,snd:proto.LtacProfTree}[]) : Map<string,LtacProfTree> {
-  //   const results = new Map<string,LtacProfTree>();
-  //   treelist.forEach((value) =>
-  //     results.set(value.fst, {entry: value.snd.entry, children: this.createLtacProfResultsMap(value.snd.children)}));
-  //   return results;
-  // }
-
   public ltacProfGetResults(uri: string, offset?: number): Thenable<void> {
     return this.server.sendRequest(proto.LtacProfResultsRequest.type, { uri: uri, offset: offset }, this.cancelRequest.token);
-    // return this.createLtacProfResultsMap(results.results);
   }
 
   public locate(uri: string, query: string): Thenable<proto.CoqTopQueryResult> {
