@@ -948,12 +948,10 @@ export class CoqTop extends events.EventEmitter {
         xmlOptions.push(new xmlTypes.Pair(optionName, new xmlTypes.OptionValue(rawOptionsValue)))
       }
     }
-    this.console.log('Set Options: ' + xmlTypes.encode(xmlOptions));
-
     const coqResult = this.coqGetResultOnce('SetOptions');
     const coqMessageResult = this.coqGetMessageOnce();
     this.console.log('--------------------------------');
-    this.console.log(`Call SetOptions(...)`);
+    this.console.log(`Call SetOptions(${xmlTypes.encode(xmlOptions)})`);
     this.mainChannelW.write(`<call val="SetOptions">${xmlTypes.encode(xmlOptions)}</call>`);    
 
     const values = await coqResult;

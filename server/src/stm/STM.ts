@@ -107,7 +107,15 @@ export class CoqStateMachine {
   private currentError : proto.FailValue = null;
   private status = STMStatus.Ready;
   /** The current state of coq options */
-  private currentCoqOptions : coqtop.CoqOptions = {};
+  private currentCoqOptions : coqtop.CoqOptions = {
+    printingCoercions: false,
+    printingMatching: false,
+    printingNotations: true,
+    printingExistentialInstances: false,
+    printingImplicit: false,
+    printingAll: false,
+    printingUniverses: false,
+  };
   /** Prevent concurrent calls to coqtop */
   private coqLock = new Mutex();
   /** Sequentialize edits */
