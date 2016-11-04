@@ -4,13 +4,14 @@
 	"description": "An IDE for the Coq Proof Assistant",
   "author": {
     "name": "Christian J. Bell",
-    "email": "siegebell@gmail.com"
+    "email": "siegebell@gmail.com",
+    "url": "http://people.csail.mit.edu/cj/"
   },
 	"version": "0.1.0",
 	"publisher": "siegebell",
-  "license": "MIT license (MIT)",
+  "license": "MIT",
 	"engines": {
- 		"vscode": "^1.5.3"
+ 		"vscode": "^1.5.3"    
 	},
 	"categories": [
 		"Languages"
