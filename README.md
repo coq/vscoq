@@ -1,4 +1,4 @@
-An IDE plugin for [Coq Proof Assistant 8.5](https://coq.inria.fr/) in [Visual Studio Code](https://code.visualstudio.com/).
+An IDE plugin for the [Coq Proof Assistant 8.5](https://coq.inria.fr/) in [Visual Studio Code](https://code.visualstudio.com/).
 
 * [Setup instructions](wiki/Setup)
 * [Tips](wiki/Tips)
