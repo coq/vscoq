@@ -1,7 +1,7 @@
 {
 	"name": "vscoq",
   "displayName": "VSCoq",
-	"description": "An IDE for Coq",
+	"description": "An IDE for the Coq Proof Assistant",
   "author": {
     "name": "Christian J. Bell",
     "email": "siegebell@gmail.com"
