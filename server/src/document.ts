@@ -32,13 +32,13 @@ export interface TextDocumentItem {
 
 
 
-interface MessageCallback {
+export interface MessageCallback {
   sendMessage(level: string, message: string, rich_message?: any) : void;
 }
-interface ResetCallback {
+export interface ResetCallback {
   sendReset() : void;
 }
-interface LtacProfCallback {
+export interface LtacProfCallback {
   sendLtacProfResults(results: coqProto.LtacProfResults) : void;
 }
 

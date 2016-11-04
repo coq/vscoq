@@ -17,6 +17,7 @@ import {CoqDocumentLanguageServer} from './CoqLanguageServer';
 import {adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
 import {CoqProject} from './CoqProject';
+import * as text from './AnnotatedText';
 
 const STM_FOCUS_IMAGE = "./images/stm-focus.svg";
 const STM_FOCUS_IMAGE_BEFORE = "./images/stm-focus-before.svg";
@@ -350,7 +351,8 @@ export class CoqDocument implements vscode.Disposable {
   public async check(query: string) {
     this.statusBar.setStateWorking('Running query');
     try {
-      return await this.langServer.check(query);
+      const results = await this.langServer.check(query);
+      this.displayQueryResults(results);
     } catch (err) {
     } finally {
       this.statusBar.setStateReady();
@@ -360,7 +362,8 @@ export class CoqDocument implements vscode.Disposable {
   public async print(query: string) {
     this.statusBar.setStateWorking('Running query');
     try {
-      return await this.langServer.print(query);
+      const results = await this.langServer.print(query);
+      this.displayQueryResults(results);
     } catch (err) {
     } finally {
       this.statusBar.setStateReady();
@@ -370,7 +373,7 @@ export class CoqDocument implements vscode.Disposable {
   private displayQueryResults(results: proto.CoqTopQueryResult) {
     this.queryOut.clear();
     this.queryOut.show(true);
-    this.queryOut.append(results.searchResults);
+    this.queryOut.append(text.textToDisplayString(results.searchResults));
     
   }
   

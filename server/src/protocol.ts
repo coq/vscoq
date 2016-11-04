@@ -222,7 +222,7 @@ export interface CoqTopQueryParams extends CoqTopParams {
   query: string;
 }
 export interface CoqTopQueryResult {
-  searchResults: string;
+  searchResults: AnnotatedText;
 }
 
 export interface CoqTopResizeWindowParams extends CoqTopParams {

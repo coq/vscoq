@@ -106,7 +106,7 @@ export class Sentence {
       return "contains";
   }
 
-  public getSymbols() {
+  public getSymbols() : vscode.SymbolInformation[] {
     return this.symbols;
   }
 

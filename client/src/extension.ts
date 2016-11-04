@@ -27,7 +27,7 @@ export function activate(context: ExtensionContext) {
   console.log(`execArgv: ${process.execArgv.join(' ')}`);
   console.log(`argv: ${process.argv.join(' ')}`);
   extensionContext = context;
-  
+
   project = CoqProject.create(context);
   context.subscriptions.push(project);
 

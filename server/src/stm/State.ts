@@ -9,7 +9,7 @@ import * as diff from './DiffProofView';
 
 export type StateId = number;
 
-interface StatusErrorInternal {
+export interface StatusErrorInternal {
   /** Error message */
   message: string,
   /** Range of error within this sentence w.r.t. document positions. Is `undefined` if the error applies to the whole sentence */

@@ -13,6 +13,7 @@ import {State, StatusError, StateStatus} from './State';
 import {LoadModule, SentenceSemantics} from './../parsing/SentenceSemantics';
 import {Mutex} from './../util/Mutex';
 import * as server from '../server';
+import {AnnotatedText} from '../util/AnnotatedText'
 
 export {StateStatus} from './State';
 
@@ -416,7 +417,7 @@ export class CoqStateMachine {
     }
   }
 
-  public async doQuery(query: string, position?: Position) : Promise<string> {
+  public async doQuery(query: string, position?: Position) : Promise<AnnotatedText> {
     if(!this.isCoqReady())
       return "";
     const endCommand = await this.startCommand();
@@ -427,7 +428,8 @@ export class CoqStateMachine {
       if(position)
         state = this.getParentSentence(position).getStateId();
       await this.refreshOptions();
-      return await this.coqtop.coqQuery(query, state)
+      const results = await this.coqtop.coqQuery(query, state);
+      return server.project.getPrettifySymbols().prettify(results);
     } finally {
       endCommand();
     }
@@ -1035,7 +1037,7 @@ function abbrString(s:string) {
   else return s2;
 }
 
-type DSentence = string;
+export type DSentence = string;
 function createDebuggingSentence(sent: State) : DSentence {
   return `${sent.getRange().start.line}:${sent.getRange().start.character}-${sent.getRange().end.line}:${sent.getRange().end.character} -- ${abbrString(sent.getText().trim())}`;
 }
