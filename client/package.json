@@ -7,8 +7,8 @@
     "email": "siegebell@gmail.com",
     "url": "http://people.csail.mit.edu/cj/"
   },
-	"version": "0.1.1",
-	"publisher": "siegebell",
+  "version": "0.1.1",
+  "publisher": "siegebell",
   "license": "MIT",
 	"engines": {
  		"vscode": "^1.5.3"    
