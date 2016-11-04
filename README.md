@@ -6,7 +6,7 @@ A plugin for the [Coq Proof Assistant 8.5](https://coq.inria.fr/) in [Visual Stu
 ## Features
 * Asynchronous proofs
 * Syntax highlighting
-* Commands: step forward, interpret to point, interrupt computation, queries, etc
+* Commands: step forward, interpret to point, interrupt computation, queries, set display options, etc.
 * Diff view for proof-view: highlight which terms change between states
 * Smarter editing: does not roll back the state when editing whitespace or comments
 * Works with [prettify-symbols-mode](https://marketplace.visualstudio.com/items?itemName=siegebell.prettify-symbols-mode)
