@@ -61,7 +61,7 @@ export function activate(context: ExtensionContext) {
   regTCmd('query.prompt.print', queryPrint);
   regTCmd('proofView.open', viewGoalState); 
   regTCmd('proofView.openExternal', viewGoalStateExternal);
-  regCmd('ltacProf.getResults', project.ltacProfGetResults);
+  regProjectCmd('ltacProf.getResults', project.ltacProfGetResults);
   regCmd('display.toggle.implicitArguments', () => project.setDisplayOption(proto.DisplayOption.ImplicitArguments, proto.SetDisplayOption.Toggle)); 
   regCmd('display.toggle.coercions', () => project.setDisplayOption(proto.DisplayOption.Coercions, proto.SetDisplayOption.Toggle)); 
   regCmd('display.toggle.rawMatchingExpressions', () => project.setDisplayOption(proto.DisplayOption.RawMatchingExpressions, proto.SetDisplayOption.Toggle)); 

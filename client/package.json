@@ -109,8 +109,6 @@
       {"command": "extension.coq.display.toggle.allLowLevelContents", "title": "Display All LowLevel Contents", "category": "Coq"},
       {"command": "extension.coq.proofView.open", "title": "Open proof view", "category": "Coq"},
       {"command": "extension.coq.proofView.openExternal", "title": "Open proof view in external browser", "category": "Coq"},
-      {"command": "extension.coq.ltacProf.start", "title": "Start/reset Ltac profiling", "category": "Coq"},
-      {"command": "extension.coq.ltacProf.stop", "title": "Stop Ltac profiling", "category": "Coq"},
       {"command": "extension.coq.ltacProf.getResults", "title": "Get the results of Ltac profiling", "category": "Coq"}
     ],
     "keybindings": [
