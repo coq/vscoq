@@ -1,31 +1,17 @@
-Support for the [Coq Proof Assistant](https://coq.inria.fr/) in [Visual Studio Code](https://code.visualstudio.com/). The status of this plugin is very much beta and somewhat experimental.
+An IDE plugin for [Coq Proof Assistant 8.5](https://coq.inria.fr/) in [Visual Studio Code](https://code.visualstudio.com/).
 
-## Instructions
-1. install [Coq 8.5](https://coq.inria.fr/download)
-2. install [vscode](https://code.visualstudio.com/)
-3. [download this extension: vscoq-0.0.1beta2.vsix](https://github.com/siegebell/vscoq/releases/download/0.0.1-beta.2/vscoq-0.0.1beta2.vsix)
-4. run: `code --install-extension vscoq-0.0.1.vsix`
-5. *optional for Windows*: to enable interrupt computation, download [coqtopw.exe](https://github.com/siegebell/vscoq/releases/download/0.0.1-beta.1/coqtopw.exe) and add `"coqtop.wrapper": "path/to/coqtopw.exe"` to your vscode settings file.
-6. start vscode (run `code`)
-7. open or create a new Coq script (*.v) file
+* [Setup instructions](wiki/Setup)
+* [Tips](wiki/Tips)
 
-## Basic usage
-* step forward: `ctrl+shift+down` 
-* step backward: `ctrl+shift+up` 
-* interpret to point: `ctrl+shift+right` 
-* interpret to end: `ctrl+shift+end` 
-* interpret to home (and reset Coq): `ctrl+shift+home`
-* interrupt computation: `ctrl+shift+~`
-* *explore more commands*: `F1` and begin typing `Coq:`
-
-## Settings (press `F1` and start typing "open workspace settings")
-* `"coqtop.coqPath": ""` -- specify the path to coqtop (e.g. "path/to/coq/bin/")
-* `"coqtop.args": ""` -- a string specifying additional command line arguments for coqtop
-* `"coqtop.loadCoqProject": true` -- set to `false` to ignore <span>_CoqProject</span>.
-
-## Tips
-* use the [prettify-symbols-mode](https://marketplace.visualstudio.com/items?itemName=siegebell.prettify-symbols-mode) extension to support fancy notation.
-* Ubuntu + vnc/rdp & can't run vscode? See: https://github.com/Microsoft/vscode/issues/3451
+## Features
+* Asynchronous proofs.
+* Syntax highlighting.
+* Commands: step forward, interpret to point, interrupt computation, queries, etc.
+* Diff view for proof-view: highlight which terms change between states.
+* Smarter editing: does not roll back the state when editing whitespace or comments.
+* Works with [prettify-symbols-mode](https://marketplace.visualstudio.com/items?itemName=siegebell.prettify-symbols-mode).
+* Supports \_CoqProject.
+* The proof-view can be opened in an external web browser.
 
 ## Screenshots
-<img alt="Screenshot of Proof Goal" src="https://cloud.githubusercontent.com/assets/16118166/15950935/9c8537dc-2e81-11e6-9954-5eefeac23a7a.png" width="45%"/> <img alt="Screenshot of LtacProf results" src="https://cloud.githubusercontent.com/assets/16118166/15950939/a00a8e02-2e81-11e6-98c4-9425bf6ab9c9.png" width="45%"/>
+<img alt="Simple example" src="https://cloud.githubusercontent.com/assets/16118166/19991384/3a8ed38c-a20b-11e6-88f6-cf9a9b04fe83.png" width="45%"/> <img alt="Screenshot of Proof Goal" src="https://cloud.githubusercontent.com/assets/16118166/15950935/9c8537dc-2e81-11e6-9954-5eefeac23a7a.png" width="45%"/>
