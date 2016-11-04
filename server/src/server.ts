@@ -36,6 +36,11 @@ export let project : CoqProject = null;
 // in the passed params the rootPath of the workspace plus the client capabilites. 
 let workspaceRoot: string;
 connection.onInitialize((params): InitializeResult => {
+  console.log = (e) => {connection.console.log(">>> " + e)};
+  console.info = (e) => {connection.console.info(">>> " + e)};
+  console.warn = (e) => {connection.console.warn(">>> " + e)};
+  console.error = (e) => {connection.console.error(">>> " + e)};
+
   connection.console.log(`Coq Language Server: process.version: ${process.version}, process.arch: ${process.arch}}`);
   // connection.console.log(`execArgv: ${process.execArgv.join(' ')}`);
   // connection.console.log(`argv: ${process.argv.join(' ')}`);

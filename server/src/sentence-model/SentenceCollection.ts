@@ -137,8 +137,14 @@ export class SentenceCollection implements vscode.TextDocument {
     }
 
     this.version = newVersion;
-    const removed = this.reparseSentencesByIndices(invalidatedSentences);
-    this.sentencesInvalidatedCallbacks.forEach((handler) => handler(removed.removed));
+
+    try {
+      const removed = this.reparseSentencesByIndices(invalidatedSentences);
+      this.sentencesInvalidatedCallbacks.forEach((handler) => handler(removed.removed));
+    } catch(err) {
+      server.connection.console.warn("Error reparsing sentences: " + err.toString());
+    }
+    
   }
 
   public *getErrors() : Iterable<vscode.Diagnostic> {
@@ -268,9 +274,10 @@ export class SentenceCollection implements vscode.TextDocument {
         const removed = this.sentences.splice(start, this.sentences.length - start, ...reparsed)
         removed.forEach((sent) => sent.dispose());
         return {removed: removed, added: reparsed, endOfSentences: true};
-      } else
-      server.connection.console.warn("syntax error: " + util.inspect(error,false,undefined))
+      } else {
+        server.connection.console.warn("unknown parsing error: " + util.inspect(error,false,undefined))
         throw error;
+      }
     }
   }
 }

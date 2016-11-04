@@ -79,7 +79,6 @@ export class CoqProject {
           break;
         }
       }
-      this.psm = new PrettifySymbolsMode([]);      
     } else
       this.psm = new PrettifySymbolsMode([]);
     this.ready.signal();

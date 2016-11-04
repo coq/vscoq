@@ -1,4 +1,5 @@
 import * as vscode from 'vscode-languageserver';
+import * as server from '../server';
 import * as parser from './coq-parser';
 import * as textUtil from './../util/text-util';
 import * as path from 'path';
@@ -118,17 +119,22 @@ namespace parseAstSymbols {
 
 
 export function parseAstForSymbols(ast: parser.Sentence, pos: vscode.Position) : vscode.SymbolInformation[] {
-  switch(ast.type) {
-  case "assumptions": return parseAstSymbols.assumptions(ast,pos);
-  case "definition": return parseAstSymbols.definition(ast,pos);
-  case "inductive": return parseAstSymbols.inductive(ast,pos);
-  case "ltacdef": return parseAstSymbols.ltacDef(ast,pos);
-  case "section": return parseAstSymbols.section(ast,pos);
-  case "module": return parseAstSymbols.module(ast,pos);
-  case "module-bind": return parseAstSymbols.moduleBind(ast,pos);
-  case "module-type": return parseAstSymbols.moduleType(ast,pos);
-  case "module-type-bind": return parseAstSymbols.moduleTypeBind(ast,pos);
-  default:  
-    return []
+  try {
+    switch(ast.type) {
+    case "assumptions": return parseAstSymbols.assumptions(ast,pos);
+    case "definition": return parseAstSymbols.definition(ast,pos);
+    case "inductive": return parseAstSymbols.inductive(ast,pos);
+    case "ltacdef": return parseAstSymbols.ltacDef(ast,pos);
+    case "section": return parseAstSymbols.section(ast,pos);
+    case "module": return parseAstSymbols.module(ast,pos);
+    case "module-bind": return parseAstSymbols.moduleBind(ast,pos);
+    case "module-type": return parseAstSymbols.moduleType(ast,pos);
+    case "module-type-bind": return parseAstSymbols.moduleTypeBind(ast,pos);
+    default:  
+      return []
+    }
+  } catch(err) {
+    server.connection.console.warn("Error processing AST: " + err.toString());
+    return [];
   }
 }

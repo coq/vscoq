@@ -141,9 +141,9 @@ SAny
   = Command _ EndOfSentence {return {type: "any"}}
 
 Assumptions
-  = idents:(_ LBround _ id:Assumptions RBround {return id})+
+  = idents:(_ LBround _ id:Assumptions _ RBround {return id})+
   { return Array.prototype.concat(...idents)}
-  / idents:IdentifierList _ ":" typeTerm:Command
+  / idents:IdentifierList _ ":" _ typeTerm:CommandP
   { return idents }
 AssumptionKind
   = "Axiom" / "Conjecture"

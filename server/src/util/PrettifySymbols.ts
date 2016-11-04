@@ -1,5 +1,6 @@
 import {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAnnotation, ScopedText, Substitution} from '../protocol';
 import {combineAnnotationText, Annotation, mapAnnotation} from './AnnotatedText';
+import * as server from '../server';
 
 
 
@@ -30,7 +31,7 @@ export class PrettifySymbolsMode {
         const uglyRegEx = new RegExp(uglyStr); // test the regex
         uglyAllStrings.push(`(?:${uglyStr})`);
       } catch(e) {
-        console.warn(`Could not add rule "${uglyStr}" --> "${prettySubst.pretty}"; invalid regular expression`)
+        server.connection.console.warn(`Could not add rule "${uglyStr}" --> "${prettySubst.pretty}"; invalid regular expression`)
       }
     }
     this.regex = new RegExp(uglyAllStrings.join('|'), 'g');
