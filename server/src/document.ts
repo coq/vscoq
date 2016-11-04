@@ -856,7 +856,11 @@ export class CoqDocument implements TextDocument {
   public async locateIdent(ident: string) {
     if(!this.stm || !this.stm.isRunning())
       return "Coq is not running";
-    return await this.stm.doQuery(`Locate ${ident}.`);
+    try {
+      return await this.stm.doQuery(`Locate ${ident}.`);
+    } catch(err) {
+      return await this.stm.doQuery(`Locate "${ident}".`);
+    }
   }
 
   public async checkTerm(term: string) {
