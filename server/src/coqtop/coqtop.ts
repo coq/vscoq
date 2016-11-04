@@ -270,10 +270,9 @@ export class CoqTop extends events.EventEmitter {
 
     if(this.settings.wrapper && this.settings.wrapper !== "" && fs.existsSync(this.settings.wrapper))
       return this.settings.wrapper;
-    else if(this.settings.autoUseWrapper && os.platform() === 'win32' && fs.existsSync(autoWrapper)) {
-      this.console.log("Using wrapper: " + autoWrapper + " from " + __dirname);
+    else if(this.settings.autoUseWrapper && os.platform() === 'win32' && fs.existsSync(autoWrapper))
       return autoWrapper;
-    } else
+    else
       return null;
   }
   
@@ -893,12 +892,6 @@ export class CoqTop extends events.EventEmitter {
     this.checkState();
     if(stateId === undefined)
     stateId = 0;
-    // 
-    // 
-    // const coqResult1 = this.coqGetResultOnce('Query');
-    // this.mainChannelW.write(`<call val="SetOptions"><list><pair><list><string>Printing</string><string>Width</string></list><option_value val="intvalue"><option val="some"><int>37</int></option></option_value></pair><pair><list><string>Printing</string><string>Coercions</string></list><option_value val="boolvalue"><bool val="false"/></option_value></pair><pair><list><string>Printing</string><string>Matching</string></list><option_value val="boolvalue"><bool val="true"/></option_value></pair><pair><list><string>Printing</string><string>Notations</string></list><option_value val="boolvalue"><bool val="true"/></option_value></pair><pair><list><string>Printing</string><string>Existential</string><string>Instances</string></list><option_value val="boolvalue"><bool val="false"/></option_value></pair><pair><list><string>Printing</string><string>Implicit</string></list><option_value val="boolvalue"><bool val="false"/></option_value></pair><pair><list><string>Printing</string><string>All</string></list><option_value val="boolvalue"><bool val="false"/></option_value></pair><pair><list><string>Printing</string><string>Universes</string></list><option_value val="boolvalue"><bool val="false"/></option_value></pair></list></call>`);
-    // await coqResult1;
-    // 
     
     const coqResult = this.coqGetResultOnce('Query');
     const coqMessageResult = this.coqGetMessageOnce();
@@ -965,7 +958,8 @@ export class CoqTop extends events.EventEmitter {
     const coqResult = this.coqGetResultOnce('SetOptions');
     const coqMessageResult = this.coqGetMessageOnce();
     this.console.log('--------------------------------');
-    this.console.log(`Call SetOptions(${xmlTypes.encode(xmlOptions)})`);
+    this.console.log(`Call SetOptions(...)`);
+    // this.console.log(`Call SetOptions(${xmlTypes.encode(xmlOptions)})`);
     this.mainChannelW.write(`<call val="SetOptions">${xmlTypes.encode(xmlOptions)}</call>`);    
 
     const values = await coqResult;
