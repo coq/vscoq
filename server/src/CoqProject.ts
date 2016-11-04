@@ -74,12 +74,14 @@ export class CoqProject {
     }
     if(newSettings.prettifySymbolsMode && newSettings.prettifySymbolsMode.substitutions) {
       for(let entry of newSettings.prettifySymbolsMode.substitutions) {
-        if(this.matchesCoq(entry.language)) {
+        if(entry.language && entry.substitutions && this.matchesCoq(entry.language)) {
           this.psm = new PrettifySymbolsMode(entry.substitutions);
           break;
         }
       }
-    }
+      this.psm = new PrettifySymbolsMode([]);      
+    } else
+      this.psm = new PrettifySymbolsMode([]);
     this.ready.signal();
   }
   

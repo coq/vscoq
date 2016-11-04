@@ -25,7 +25,7 @@ export interface PrettifySymbolsModeSettings {
 export interface Settings {
   coqtop: CoqTopSettings,
   coq: CoqSettings,
-  prettifySymbolsMode: PrettifySymbolsModeSettings,
+  prettifySymbolsMode?: PrettifySymbolsModeSettings,
 }
 
 

@@ -84,6 +84,8 @@ export class PrettifySymbolsMode {
 
 
   public prettify(text: AnnotatedText) : AnnotatedText {
+    if(!this.regex)
+      return text;
     return mapAnnotation(text, (plainText,ann,start,displayStart) => {
       return this.prettifyString(plainText, ann);
     });
