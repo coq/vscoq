@@ -16,11 +16,12 @@
 		"Languages"
 	],
   "keywords": [
-    "coq", "theorem prover"
+    "coq", "theorem prover", "proof assistant"
   ],
 	"activationEvents": [
 		"onLanguage:coq"
 	],
+  "readme": "https://github.com/siegebell/vscoq/README.md",
   "bugs": "https://github.com/siegebell/vscoq/issues",
   "homepage": "https://github.com/siegebell/vscoq/README.md",
 	"main": "./out/src/extension",
