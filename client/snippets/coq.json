@@ -56,5 +56,82 @@
       "End ${name}.\n"
       ],
     "description": "Module..."
+  },
+  "Obligation Tactic": {
+    "prefix": "Obligation Tactic",
+    "body": ["Obligation Tactic := ${expr}."]
+  },
+  "Local Obligation Tactic": {
+    "prefix": "Local Obligation Tactic",
+    "body": ["Local Obligation Tactic := ${expr}."]
+  },
+  "Global Obligation Tactic": {
+    "prefix": "Global Obligation Tactic",
+    "body": ["Global Obligation Tactic := ${expr}."]
+  },
+  "Show Obligation Tactic": {
+    "prefix": "Show Obligation Tactic",
+    "body": ["Show Obligation Tactic."]
+  },
+  "Obligations": {
+    "prefix": "Obligations",
+    "body": ["Obligations."]
+  },
+  "Obligations of...": {
+    "prefix": "Obligations of",
+    "body": ["Obligations of ${ident}."]
+  },
+  "Obligation (num)": {
+    "prefix": "Obligation",
+    "body": ["Obligation ${num}."]
+  },
+  "Obligation (num) of...": {
+    "prefix": "Obligation of",
+    "body": ["Obligation ${num} of ${ident}."]
+  },
+  "Next Obligation": {
+    "prefix": "Next Obligation",
+    "body": ["Next Obligation."]
+  },
+  "Next Obligation of...": {
+    "prefix": "Next Obligation of",
+    "body": ["Next Obligation of ${ident}."]
+  },
+  "Solve Obligation": {
+    "prefix": "Solve Obligation",
+    "body": ["Solve Obligation."]
+  },
+  "Solve Obligation of...": {
+    "prefix": "Solve Obligation of",
+    "body": ["Solve Obligation of ${ident}."]
+  },
+  "Solve Obligation of... with...": {
+    "prefix": "Solve Obligation of",
+    "body": ["Solve Obligation of ${ident} with ${expr}."]
+  },
+  "Solve All Obligations": {
+    "prefix": "Solve All Obligations",
+    "body": ["Solve All Obligations."]
+  },
+  "Solve All Obligations with...": {
+    "prefix": "Solve All Obligations with",
+    "body": ["Solve All Obligations with ${expr}."]
+  },
+  "Admit Obligations": {
+    "prefix": "Admit Obligations",
+    "body": ["Admit Obligations."]
+  },
+  "Admit Obligations of...": {
+    "prefix": "Admit Obligations of...",
+    "body": ["Admit Obligations of ${ident}."]
+  },
+  "Preterm": {
+    "prefix": "Preterm",
+    "body": ["Preterm."]
+  },
+  "Preterm of...": {
+    "prefix": "Preterm of",
+    "body": ["Preterm of ${ident}."]
   }
+
 }

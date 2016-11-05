@@ -11,7 +11,7 @@ const coqProjectFileName = '_CoqProject';
 
 
 export class CoqProject {
-  private coqInstances : { [uri: string] : CoqDocument } = {};
+  private coqInstances = new Map<string,CoqDocument>();
   private currentSettings : Settings;
   private workspaceRoot: string;
   private console: vscode.RemoteConsole;
@@ -35,7 +35,7 @@ export class CoqProject {
   }
   
   public lookup(uri: string) : CoqDocument {
-    var doc = this.coqInstances[uri];
+    var doc = this.coqInstances.get(uri);
     if(!doc)
       throw 'unknown document: ' + uri;
     return doc;
@@ -87,18 +87,23 @@ export class CoqProject {
   public async open(textDocument: TextDocumentItem, callbacks: DocumentCallbacks): Promise<CoqDocument> {
     await this.ready.event;
     const doc = new CoqDocument(this, textDocument, this.getWorkspaceRoot(), this.console, callbacks);
-    this.coqInstances[doc.uri] = doc;
+    this.coqInstances.set(doc.uri, doc);
     return doc;
   }
   
   public close(uri: string) {
     this.lookup(uri)
       .close();
-    delete this.coqInstances[uri];
+    this.coqInstances.delete(uri);
   }
   
   private coqProjectFile() {
     return path.join(this.workspaceRoot, coqProjectFileName);
+  }
+
+  public shutdown() {
+    this.coqInstances.forEach((x) => x.close());
+    this.coqInstances.clear();
   }
   
   private async isCoqProjectOutOfDate() {

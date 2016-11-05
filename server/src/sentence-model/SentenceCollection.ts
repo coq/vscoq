@@ -192,6 +192,49 @@ export class SentenceCollection implements vscode.TextDocument {
     return this.sentences;
   }
 
+  public getSentencePrefixTextAt(pos: Position, normalize = true) : string {
+    const sent = this.getSentenceIndexBeforeOrAt(pos);
+    let range: Range;
+    let text: string;
+    let prefix : string;
+    if(sent < 0) {
+      const offset = this.offsetAt(pos);
+      prefix = parser.normalizeText(this.documentText.substring(0,offset));
+    } else if(this.sentences[sent].contains(pos)) {
+      range = this.sentences[sent].getRange();
+      text = this.sentences[sent].getText();
+      const offset = textUtil.relativeOffsetAtAbsolutePosition(text,range.start,pos);
+      prefix = parser.normalizeText(text.substring(0,offset));
+    } else if(sent+1 < this.sentences.length) {
+      const start = this.sentences[sent].getRange().end;
+      const end = this.sentences[sent+1].getRange().start;
+      text = this.documentText.substring(this.offsetAt(start),this.offsetAt(end));
+      const offset = textUtil.relativeOffsetAtAbsolutePosition(text,start,pos);
+      prefix = parser.normalizeText(text.substring(0,offset));
+    } else {
+      const start = this.sentences[sent].getRange().end;
+      text = this.documentText.substring(this.offsetAt(start));
+      const offset = textUtil.relativeOffsetAtAbsolutePosition(text,start,pos);
+      prefix = parser.normalizeText(text.substring(0,offset));
+    }
+    if(normalize)
+      return parser.normalizeText(prefix);
+    else
+      return prefix;
+  }
+
+
+  /**
+   * @param `pos` -- position in the text document
+   * @return the sentence containing `pos`, or `null` if no such sentence exists 
+   */
+  public getSentenceAt(pos: Position) : Sentence|null {
+    const idx = this.getSentenceIndexBeforeOrAt(pos);
+    if(idx < 0)
+      return null;
+    if(this.sentences[idx].contains(pos))
+      return this.sentences[idx];
+  }
 
   /**
    * @param count -- minimum number of sentences to reparse

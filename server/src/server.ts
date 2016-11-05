@@ -22,7 +22,6 @@ import {CoqProject} from './CoqProject';
 // stdin / stdout for message passing
 export let connection: IConnection = createConnection(process.stdin, process.stdout);
 
-
 export let project : CoqProject = null;
 
 // // Create a simple text document manager. The text document manager
@@ -73,7 +72,9 @@ connection.onInitialize((params): InitializeResult => {
 	}
 });
 
-
+connection.onShutdown(() => {
+  project.shutdown();
+})
 
 // documents.onDidChangeContent((change) => {
 //   var uri = change.document.uri;
@@ -219,6 +220,10 @@ connection.onRequest(coqproto.SetDisplayOptionsRequest.type, (params: coqproto.C
     .setDisplayOptions(params.options);
 });
 
+connection.onRequest(coqproto.GetSentencePrefixTextRequest.type, (params: coqproto.DocumentPositionParams, token: CancellationToken) => {
+  return project.lookup(params.uri)
+    .getSentencePrefixTextAt(params.position);
+});
 
 
 function sendHighlightUpdates(documentUri: string, highlights: coqproto.Highlights) {
@@ -293,7 +298,7 @@ connection.onDidOpenTextDocument((params: vscodeLangServer.DidOpenTextDocumentPa
     sendReset: () =>
       connection.sendNotification(coqproto.CoqResetNotification.type, {uri: uri}),
     sendStmFocus: (focus: Position) =>
-      connection.sendNotification(coqproto.CoqStmFocusNotification.type, {uri: uri, focus: focus}),
+      connection.sendNotification(coqproto.CoqStmFocusNotification.type, {uri: uri, position: focus}),
     sendLtacProfResults: (results: coqproto.LtacProfResults) =>
       connection.sendNotification(coqproto.CoqLtacProfResultsNotification.type, {uri: uri, results: results}),
   });

@@ -124,6 +124,14 @@ export class CoqDocument implements TextDocument {
    this.updateHighlights();
    this.updateDiagnostics();
   }
+
+  public getSentences() : SentenceCollection {
+    return this.document;
+  }
+
+  public getSentencePrefixTextAt(pos: Position) {
+    return this.document.getSentencePrefixTextAt(pos);
+  }
   
   public offsetAt(pos: Position) : number {
     return this.document.offsetAt(pos);

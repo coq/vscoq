@@ -6,7 +6,7 @@ import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } f
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } from 'vscode-languageclient';
 import * as proto from './protocol';
 import {CoqProject, CoqDocument} from './CoqProject';
-
+import {setupSnippets} from './Snippets';
 
 vscode.Range.prototype.toString = function rangeToString() {return `[${this.start.toString()},${this.end.toString()})`}
 vscode.Position.prototype.toString = function positionToString() {return `{${this.line}@${this.character}}`}
@@ -72,120 +72,7 @@ export function activate(context: ExtensionContext) {
   regCmd('display.toggle.allLowLevelContents', () => project.setDisplayOption(proto.DisplayOption.AllLowLevelContents, proto.SetDisplayOption.Toggle));
   regCmd('display.toggle', () => project.setDisplayOption());
 
-
-  function snippetSentence(text: string) : vscode.CompletionItem{
-    const result = new vscode.CompletionItem(text,vscode.CompletionItemKind.Snippet);
-    result.insertText = text + ".";
-    return result;
-  }
-  vscode.languages.registerCompletionItemProvider('coq', {
-    provideCompletionItems: (doc, pos, token) : vscode.CompletionItem[] => {
-      return [
-        "Set Asymmetric Patterns",
-        "Set Atomic Load",
-        "Set Automatic Coercions Import",
-        "Set Automatic Introduction",
-        "Set Boolean Equality Schemes",
-        "Set Bracketing Last Introduction Pattern",
-        "Set Bullet Behavior",
-        "Set Subproofs Case Analysis Schemes",
-        "Set Compat Notations",
-        "Set Congruence Depth",
-        "Set Congruence Verbose",
-        "Set Contextual Implicit",
-        "Set Debug Auto",
-        "Set Debug Eauto",
-        "Set Debug Rakam",
-        "Set Debug Tactic Unification",
-        "Set Debug Trivial",
-        "Set Debug Unification",
-        "Set Decidable Equality Schemes",
-        "Set Default Clearing Used Hypotheses",
-        "Set Default Goal Selector",
-        "Set Default Proof Mode",
-        "Set Default Proof Using",
-        "Set Default Timeout",
-        "Set Dependent Propositions Elimination",
-        "Set Discriminate Introduction",
-        "Set Dump Bytecode",
-        "Set Elimination Schemes",
-        "Set Equality Scheme",
-        "Set Extraction Auto Inline",
-        "Set Extraction Conservative Types",
-        "Set Extraction File Comment",
-        "Set Extraction Flag",
-        "Set Extraction Keep Singleton",
-        "Set Extraction Optimize",
-        "Set Extraction Safe Implicits",
-        "Set Extraction Type Expand",
-        "Set Firstorder Depth",
-        "Set Hide Obligations",
-        "Set Implicit Arguments",
-        "Set Info Auto",
-        "Set Info Eauto",
-        "Set Info Level",
-        "Set Info Trivial",
-        "Set Injection L2 Rpattern Order",
-        "Set Injection On Proofs",
-        "Set Inline Level",
-        "Set Intuition Iff Unfolding",
-        "Set Intuition Negation Unfolding",
-        "Set Kernel Term Sharing",
-        "Set Keyed Unification",
-        "Set Loose Hint Behavior",
-        "Set Maximal Implicit Insertion",
-        "Set Nonrecursive Elimination Schemes",
-        "Set Parsing Explicit",
-        "Set Primitive Projections",
-        "Set Printing All",
-        "Set Printing Coercions",
-        "Set Printing Depth",
-        "Set Printing Existential Instances",
-        "Set Printing Implicit",
-        "Set Printing Implicit Defensive",
-        "Set Printing Matching",
-        "Set Printing Notations",
-        "Set Printing Primitive Projection Compatibility",
-        "Set Printing Primitive Projection Parameters",
-        "Set Printing Projections",
-        "Set Printing Records",
-        "Set Printing Synth",
-        "Set Printing Universes",
-        "Set Printing Width",
-        "Set Printing Wildcard",
-        "Set Program Mode",
-        "Set Proof Using Clear Unused",
-        "Set Record Elimination Schemes",
-        "Set Regular Subst Tactic",
-        "Set Reversible Pattern Implicit",
-        "Set Rewriting Schemes",
-        "Set Short Module Printing",
-        "Set Shrink Obligations",
-        "Set Simpl Is Cbn",
-        "Set Standard Proposition Elimination Names",
-        "Set Strict Implicit",
-        "Set Strict Proofs",
-        "Set Strict Universe Declaration",
-        "Set Strongly Strict Implicit",
-        "Set Suggest Proof Using",
-        "Set Tactic Compat Context",
-        "Set Tactic Evars Pattern Unification",
-        "Set Transparent Obligations",
-        "Set Typeclass Resolution After Apply",
-        "Set Typeclass Resolution For Conversion",
-        "Set Typeclasses Debug",
-        "Set Typeclasses Dependency Order",
-        "Set Typeclasses Depth",
-        "Set Typeclasses Modulo Eta",
-        "Set Typeclasses Strict Resolution",
-        "Set Typeclasses Unique Instances",
-        "Set Typeclasses Unique Solutions",
-        "Set Universal Lemma Under Conjunction",
-        "Set Universe Minimization To Set",
-        "Set Universe Polymorphism",
-        "Set Verbose Compat Notations" ]
-        .map(snippetSentence);
-    }});
+  setupSnippets(context.subscriptions);
 }
 
 // function provideOptionCompletions(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.CompletionItem[] {

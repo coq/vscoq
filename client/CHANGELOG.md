@@ -1,3 +1,6 @@
+## 0.1.4
+* apply prettify-symbols-mode on query results
+* snippets for Set options
 ## 0.1.3 
 Bug fixes:
 * fixed prettify-symbols-mode in proof-view

@@ -252,6 +252,11 @@ export namespace LtacProfResultsRequest {
   , _:undefined }; 
 }
 
+export namespace GetSentencePrefixTextRequest { 
+  export const type: RequestType<DocumentPositionParams, string, void> =
+  { get method() { return 'coqtop/getSentencePrefixText' }
+  , _:undefined }; 
+} 
 
 export enum HighlightType {
   StateError=0, Parsing=1, Processing=2, Incomplete=3, Complete=4, InProgress=5, Processed=6 
@@ -295,12 +300,12 @@ export namespace CoqResetNotification {
   , _:undefined }; 
 } 
 
-export interface NotifyCoqStmFocusParams extends NotificationParams {
-  focus: vscode.Position;
+export interface DocumentPositionParams extends NotificationParams {
+  position: vscode.Position;
 }
 
 export namespace CoqStmFocusNotification { 
-  export const type: NotificationType<NotifyCoqStmFocusParams> =
+  export const type: NotificationType<DocumentPositionParams> =
   { get method() { return 'coqtop/stmFocus' }
   , _:undefined }; 
 } 

@@ -121,8 +121,8 @@ export class CoqLanguageServer implements vscode.Disposable {
     return { dispose: () => this.onResetHandlers.delete(listener) }
   }
 
-  private onUpdateCoqStmFocusHandlers = new Set<(params: proto.NotifyCoqStmFocusParams) => void>(); 
-  public onUpdateCoqStmFocus(listener: (params: proto.NotifyCoqStmFocusParams) => void) {
+  private onUpdateCoqStmFocusHandlers = new Set<(params: proto.DocumentPositionParams) => void>(); 
+  public onUpdateCoqStmFocus(listener: (params: proto.DocumentPositionParams) => void) {
     this.onUpdateCoqStmFocusHandlers.add(listener);
     return { dispose: () => this.onUpdateCoqStmFocusHandlers.delete(listener) }
   }
@@ -171,12 +171,15 @@ export class CoqLanguageServer implements vscode.Disposable {
   }
 
   public resizeView(uri: string, columns: number): Thenable<void> {
-    var x = proto.ResizeWindowRequest.type;
     return this.server.sendRequest(proto.ResizeWindowRequest.type, <proto.CoqTopResizeWindowParams>{ uri: uri, columns: columns }, this.cancelRequest.token);
   }
 
   public ltacProfGetResults(uri: string, offset?: number): Thenable<void> {
     return this.server.sendRequest(proto.LtacProfResultsRequest.type, { uri: uri, offset: offset }, this.cancelRequest.token);
+  }
+
+  public getPrefixText(uri: string, pos: vscode.Position, token?: vscode.CancellationToken): Thenable<string> {
+    return this.server.sendRequest(proto.GetSentencePrefixTextRequest.type, { uri: uri, position: pos }, token || this.cancelRequest.token);
   }
 
   public locate(uri: string, query: string): Thenable<proto.CoqTopQueryResult> {
@@ -261,8 +264,8 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
     }));
   }
 
-  public onUpdateCoqStmFocus(listener: (params: proto.NotifyCoqStmFocusParams) => void) {
-    this.subscriptions.push(this.server.onUpdateCoqStmFocus((p: proto.NotifyCoqStmFocusParams) => {
+  public onUpdateCoqStmFocus(listener: (params: proto.DocumentPositionParams) => void) {
+    this.subscriptions.push(this.server.onUpdateCoqStmFocus((p: proto.DocumentPositionParams) => {
       if (p.uri === this.uri)
         listener(p);
     }));

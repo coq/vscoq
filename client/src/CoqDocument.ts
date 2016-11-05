@@ -91,7 +91,7 @@ export class CoqDocument implements vscode.Disposable {
     this.langServer.onUpdateHighlights((p) => this.onDidUpdateHighlights(p));
     this.langServer.onMessage((p) => this.onCoqMessage(p));
     this.langServer.onReset((p) => this.onCoqReset());
-    this.langServer.onUpdateCoqStmFocus((p) => this.updateFocus(p.focus));
+    this.langServer.onUpdateCoqStmFocus((p) => this.updateFocus(p.position));
     this.langServer.onLtacProfResults((p) => this.onLtacProfResults(p));
 
     this.view.onresize = async (columns:number) => {
