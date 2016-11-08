@@ -35,7 +35,7 @@ AllSentences
   = Sentence* NoMoreSentences
 
 NoMoreSentences
-  = Blank* !. { return {type: "EOF", text: text(), rest: ""} }
+  = _ !. { return {type: "EOF", text: text(), rest: ""} }
 
 Sentence
   = _ sent:
