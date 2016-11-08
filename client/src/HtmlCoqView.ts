@@ -187,7 +187,7 @@ export class HtmlCoqView implements view.CoqView {
   }
 
   private sendMessage(message: ProofViewProtocol, clients = this.server.clients) {
-    for(const connection of this.server.clients) {
+    for(const connection of clients) {
       try {
         connection.send(JSON.stringify(message));
       } catch(error) {}
