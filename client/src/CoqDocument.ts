@@ -64,6 +64,7 @@ export class CoqDocument implements vscode.Disposable {
   constructor(document: vscode.TextDocument, project: CoqProject) {
     this.statusBar = new StatusBar();
     this.document = document;
+    this.project = project;
     // this.document = vscode.workspace.textDocuments.find((doc) => doc.uri === uri);
 
     this.documentUri = document.uri.toString();

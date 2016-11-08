@@ -42,6 +42,8 @@ export class CoqProject implements vscode.Disposable {
     this.currentSettings = vscode.workspace.getConfiguration("coq") as any as proto.CoqSettings;
     context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) =>
       this.currentSettings = vscode.workspace.getConfiguration("coq") as any as proto.CoqSettings));
+      if(this.currentSettings.moveCursorToFocus === undefined)
+        this.currentSettings.moveCursorToFocus = true;
   }
 
   public static create(context: vscode.ExtensionContext) {
