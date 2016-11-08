@@ -14,6 +14,7 @@ import {LoadModule, SentenceSemantics} from './../parsing/SentenceSemantics';
 import {Mutex} from './../util/Mutex';
 import * as server from '../server';
 import {AnnotatedText} from '../util/AnnotatedText'
+import * as text from '../util/AnnotatedText'
 
 export {StateStatus} from './State';
 
@@ -726,8 +727,12 @@ export class CoqStateMachine {
     return <proto.Goal>{
       goal: server.project.getPrettifySymbols().prettify(goal.goal),
       hypotheses: goal.hypotheses.map((hyp) => {
-        let h = (hyp as string).split(/(:=|:)([^]*)/);
-        return {identifier: h[0].trim(), relation: h[1].trim(), expression: server.project.getPrettifySymbols().prettify(h[2].trim())};
+        let h = text.textSplit(hyp,/(:=|:)([^]*)/,2);
+        const result =
+          { identifier: text.textToString(h.splits[0]).trim()
+          , relation: text.textToString(h.splits[1])
+          , expression: text.normalizeText(server.project.getPrettifySymbols().prettify(h.rest))};
+        return result;
       })
     };
   }
@@ -751,8 +756,8 @@ export class CoqStateMachine {
         const result : GoalResult = {type: 'proof-view',
           goals: goals.goals.map(this.parseConvertGoal),
           backgroundGoals: this.convertUnfocusedGoals(goals.backgroundGoals),
-          shelvedGoals: goals.shelvedGoals.map(this.parseConvertGoal),
-          abandonedGoals: goals.abandonedGoals.map(this.parseConvertGoal),
+          shelvedGoals: (goals.shelvedGoals || []).map(this.parseConvertGoal),
+          abandonedGoals: (goals.abandonedGoals || []).map(this.parseConvertGoal),
         };
         this.focusedSentence.setGoal(result);
         return result;

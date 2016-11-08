@@ -95,8 +95,10 @@ export interface TextAnnotation {
 export interface ScopedText {
   /** A scope identifier */
   scope: string,
+  /** Extra stuff */
+  attributes?: any,
   /** the underlying text, possibly with more annotations */
-  text: AnnotatedText
+  text: AnnotatedText,
 }
 
 export type AnnotatedText = string | TextAnnotation | ScopedText | (string | TextAnnotation | ScopedText)[];

@@ -81,6 +81,55 @@ export function copyAnnotation(x: Annotation) : Annotation {
 }
 
 
+export function textSplit(text: AnnotatedText, separator: string|RegExp, limit?: number) : {splits: (string | TextAnnotation | ScopedText)[], rest: AnnotatedText} {
+  if(typeof text === 'string') {
+    const result = text.split(separator as any).filter((v) => v!=="");
+    return {splits: result.slice(0,limit), rest: limit===undefined ? [] : result.slice(limit)}
+  } else if(text instanceof Array) {
+    const splits : (string | TextAnnotation | ScopedText)[] = [];
+    let idx = 0;
+    let rest : AnnotatedText = [];
+    let count = 0;
+    for(/**/ ; (limit===undefined || count < limit) && idx < text.length; ++idx) {
+      const {splits: splits2, rest: rest2} = textSplit(text[idx], separator, limit===undefined? undefined : limit-count);
+      splits.push(...splits2);
+      count += splits2.length;
+      rest = rest2;
+    }
+    if(limit === undefined)
+      return {splits: splits, rest: []};
+    else {
+      if(rest instanceof Array)
+        return {splits: splits.slice(0,limit), rest: [...splits.slice(limit), ...rest, ...text.slice(idx)]};
+      else
+        return {splits: splits.slice(0,limit), rest: [...splits.slice(limit), rest, ...text.slice(idx)]};      
+    }
+  } else if(isScopedText(text)) {
+    const {splits: splits, rest: rest} = textSplit(text.text, separator, limit);
+    const splitsResult = splits.map((s: AnnotatedText) => text.attributes ? {scope: text.scope, attributes: text.attributes, text: s} : {scope: text.scope, text: s} );
+    const restResult : ScopedText = {scope: text.scope, text: rest}
+    if(text.attributes)
+      restResult.attributes = text.attributes;
+    return {splits: splitsResult, rest: restResult};
+  } else {// TextAnnotation
+    const result = text.text.split(separator as any).filter((v) => v!=="");
+    return {
+      splits: result.slice(0,limit).map((s) =>
+        normalizeTextAnnotationOrString({diff:text.diff, substitution:text.substitution, text: s})),
+      rest: limit===undefined ? [] :
+        result.slice(limit).map((s) =>
+          normalizeTextAnnotationOrString({diff:text.diff, substitution:text.substitution, text: s}))}
+
+
+    // const {splits: splits, rest: rest} = textSplit(text.text, separator, limit);
+    // var xxx:TextAnnotation = {diff: text.diff, substitution: text.substitution, text: rest}
+    // const result = {
+    //   splits: splits, //splits.map((s: AnnotatedText) => ({diff: text.diff, substitution: text.substitution, text: s})),
+    //   rest: {diff: text.diff, substitution: text.substitution, text: rest} as TextAnnotation};
+    // return result;
+  }
+}
+
 function mapAnnotationInternal(text: AnnotatedText, map: (text: string, annotation: Annotation, start: number, displayStart: number) => AnnotatedText, currentOffset: number, currentDisplayOffset: number) : {text: AnnotatedText, endOffset: number, endDisplayOffset: number } {
   if(typeof text === 'string') {
     const result = map(text,{},currentOffset,currentDisplayOffset);
@@ -99,7 +148,10 @@ function mapAnnotationInternal(text: AnnotatedText, map: (text: string, annotati
     return {text: results, endOffset: currentOffset, endDisplayOffset: currentDisplayOffset};
   } else if(isScopedText(text)) {
     const result = mapAnnotationInternal(text.text,map,currentOffset,currentDisplayOffset);
-    return {text: {scope: text.scope, text: result.text}, endOffset: result.endOffset, endDisplayOffset: result.endDisplayOffset};
+    const resultText : ScopedText = {scope: text.scope, text: result.text};
+    if(text.attributes)
+      resultText.attributes = text.attributes;
+    return {text: resultText, endOffset: result.endOffset, endDisplayOffset: result.endDisplayOffset};
   } else {// TextAnnotation
     const newText = map(text.text,copyAnnotation(text),currentOffset,currentDisplayOffset);
     return {text: newText, endOffset: currentOffset + textLength(newText), endDisplayOffset: currentDisplayOffset + textDisplayLength(newText)};
@@ -133,14 +185,19 @@ function concatText(text1: AnnotatedText, text2: AnnotatedText) : AnnotatedText 
 function tryCombineText(text1: string|TextAnnotation|ScopedText, text2: string|TextAnnotation|ScopedText) : string|TextAnnotation|ScopedText|undefined {
   if(typeof text1 === 'string' && typeof text2 === 'string')
     return text1 + text2;
-  else if(isScopedText(text1) && isScopedText(text2) && text1.scope === text2.scope)
-    return {scope: text1.scope, text: normalizeText(concatText(text1.text,text2.text))};
-  else if(isTextAnnotation(text1) && isTextAnnotation(text2) && compatibleAnnotations(text1,text2)) {
+  else if(isScopedText(text1) && isScopedText(text2) && text1.scope === text2.scope && text1.attributes === text2.attributes) {
+    if(text1.attributes)
+      return {scope: text1.scope, attributes: text1.attributes, text: normalizeText(concatText(text1.text,text2.text))};
+    else
+      return {scope: text1.scope, text: normalizeText(concatText(text1.text,text2.text))};
+  } else if(isTextAnnotation(text1) && isTextAnnotation(text2) && compatibleAnnotations(text1,text2)) {
     return normalizeTextAnnotationOrString({diff: text1.diff, substitution: text1.substitution||text2.substitution, text: text1.text+text2.text});
   } else
     return undefined
 }
 
+export function normalizeTextAnnotationOrString(text: string) : string;
+export function normalizeTextAnnotationOrString(text: TextAnnotation) : TextAnnotation|string;
 export function normalizeTextAnnotationOrString(text: TextAnnotation|string) : TextAnnotation|string {
   if(typeof text === 'string') {
     return text;
@@ -203,6 +260,8 @@ export function normalizeText(text: AnnotatedText) : AnnotatedText {
     const norm = normalizeText(text.text);
     if(text.scope === "" || norm === "")
       return norm;
+    else if(text.attributes)
+      return {scope: text.scope, attributes: text.attributes, text: norm};
     else
       return {scope: text.scope, text: norm};
   } else {// TextAnnotation

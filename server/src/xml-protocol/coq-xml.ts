@@ -2,6 +2,7 @@
 import * as events from 'events';
 import * as sax from 'sax';
 import * as coqProto from '../coqtop/coq-proto';
+import * as text from '../util/AnnotatedText';
 // var entities = require('entities'); 
 
 export interface EventCallbacks {
@@ -105,7 +106,7 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
       return <coqProto.Goal>{
         id: +value.$children[0],
         hypotheses: value.$children[1],
-        goal: value.$children[2]
+        goal: value.$children[2] || []
       }
     case 'goals': {
       let result = <coqProto.Goals>{goals: value.$children[0]};
@@ -114,8 +115,8 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
         result.backgroundGoals = bg_goals.reduce
           ( (bg, v) => <coqProto.UnfocusedGoalStack>{before: v.fst, next: bg, after: v.snd}
           , <coqProto.UnfocusedGoalStack>null);
-        result.shelvedGoals = value.$children[2];
-        result.abandonedGoals = value.$children[3];
+        result.shelvedGoals = value.$children[2] || [];
+        result.abandonedGoals = value.$children[3] || [];
       }
       return result;
     } case 'loc':
@@ -305,7 +306,7 @@ export class XmlStream extends events.EventEmitter {
     
     let options : sax.SAXOptions | {strictEntities: boolean} = {
       lowercase: true,
-      trim: true,
+      trim: false,
       normalize: false,
       xmlns:false,
       position: false,
@@ -327,32 +328,29 @@ export class XmlStream extends events.EventEmitter {
     this.emit('error', err);
   }
 
-  private build_string = false;
-  private xml_string = "";
+  private annotateTextMode = false;
+  private textStack : text.ScopedText[] = [];
 
   private onOpenTag(node: sax.Tag) {
     if(node.name === 'coqtoproot')
       return;
 
-    if(node.name === 'richpp') {
-      this.build_string = true;
-      this.xml_string = "";
+    if(this.annotateTextMode) {
+      let txt : text.ScopedText = {scope: node.name, attributes: node.attributes, text: []};
+      this.textStack.push(txt);
+    } else if (node.name === 'richpp') {
+      let txt : text.ScopedText = {scope: "", attributes: node.attributes, text: []};
+      this.annotateTextMode = true;
+      this.textStack = [txt];
+    } else {
+      let topNode = {
+        $name: node.name,
+        $: node.attributes,
+        $text: "",
+        $children: <any[]>[]
+      };
+      this.stack.push(topNode);
     }
-
-    if(this.build_string) {
-      const parts = [node.name];
-      for(const key in node.attributes)
-        parts.push(`${key}="${node.attributes[key]}"`);
-      this.xml_string+= "<" + parts.join(' ') + '>';
-    }
-
-    let topNode = {
-      $name: node.name,
-      $: node.attributes,
-      $text: "",
-      $children: <any[]>[]
-    };
-    this.stack.push(topNode);
   }
 
   private onCloseTag(closingTagName : string) {
@@ -360,35 +358,47 @@ export class XmlStream extends events.EventEmitter {
       this.emit('error', 'malformed XML input stream has too many closing tags');
       return;
     }
-    if (this.stack.length === 0)
-      return;
 
-    if(this.build_string)
-      this.xml_string+= `</${closingTagName}>`;
-
-
-    let currentTop = this.stack.pop();
-    let tagName = currentTop.$name;
-    let value : coqProto.CoqValue = toCoqValue(currentTop);
-    
-    if (this.stack.length > 0) {
-      let newTop = this.stack[this.stack.length - 1];
-      newTop.$children.push(value);
-      newTop[tagName] = value;
-      if(closingTagName === 'richpp') {
-        this.build_string = false;
-        value["string"] = this.xml_string;
-        newTop["richpp_string"] = this.xml_string;
+    if(this.annotateTextMode) {
+      const current = this.textStack.pop();
+      if(this.textStack.length > 0) {
+        const top = this.textStack[this.textStack.length-1];
+        if(top.text instanceof Array)
+          top.text.push(current);
+        else
+          top.text = [top.text, current]
+        return;
+      } else {
+        let newTop = this.stack[this.stack.length - 1];
+        newTop.$children.push(current);
+        newTop['richpp'] = current;
+        this.annotateTextMode = false;
+        return; 
       }
-    } else if(currentTop.$name === 'feedback') {
-      this.emit('response', value);
-      if(currentTop.$['object'] === 'edit')
-        this.emit('response: edit-feedback', value);
-      else if(currentTop.$['object'] === 'state')
-        this.emit('response: state-feedback', value);
-    } else {
-      this.emit('response', value);
-      this.emit('response: ' + currentTop.$name, value);
+    } else if (this.stack.length === 0)
+      return;
+    else {
+      let currentTop = this.stack.pop();
+      let tagName = currentTop.$name;
+      let value : coqProto.CoqValue = toCoqValue(currentTop);
+      
+      if (this.stack.length > 0) {
+        let newTop = this.stack[this.stack.length - 1];
+        newTop.$children.push(value);
+        newTop[tagName] = value;
+        if(closingTagName === 'richpp') {
+          this.annotateTextMode = false;
+        }
+      } else if(currentTop.$name === 'feedback') {
+        this.emit('response', value);
+        if(currentTop.$['object'] === 'edit')
+          this.emit('response: edit-feedback', value);
+        else if(currentTop.$['object'] === 'state')
+          this.emit('response: state-feedback', value);
+      } else {
+        this.emit('response', value);
+        this.emit('response: ' + currentTop.$name, value);
+      }
     }
   }
   
@@ -416,10 +426,13 @@ export class XmlStream extends events.EventEmitter {
 
   
   private onText(text : string) {
-    if(this.build_string)
-      this.xml_string+= text;
-
-    if(this.stack.length > 0) {
+    if(this.annotateTextMode) {
+      const top = this.textStack[this.textStack.length-1];
+      if(top.text instanceof Array)
+        top.text.push(text);
+      else
+        top.text = [top.text, text];
+    } else if(this.stack.length > 0) {
       // let plainText = entities.decodeXML(text);
       this.stack[this.stack.length-1].$text += text;
     }

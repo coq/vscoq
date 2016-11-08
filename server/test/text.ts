@@ -57,6 +57,19 @@ suite("AnnotatedText", () => {
     assert.deepStrictEqual(text.normalizeText({diff:"added",text:"aabbaa"}),{diff:"added",text:"aabbaa"});
   }));
 
+  test("textSplit", (() => {
+    assert.deepStrictEqual(text.textSplit("foo bar", " "), {splits: ["foo", "bar"], rest: []});
+    assert.deepStrictEqual(text.textSplit("foo  bar", " "), {splits: ["foo", "bar"], rest: []});
+    assert.deepStrictEqual(text.textSplit(["foo  bar", " dee  doo "], " "), {splits: ["foo", "bar", "dee", "doo"], rest: []});
+    assert.deepStrictEqual(text.textSplit([{scope:"aa",text:"foo"}," bar"], " "), {splits: [{scope:"aa",text:"foo"}, "bar"], rest: []});
+    assert.deepStrictEqual(text.textSplit([{scope:"aa",text:"foo buh "}," bar"], " "), {splits: [{scope:"aa",text:"foo"},{scope:"aa",text:"buh"},"bar"], rest: []});
+    assert.deepStrictEqual(text.textSplit("H1 : nat := 1=1", /(:=|:)([^]*)/), {splits: ["H1 ", ":", " nat := 1=1"], rest: []});
+    assert.deepStrictEqual(text.textSplit(["H1 ",{diff: "added", text: ": nat := 1=1"}], /(:=|:)([^]*)/), {splits: ["H1 ", {diff:"added",text:":"}, {diff:"added",text:" nat := 1=1"}], rest: []});
+    assert.deepStrictEqual(text.textSplit(["H1 ",{diff: "added", text: ": nat := 1=1"}], /(:=|:)([^]*)/,2), {splits: ["H1 ", {diff:"added",text:":"}], rest: [{diff:"added",text:" nat := 1=1"}]});
+    assert.deepStrictEqual(text.textSplit(["H1 ",{diff: "added", text: ": nat := 1=1"}], /(:=|:)([^]*)/,3), {splits: ["H1 ", {diff:"added",text:":"}, {diff:"added",text:" nat := 1=1"}], rest: []});
+
+  }));
+
   test("mapAnnotation", (() => {    
     let hist : [string,text.Annotation,number,number][] = [];
     let x : text.AnnotatedText = "foo";
