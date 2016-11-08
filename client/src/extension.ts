@@ -6,17 +6,13 @@ import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } f
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } from 'vscode-languageclient';
 import * as proto from './protocol';
 import {CoqProject, CoqDocument} from './CoqProject';
-import {setupSnippets} from './Snippets';
+import * as snippets from './Snippets';
+const regenerate = require('regenerate');
 
 vscode.Range.prototype.toString = function rangeToString() {return `[${this.start.toString()},${this.end.toString()})`}
 vscode.Position.prototype.toString = function positionToString() {return `{${this.line}@${this.character}}`}
 
 console.log(`Coq Extension: process.version: ${process.version}, process.arch: ${process.arch}}`);
-
-// from 'vscode-languageserver'
-// export interface TextDocumentIdentifier {
-//     uri: string;
-// } 
 
 let project : CoqProject;
 
@@ -72,27 +68,42 @@ export function activate(context: ExtensionContext) {
   regCmd('display.toggle.allLowLevelContents', () => project.setDisplayOption(proto.DisplayOption.AllLowLevelContents, proto.SetDisplayOption.Toggle));
   regCmd('display.toggle', () => project.setDisplayOption());
 
-  setupSnippets(context.subscriptions);
+  vscode.languages.setLanguageConfiguration('coq', {
+    indentationRules: {increaseIndentPattern: /^\s*(?:\bProof\b|\*|\+|\-)/, decreaseIndentPattern: /^\s*(?:\bQed\b)/},
+    wordPattern: new RegExp(
+      "(?:" +
+      regenerate()
+      .add(require('unicode-9.0.0/General_Category/Lowercase_Letter/code-points'))
+      .add(require('unicode-9.0.0/General_Category/Uppercase_Letter/code-points'))
+      .add(require('unicode-9.0.0/General_Category/Other_Letter/code-points'))
+      .add(require('unicode-9.0.0/General_Category/Titlecase_Letter/code-points'))
+      .addRange(0x1D00, 0x1D7F) // Phonetic Extensions.
+      .addRange(0x1D80, 0x1DBF) // Phonetic Extensions Suppl.
+      .addRange(0x1DC0, 0x1DFF) // Combining Diacritical Marks Suppl.
+      .add(0x005F)              // Underscore.
+      .add(0x00A0)              // Non-breaking space.
+      .toString()
+      + ")" + "(?:" +
+      regenerate()
+      .add(require('unicode-9.0.0/General_Category/Lowercase_Letter/code-points'))
+      .add(require('unicode-9.0.0/General_Category/Uppercase_Letter/code-points'))
+      .add(require('unicode-9.0.0/General_Category/Other_Letter/code-points'))
+      .add(require('unicode-9.0.0/General_Category/Titlecase_Letter/code-points'))
+      .add(require('unicode-9.0.0/General_Category/Decimal_Number/code-points'))
+      .add(require('unicode-9.0.0/General_Category/Letter_Number/code-points'))
+      .add(require('unicode-9.0.0/General_Category/Other_Number/code-points'))
+      .addRange(0x1D00, 0x1D7F) // Phonetic Extensions.
+      .addRange(0x1D80, 0x1DBF) // Phonetic Extensions Suppl.
+      .addRange(0x1DC0, 0x1DFF) // Combining Diacritical Marks Suppl.
+      .add(0x005F)              // Underscore.
+      .add(0x00A0)              // Non-breaking space.
+      .add(0x0027)              // Special space/
+      .toString()
+      + ")*")
+  })
+
+  snippets.setupSnippets(context.subscriptions);
 }
-
-// function provideOptionCompletions(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.CompletionItem[] {
-//   const wordRange = document.lineAt(position.line);
-//   if(!wordRange)
-//     return [];
-//   const wordAtPosition = document.getText();
-//   const optionsMatch = /^[(.*)]$/.exec(wordAtPosition);
-//   if(optionsMatch) {
-//     const options = optionsMatch[1].split('|');
-//     return options.map((o) => <vscode.CompletionItem>{label:o});
-//   }
-//   
-// }
-
-// function withDoc<T>(editor: TextEditor, callback: (doc: CoqDocument) => T) : void {
-//   const doc = documents.get(editor.document.uri.toString());
-//   if(doc)
-//     callback(doc);
-// }
 
 async function withDocAsync<T>(editor: TextEditor, callback: (doc: CoqDocument) => Promise<T>) : Promise<void> {
   const doc = project.getOrCurrent(editor ? editor.document.uri.toString() : null);
