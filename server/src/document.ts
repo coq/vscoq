@@ -12,6 +12,7 @@ import * as coqParser from './parsing/coq-parser';
 import * as textUtil from './util/text-util';
 import {Mutex} from './util/Mutex';
 import {AsyncWorkQueue} from './util/AsyncQueue';
+import {AnnotatedText, textToDisplayString} from './util/AnnotatedText';
 import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './stm/STM';
 import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
 import * as sentSem from './parsing/SentenceSemantics';
@@ -33,7 +34,7 @@ export interface TextDocumentItem {
 
 
 export interface MessageCallback {
-  sendMessage(level: string, message: string, rich_message?: any) : void;
+  sendMessage(level: string, message: AnnotatedText) : void;
 }
 export interface ResetCallback {
   sendReset() : void;
@@ -224,7 +225,7 @@ export class CoqDocument implements TextDocument {
     let diagnostics : Diagnostic[] = [];
     for(let error of this.stm.getErrors()) {
       diagnostics.push(
-        { message: error.message
+        { message: textToDisplayString(error.message)
         , range: error.range
         , severity: DiagnosticSeverity.Error
         , source: 'coq'
@@ -250,7 +251,7 @@ export class CoqDocument implements TextDocument {
     }, now);
   }
 
-  private onCoqStateError(sentenceRange: Range, errorRange: Range, message: string, rich_message?: any) {
+  private onCoqStateError(sentenceRange: Range, errorRange: Range, message: AnnotatedText) {
     this.updateHighlights();
     this.updateDiagnostics()
     // this.addDiagnostic(
@@ -261,8 +262,8 @@ export class CoqDocument implements TextDocument {
   }
   
   
-  private onCoqMessage(level: coqProto.MessageLevel, message: string, rich_message?: any) {
-    this.callbacks.sendMessage(coqProto.MessageLevel[level], message, rich_message);
+  private onCoqMessage(level: coqProto.MessageLevel, message: AnnotatedText) {
+    this.callbacks.sendMessage(coqProto.MessageLevel[level], message);
   }
 
   private onCoqStateLtacProf(range: Range, results: coqProto.LtacProfResults) {
@@ -284,7 +285,7 @@ export class CoqDocument implements TextDocument {
       clearSentence: (x1) => this.onClearSentence(x1),
       updateStmFocus: (x1) => this.onUpdateStmFocus(x1),
       error: (x1,x2,x3) => this.onCoqStateError(x1,x2,x3),
-      message: (x1,x2,x3) => this.onCoqMessage(x1,x2,x3),
+      message: (x1,x2) => this.onCoqMessage(x1,x2),
       ltacProfResults: (x1,x2) => this.onCoqStateLtacProf(x1,x2),
       coqDied: (error?: string) => this.onCoqDied(error),
     }, this.clientConsole);
@@ -784,10 +785,10 @@ export class CoqDocument implements TextDocument {
       for(let error of this.stm.getErrors()) {
         if(error.range) {
           // this.clientConsole.log("call failure: " + textUtil.rangeToString(error.range) + " of " + textUtil.rangeToString(error.sentence));
-          diagnostics.push(Diagnostic.create(error.range,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
+          diagnostics.push(Diagnostic.create(error.range,textToDisplayString(error.message),DiagnosticSeverity.Error,undefined,'coqtop'))
         } else {
         // this.clientConsole.log("call failure: " + textUtil.rangeToString(error.sentence));
-          diagnostics.push(Diagnostic.create(error.sentence,error.message,DiagnosticSeverity.Error,undefined,'coqtop'))
+          diagnostics.push(Diagnostic.create(error.sentence,textToDisplayString(error.message),DiagnosticSeverity.Error,undefined,'coqtop'))
         }
       }
 

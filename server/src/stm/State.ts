@@ -5,20 +5,21 @@ import * as parser from './../parsing/coq-parser';
 import * as textUtil from './../util/text-util';
 import {Sentence} from './../sentence-model/Sentence';
 import {ProofView} from '../protocol';
+import {AnnotatedText} from '../util/AnnotatedText';
 import * as diff from './DiffProofView';
 
 export type StateId = number;
 
 export interface StatusErrorInternal {
   /** Error message */
-  message: string,
+  message: AnnotatedText,
   /** Range of error within this sentence w.r.t. document positions. Is `undefined` if the error applies to the whole sentence */
   range?: Range,
 }
 
 export interface StatusError extends StatusErrorInternal {
   /** Error message */
-  message: string,
+  message: AnnotatedText,
   /** Range of error within this sentence w.r.t. document positions. Is `undefined` if the error applies to the whole sentence */
   range?: Range,
   /** Range of the sentence containing the error */
@@ -326,7 +327,7 @@ export class State {
   /** This sentence has reached an error state
    * @param location: optional offset range within the sentence where the error occurred
    */
-  public setError(message: string, location?: coqProto.Location) : void {
+  public setError(message: AnnotatedText, location?: coqProto.Location) : void {
     this.error = {message: message};
     if(location && location.start !== location.stop) {
       const sentRange = this.getRange();

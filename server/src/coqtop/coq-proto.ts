@@ -29,7 +29,7 @@ export enum SentenceStatus {
 }
 
 export interface FailValue {
-  message: string;
+  message: AnnotatedText;
   range?: Location;
 }
 
@@ -37,7 +37,7 @@ export interface Value {
   stateId?: number;
   error?: FailValue;
   value?: any;
-  message?: string;
+  message?: AnnotatedText;
   unfocusedStateId?: number;
 }
 export interface SentenceFeedback {
@@ -82,8 +82,7 @@ export enum MessageLevel {
 
 export interface Message {
   level: MessageLevel;
-  message: string;
-  rich_message?: any;
+  message: AnnotatedText;
 }
 
 export interface Location {
@@ -92,7 +91,7 @@ export interface Location {
 }
 
 export interface ErrorMessage {
-  message: string;
+  message: AnnotatedText;
   location?: Location;
 }
 export interface EditFeedback {

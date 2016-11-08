@@ -44,8 +44,8 @@ export interface StateMachineCallbacks {
   sentenceStatusUpdate(range: Range, status: StateStatus) : void;
   clearSentence(range: Range) : void;
   updateStmFocus(focus: Position): void;
-  error(sentenceRange: Range, errorRange: Range, message: string, rich_message?: any) : void;
-  message(level: coqProto.MessageLevel, message: string, rich_message?: any) : void;
+  error(sentenceRange: Range, errorRange: Range, message: AnnotatedText) : void;
+  message(level: coqProto.MessageLevel, message: AnnotatedText) : void;
   ltacProfResults(range: Range, results: coqProto.LtacProfResults) : void;
   coqDied(error?: string) : void;
 }
@@ -66,7 +66,7 @@ class InconsistentState {
 
 class AddCommandFailure implements proto.FailValue {
   constructor(
-    public message: string,
+    public message: AnnotatedText,
     public range: vscode.Range,
     public sentence: vscode.Range)
   {} 
@@ -134,13 +134,13 @@ export class CoqStateMachine {
       onStateStatusUpdate: (x1,x2,x3,x4) => this.onCoqStateStatusUpdate(x1,x2,x3,x4),
       onStateError: (x1,x2,x3,x4) => this.onCoqStateError(x1,x2,x3,x4),
       onEditFeedback: (x1,x2) => this.onCoqEditFeedback(x1,x2),
-      onMessage: (x1,x2,x3) => this.onCoqMessage(x1,x2,x3),
+      onMessage: (x1,x2) => this.onCoqMessage(x1,x2),
       onStateWorkerStatusUpdate: (x1,x2,x3) => this.onCoqStateWorkerStatusUpdate(x1,x2,x3),
       onStateFileDependencies: (x1,x2,x3) => this.onCoqStateFileDependencies(x1,x2,x3),
       onStateFileLoaded: (x1,x2,x3) => this.onCoqStateFileLoaded(x1,x2,x3),
       onStateLtacProf: (x1,x2,x3) => this.onCoqStateLtacProf(x1,x2,x3),
       onClosed: (error?: string) => this.onCoqClosed(error),
-    });
+    } as coqtop.EventCallbacks);
   }
 
   public dispose() {
@@ -884,13 +884,14 @@ export class CoqStateMachine {
   /** A sentence has reached an error state
    * @param location: optional offset range within the sentence where the error occurred
    */
-  private onCoqStateError(stateId: number, route: number, message: string, location?: coqProto.Location) {
+  private onCoqStateError(stateId: number, route: number, message: AnnotatedText, location?: coqProto.Location) {
     const sent = this.sentences.get(stateId);
     if(sent) {
       // if(location)
       //   this.console.log(`CoqStateError: ${location.start}-${location.stop}`);
       sent.setError(message, location);
-      this.callbacks.error(sent.getRange(), sent.getError().range, message);
+      const prettyMessage = server.project.getPrettifySymbols().prettify(message);
+      this.callbacks.error(sent.getRange(), sent.getError().range, prettyMessage);
     } else {
       this.console.warn(`Error for unknown stateId: ${stateId}; message: ${message}`);
     }
@@ -907,8 +908,9 @@ export class CoqStateMachine {
     // }
   }
 
-  private onCoqMessage(level: coqProto.MessageLevel, message: string, rich_message?: any) {
-    this.callbacks.message(level, message, rich_message);
+  private onCoqMessage(level: coqProto.MessageLevel, message: AnnotatedText) {
+    const prettyMessage = server.project.getPrettifySymbols().prettify(message);
+    this.callbacks.message(level, prettyMessage);
   }
 
   private onCoqStateWorkerStatusUpdate(stateId: number, route: number, workerUpdates: coqProto.WorkerStatus[]) {

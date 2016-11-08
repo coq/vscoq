@@ -5,6 +5,7 @@ import * as vscode from 'vscode'
 import * as view from './CoqView'
 export {CoqView} from './CoqView'
 import * as proto from './protocol'
+import * as text from './AnnotatedText';
 
 
 export class SimpleCoqView implements view.CoqView {
@@ -22,7 +23,7 @@ export class SimpleCoqView implements view.CoqView {
   }
 
   private displayError(state: proto.FailureResult) {
-    this.out.appendLine(state.message);
+    this.out.appendLine(text.textToDisplayString(state.message));
   }
 
   private displayProof(state: proto.CommandResult) {

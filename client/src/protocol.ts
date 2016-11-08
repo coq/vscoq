@@ -50,7 +50,7 @@ export interface CoqSettings {
 }
 
 export interface FailValue {
-  message: string;
+  message: AnnotatedText;
   range?: vscode.Range;
   sentence: vscode.Range;
 }
@@ -95,8 +95,10 @@ export interface TextAnnotation {
 export interface ScopedText {
   /** A scope identifier */
   scope: string,
+  /** Extra stuff */
+  attributes?: any,
   /** the underlying text, possibly with more annotations */
-  text: AnnotatedText
+  text: AnnotatedText,
 }
 
 export type AnnotatedText = string | TextAnnotation | ScopedText | (string | TextAnnotation | ScopedText)[];
@@ -285,8 +287,7 @@ export namespace UpdateHighlightsNotification {
 
 export interface NotifyMessageParams extends NotificationParams {
   level: string;
-  message: string;
-  rich_message?: any;
+  message: AnnotatedText;
 }
 export namespace CoqMessageNotification { 
   export const type: NotificationType<NotifyMessageParams> =

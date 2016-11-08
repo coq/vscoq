@@ -154,21 +154,21 @@ export class CoqDocument implements vscode.Disposable {
     case 'warning':
       // vscode.window.showWarningMessage(params.message); return;
       this.infoOut.show(true);
-      this.infoOut.appendLine(params.message);
+      this.infoOut.appendLine(text.textToDisplayString(params.message));
     case 'info':
       // this.infoOut.appendLine(params.message); return;
       // this.view.message(params.message);
       this.infoOut.show(true);
-      this.infoOut.appendLine(params.message);
+      this.infoOut.appendLine(text.textToDisplayString(params.message));
       return;
     case 'notice':
       this.noticeOut.clear();
       this.noticeOut.show(true);
-      this.noticeOut.append(params.message);
+      this.noticeOut.append(text.textToDisplayString(params.message));
       return;
       // vscode.window.showInformationMessage(params.message); return;
     case 'error':
-      vscode.window.showErrorMessage(params.message); return;
+      vscode.window.showErrorMessage(text.textToDisplayString(params.message)); return;
     }
   }
 

@@ -67,7 +67,7 @@ interface UnfocusedGoalStack {
 }
 
 interface FailValue {
-  message: string;
+  message: AnnotatedText;
   location?: Location;
 }
 

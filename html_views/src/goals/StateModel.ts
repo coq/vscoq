@@ -161,8 +161,12 @@ class StateModel {
     $('#messages').text(message);
   }
 
-  private setErrorMessage(message: string) {
-    $('#error').text(message);
+  private setErrorMessage(message: AnnotatedText) {
+    if(typeof message === 'string')
+      $('#error').text(message);
+    else {
+      $('#error').append($(createAnnotatedText(message)));
+    }
   }
   private clearErrorMessage() {
     $('#error').empty();
@@ -175,7 +179,7 @@ class StateModel {
       $('#stdout').text('');
 
       if(state.type === 'failure')
-        this.setErrorMessage(state.message.toString());
+        this.setErrorMessage(state.message);
       else if(state.type === 'not-running') 
         this.setMessage('Not running.');
       else if(state.type === 'no-proof')

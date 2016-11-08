@@ -15,6 +15,7 @@ import {CoqTopSettings, LtacProfTactic, LtacProfResults} from '../protocol';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as xmlTypes from '../xml-protocol/CoqXmlProtocolTypes';
+import {AnnotatedText} from '../util/AnnotatedText';
 
 // import entities = require('entities'); 
 // const spawn = require('child_process').spawn;
@@ -52,7 +53,7 @@ export class CoqtopError {
 /** A call did not succeed; a nonfatal error */
 export class CallFailure {
   constructor(
-    public message: string,
+    public message: AnnotatedText,
     public stateId?: number,
     public range?: coqProto.Location)
   {}
@@ -137,13 +138,13 @@ export type GoalResult = NoProofResult | ProofModeResult
 
 export interface EventCallbacks {
   onStateStatusUpdate? : (stateId: number, route: number, status: coqProto.SentenceStatus, worker: string) => void;
-  onStateError? : (stateId: number, route: number, message: string, location?: coqProto.Location) => void;
+  onStateError? : (stateId: number, route: number, message: AnnotatedText, location?: coqProto.Location) => void;
   onStateWorkerStatusUpdate? : (stateId: number, route: number, workerUpdates: coqProto.WorkerStatus[]) => void;
   onStateFileDependencies? : (stateId: number, route: number, fileDependencies: Map<string,string[]>) => void;
   onStateFileLoaded? : (stateId: number, route: number, status: coqProto.FileLoaded) => void;
   onStateLtacProf?: (stateId: number, route: number, results: LtacProfResults) => void;
   onEditFeedback? : (editId: number, error?: coqProto.ErrorMessage) => void;
-  onMessage? : (level: coqProto.MessageLevel, message: string, rich_message?: any) => void;
+  onMessage? : (level: coqProto.MessageLevel, message: AnnotatedText) => void;
   onClosed?: (error?: string) => void;
 }
 
@@ -598,7 +599,7 @@ export class CoqTop extends events.EventEmitter {
   private onMessage(msg: coqProto.Message) {
     // this.console.log(`>> ${coqProto.MessageLevel[msg.level]}: ${msg.message}`);
     if(this.callbacks.onMessage)
-      this.callbacks.onMessage(msg.level, msg.message, msg.rich_message);
+      this.callbacks.onMessage(msg.level, msg.message);
   }
 
   private onOther(x: any) {}
@@ -888,7 +889,7 @@ export class CoqTop extends events.EventEmitter {
     this.console.log(`ResizeWindow: ${columns} --> ()`);
   }
   
-  public async coqQuery(query: string, stateId?: number) : Promise<string> {
+  public async coqQuery(query: string, stateId?: number) : Promise<AnnotatedText> {
     this.checkState();
     if(stateId === undefined)
     stateId = 0;

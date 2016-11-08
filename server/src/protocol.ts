@@ -50,7 +50,7 @@ export interface CoqSettings {
 }
 
 export interface FailValue {
-  message: string;
+  message: AnnotatedText;
   range?: vscode.Range;
   sentence: vscode.Range;
 }
@@ -287,8 +287,7 @@ export namespace UpdateHighlightsNotification {
 
 export interface NotifyMessageParams extends NotificationParams {
   level: string;
-  message: string;
-  rich_message?: any;
+  message: AnnotatedText;
 }
 export namespace CoqMessageNotification { 
   export const type: NotificationType<NotifyMessageParams> =
