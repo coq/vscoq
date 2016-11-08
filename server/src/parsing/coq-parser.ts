@@ -245,9 +245,9 @@ CommentText "commentText"
   
 UnicodeLetter
   = Ll / Lu / Lt / Lo
-  / [\u1D00\u1D7F]  // Phonetic Extensions.
-  / [\u1D80\u1DBF]  // Phonetic Extensions Suppl.
-  / [\u1DC0\u1DFF]  // Combining Diacritical Marks Suppl.
+  / [\u1D00-\u1D7F]  // Phonetic Extensions.
+  / [\u1D80-\u1DBF]  // Phonetic Extensions Suppl.
+  / [\u1DC0-\u1DFF]  // Combining Diacritical Marks Suppl.
   / [\u005F]        // Underscore.
   / [\u00A0]        // Non-breaking space.
 UnicodeIdPart
