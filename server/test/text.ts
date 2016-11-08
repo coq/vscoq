@@ -27,6 +27,7 @@ suite("AnnotatedText", () => {
     assert.equal(text.textToDisplayString([{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]), "FOO!!bar");
     assert.equal(text.textToDisplayString([{substitution:"∀", text:"forall"}," x : nat, x = x ",{substitution:"∨", text:"\\/"}," ",{substitution:"⊥", text:"False"}]), "∀ x : nat, x = x ∨ ⊥");
     assert.equal(text.textToDisplayString(["0 = 0 ",{substitution:"∨",text:"\\/"}," ",{substitution:"⊥",text:"False"}]), "0 = 0 ∨ ⊥");
+    assert.equal(text.textToDisplayString([{scope:"aa", text: [{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]}, "dee"]), "FOO!!bardee");
   }));
 
   test("textLength", (() => {
@@ -43,6 +44,7 @@ suite("AnnotatedText", () => {
     assert.equal(text.textDisplayLength([{scope:"aa",text:"foo"},"bar"]), 6);
     assert.equal(text.textDisplayLength([{scope:"aa",text:["foo","!!"]},"bar"]), 8);
     assert.equal(text.textDisplayLength([{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]), 8);
+    assert.equal(text.textDisplayLength([{scope:"aa", text: [{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]}, "dee"]), 11);
   }));
 
   test("normalizeText", (() => {

@@ -37,7 +37,7 @@ export function textToDisplayString(text: AnnotatedText) : string {
   } else if(text instanceof Array) {
     return text.map(textToDisplayString).join('');
   } else if(isScopedText(text)) {
-    return textToString(text.text);
+    return textToDisplayString(text.text);
   } else if(text.substitution) {// TextAnnotation
     return textToDisplayString(text.substitution);
   } else{// TextAnnotation
