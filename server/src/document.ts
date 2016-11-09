@@ -332,7 +332,7 @@ export class CoqDocument implements TextDocument {
         if (highlight) {// Preliminary "parsing" highlight
           this.parsingRanges.push(result.range);
 
-          this.updateHighlights();
+          this.updateHighlights(true);
         }
       } else
         return;
