@@ -278,15 +278,15 @@ export function setupSnippets(subscriptions: vscode.Disposable[]) {
   subscriptions.push(vscode.languages.registerCompletionItemProvider('coq', {
     provideCompletionItems: async (doc, pos, token) => {
       try {
-        console.log("^");
         const prefix = await CoqLanguageServer.getInstance().getPrefixText(doc.uri.toString(),pos,token);
+        if(prefix === "")
+          return [];
         const trigger = getTriggerSnippet(prefix);
         if(trigger)
           return trigger.completion;
         else
           return getTriggerCompletions(prefix.trim());
       } catch(err) {
-        console.log("!");
         return [];
       }
     }
