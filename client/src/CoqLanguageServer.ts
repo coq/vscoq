@@ -96,6 +96,7 @@ export class CoqLanguageServer implements vscode.Disposable {
   }
 
   public dispose() {
+    this.server.stop();
     this.subscriptions.forEach((d) => d.dispose());
     this.cancelRequest.dispose();
     this.subscriptions = [];

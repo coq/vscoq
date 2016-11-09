@@ -14,6 +14,7 @@ import {HtmlCoqView} from './HtmlCoqView';
 import {HtmlLtacProf} from './HtmlLtacProf';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
+import {extensionContext} from './extension';
 import {CoqDocumentLanguageServer} from './CoqLanguageServer';
 import {adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
@@ -70,7 +71,7 @@ export class CoqDocument implements vscode.Disposable {
     this.queryOut = vscode.window.createOutputChannel('Query Results');
     this.noticeOut = vscode.window.createOutputChannel('Notices');
     
-    this.view = new HtmlCoqView(document.uri, project.context);
+    this.view = new HtmlCoqView(document.uri, extensionContext);
     // this.view = new SimpleCoqView(uri.toString());
     // this.view = new MDCoqView(uri);
     this.view.show(true,adjacentPane(this.currentViewColumn()));

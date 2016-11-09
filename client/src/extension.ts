@@ -19,7 +19,6 @@ let project : CoqProject;
 
 export var extensionContext : ExtensionContext;
 
-
 export function activate(context: ExtensionContext) {
   console.log(`execArgv: ${process.execArgv.join(' ')}`);
   console.log(`argv: ${process.argv.join(' ')}`);
@@ -39,7 +38,7 @@ export function activate(context: ExtensionContext) {
   }
 
   initializeDecorations(context);
-  
+
   regProjectCmd('quit', project.quitCoq);
   regProjectCmd('reset', project.resetCoq);
   regProjectCmd('interrupt', project.interruptCoq);

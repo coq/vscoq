@@ -394,12 +394,12 @@ export class CoqStateMachine {
       // Advance the focus until we reach or exceed the location
       await this.iterateAdvanceFocus(
         { iterateCondition: (command,contiguousFocus) =>
-            textUtil.positionIsAfterOrEqual(position,command.range.end) && !token.isCancellationRequested
+            textUtil.positionIsAfterOrEqual(position,command.range.end) && (!token || !token.isCancellationRequested)
         , commandSequence: commandSequence
         , end: position
         , verbose: true
         });
-      if(token.isCancellationRequested)
+      if(token && token.isCancellationRequested)
         throw "operation interrupted"
 
       if(textUtil.positionIsBefore(position,this.getFocusedPosition())) {

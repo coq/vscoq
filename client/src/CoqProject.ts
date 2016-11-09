@@ -15,16 +15,15 @@ export function getProject() : CoqProject {
 
 export class CoqProject implements vscode.Disposable {
   private documents = new Map<string, CoqDocument>();
-  public readonly context: vscode.ExtensionContext;
   private activeEditor : vscode.TextEditor|null = null;
   /** the coq-doc that is either active, was the last to be active, or is associated with a helper view (proof-view) */
   private activeDoc : CoqDocument|null = null;
   private static instance : CoqProject|null = null;
   private langServer : CoqLanguageServer;
   private currentSettings: proto.CoqSettings;
+  private subscriptions : vscode.Disposable[] = [];
 
   private constructor(context: vscode.ExtensionContext) {
-    this.context = context;
     this.langServer = CoqLanguageServer.create(context);
 
     this.activeEditor = vscode.window.activeTextEditor;
@@ -37,10 +36,8 @@ export class CoqProject implements vscode.Disposable {
     vscode.workspace.textDocuments
       .forEach((textDoc) => this.tryLoadDocument(textDoc));
 
-    context.subscriptions.push(this);
-
     this.currentSettings = vscode.workspace.getConfiguration("coq") as any as proto.CoqSettings;
-    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) =>
+    this.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) =>
       this.currentSettings = vscode.workspace.getConfiguration("coq") as any as proto.CoqSettings));
       if(this.currentSettings.moveCursorToFocus === undefined)
         this.currentSettings.moveCursorToFocus = true;
@@ -58,7 +55,10 @@ export class CoqProject implements vscode.Disposable {
   
   dispose() {
     this.documents.forEach((doc) => doc.dispose());
+    this.subscriptions.forEach((s) => s.dispose());
     this.langServer.dispose();
+    this.langServer = null;
+    this.subscriptions = [];
     this.documents.clear();
   }
 
