@@ -92,9 +92,11 @@ export class CoqProject {
   }
   
   public close(uri: string) {
-    this.lookup(uri)
-      .close();
+    var doc = this.coqInstances.get(uri);
     this.coqInstances.delete(uri);
+    if(doc) {
+      doc.close();
+    }
   }
   
   private coqProjectFile() {

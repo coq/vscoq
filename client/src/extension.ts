@@ -8,6 +8,7 @@ import * as proto from './protocol';
 import {CoqProject, CoqDocument} from './CoqProject';
 import * as snippets from './Snippets';
 const regenerate = require('regenerate');
+import {initializeDecorations} from './Decorations';
 
 vscode.Range.prototype.toString = function rangeToString() {return `[${this.start.toString()},${this.end.toString()})`}
 vscode.Position.prototype.toString = function positionToString() {return `{${this.line}@${this.character}}`}
@@ -37,6 +38,8 @@ export function activate(context: ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand('extension.coq.'+command, callback, project));
   }
 
+  initializeDecorations(context);
+  
   regProjectCmd('quit', project.quitCoq);
   regProjectCmd('reset', project.resetCoq);
   regProjectCmd('interrupt', project.interruptCoq);

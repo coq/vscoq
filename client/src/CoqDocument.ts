@@ -6,6 +6,7 @@ import { LanguageClient } from 'vscode-languageclient';
 import * as vscodeTypes from 'vscode-languageserver-types';
 import * as vc from 'vscode-languageclient';
 
+import {decorations} from './Decorations';
 import {Highlights} from './Highlights';
 import {CoqView, SimpleCoqView} from './SimpleCoqView';
 import {MDCoqView} from './MDCoqView';
@@ -18,9 +19,6 @@ import {adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
 import {CoqProject} from './CoqProject';
 import * as text from './AnnotatedText';
-
-const STM_FOCUS_IMAGE = "./images/stm-focus.svg";
-const STM_FOCUS_IMAGE_BEFORE = "./images/stm-focus-before.svg";
 
 namespace DisplayOptionPicks {
   type T = vscode.QuickPickItem & {displayItem: number};
@@ -57,8 +55,6 @@ export class CoqDocument implements vscode.Disposable {
   private noticeOut: vscode.OutputChannel;
   private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
   private focus: vscode.Position;
-  private focusDecoration : vscode.TextEditorDecorationType;
-  private focusBeforeDecoration : vscode.TextEditorDecorationType;
   private project: CoqProject;
 
   constructor(document: vscode.TextDocument, project: CoqProject) {
@@ -78,16 +74,6 @@ export class CoqDocument implements vscode.Disposable {
     // this.view = new SimpleCoqView(uri.toString());
     // this.view = new MDCoqView(uri);
     this.view.show(true,adjacentPane(this.currentViewColumn()));
-
-    this.focusDecoration = vscode.window.createTextEditorDecorationType({
-      gutterIconPath: project.context.asAbsolutePath(STM_FOCUS_IMAGE),
-      gutterIconSize: "contain"
-    });
-    this.focusBeforeDecoration = vscode.window.createTextEditorDecorationType({
-      gutterIconPath: project.context.asAbsolutePath(STM_FOCUS_IMAGE_BEFORE),
-      gutterIconSize: "contain"
-    });
-
 
     this.langServer.onUpdateHighlights((p) => this.onDidUpdateHighlights(p));
     this.langServer.onMessage((p) => this.onCoqMessage(p));
@@ -121,11 +107,10 @@ export class CoqDocument implements vscode.Disposable {
     return this.document;
   }
 
-  dispose() {
+  public dispose() {
+    this.highlights.clearAll(this.allEditors());
     this.statusBar.dispose();
     this.view.dispose();
-    this.focusDecoration.dispose();
-    this.focusBeforeDecoration.dispose();
     this.subscriptions.forEach((d) => d.dispose());
   }
 
@@ -255,18 +240,18 @@ export class CoqDocument implements vscode.Disposable {
       const focusRange = new vscode.Range(this.focus.line,0,this.focus.line,1);
       if(this.focus.line === 0 && focus.character === 0) {
         for(let editor of this.allEditors()) {
-          editor.setDecorations(this.focusBeforeDecoration, [focusRange]);
-          editor.setDecorations(this.focusDecoration, []);
+          editor.setDecorations(decorations.focusBefore, [focusRange]);
+          editor.setDecorations(decorations.focus, []);
         }
       } else {
         for(let editor of this.allEditors()) {
-          editor.setDecorations(this.focusBeforeDecoration, []);
-          editor.setDecorations(this.focusDecoration, [focusRange]);
+          editor.setDecorations(decorations.focusBefore, []);
+          editor.setDecorations(decorations.focus, [focusRange]);
         }
       }
     } else {
       for(let editor of this.allEditors())
-        editor.setDecorations(this.focusDecoration, []);
+        editor.setDecorations(decorations.focus, []);
     }
   }
 

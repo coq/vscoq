@@ -31,7 +31,7 @@ export class CoqProject implements vscode.Disposable {
 
     vscode.workspace.onDidChangeTextDocument((params) => this.onDidChangeTextDocument(params));
     vscode.workspace.onDidOpenTextDocument((params) => this.onDidOpenTextDocument(params));
-    vscode.workspace.onDidCloseTextDocument((params) => this.onDidOpenTextDocument(params));
+    vscode.workspace.onDidCloseTextDocument((params) => this.onDidCloseTextDocument(params));
     vscode.window.onDidChangeActiveTextEditor((params) => this.onDidChangeActiveTextEditor(params));
     // Handle already-loaded documents
     vscode.workspace.textDocuments
@@ -81,11 +81,9 @@ export class CoqProject implements vscode.Disposable {
   private tryLoadDocument(textDoc: vscode.TextDocument) {
     if(textDoc.languageId !== 'coq')
       return;
-    // console.log("try load coq doc: " + textDoc.uri.fsPath);
     const uri = textDoc.uri.toString();
     if(!this.documents.has(uri)) {
       this.documents.set(uri, new CoqDocument(textDoc, this));
-      // console.log("new coq doc: " + textDoc.uri.fsPath);
     }
 
     // refresh this in case the loaded document has focus and it was not in our registry
@@ -106,17 +104,16 @@ export class CoqProject implements vscode.Disposable {
   }
 
   private onDidOpenTextDocument(doc: vscode.TextDocument) {
-    // console.log("opening: " + doc.uri.fsPath);
     this.tryLoadDocument(doc);
   }
 
   private onDidCloseTextDocument(doc: vscode.TextDocument) {
     const uri = doc.uri.toString();
     const coqDoc = this.documents.get(uri);
+    this.documents.delete(uri);
     if(!coqDoc)
       return;
     coqDoc.dispose();
-    this.documents.delete(uri);
   }
 
   public getActiveDoc() : CoqDocument|null {

@@ -216,7 +216,6 @@ export class CoqDocument implements TextDocument {
       }
       ++count1;
     }
-    // this.clientConsole.log(`Highlights: ${count1} sentences --> ${count2} ranges`)
     return highlights;
   }
 
@@ -567,7 +566,11 @@ export class CoqDocument implements TextDocument {
   // }
   
   public async close() {
-    return await this.stm.shutdown();
+    if(this.stm) {
+      await this.stm.shutdown();
+      this.stm.dispose();
+      this.stm = null;
+    }
   }
 
   // private async protectOperation(op: (wasReset:boolean)=>Promise<thmProto.CoqTopGoalResult>, lazyInitialize?: boolean) : Promise<thmProto.CoqTopGoalResult> {
@@ -784,10 +787,8 @@ export class CoqDocument implements TextDocument {
       const diagnostics : Diagnostic[] = [];
       for(let error of this.stm.getErrors()) {
         if(error.range) {
-          // this.clientConsole.log("call failure: " + textUtil.rangeToString(error.range) + " of " + textUtil.rangeToString(error.sentence));
           diagnostics.push(Diagnostic.create(error.range,textToDisplayString(error.message),DiagnosticSeverity.Error,undefined,'coqtop'))
         } else {
-        // this.clientConsole.log("call failure: " + textUtil.rangeToString(error.sentence));
           diagnostics.push(Diagnostic.create(error.sentence,textToDisplayString(error.message),DiagnosticSeverity.Error,undefined,'coqtop'))
         }
       }

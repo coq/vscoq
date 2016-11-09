@@ -6,7 +6,6 @@ import * as util from 'util';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
 import { RangeSet } from './RangeSet';
-import { Highlights } from './Highlights';
 import { CoqDocument } from './CoqDocument';
 
 import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';

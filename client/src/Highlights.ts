@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import * as util from 'util';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
+import {decorations} from './Decorations';
 // import {RangeSet} from './RangeSet';
 
 import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
@@ -14,64 +15,6 @@ import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } 
 function toRange(range: {start: {line: number, character: number}, end: {line: number, character: number}}) {
   return new vscode.Range(range.start.line,range.start.character,range.end.line,range.end.character);
 }
-
-
-// export enum HighlightType {
-//   Clear,  SyntaxError,  TacticFailure,  Parsing,  Processing, Incomplete, Complete, InProgress, Processed 
-// }
-const parsingTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    outlineWidth: '1px',
-    outlineStyle: 'solid', 
-    overviewRulerColor: 'yellow', 
-    overviewRulerLane: vscode.OverviewRulerLane.Right,
-    light: {outlineColor: 'rgba(218, 165, 32,0.7)', backgroundColor: 'rgba(255, 255, 0,0.2)'},
-    dark: {outlineColor: 'rgba(218, 165, 32,0.7)', backgroundColor: 'rgba(255, 255, 0,0.2)'},
-  });
-const processingTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    overviewRulerColor: 'blue', 
-    overviewRulerLane: vscode.OverviewRulerLane.Center,
-    light: {backgroundColor: 'rgba(0,0,255,0.3)'},
-    dark: {backgroundColor: 'rgba(0,0,255,0.3)'},
-  });
-const stateErrorTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    borderWidth: '1px',
-    borderStyle: 'solid', 
-    light:
-      { borderColor: 'rgba(255,0,0,0.5)'
-      , backgroundColor: 'rgba(255,0,0,0.25)'
-      },
-    dark:
-      {borderColor: 'rgba(255,0,0,0.5)'
-      , backgroundColor: 'rgba(255,0,0,0.25)'
-      },
-  });
-
-const processedTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    overviewRulerColor: 'green', 
-    overviewRulerLane: vscode.OverviewRulerLane.Center,
-    light: {backgroundColor: 'rgba(0,150,0,0.2)'},
-    dark: {backgroundColor: 'rgba(0,150,0,0.2)'},
-  });
-// Example: a Qed. whose proof failed.
-const incompleteTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    overviewRulerColor: 'yellow',
-    overviewRulerLane: vscode.OverviewRulerLane.Center,
-    light: {backgroundColor: 'rgba(255,255,0,0.2)'},
-    dark: {backgroundColor: 'rgba(255,255,0,0.2)'},
-  });
-const completeTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    overviewRulerColor: 'green', 
-    overviewRulerLane: vscode.OverviewRulerLane.Center,
-    light: {backgroundColor: 'rgba(0,255,255,0.2)'},
-    dark: {backgroundColor: 'rgba(0,255,255,0.2)'},
-  });
-const inProgressTextDecoration: vscode.TextEditorDecorationType = vscode.window.createTextEditorDecorationType({
-    overviewRulerColor: 'purple', 
-    overviewRulerLane: vscode.OverviewRulerLane.Center,
-    light: {backgroundColor: 'lightpurple'},
-    dark: {backgroundColor: 'darkpurple'},
-  });
-
 
 export class Highlights {
   // private textHighlights : {decoration: vscode.TextEditorDecorationType, ranges: RangeSet}[] = [];
@@ -113,13 +56,13 @@ export class Highlights {
 
   private applyCurrent(editors: Iterable<TextEditor>) {
     for(let editor of editors) {
-      editor.setDecorations(stateErrorTextDecoration , this.current.ranges[proto.HighlightType.StateError]);
-      editor.setDecorations(parsingTextDecoration    , this.current.ranges[proto.HighlightType.Parsing]);
-      editor.setDecorations(processingTextDecoration , this.current.ranges[proto.HighlightType.Processing]);
-      editor.setDecorations(incompleteTextDecoration , this.current.ranges[proto.HighlightType.Incomplete]);
-      editor.setDecorations(completeTextDecoration   , this.current.ranges[proto.HighlightType.Complete]);
-      editor.setDecorations(inProgressTextDecoration , this.current.ranges[proto.HighlightType.InProgress]);
-      editor.setDecorations(processedTextDecoration  , this.current.ranges[proto.HighlightType.Processed]); 
+      editor.setDecorations(decorations.stateError , this.current.ranges[proto.HighlightType.StateError]);
+      editor.setDecorations(decorations.parsing    , this.current.ranges[proto.HighlightType.Parsing]);
+      editor.setDecorations(decorations.processing , this.current.ranges[proto.HighlightType.Processing]);
+      editor.setDecorations(decorations.incomplete , this.current.ranges[proto.HighlightType.Incomplete]);
+      editor.setDecorations(decorations.complete   , this.current.ranges[proto.HighlightType.Complete]);
+      editor.setDecorations(decorations.inProgress , this.current.ranges[proto.HighlightType.InProgress]);
+      editor.setDecorations(decorations.processed  , this.current.ranges[proto.HighlightType.Processed]); 
     }
   }
 
