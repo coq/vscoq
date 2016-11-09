@@ -9,6 +9,7 @@ import * as textUtil from './text-util'
 import * as WebSocket from 'ws';
 import * as http from 'http';
 import * as path from 'path';
+import {extensionContext} from './extension'
 
 const opener = require('opener');
 
@@ -120,9 +121,9 @@ export class HtmlLtacProf {
       await this.serverReady;
       const serverAddress = this.httpServer.address();
 
-      const templateFileName = vscode.Uri.file(__dirname + '/HtmlView/LtacProf.html');
-      this.coqViewUri = vscode.Uri.parse(`coq-ltacprof://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
-      console.log(this.coqViewUri);
+      const templateFileName = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/ltacprof/LtacProf.html'));
+      this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
+      console.log("LtacProf: " + this.coqViewUri.toString());
 
     } catch(err) {
       vscode.window.showErrorMessage(err.toString());
@@ -136,7 +137,7 @@ export class HtmlLtacProf {
   public async show(preserveFocus: boolean) {
     await this.bufferReady;
     // const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
-    const result = await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two);
+    const result = await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two, "LtacProf");
     // if(preserveFocus && focusedDoc)
     //   await vscode.window.showTextDocument(focusedDoc);
   }

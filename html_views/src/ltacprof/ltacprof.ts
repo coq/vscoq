@@ -3,8 +3,6 @@
 // asdasd/// <reference path="jqueryui.d.ts" />
 // 'use strict';
 
-namespace ltacprof {
-
 interface LtacProfTactic {
   name: string,
   statistics: {total: number; self: number; num_calls: number; max_total: number},
@@ -398,6 +396,4 @@ function updateResults(results: LtacProfResults) {
   // $('#results tr:visible:even').removeClass('result-odd');
   // $('#results tr:visible:odd').addClass('result-odd');
   updateResultsAlternatingBackground(0);
-}
-
 }
