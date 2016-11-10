@@ -57,6 +57,7 @@ export class CoqDocument implements vscode.Disposable {
   private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
   private focus: vscode.Position;
   private project: CoqProject;
+  private currentLtacProfView: HtmlLtacProf = null;
 
   constructor(document: vscode.TextDocument, project: CoqProject) {
     this.statusBar = new StatusBar();
@@ -313,6 +314,8 @@ export class CoqDocument implements vscode.Disposable {
       this.view.update(value);
     } catch (err) {
       console.warn("Interpret to point failed: " + err.toString());
+      if(err.stack)
+        console.log("Stack: \n" + err.stack);
     }
     this.statusBar.setStateReady();
   }
@@ -412,6 +415,7 @@ export class CoqDocument implements vscode.Disposable {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
       const offset = editor.document.offsetAt(editor.selection.active);
+      this.currentLtacProfView = new HtmlLtacProf({total_time: 0, tactics: []});
       const results = await this.langServer.ltacProfGetResults(offset);
       // const view = new HtmlLtacProf(results); 
       // const out = vscode.window.createOutputChannel("LtacProfiler");
@@ -424,8 +428,12 @@ export class CoqDocument implements vscode.Disposable {
       this.statusBar.setStateReady();
     }
   }
+
   private onLtacProfResults(results: proto.LtacProfResults) {
-    const view = new HtmlLtacProf(results); 
+    if(!this.currentLtacProfView)
+      this.currentLtacProfView = new HtmlLtacProf(results);
+    else 
+      this.currentLtacProfView.update(results);
   }
 
   public async doOnLostFocus() {

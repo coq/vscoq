@@ -38,8 +38,8 @@
     .treegrid-expander-collapsed{background-image: url('jquery/img/expand.png');}*/
     .tbltree-indent {width:16px; height: 16px; display: inline-block; position: relative;}
     .tbltree-expander {width:16px; height: 16px; display: inline-block; position: relative; cursor: pointer;}
-    .tbltree-expander-expanded{background-image: url(jquery/img/collapse.png); }
-    .tbltree-expander-collapsed{background-image: url(jquery/img/expand.png);}
+    .tbltree-expander-expanded{background-image: url(../jquery/img/collapse.png); }
+    .tbltree-expander-collapsed{background-image: url(../jquery/img/expand.png);}
     .tbltree-level-pickers {float: left;}
     .tbltree-level-pickers .tbltree-level-item {cursor: pointer;}
     .tbltree-count-wrap {
@@ -126,10 +126,11 @@ table.rc-table-resizing thead > th > a {
       font-size: 8pt;
     }
 
-    #self-unit, #total-unit {
+    #local-unit, #total-unit {
       -moz-appearance: none;
       -webkit-appearance: none;
       display: inline;
+      user-select: none;
       -webkit-user-select: none;
       -moz-user-select: none;
       background-color: inherit;
@@ -139,15 +140,15 @@ table.rc-table-resizing thead > th > a {
       font-size: inherit;
       font-style: italic;
     }
-    #self-unit option, #total-unit option {
+    #local-unit option, #total-unit option {
       background-color: inherit;
       color: black;
     }
-    #results td .self-seconds {
+    #results td .local-seconds {
       display: inherit;
     }
 
-    #results td .self-percent {
+    #results td .local-percent {
       display: none;
     }
 
@@ -213,7 +214,7 @@ table.rc-table-resizing thead > th > a {
     <thead>
     <tr>
       <th>tactic</th>
-      <th id="self-column">self <select id="self-unit"><option value="percent" selected="selected">(%)</option><option value="seconds">(sec)</option><option value="minutes">(min)</option><option value="hhmmss">(h:mm:ss.s)</option></select></th>
+      <th id="local-column">local <select id="local-unit"><option value="percent" selected="selected">(%)</option><option value="seconds">(sec)</option><option value="minutes">(min)</option><option value="hhmmss">(h:mm:ss.s)</option></select></th>
       <th id="total-column">total <select id="total-unit"><option value="percent" selected="selected">(%)</option><option value="seconds">(sec)</option><option value="minutes">(min)</option><option value="hhmmss">(h:mm:ss.s)</option></select></th>
       <th>#calls</th><th>max total (s)</th>
     </tr>

@@ -30,8 +30,12 @@ gulp.task('compile-goals-ts', function() {
         .pipe(gulp.dest(tsProjectGoals.options.outDir + '/goals/'));
 });
 gulp.task('compile-ltacprof-ts', function() {
-    return gulp.src(['./src/ltacprof/**/*.ts'])
+    var result = gulp.src(['./src/ltacprof/**/*.ts'])
+        .pipe(sourcemaps.init())
         .pipe(tsProjectLtacProf())
+    return result.js
+        // .pipe(sourcemaps.write("."))
+        .pipe(sourcemaps.write({sourceRoot: "/html_views"}))
         .pipe(gulp.dest(tsProjectLtacProf.options.outDir + '/ltacprof/'));
 });
 

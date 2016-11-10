@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as events from 'events'; 
 // var xml2js = require('xml2js');
 // import * as stream from 'stream'; 
-import * as coqXml from '../xml-protocol/coq-xml';
+import * as coqXml from './xml-protocol/coq-xml';
 import * as vscode from 'vscode-languageserver';
 
 import * as coqProto from './coq-proto';
@@ -14,8 +14,9 @@ import {ChildProcess, exec, spawn} from 'child_process';
 import {CoqTopSettings, LtacProfTactic, LtacProfResults} from '../protocol';
 import * as fs from 'fs';
 import * as os from 'os';
-import * as xmlTypes from '../xml-protocol/CoqXmlProtocolTypes';
+import * as xmlTypes from './xml-protocol/CoqXmlProtocolTypes';
 import {AnnotatedText} from '../util/AnnotatedText';
+import {createDeserializer} from './xml-protocol/deserialize';
 
 // import entities = require('entities'); 
 // const spawn = require('child_process').spawn;
@@ -168,6 +169,7 @@ export class CoqTop extends events.EventEmitter {
   private scriptFile : string;
   private projectRoot: string;
   private supportsInterruptCall = false;
+  private coqtopVersion : string;
 
   constructor(settings : CoqTopSettings, scriptFile: string, projectRoot: string, console: vscode.RemoteConsole, callbacks?: EventCallbacks) {
     super();
@@ -276,10 +278,45 @@ export class CoqTop extends events.EventEmitter {
     else
       return null;
   }
+
+  public getVersion() {
+    return this.coqtopVersion;
+  }
+
+  private detectVersion() : Promise<string> {
+    var coqtopModule = path.join(this.settings.binPath.trim(), 'coqtop');
+    this.console.log('exec: ' + coqtopModule + ' -v');
+    return new Promise<string>((resolve,reject) => {
+      try {
+        const coqtop = spawn(coqtopModule, ['-v'], {detached: false, cwd: this.projectRoot});
+        let result = "";
+
+        coqtop.stdout.on('data', (data:string) => {
+          result += data
+        });
+
+        coqtop.on('close', (code:number) => {
+          const ver = /^\s*The Coq Proof Assistant, version (.+?)\s/.exec(result);
+          resolve(!ver ? undefined : ver[1]);
+        });
+        coqtop.on('error', (code:number) => {
+          reject(`Could not start coqtop; error code: ${code}`);
+        });
+      } catch(err) {
+        reject(err);
+      }
+    })
+  }
   
   public async resetCoq() : Promise<InitResult> {    
     this.console.log('reset');
     this.cleanup(undefined);
+
+    this.coqtopVersion = await this.detectVersion();
+    if(this.coqtopVersion)
+      this.console.log(`Detected coqtop version ${this.coqtopVersion}`)
+    else
+      this.console.warn(`Could not detect coqtop version`)
 
     // await this.setupCoqTopWindows();
     const wrapper = this.findWrapper();
@@ -323,7 +360,8 @@ export class CoqTop extends events.EventEmitter {
     this.controlChannelR = channels[1];
     this.controlChannelW = channels[1];
     
-    this.parser = new coqXml.XmlStream(this.mainChannelR, {
+    const deserializer = createDeserializer(this.coqtopVersion);
+    this.parser = new coqXml.XmlStream(this.mainChannelR, deserializer, {
       onStateFeedback: (feedback: coqProto.StateFeedback) => this.onStateFeedback(feedback),
       onEditFeedback: (feedback: coqProto.EditFeedback) => this.onEditFeedback(feedback),
       onMessage: (msg: coqProto.Message) => this.onMessage(msg),
@@ -365,7 +403,8 @@ export class CoqTop extends events.EventEmitter {
     this.controlChannelR = channels[2];
     this.controlChannelW = channels[3];
 
-    this.parser = new coqXml.XmlStream(this.mainChannelR, {
+    const deserializer = createDeserializer(this.coqtopVersion);
+    this.parser = new coqXml.XmlStream(this.mainChannelR, deserializer, {
       onStateFeedback: (feedback: coqProto.StateFeedback) => this.onStateFeedback(feedback),
       onEditFeedback: (feedback: coqProto.EditFeedback) => this.onEditFeedback(feedback),
       onMessage: (msg: coqProto.Message) => this.onMessage(msg),
@@ -703,7 +742,7 @@ export class CoqTop extends events.EventEmitter {
       this.console.log('Call Quit()');
       this.mainChannelW.write('<call val="Quit"><unit/></call>');
       try {
-        await Promise.race([coqResult, new Promise((resolve,reject) => setTimeout(() => reject(), 1000))]);
+        await Promise.race([coqResult, new Promise((resolve,reject) => setTimeout(reject, 1000, "timeout"))]);
         this.console.log(`Quit: () --> ()`);
       } catch(err) {
         this.console.log(`Forced Quit (timeout).`);

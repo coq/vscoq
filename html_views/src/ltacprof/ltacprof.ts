@@ -5,7 +5,7 @@
 
 interface LtacProfTactic {
   name: string,
-  statistics: {total: number; self: number; num_calls: number; max_total: number},
+  statistics: {total: number; local: number; num_calls: number; max_total: number},
   tactics: LtacProfTactic[],
 }
 
@@ -169,12 +169,6 @@ function sleepFor( sleepDuration ){
     while(new Date().getTime() < now + sleepDuration){ /* do nothing */ } 
 }
 
-function time<T>(tag:string, f: ()=> T){
-	const startT = new Date().getTime();
-  f();
-  console.log(tag + ': ' + (new Date().getTime() - startT));
-}
-
 function loadResultsTable(results: LtacProfResults, tbody: JQuery) {
   let currentId = 0;
   let totalTime = results.total_time;
@@ -213,7 +207,7 @@ function loadResultsTable(results: LtacProfResults, tbody: JQuery) {
       .attr('tabindex',currentId)
       // .map((idx,element) => parentId > 0 ? $(element).addClass('treegrid-parent-'+parentId) : $(element))
         .append($(document.createElement('td')).text(tactic.name))
-        .append(buildTime(tactic.statistics.self,totalTime,'self'))
+        .append(buildTime(tactic.statistics.local,totalTime,'local'))
         .append(buildTime(tactic.statistics.total,totalTime,'total'))
         .append($(document.createElement('td')).text(tactic.statistics.num_calls))
         .append($(document.createElement('td')).text(tactic.statistics.max_total.toFixed(3)));
@@ -226,14 +220,10 @@ function loadResultsTable(results: LtacProfResults, tbody: JQuery) {
     }
   }
   
-	time('load',() => {  
-    for(let entry of buildTacticsResults(0,results.tactics)) {
-      tbody.append(entry);
-    }
-    // for(let entry of buildResultRow(0,"",result.entry,result.children)) {
-    //   tbody.append(entry);
-    // }
-  });
+  console.time('load');
+  for(let entry of buildTacticsResults(0,results.tactics))
+    tbody.append(entry);
+  console.timeEnd('load');
 
   // setTimeout(() => {
   // for(let entry of buildResults(0,result.results)) {
@@ -292,9 +282,13 @@ function updateResultsAlternatingBackground(delay?: number) {
   }
 }
 function updateResults(results: LtacProfResults) {
-  $('#results').remove('tbody').remove('table tr');
-  const tbody = $('<tbody>');
-  $('#results').append(tbody);
+  let tbody = $('#results tbody'); 
+  if(tbody.length > 0)
+    tbody.empty();
+  else {
+    tbody = $('<tbody>');
+    $('#results').append(tbody);
+  }
   loadResultsTable(results, tbody);
 
   $('#results').keydown((e) => {
@@ -336,13 +330,13 @@ function updateResults(results: LtacProfResults) {
   // });
   // });
 
-  time('tbltree', () => {
+  console.time('tbltree');
   $('#results').tbltree({
     initState: 'collapsed',
     saveState: false,
     change: () => updateResultsAlternatingBackground(50),
   });
-  });
+  console.timeEnd('tbltree');
 
 
 
@@ -353,33 +347,33 @@ function updateResults(results: LtacProfResults) {
   //   .css('table-layout','fixed');
   // });
 
-  time('resizable', () => {
-  $('#results')
-    .css('table-layout','auto')
-    .colResizable({
-      resizeMode: 'fit', liveDrag: true,
-      // onResize: (e:JQueryEventObject) => {
-      //   console.log('resize');
-      //   // $('#sticky-results-header').remove('thead'); //.append($('results thead'));
-      // } 
-    })
-    .css('table-layout','fixed');
+  // time('resizable', () => {
+  // $('#results')
+  //   .css('table-layout','auto')
+  //   .colResizable({
+  //     resizeMode: 'fit', liveDrag: true,
+  //     // onResize: (e:JQueryEventObject) => {
+  //     //   console.log('resize');
+  //     //   // $('#sticky-results-header').remove('thead'); //.append($('results thead'));
+  //     // } 
+  //   })
+  //   .css('table-layout','fixed');
 
-  });
+  // });
 
-  $('#self-unit').change((ev: JQueryEventObject) => {
-    const tag = $('#self-unit option:selected').val(); 
-    $('#results span.self').not('.'+tag).hide();
-    $('#results span.self').filter('.'+tag).show();
+  $('#local-unit').change((ev: JQueryEventObject) => {
+    const tag = $('#local-unit option:selected').val(); 
+    $('#results span.local').not('.'+tag).hide();
+    $('#results span.local').filter('.'+tag).show();
   });
   $('#total-unit').change((ev: JQueryEventObject) => {
     const tag = $('#total-unit option:selected').val(); 
     $('#results span.total').not('.'+tag).hide();
     $('#results span.total').filter('.'+tag).show();
   });
-  $('#self-column').click((ev:JQueryEventObject) => { 
-    if(ev.target === $('#self-column').get(0))
-      $('#self-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#self-unit').change() });
+  $('#local-column').click((ev:JQueryEventObject) => { 
+    if(ev.target === $('#local-column').get(0))
+      $('#local-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#local-unit').change() });
   $('#total-column').click(() => { $('#total-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#total-unit').change() });
 
   // $('#results').floatThead('reflow');

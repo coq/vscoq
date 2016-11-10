@@ -53,14 +53,7 @@ class IFrameDocumentProvider implements vscode.TextDocumentContentProvider {
     return `<!DOCTYPE HTML><body style="margin:0px;padding:0px;width:100%;height:100vh;border:none;position:absolute;top:0px;left:0px;right:0px;bottom:0px">
 <iframe src="${coqViewToFileUri(uri)}" seamless style="position:absolute;top:0px;left:0px;right:0px;bottom:0px;border:none;margin:0px;padding:0px;width:100%;height:100%" />
 </body>`;
-//     return `<!DOCTYPE HTML>
-//     <iframe seamless style="position:absolute;top:0px;left:0px;right:0px;bottom:0px;border:none;margin:0px;padding:0px;width:100%;height:100%;backgroundColor="blue" srcdoc="
-// <!DOCTYPE HTML><head><script>
-//       document.getElementById("box").innerHTML = "Hello JavaScript!";
-//       document.getElementById("box").backgroundColor = "red";
-//     </script><body>
-// <div id="box" style="width: 3cm; height: 5cm; background-color: green" onclick="window.alert('hi')" />
-// </body></head>" />`;
+
   }
   // function () {document.getElementById("box").style.backgroundColor='red'
   
@@ -84,7 +77,7 @@ export class HtmlLtacProf {
   private docRegistration : {dispose(): any}; 
 
   
-  constructor(results: proto.LtacProfResults) {
+  constructor(private results: proto.LtacProfResults) {
     if(coqViewProvider===null) {    
       coqViewProvider = new IFrameDocumentProvider();
       this.docRegistration = vscode.workspace.registerTextDocumentContentProvider('coq-ltacprof', coqViewProvider);
@@ -101,7 +94,7 @@ export class HtmlLtacProf {
     this.server = new WebSocket.Server({server: httpServer});
     this.server.on('connection', (ws: WebSocket) => {
       ws.onmessage = (event) => this.handleClientMessage(event);
-      ws.send(JSON.stringify(results));
+      ws.send(JSON.stringify(this.results));
     })
 
     this.createBuffer();
@@ -132,6 +125,18 @@ export class HtmlLtacProf {
     resolve();
     this.show(true);
     });
+  }
+
+  public async update(results) {
+    await this.bufferReady;
+    this.results = results;
+    await Promise.all(
+      this.server.clients.map((c) => {
+        if(c.readyState === c.OPEN)
+          return new Promise((resolve,reject) => c.send(JSON.stringify(this.results), (err) => resolve()));
+        else
+          return Promise.resolve();
+      }));
   }
 
   public async show(preserveFocus: boolean) {

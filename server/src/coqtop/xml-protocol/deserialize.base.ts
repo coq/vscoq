@@ -1,39 +1,16 @@
 'use strict';
-import * as events from 'events';
-import * as sax from 'sax';
-import * as coqProto from '../coqtop/coq-proto';
-import * as text from '../util/AnnotatedText';
-// var entities = require('entities'); 
+import * as coqProto from '../coq-proto';
+import * as text from '../../util/AnnotatedText';
+import * as util from 'util';
+import {Node} from './coq-xml';
+export {Node} from './coq-xml';
 
-export interface EventCallbacks {
-  onValue?: (x: coqProto.Value) => void;
-  onStateFeedback? : (feedback: coqProto.StateFeedback) => void;
-  onEditFeedback? : (feedback: coqProto.EditFeedback) => void;
-  onMessage? : (msg: coqProto.Message) => void;
-  onOther? : (x: any) => void;
-  onError? : (x: any) => void;
-}
+export abstract class Deserialize {
+  public constructor() {}
 
-export interface Node {
-  $name: string;
-  $text: string;
-  /* attributes */
-  $: { [key:string]:coqProto.CoqValue };
-  /* children */
-  $children : coqProto.CoqValue[];
-}
-
-export function escapeXml(unsafe: string) : string {
-    return unsafe.replace(/[<>&'"]/g, function (c) {
-        switch (c) {
-            case '<': return '&lt;';
-            case '>': return '&gt;';
-            case '&': return '&amp;';
-            case '\'': return '&apos;';
-            case '"': return '&quot;';
-            default: return c;
-        }
-    });
+  public deserialize(value: Node) : coqProto.CoqValue {
+    return toCoqValue(value);
+  }
 }
 
 function toCoqValue(value: Node) : coqProto.CoqValue {
@@ -58,7 +35,7 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
         name: value.$['name'],
         statistics: {
           total: +value.$['total'],
-          self: +value.$['self'],
+          local: +value.$['self'],
           num_calls: +value.$['num_calls'],
           max_total: +value.$['max_total']},
         tactics: value.$children };
@@ -82,11 +59,13 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
         case 'in_r': return <coqProto.Union<any,any>>{inr: value.$children};
       }
       break;
+    case 'option':
+      return value.$['val'] === "some" ? value.$children[0] : undefined;
     case 'option_value': {
       if(value.$['val'] === 'intvalue')
-        return value['option'].$['val'] === 'some' ? value['option'].$children[0] : undefined
+        return value['option']
       else if(value.$['val'] === 'stringoptvalue')
-        return value['option'].$['val'] === 'some' ? value['option'].$children[0] : undefined
+        return value['option']
       else if(value.$['val'] === 'boolvalue')
         return value['bool'].$['val']
       else if(value.$['val'] === 'stringvalue')
@@ -120,17 +99,14 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
       }
       return result;
     } case 'loc':
-      return <coqProto.Location>{
-        start: +value.$['start'],
-        stop: +value.$['stop']
-      }
+      return {start: +value.$['start'], stop: +value.$['stop']} as coqProto.Location
     case 'message_level':
-      return <coqProto.MessageLevel>coqProto.MessageLevel[<string>value.$['val']];
+      return coqProto.MessageLevel[<string>value.$['val']] as coqProto.MessageLevel;
     case 'message':
-      return <coqProto.Message>{
-        level: <coqProto.MessageLevel>value['message_level'],
+      return {
+        level: value['message_level'] as coqProto.MessageLevel, 
         message: value.$children[1],
-      }
+      } as coqProto.Message;
     case 'value':
       switch(value.$['val']) {
         case 'good':
@@ -138,6 +114,8 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
             return <coqProto.Value>{
               stateId: value['state_id']
             };
+          else if(value.hasOwnProperty('option'))
+            return {value: value['option']} as coqProto.Value
           else if(value.$children.length===1 && value.$children[0].fst && value.$children[0].snd.fst.inl)
             return <coqProto.Value>{
               stateId: value.$children[0].fst,
@@ -158,15 +136,10 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
             return <coqProto.Value>{
               value: value['union']
             }
-          else if(value['option'] && value['option'].$['val'] === 'some' && value['option']['goals'])
-            return <coqProto.Value>{
-              value: value['option']['goals']
-            }
-          else if(value['option'] && value['option'].$['val'] === 'none')
+          else
             return <coqProto.Value>{
               value: {}
             }
-          break;
         case 'fail': {
           return <coqProto.Value>{
             stateId: value['state_id'],
@@ -197,7 +170,7 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
             state: coqProto.WorkerState[statusStr]
           };
       } case 'filedependency': {
-        let file = value.$children[0].some || "";
+        let file = value.$children[0] || "";
         let dependency = value.$children[1];
         return <coqProto.FileDependency>{
           filename: file,
@@ -223,10 +196,10 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
         }
       case 'custom': {
         return {
-          type: <string>value['string'],
-          location: value['loc'],
+          type: value.$children[1] as string,
+          location: value.$children[0] as coqProto.Location,
           data: value.$children[2],
-        };
+        } as coqProto.CustomFeedback;
       } default:
         return value;
       }
@@ -277,153 +250,4 @@ function toCoqValue(value: Node) : coqProto.CoqValue {
       break;
   }
   return value;
-}
-
-export class XmlStream extends events.EventEmitter {
-  
-  private inputStream : NodeJS.ReadableStream;
-  private stack : Node[] = [];
-  
-  public constructor(stream: NodeJS.ReadableStream, callbacks?: EventCallbacks) {
-    super();
-    this.inputStream = stream;
-    
-    if(callbacks) {
-      if(callbacks.onValue)
-        this.on('response: value', (x:coqProto.Value) => callbacks.onValue(x));
-      if(callbacks.onStateFeedback)
-        this.on('response: state-feedback', (x:coqProto.StateFeedback) => callbacks.onStateFeedback(x));
-      if(callbacks.onEditFeedback)
-        this.on('response: edit-feedback', (x:coqProto.EditFeedback) => callbacks.onEditFeedback(x));
-      if(callbacks.onMessage)
-        this.on('response: message', (x:coqProto.Message) => callbacks.onMessage(x));
-      if(callbacks.onOther)
-        this.on('response', (x:any) => callbacks.onOther(x));
-      if(callbacks.onError)
-        this.on('error', (x:any) => callbacks.onError(x));
-    }
-    
-    let options : sax.SAXOptions | {strictEntities: boolean} = {
-      lowercase: true,
-      trim: false,
-      normalize: false,
-      xmlns:false,
-      position: false,
-      strictEntities: false,
-      noscript: true
-    };
-    
-    let saxStream = sax.createStream(false,options);
-    saxStream.on('error', (err:any) => this.onError(err));
-    saxStream.on('opentag', (node:sax.Tag) => this.onOpenTag(node));
-    saxStream.on('closetag', (tagName:string) => this.onCloseTag(tagName));
-    saxStream.on('text', (text:string) => this.onText(text));
-    saxStream.on('end', () => this.onEnd());
-    saxStream.write('<coqtoproot>'); // write a dummy root node to satisfy the xml parser
-    stream.pipe(saxStream);
-  }
-  
-  private onError(err:any[]) {
-    this.emit('error', err);
-  }
-
-  private annotateTextMode = false;
-  private textStack : text.ScopedText[] = [];
-
-  private onOpenTag(node: sax.Tag) {
-    if(node.name === 'coqtoproot')
-      return;
-
-    if(this.annotateTextMode) {
-      let txt : text.ScopedText = {scope: node.name, attributes: node.attributes, text: []};
-      this.textStack.push(txt);
-    } else if (node.name === 'richpp') {
-      let txt : text.ScopedText = {scope: "", attributes: node.attributes, text: []};
-      this.annotateTextMode = true;
-      this.textStack = [txt];
-    } else {
-      let topNode = {
-        $name: node.name,
-        $: node.attributes,
-        $text: "",
-        $children: <any[]>[]
-      };
-      this.stack.push(topNode);
-    }
-  }
-
-  private onCloseTag(closingTagName : string) {
-    if(closingTagName === 'coqtoproot') {
-      this.emit('error', 'malformed XML input stream has too many closing tags');
-      return;
-    }
-
-    if(this.annotateTextMode) {
-      const current = this.textStack.pop();
-      if(this.textStack.length > 0) {
-        const top = this.textStack[this.textStack.length-1];
-        if(top.text instanceof Array)
-          top.text.push(current);
-        else
-          top.text = [top.text, current]
-        return;
-      } else {
-        let newTop = this.stack[this.stack.length - 1];
-        newTop.$children.push(current);
-        newTop['richpp'] = current;
-        this.annotateTextMode = false;
-        return; 
-      }
-    } else if (this.stack.length === 0)
-      return;
-    else {
-      let currentTop = this.stack.pop();
-      let tagName = currentTop.$name;
-      let value : coqProto.CoqValue = toCoqValue(currentTop);
-      
-      if (this.stack.length > 0) {
-        let newTop = this.stack[this.stack.length - 1];
-        newTop.$children.push(value);
-        newTop[tagName] = value;
-        if(closingTagName === 'richpp') {
-          this.annotateTextMode = false;
-        }
-      } else if(currentTop.$name === 'feedback') {
-        this.emit('response', value);
-        if(currentTop.$['object'] === 'edit')
-          this.emit('response: edit-feedback', value);
-        else if(currentTop.$['object'] === 'state')
-          this.emit('response: state-feedback', value);
-      } else {
-        this.emit('response', value);
-        this.emit('response: ' + currentTop.$name, value);
-      }
-    }
-  }
-  
-  private onText(text : string) {
-    if(this.annotateTextMode) {
-      const top = this.textStack[this.textStack.length-1];
-      if(top.text instanceof Array)
-        top.text.push(text);
-      else
-        top.text = [top.text, text];
-    } else if(this.stack.length > 0) {
-      // let plainText = entities.decodeXML(text);
-      this.stack[this.stack.length-1].$text += text;
-    }
-  }
-  
-  private onEnd() {
-    this.emit('end');
-  }
-  
-  public pause() {
-    this.inputStream.pause();
-  }
-  
-  public resume() {
-    this.inputStream.resume();
-  }
-  
 }

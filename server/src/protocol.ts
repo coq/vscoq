@@ -163,7 +163,7 @@ export interface CoqTopInterpretToPointParams extends CoqTopParams {
 
 export interface LtacProfTactic {
   name: string,
-  statistics: {total: number; self: number; num_calls: number; max_total: number},
+  statistics: {total: number; local: number; num_calls: number; max_total: number},
   tactics: LtacProfTactic[]
 }
 export interface LtacProfResults {

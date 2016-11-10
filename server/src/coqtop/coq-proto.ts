@@ -82,6 +82,7 @@ export enum MessageLevel {
 
 export interface Message {
   level: MessageLevel;
+  location?: Location;
   message: AnnotatedText;
 }
 
@@ -126,7 +127,7 @@ export interface Goals {
 
 export interface LtacProfTactic {
   name: string;
-  statistics: {total: number; self: number; num_calls: number; max_total: number};
+  statistics: {total: number; local: number; num_calls: number; max_total: number};
   tactics: LtacProfTactic[]
 }
 export interface LtacProfResults {
