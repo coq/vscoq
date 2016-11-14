@@ -260,7 +260,7 @@ export function normalizeText(text: AnnotatedText) : AnnotatedText {
     const norm = normalizeText(text.text);
     if(text.scope === "" || norm === "")
       return norm;
-    else if(text.attributes)
+    else if(text.attributes && Object.keys(text.attributes).length > 0)
       return {scope: text.scope, attributes: text.attributes, text: norm};
     else
       return {scope: text.scope, text: norm};

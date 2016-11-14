@@ -50,6 +50,7 @@ suite("AnnotatedText", () => {
   test("normalizeText", (() => {
     assert.equal(text.normalizeText("foo"), "foo");
     assert.equal(text.normalizeText(["foo","bar"]), "foobar");
+    assert.deepStrictEqual(text.normalizeText({scope:"aa",attributes: {}, text:"foo"}), {scope:"aa", text:"foo"});
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:"foo"},"bar"]), [{scope:"aa",text:"foo"},"bar"]);
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:["foo","!!"]},"bar"]), [{scope:"aa",text:"foo!!"},"bar"]);
     assert.deepStrictEqual(text.normalizeText([{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]), [{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]);
