@@ -26,7 +26,7 @@ suite("Deserialize 8.5", () => {
   function parse(xml: string|string[]) : Promise<proto.ReturnValue[]> {
     return new Promise<proto.ReturnValue[]>((resolve, reject) => {
       const results : proto.ReturnValue[] = [];
-      parser.on('response', (v) => results.push(v));
+      parser.on('response', (tag, v) => results.push(v));
       parser.on('error', reject);
       parser.on('end', () => resolve(results));
       if(xml instanceof Array)
