@@ -1,0 +1,19 @@
+<!DOCTYPE HTML>
+<head>
+  <title>ProofView</title>
+  <style>
+    :root {
+      --background-color: blue;
+    }
+  </style>
+  <script type="text/javascript">
+    function loadC() {
+      var container = document.getElementById("container");
+      container.src = "file:///C:/users/cj/Research/vscoq/client/html_views/goals/Coq.html" + window.location.href.substr(window.location.href.indexOf('?'));
+    }
+  </script>
+</head>
+<body onload="loadC()" style="margin:0px;padding:0px;width:100%;height:100vh;border:none;position:absolute;top:0px;left:0px;right:0px;bottom:0px">
+	<iframe id="container" src="file:///C:/users/cj/Research/vscoq/client/html_views/goals/Coq.html?host=127.0.0.1&port=43704" seamless style="position:absolute;top:0px;left:0px;right:0px;bottom:0px;border:none;margin:0px;padding:0px;width:100%;height:100%"
+	/>
+</body>
