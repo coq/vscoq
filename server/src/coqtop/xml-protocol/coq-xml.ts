@@ -2,26 +2,29 @@
 import * as events from 'events';
 import * as sax from 'sax';
 import * as coqProto from '../coq-proto';
+import {StateId, EditId, Pair, StateFeedback, LtacProfTactic, LtacProfResults,
+  UnionL, UnionR, Union, OptionState, Subgoal, Goals, Location, MessageLevel,
+  Message, FailValue, UnfocusedGoalStack, SentenceStatus, FeedbackContent,
+  ValueReturn} from '../coq-proto';
 import * as text from '../../util/AnnotatedText';
 import * as util from 'util';
 import {Deserialize} from './deserialize.base';
 
 export interface EventCallbacks {
-  onValue?: (x: coqProto.Value) => void;
-  onStateFeedback? : (feedback: coqProto.StateFeedback) => void;
-  onEditFeedback? : (feedback: coqProto.EditFeedback) => void;
-  onMessage? : (msg: coqProto.Message) => void;
+  onValue?: (x: ValueReturn) => void;
+  onFeedback? : (feedback: StateFeedback) => void;
+  onMessage? : (msg: Message) => void;
   onOther? : (x: any) => void;
   onError? : (x: any) => void;
 }
 
 export interface Node {
   $name: string;
-  $text: string;
+  // $text: string;
   /* attributes */
-  $: { [key:string]:coqProto.CoqValue };
+  $: { };
   /* children */
-  $children : coqProto.CoqValue[];
+  $children : {}[];
 }
 
 export function escapeXml(unsafe: string) : string {
@@ -45,11 +48,9 @@ export class XmlStream extends events.EventEmitter {
     
     if(callbacks) {
       if(callbacks.onValue)
-        this.on('response: value', (x:coqProto.Value) => callbacks.onValue(x));
-      if(callbacks.onStateFeedback)
-        this.on('response: state-feedback', (x:coqProto.StateFeedback) => callbacks.onStateFeedback(x));
-      if(callbacks.onEditFeedback)
-        this.on('response: edit-feedback', (x:coqProto.EditFeedback) => callbacks.onEditFeedback(x));
+        this.on('response: value', (x:ValueReturn) => callbacks.onValue(x));
+      if(callbacks.onFeedback)
+        this.on('response: feedback', (x:coqProto.StateFeedback) => callbacks.onFeedback(x));
       if(callbacks.onMessage)
         this.on('response: message', (x:coqProto.Message) => callbacks.onMessage(x));
       if(callbacks.onOther)
@@ -100,7 +101,7 @@ export class XmlStream extends events.EventEmitter {
       let topNode = {
         $name: node.name,
         $: node.attributes,
-        $text: "",
+        // $text: "",
         $children: <any[]>[]
       };
       this.stack.push(topNode);
@@ -143,12 +144,6 @@ export class XmlStream extends events.EventEmitter {
         if(closingTagName === 'richpp') {
           this.annotateTextMode = false;
         }
-      } else if(currentTop.$name === 'feedback') {
-        this.emit('response', value);
-        if(currentTop.$['object'] === 'edit')
-          this.emit('response: edit-feedback', value);
-        else if(currentTop.$['object'] === 'state')
-          this.emit('response: state-feedback', value);
       } else {
         this.emit('response', value);
         this.emit('response: ' + currentTop.$name, value);
@@ -164,8 +159,9 @@ export class XmlStream extends events.EventEmitter {
       else
         top.text = [top.text, text];
     } else if(this.stack.length > 0) {
+      this.stack[this.stack.length-1].$children.push(text);
       // let plainText = entities.decodeXML(text);
-      this.stack[this.stack.length-1].$text += text;
+      // this.stack[this.stack.length-1].$text += text;
     }
   }
   

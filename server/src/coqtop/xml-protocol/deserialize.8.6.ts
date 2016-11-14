@@ -1,41 +1,80 @@
 'use strict';
-import * as coqProto from '../coq-proto';
+import * as coqProto  from '../coq-proto';
 import * as text from '../../util/AnnotatedText';
-import {Deserialize, Node} from './deserialize.base';
+import {AnnotatedText} from '../../util/AnnotatedText';
+import {Deserialize, Node, Nodes} from './deserialize.base';
+
+namespace Nodes_8_6 {
+  export interface MessageNode {
+    $name: 'message',
+    $: {},
+    $children: {[0]: coqProto.MessageLevel, [1]: coqProto.Location, [2]: AnnotatedText} & {}[]
+    message_level: coqProto.MessageLevel,
+  }
+
+  export interface LtacProfTacticNode {
+    $name: 'ltacprof_tactic',
+    $: {name: string, total: string, local: string, ncalls: string, max_total: string }
+    $children: coqProto.LtacProfTactic[],
+  }
+ 
+  
+  export type TypedNode =
+    /** 8.6 */
+    MessageNode |
+    LtacProfTacticNode |
+    /** Base */
+    Nodes.StateIdNode | Nodes.EditIdNode | Nodes.IntNode | Nodes.StringNode | Nodes.UnitNode | Nodes.BoolNode |
+    Nodes.PairNode | Nodes.ListNode | Nodes.UnionNode |
+    Nodes.OptionNode | Nodes.OptionValueNode | Nodes.OptionStateNode |
+    Nodes.GoalNode | Nodes.GoalsNode |
+    Nodes.LocationNode | Nodes.MessageLevelNode |
+    Nodes.LtacProfResultsNode |
+    Nodes.FeedbackNode | Nodes.FeedbackContentNode |
+    Nodes.ValueNode;
+}
 
 export class Deserialize_8_6 extends Deserialize {
-  public deserialize(value: Node) : coqProto.CoqValue {
-    const [tag, attrs, children] = [value.$name, value.$, value.$children]
+  public deserialize(v: Node) : coqProto.CoqValue {
+    const value = v as Nodes_8_6.TypedNode;
     try {
-    switch(tag) {
+    switch(value.$name) {
       case 'message':
         return {
-          level: children[0] as coqProto.MessageLevel,
-          location: children[1],
-          message: children[2],
+          level: value.$children[0],
+          location: value.$children[1],
+          message: value.$children[2],
         } as coqProto.Message;
       case 'ltacprof':
         return {
-          total_time: +attrs['total_time'],
-          tactics: children
+          total_time: +value.$.total_time,
+          tactics: value.$children,
         } as coqProto.LtacProfResults;
       case 'ltacprof_tactic':
         return {
-          name: attrs['name'],
+          name: value.$.name,
           statistics: {
-            total: +attrs['total'],
-            local: +attrs['local'],
-            num_calls: +attrs['ncalls'],
-            max_total: +attrs['max_total']},
-            tactics: children
+            total: +value.$.total,
+            local: +value.$.local,
+            num_calls: +value.$.ncalls,
+            max_total: +value.$.max_total},
+            tactics: value.$children
           } as coqProto.LtacProfTactic;
       default:
-        return super.deserialize(value);
+        return super.deserialize(v);
     }}
     catch(err) {
       debugger;
     }
   }
+
+  // public deserializeFeedbackContent(value: Node) : any {
+  //   const [ type, children ] = [value.$['val'], value.$children];
+  //   switch (type) {
+  //   default:
+  //     return super.deserializeFeedbackContent(value);
+  //   }
+  // }
 
   public static readonly baseVersion = "8.6";
 }

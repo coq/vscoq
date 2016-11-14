@@ -6,7 +6,7 @@
 			"name": "Attach",
 			"type": "node",
 			"request": "attach",
-			"port": 6004,
+			"port": 6005,
 			"sourceMaps": true,
 			"outDir": "${workspaceRoot}/../client/server"
 		},

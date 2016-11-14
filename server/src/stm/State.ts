@@ -38,12 +38,12 @@ export enum StateStatus {
 
 function convertStatus(status: coqProto.SentenceStatus) : StateStatus {
   switch(status) {
-    case coqProto.SentenceStatus.Parsing:          return StateStatus.Parsing;
-    case coqProto.SentenceStatus.ProcessingInput:  return StateStatus.ProcessingInput;
-    case coqProto.SentenceStatus.Processed:        return StateStatus.Processed;
-    case coqProto.SentenceStatus.InProgress:       return StateStatus.InProgress;
-    case coqProto.SentenceStatus.Incomplete:       return StateStatus.Incomplete;
-    case coqProto.SentenceStatus.Complete:         return StateStatus.Complete;
+    case coqProto.SentenceStatus.Parsing:            return StateStatus.Parsing;
+    case coqProto.SentenceStatus.ProcessingInWorker: return StateStatus.ProcessingInput;
+    case coqProto.SentenceStatus.Processed:          return StateStatus.Processed;
+    case coqProto.SentenceStatus.InProgress:         return StateStatus.InProgress;
+    case coqProto.SentenceStatus.Incomplete:         return StateStatus.Incomplete;
+    case coqProto.SentenceStatus.Complete:           return StateStatus.Complete;
   }
 }
 

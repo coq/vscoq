@@ -131,16 +131,10 @@ export class CoqStateMachine {
     , private console: RemoteConsole
   ) {
     this.coqtop = new coqtop.CoqTop(settings, scriptFile, projectRoot, console, {
-      onStateStatusUpdate: (x1,x2,x3,x4) => this.onCoqStateStatusUpdate(x1,x2,x3,x4),
-      onStateError: (x1,x2,x3,x4) => this.onCoqStateError(x1,x2,x3,x4),
-      onEditFeedback: (x1,x2) => this.onCoqEditFeedback(x1,x2),
-      onMessage: (x1,x2) => this.onCoqMessage(x1,x2),
-      onStateWorkerStatusUpdate: (x1,x2,x3) => this.onCoqStateWorkerStatusUpdate(x1,x2,x3),
-      onStateFileDependencies: (x1,x2,x3) => this.onCoqStateFileDependencies(x1,x2,x3),
-      onStateFileLoaded: (x1,x2,x3) => this.onCoqStateFileLoaded(x1,x2,x3),
-      onStateLtacProf: (x1,x2,x3) => this.onCoqStateLtacProf(x1,x2,x3),
+      onFeedback: (x1) => this.onFeedback(x1),
+      onMessage: (x1) => this.onCoqMessage(x1),
       onClosed: (error?: string) => this.onCoqClosed(error),
-    } as coqtop.EventCallbacks);
+    });
   }
 
   public dispose() {
@@ -429,7 +423,7 @@ export class CoqStateMachine {
       if(position)
         state = this.getParentSentence(position).getStateId();
       await this.refreshOptions();
-      const results = await this.coqtop.coqQuery(query, state);
+      const results = await this.coqtop.coqQuery(query, state, this.routeId++);
       return server.project.getPrettifySymbols().prettify(results);
     } finally {
       endCommand();
@@ -451,6 +445,7 @@ export class CoqStateMachine {
     }
   }
 
+private routeId = 1;
   public async requestLtacProfResults(position?: Position) : Promise<void> {
     if(!this.isCoqReady())
       return;
@@ -461,11 +456,11 @@ export class CoqStateMachine {
       if(position !== undefined) {
         const sent = this.getSentence(position);
         if(sent) {
-          await this.coqtop.coqLtacProfilingResults(sent.getStateId());
+          await this.coqtop.coqLtacProfilingResults(sent.getStateId(), this.routeId++);
           return;
         }
-      }
-      await this.coqtop.coqLtacProfilingResults();
+      } else
+        await this.coqtop.coqLtacProfilingResults(undefined, this.routeId++);
     } finally {
       endCommand();
     }
@@ -674,7 +669,7 @@ export class CoqStateMachine {
       this.sentences.set(newSentence.getStateId(),newSentence);
       // some feedback messages may have arrived before we get here
       this.applyBufferedFeedback();
-      newSentence.updateStatus(coqProto.SentenceStatus.ProcessingInput);
+      newSentence.updateStatus(coqProto.SentenceStatus.ProcessingInWorker);
 
       if(textUtil.positionIsAfterOrEqual(newSentence.getRange().start, this.lastSentence.getRange().end))
         this.lastSentence = newSentence;
@@ -723,7 +718,7 @@ export class CoqStateMachine {
     return {message: error.message, range: errorRange, sentence: command.range}
   }
 
-  private parseConvertGoal(goal: coqProto.Goal) : proto.Goal {
+  private parseConvertGoal(goal: coqProto.Subgoal) : proto.Goal {
     return <proto.Goal>{
       goal: server.project.getPrettifySymbols().prettify(goal.goal),
       hypotheses: goal.hypotheses.map((hyp) => {
@@ -869,75 +864,77 @@ export class CoqStateMachine {
     this.callbacks.updateStmFocus(this.getFocusedPosition());
   }
 
-  private onCoqStateStatusUpdate(stateId: number, route: number, status: coqProto.SentenceStatus, worker: string) {
-    const sent = this.sentences.get(stateId);
-    if(sent) {
-      sent.updateStatus(status);
-      this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getStatus())
-    } else {
-      // Sometimes, feedback will be received before CoqTop has given us the new stateId,
-      // So we will buffer these messages until we get the next 'value' response.
-      this.bufferedFeedback.push({stateId: stateId, type: "status", status: status, worker: worker});
+  // /** A sentence has reached an error state
+  //  * @param location: optional offset range within the sentence where the error occurred
+  //  */
+  // private onCoqStateError(stateId: number, route: number, message: AnnotatedText, location?: coqProto.Location) {
+  //   const sent = this.sentences.get(stateId);
+  //   if(sent) {
+  //     // if(location)
+  //     //   this.console.log(`CoqStateError: ${location.start}-${location.stop}`);
+  //     sent.setError(message, location);
+  //     const prettyMessage = server.project.getPrettifySymbols().prettify(message);
+  //     this.callbacks.error(sent.getRange(), sent.getError().range, prettyMessage);
+  //   } else {
+  //     this.console.warn(`Error for unknown stateId: ${stateId}; message: ${message}`);
+  //   }
+  // }
+
+  private onCoqMessage(msg: coqProto.Message, stateId?: StateId) {
+    const prettyMessage = server.project.getPrettifySymbols().prettify(msg.message);
+    if(msg.level === coqProto.MessageLevel.Error && stateId!==undefined) {
+      const sent = this.sentences.get(stateId);
+      if(sent) {
+        sent.setError(msg.message, msg.location);
+        this.callbacks.error(sent.getRange(), sent.getError().range, prettyMessage);
+      } else {
+        this.console.warn(`Error for unknown stateId: ${stateId}; message: ${msg.message}`);
+      }
     }
+
+    this.callbacks.message(msg.level, prettyMessage);
   }
 
-  /** A sentence has reached an error state
-   * @param location: optional offset range within the sentence where the error occurred
-   */
-  private onCoqStateError(stateId: number, route: number, message: AnnotatedText, location?: coqProto.Location) {
-    const sent = this.sentences.get(stateId);
-    if(sent) {
-      // if(location)
-      //   this.console.log(`CoqStateError: ${location.start}-${location.stop}`);
-      sent.setError(message, location);
-      const prettyMessage = server.project.getPrettifySymbols().prettify(message);
-      this.callbacks.error(sent.getRange(), sent.getError().range, prettyMessage);
-    } else {
-      this.console.warn(`Error for unknown stateId: ${stateId}; message: ${message}`);
-    }
-  }
+  private onFeedback(feedback: coqProto.StateFeedback) {
+    const hasStateId = feedback.objectId.objectKind === 'stateid';
+    const stateId = coqProto.hasStateId(feedback.objectId) ? feedback.objectId.stateId : undefined;
 
-  private onCoqEditFeedback(editId: number, error?: coqProto.ErrorMessage) {
-    // if(feedback.error) {
-    //   const errorBegin = feedback.error.
-    //   this.addDiagnostic({
-    //     message: feedback.error.message,
-    //     range: Range.create(this.positionAt(errorBegin), this.positionAt(errorEnd)),
-    //     severity: DiagnosticSeverity.Error
-    //     });
+    if(!hasStateId) {
+      this.console.log("Edit feedback: " + util.inspect(feedback));
+    }
+
+    if(feedback.feedbackKind === "ltacprof" && hasStateId) {
+      const sent = this.sentences.get(stateId);
+      if(sent) {
+        this.callbacks.ltacProfResults(sent.getRange(),feedback);
+      } else {
+        this.console.warn(`LtacProf results for unknown stateId: ${stateId}`);
+      }
+    } else if(feedback.feedbackKind === "message") {
+      this.onCoqMessage(feedback, stateId /* can be undefined */);
+    } else if(feedback.feedbackKind === "sentence-status" && hasStateId) {
+      this.console.log("Sentence feedback: " + util.inspect(feedback));
+      const sent = this.sentences.get(stateId);
+      if(sent) {
+        sent.updateStatus(feedback.status);
+        this.callbacks.sentenceStatusUpdate(sent.getRange(), sent.getStatus())
+      } else {
+        // Sometimes, feedback will be received before CoqTop has given us the new stateId,
+        // So we will buffer these messages until we get the next 'value' response.
+        this.bufferedFeedback.push({stateId: stateId, type: "status", status: feedback.status, worker: feedback.worker});
+      }
+    }
+    // We could track this info, but why?
+    //   const sent = this.sentences.get(stateId);
+    //   if(sent) {
+    //     if(sent.getText().includes(feedback.status.module))
+    //       sent.addSemantics(new LoadModule(status.filename, status.module));
+    //   } else {
+    //     this.bufferedFeedback.push({stateId: stateId, type: "fileLoaded", filename: status.filename, module: status.module});
+    //   }
     // }
   }
 
-  private onCoqMessage(level: coqProto.MessageLevel, message: AnnotatedText) {
-    const prettyMessage = server.project.getPrettifySymbols().prettify(message);
-    this.callbacks.message(level, prettyMessage);
-  }
-
-  private onCoqStateWorkerStatusUpdate(stateId: number, route: number, workerUpdates: coqProto.WorkerStatus[]) {
-  }
-
-  private onCoqStateFileDependencies(stateId: number, route: number, fileDependencies: Map<string,string[]>) {
-  }
-
-  private onCoqStateFileLoaded(stateId: number, route: number, status: coqProto.FileLoaded) {
-    // const sent = this.sentences.get(stateId);
-    // if(sent) {
-    //   if(sent.getText().includes(status.module))
-    //     sent.addSemantics(new LoadModule(status.filename, status.module));
-    // } else {
-    //   this.bufferedFeedback.push({stateId: stateId, type: "fileLoaded", filename: status.filename, module: status.module});
-    // }
-  }
-  
-  private onCoqStateLtacProf(stateId: number, route: number, results: coqProto.LtacProfResults) {
-    const sent = this.sentences.get(stateId);
-    if(sent) {
-      this.callbacks.ltacProfResults(sent.getRange(),results);
-    } else {
-      this.console.warn(`LtacProf results for unknown stateId: ${stateId}`);
-    }
-  }
- 
   /** recieved from coqtop controller */
   private async onCoqClosed(error?: string) {
     if(!error || !this.isRunning())

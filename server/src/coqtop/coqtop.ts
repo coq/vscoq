@@ -75,7 +75,7 @@ export interface InitResult {
 export interface AddResult {
   stateId: number;
   unfocusedStateId?: number;
-  message: string;
+  message: AnnotatedText;
 }
 export interface EditAtFocusResult {
   stateId: number;
@@ -86,17 +86,22 @@ export interface EditAtResult {
   enterFocus?: EditAtFocusResult;
 }
 export interface ProofView {
-  goals: coqProto.Goal[];
+  goals: coqProto.Subgoal[];
   backgroundGoals: coqProto.UnfocusedGoalStack
-  shelvedGoals: coqProto.Goal[];
-  abandonedGoals: coqProto.Goal[];
+  shelvedGoals: coqProto.Subgoal[];
+  abandonedGoals: coqProto.Subgoal[];
 }
+
+
 
 export type NoProofTag = {mode: 'no-proof'}
 export type ProofModeTag = {mode: 'proof'}
 export type NoProofResult = NoProofTag & {}
 export type ProofModeResult = ProofModeTag & ProofView
 export type GoalResult = NoProofResult | ProofModeResult
+
+
+
   
 
 
@@ -138,14 +143,8 @@ export type GoalResult = NoProofResult | ProofModeResult
 // }
 
 export interface EventCallbacks {
-  onStateStatusUpdate? : (stateId: number, route: number, status: coqProto.SentenceStatus, worker: string) => void;
-  onStateError? : (stateId: number, route: number, message: AnnotatedText, location?: coqProto.Location) => void;
-  onStateWorkerStatusUpdate? : (stateId: number, route: number, workerUpdates: coqProto.WorkerStatus[]) => void;
-  onStateFileDependencies? : (stateId: number, route: number, fileDependencies: Map<string,string[]>) => void;
-  onStateFileLoaded? : (stateId: number, route: number, status: coqProto.FileLoaded) => void;
-  onStateLtacProf?: (stateId: number, route: number, results: LtacProfResults) => void;
-  onEditFeedback? : (editId: number, error?: coqProto.ErrorMessage) => void;
-  onMessage? : (level: coqProto.MessageLevel, message: AnnotatedText) => void;
+  onFeedback? : (feedback: coqProto.StateFeedback) => void;
+  onMessage? : (msg: coqProto.Message) => void;
   onClosed?: (error?: string) => void;
 }
 
@@ -362,11 +361,10 @@ export class CoqTop extends events.EventEmitter {
     
     const deserializer = createDeserializer(this.coqtopVersion);
     this.parser = new coqXml.XmlStream(this.mainChannelR, deserializer, {
-      onStateFeedback: (feedback: coqProto.StateFeedback) => this.onStateFeedback(feedback),
-      onEditFeedback: (feedback: coqProto.EditFeedback) => this.onEditFeedback(feedback),
+      onFeedback: (feedback: coqProto.StateFeedback) => this.onFeedback(feedback),
       onMessage: (msg: coqProto.Message) => this.onMessage(msg),
       onOther: (x: any) => this.onOther(x),
-      onError: (x: any) => this.onError(x)
+      onError: (x: any) => this.onSerializationError(x)
     });
     
     // this.mainChannelR.on('data', (data) => this.onMainChannelR(data));
@@ -405,11 +403,10 @@ export class CoqTop extends events.EventEmitter {
 
     const deserializer = createDeserializer(this.coqtopVersion);
     this.parser = new coqXml.XmlStream(this.mainChannelR, deserializer, {
-      onStateFeedback: (feedback: coqProto.StateFeedback) => this.onStateFeedback(feedback),
-      onEditFeedback: (feedback: coqProto.EditFeedback) => this.onEditFeedback(feedback),
+      onFeedback: (feedback: coqProto.StateFeedback) => this.onFeedback(feedback),
       onMessage: (msg: coqProto.Message) => this.onMessage(msg),
       onOther: (x: any) => this.onOther(x),
-      onError: (x: any) => this.onError(x)
+      onError: (x: any) => this.onSerializationError(x)
     });
     
     // this.mainChannelR.on('data', (data) => this.onMainChannelR(data));
@@ -602,58 +599,29 @@ export class CoqTop extends events.EventEmitter {
   }
   
 
-  private onStateFeedback(feedback: coqProto.StateFeedback) {
-    if (feedback.sentenceFeedback && this.callbacks.onStateStatusUpdate) {
-      // this.console.log(`[stateId: ${feedback.stateId}] --> ${coqProto.SentenceStatus[feedback.sentenceFeedback.status]} by ${feedback.sentenceFeedback.worker || "()"}`);
-      this.callbacks.onStateStatusUpdate(feedback.stateId, feedback.route, feedback.sentenceFeedback.status, feedback.sentenceFeedback.worker);
-    }
-    if(feedback.error && this.callbacks.onStateError) {
-      // this.console.log(`[stateId: ${feedback.stateId}] --> ERROR: ${feedback.error.message} ${feedback.error.location ? `@ ${feedback.error.location.start}-${feedback.error.location.stop}` : ""}`);
-      this.callbacks.onStateError(feedback.stateId,feedback.route, feedback.error.message,feedback.error.location);
-    }
-    if(feedback.workerStatus && this.callbacks.onStateWorkerStatusUpdate) {
-      // this.console.log(`[stateId: ${feedback.stateId}] --> ${feedback.workerStatus[0].id} is ${coqProto.WorkerState[feedback.workerStatus[0].state]} ${feedback.workerStatus[0].ident || ""}`);
-      this.callbacks.onStateWorkerStatusUpdate(feedback.stateId, feedback.route, feedback.workerStatus);
-    }
-    if(feedback.fileDependencies && this.callbacks.onStateFileDependencies) {
-      // this.console.log(`[stateId: ${feedback.stateId}] --> FileDependency`);
-      this.callbacks.onStateFileDependencies(feedback.stateId, feedback.route, feedback.fileDependencies);
-    }
-    if(feedback.fileLoaded && this.callbacks.onStateFileLoaded) {
-      // this.console.log(`[stateId: ${feedback.stateId}] --> FileLoaded`);
-      this.callbacks.onStateFileLoaded(feedback.stateId, feedback.route, feedback.fileLoaded);
-    }
-    if(feedback.custom && feedback.custom.type === 'ltacprof_results' && this.callbacks.onStateLtacProf) {
-      // this.console.log(`[stateId: ${feedback.stateId}] --> LtacProfResults`);
-      this.callbacks.onStateLtacProf(feedback.stateId, feedback.route, <LtacProfResults>feedback.custom.data);
-    }
-  }
-
-  private onEditFeedback(feedback: coqProto.EditFeedback) {
-    // this.console.log(`[editId: ${feedback.editId}] --> ${feedback.error || "()"}`);
-    if(this.callbacks.onEditFeedback)
-      this.callbacks.onEditFeedback(feedback.editId, feedback.error);
+  private onFeedback(feedback: coqProto.StateFeedback) {
+    if(this.onFeedback)
+      this.callbacks.onFeedback(feedback);
   }
 
   private onMessage(msg: coqProto.Message) {
-    // this.console.log(`>> ${coqProto.MessageLevel[msg.level]}: ${msg.message}`);
     if(this.callbacks.onMessage)
-      this.callbacks.onMessage(msg.level, msg.message);
+      this.callbacks.onMessage(msg);
   }
 
-  private onOther(x: any) {}
-  private onError(x: any) {}
+  private onOther(x: any) {
+      this.console.log("Unknown reponse: " + util.inspect(x));    
+  }
+  private onSerializationError(x: any) {}
 
 
-  private validateValue(value: coqProto.Value, logIdent?: string) {
-    if(!value.error)
-      return;
-    else if(value.error.message === 'User interrupt.')
+  private validateValue(value: coqProto.FailValue, logIdent?: string) : never {
+    if(value.message === 'User interrupt.')
       throw new Interrupted(value.stateId);
     else {
-      let error = new CallFailure(value.error.message,value.stateId)
-      if(value.error.range)
-        error.range = value.error.range;
+      let error = new CallFailure(value.message,value.stateId)
+      if(value.location)
+        error.range = value.location;
       // this.console.log(`ERROR ${logIdent || ""}: ${value.stateId} --> ${value.error.message} ${value.error.range ? `@ ${value.error.range.start}-${value.error.range.stop}`: ""}`);
       throw error;
     }
@@ -663,12 +631,14 @@ export class CoqTop extends events.EventEmitter {
    * Note: this needs to be called before this.mainChannelW.write to ensure that the handler for 'response: value'
    * is installed on time
    */
-  private coqGetResultOnce(logIdent?: string) : Promise<coqProto.Value> {
-    return new Promise<coqProto.Value>((resolve,reject) => {
-      this.parser.once('response: value', (value:coqProto.Value) => {
+  private coqGetResultOnce(logIdent?: string) : Promise<coqProto.ValueReturn> {
+    return new Promise<coqProto.ValueReturn>((resolve,reject) => {
+      this.parser.once('response: value', (value:coqProto.ValueReturn|coqProto.FailValue) => {
         try {
-          this.validateValue(value,logIdent);
-          resolve(value);
+          if(value.status === 'good')
+            resolve(value);
+          else
+            this.validateValue(value,logIdent);
         } catch(error) {
           reject(error);
         }
@@ -697,7 +667,7 @@ export class CoqTop extends events.EventEmitter {
       return;
 
     if(this.supportsInterruptCall) {
-      this.parser.once('response: value', (value:coqProto.Value) => {
+      this.parser.once('response: value', (value:coqProto.ValueReturn) => {
         this.console.log('interrupted');
       });
       this.console.log('interrupt');
@@ -721,8 +691,8 @@ export class CoqTop extends events.EventEmitter {
 
     const timeout = 3000;
     // try {
-    const value = await coqResult;
-    const result = <InitResult>{stateId: value.stateId};
+    const value = coqProto.GetValue('Init', await coqResult);
+    const result = <InitResult>{stateId: value};
     this.console.log(`Init: () --> ${result.stateId}`);
     return result;
     // } catch(error) {
@@ -771,14 +741,14 @@ export class CoqTop extends events.EventEmitter {
     this.console.log('Call Goal()');
     this.mainChannelW.write('<call val="Goal"><unit/></call>');
     
-    const value = await coqResult;
+    const value = coqProto.GetValue('Goal', await coqResult);
     // this.console.log(util.inspect(value,false,undefined));
-    if(value.hasOwnProperty('value') && value.value.hasOwnProperty('goals')) {
-      const result = <ProofView>{
-        goals: value.value.goals,
-        backgroundGoals: value.value.backgroundGoals,
-        shelvedGoals: value.value.shelvedGoals,
-        abandonedGoals: value.value.abandonedGoals
+    if(value.goals.length > 0) {
+      const result : ProofView = {
+        goals: value.goals,
+        backgroundGoals: value.backgroundGoals,
+        shelvedGoals: value.shelvedGoals,
+        abandonedGoals: value.abandonedGoals
       };
       // this.console.log(`Goal: () --> focused: ${result.goals.length}, unfocused: ${this.countBackgroundGoals(result.backgroundGoals)}, shelved: ${result.shelvedGoals.length}, abandoned: ${result.abandonedGoals.length}`);
       return Object.assign(result, <ProofModeResult>{mode: 'proof'});
@@ -815,15 +785,14 @@ export class CoqTop extends events.EventEmitter {
     this.console.log(`Call Add("${command.trim().substr(0, 20) + (command.trim().length > 20 ? "..." : "")}", editId: ${editId}, stateId: ${stateId}, verbose: ${verboseStr})`);
     this.mainChannelW.write(`<call val="Add"><pair><pair><string>${coqXml.escapeXml(command)}</string><int>${editId}</int></pair><pair><state_id val="${stateId}"/><bool val="${verboseStr}"/></pair></pair></call>`);
 
-    const value = await coqResult;
-    let result = <AddResult>{
-      stateId: value.stateId,
+    const value = coqProto.GetValue('Add', await coqResult);
+    let result : AddResult = {
+      stateId: value.assignedState,
       message: value.message,
+      unfocusedStateId: value.nextFocusState,
     };
     if(result.stateId === undefined)
       this.console.log(`UNDEFINED Add: ` + util.inspect(value,false,undefined));
-    if (value.unfocusedStateId)
-      result.unfocusedStateId = value.unfocusedStateId;
     this.console.log(`Add:  ${stateId} --> ${result.stateId} ${result.unfocusedStateId ? `(unfocus ${result.unfocusedStateId})` : ""} "${result.message || ""}"`);
     return result;
   }
@@ -836,14 +805,14 @@ export class CoqTop extends events.EventEmitter {
     this.console.log(`Call EditAt(stateId: ${stateId})`);
     this.mainChannelW.write(`<call val="Edit_at"><state_id val="${stateId}"/></call>`);    
 
-    const value = await coqResult;
+    const value = coqProto.GetValue('Edit_at', await coqResult);
     let result : EditAtResult;
-    if(value.value.inr) {
+    if(value) {
       // Jumping inside another proof; create a new tip
       result = {enterFocus: {
-        stateId: value.value.inr[0].fst,
-        qedStateId: value.value.inr[0].snd.fst,
-        oldStateIdTip: value.value.inr[0].snd.snd,
+        stateId: value.focusedState,
+        qedStateId: value.focusedQedState,
+        oldStateIdTip: value.oldFocusedState,
       }};
     } else {
       result = {};
@@ -853,16 +822,17 @@ export class CoqTop extends events.EventEmitter {
   }
 
 
-  public async coqLtacProfilingResults(stateId?: number) : Promise<void> {
+  public async coqLtacProfilingResults(stateId?: number, routeId?: number) : Promise<void> {
     this.checkState();
     stateId = stateId || 0;
+    const routeAttr = typeof routeId === 'number' ? ` route="${routeId}"` : ""; 
 
     const coqResult = this.coqGetResultOnce('Query');
     this.console.log('--------------------------------');
-    this.console.log(`Call Query(query: "Show Ltac Profile.", stateId: ${stateId})`);
-    this.mainChannelW.write(`<call val="Query"><pair><string>Show Ltac Profile.</string><state_id val="${stateId}"/></pair></call>`);    
+    this.console.log(`Call Query(query: "Show Ltac Profile.", stateId: ${stateId}, routeId: ${routeId})`);
+    this.mainChannelW.write(`<call val="Query"${routeAttr}><pair><string>Show Ltac Profile.</string><state_id val="${stateId}"/></pair></call>`);
 
-    const value = await coqResult;
+    const value = coqProto.GetValue('Query',await coqResult);
     // return {total_time: 0, tactics:[]};;
     // let result : LtacProfResults = value['ltacprof'];
     // this.console.log(`LtacProfResults: () --> ...`);
@@ -887,64 +857,29 @@ export class CoqTop extends events.EventEmitter {
     this.console.log('--------------------------------');
     this.console.log(`Call ResizeWindow(columns: ${columns})`);
     this.mainChannelW.write(`<call val="SetOptions"><list><pair><list><string>Printing</string><string>Width</string></list><option_value val="intvalue"><option val="some"><int>${columns}</int></option></option_value></pair></list></call>`);
-    // this.mainChannelW.write(`
-    // <call val="SetOptions">
-    //   <list>
-    //     <pair>
-    //       <list><string>Printing</string><string>Width</string></list>
-    //       <option_value val="intvalue"><option val="some"><int>37</int></option></option_value>
-    //     </pair>
-    //     <pair>
-    //       <list><string>Printing</string><string>Coercions</string></list>
-    //       <option_value val="boolvalue"><bool val="false"/></option_value>
-    //     </pair>
-    //     <pair>
-    //       <list><string>Printing</string><string>Matching</string></list>
-    //       <option_value val="boolvalue"><bool val="true"/></option_value>
-    //     </pair>
-    //     <pair>
-    //       <list><string>Printing</string><string>Notations</string></list>
-    //       <option_value val="boolvalue"><bool val="true"/></option_value>
-    //     </pair>
-    //     <pair>
-    //       <list><string>Printing</string><string>Existential</string><string>Instances</string></list>
-    //       <option_value val="boolvalue"><bool val="false"/></option_value>
-    //     </pair>
-    //     <pair>
-    //       <list><string>Printing</string><string>Implicit</string></list>
-    //       <option_value val="boolvalue"><bool val="false"/></option_value>
-    //     </pair>
-    //     <pair>
-    //       <list><string>Printing</string><string>All</string></list>
-    //       <option_value val="boolvalue"><bool val="false"/></option_value>
-    //     </pair>
-    //     <pair>
-    //       <list><string>Printing</string><string>Universes</string></list>
-    //       <option_value val="boolvalue"><bool val="false"/></option_value>
-    //     </pair>
-    //   </list>
-    // </call>`);
-    await coqResult;
+    const result = coqProto.GetValue('SetOptions',await coqResult);
     this.console.log(`ResizeWindow: ${columns} --> ()`);
   }
   
-  public async coqQuery(query: string, stateId?: number) : Promise<AnnotatedText> {
+  public async coqQuery(query: string, stateId?: number, routeId?: number) : Promise<AnnotatedText> {
     this.checkState();
     if(stateId === undefined)
-    stateId = 0;
-    
+      stateId = 0;
+    const routeAttr = typeof routeId === 'number' ? ` route="${routeId}"` : ""; 
+
     const coqResult = this.coqGetResultOnce('Query');
     const coqMessageResult = this.coqGetMessageOnce();
     this.console.log('--------------------------------');
-    this.console.log(`Call Query(stateId: ${stateId}, query: ${query})`);
-    this.mainChannelW.write(`<call val="Query"><pair><string>${coqXml.escapeXml(query)}</string><state_id val="${stateId}"/></pair></call>`);    
+    this.console.log(`Call Query(stateId: ${stateId}, ${routeId!==undefined? "routeId: "+routeId+", ":""}query: ${query})`);
+    this.mainChannelW.write(`<call val="Query"${routeAttr}><pair><string>${coqXml.escapeXml(query)}</string><state_id val="${stateId}"/></pair></call>`);    
     // this.mainChannelW.write(`<call val="Query"><pair><string>${entities.encodeXML(query)}</string><state_id val="${stateId}"/></pair></call>`);    
 
-    const values = await Promise.all<coqProto.Message>([coqMessageResult, coqResult.then(() => null)]);
+    const values = await Promise.all([coqMessageResult, coqResult.then(() => null)]);
     this.console.log(`Query: ${stateId} --> ...`);
     return values[0].message;
 
     // return entities.decodeXML(values[0].message);
+
 
 //     this.checkState();
 // 
@@ -976,12 +911,8 @@ export class CoqTop extends events.EventEmitter {
     this.console.log(`Call GetOptions()`);
     this.mainChannelW.write(`<call val="GetOptions"><unit/></call>`);    
 
-    const values = await coqResult;
+    const values = coqProto.GetValue('GetOptions', await coqResult);
     this.console.log(`GetOptions: () --> ...`);
-
-    for(let option of values as {fst: string[], snd: {}}[]) {
-
-    }
   }
 
   public async coqSetOptions(options: CoqOptions) : Promise<void> {
@@ -1002,7 +933,7 @@ export class CoqTop extends events.EventEmitter {
     // this.console.log(`Call SetOptions(${xmlTypes.encode(xmlOptions)})`);
     this.mainChannelW.write(`<call val="SetOptions">${xmlTypes.encode(xmlOptions)}</call>`);    
 
-    const values = await coqResult;
+    const values = coqProto.GetValue('SetOptions', await coqResult);
     this.console.log(`SetOptions: (...) --> ...`);
   }
 
