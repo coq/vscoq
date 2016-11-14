@@ -478,7 +478,6 @@ export abstract class Deserialize {
           objectId = {objectKind: "stateid", stateId: +value['state_id']};
         else if(value.$['object'] === 'edit')
           objectId = {objectKind: "editid", editId: +value['edit_id']};
-    console.log('feedback_content: ' + util.inspect(value.$children[1]));
         const result = Object.assign<coqProto.FeedbackBase, coqProto.FeedbackContent>({
           objectId: objectId,
           route: +(value.$.route || "0"),

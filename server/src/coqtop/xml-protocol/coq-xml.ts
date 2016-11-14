@@ -14,7 +14,7 @@ export interface EventCallbacks {
   onValue?: (x: ValueReturn) => void;
   onFeedback? : (feedback: StateFeedback) => void;
   onMessage? : (msg: Message) => void;
-  onOther? : (x: any) => void;
+  onOther? : (tag:string, x: any) => void;
   onError? : (x: any) => void;
 }
 
@@ -54,7 +54,7 @@ export class XmlStream extends events.EventEmitter {
       if(callbacks.onMessage)
         this.on('response: message', (x:coqProto.Message) => callbacks.onMessage(x));
       if(callbacks.onOther)
-        this.on('response', (x:any) => callbacks.onOther(x));
+        this.on('response', (tag:string, x:any) => callbacks.onOther(tag,x));
       if(callbacks.onError)
         this.on('error', (x:any) => callbacks.onError(x));
     }
@@ -145,7 +145,7 @@ export class XmlStream extends events.EventEmitter {
           this.annotateTextMode = false;
         }
       } else {
-        this.emit('response', value);
+        this.emit('response', currentTop.$name, value);
         this.emit('response: ' + currentTop.$name, value);
       }
     }

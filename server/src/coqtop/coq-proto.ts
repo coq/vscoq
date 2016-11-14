@@ -293,7 +293,7 @@ export interface InterpReturn {
 export type ReturnValue = AddReturn|Goals|EditAtJumpFocusReturn|HintsReturn|InterpReturn|AnnotatedText|StateId|CoqStatus|CoqInfo|CoqObject<string>|Map<string[],OptionState>|string[]|string[][]|{};
 export function GetValue(x: 'Add', value: ValueReturn) : AddReturn;
 export function GetValue(x: 'Edit_at', value: ValueReturn) : EditAtJumpFocusReturn|null;
-export function GetValue(x: 'Goal', value: ValueReturn) : Goals;
+export function GetValue(x: 'Goal', value: ValueReturn) : Goals|null;
 export function GetValue(x: 'Query', value: ValueReturn) : AnnotatedText;
 export function GetValue(x: 'Evars', value: ValueReturn) : string[];
 export function GetValue(x: 'Hints', value: ValueReturn) : HintsReturn;
@@ -310,6 +310,8 @@ export function GetValue(x: 'StopWorker', value: ValueReturn) : void;
 export function GetValue(x: 'PrintAst', value: ValueReturn) : void;
 export function GetValue(x: 'Annotate', value: ValueReturn) : void;
 export function GetValue(x: string, value: ValueReturn) : ReturnValue {
+  if(value.status !== "good")
+    throw "Cannot get value of failed command";
   switch(x) {
     case 'Add': {
       let v = value.result as Add_rty;
@@ -321,7 +323,7 @@ export function GetValue(x: string, value: ValueReturn) : ReturnValue {
       else
         return {focusedState: v.value[0], focusedQedState: v.value[1][0], oldFocusedState: v.value[1][1]}
     } case 'Goal': {
-      return value;
+      return value.result;
     } case 'Query': {
       return value.result as Query_rty
     } case 'Evars': {

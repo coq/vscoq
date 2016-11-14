@@ -282,12 +282,13 @@ export class CoqTop extends events.EventEmitter {
     return this.coqtopVersion;
   }
 
-  private detectVersion() : Promise<string> {
-    var coqtopModule = path.join(this.settings.binPath.trim(), 'coqtop');
-    this.console.log('exec: ' + coqtopModule + ' -v');
+  public static detectVersion(binPath: string, cwd: string, console?: {log: (string)=>void}) : Promise<string> {
+    var coqtopModule = path.join(binPath.trim(), 'coqtop');
+    if(console)
+      console.log('exec: ' + coqtopModule + ' -v');
     return new Promise<string>((resolve,reject) => {
       try {
-        const coqtop = spawn(coqtopModule, ['-v'], {detached: false, cwd: this.projectRoot});
+        const coqtop = spawn(coqtopModule, ['-v'], {detached: false, cwd: cwd});
         let result = "";
 
         coqtop.stdout.on('data', (data:string) => {
@@ -311,7 +312,7 @@ export class CoqTop extends events.EventEmitter {
     this.console.log('reset');
     this.cleanup(undefined);
 
-    this.coqtopVersion = await this.detectVersion();
+    this.coqtopVersion = await CoqTop.detectVersion(this.settings.binPath, this.projectRoot, this.console);
     if(this.coqtopVersion)
       this.console.log(`Detected coqtop version ${this.coqtopVersion}`)
     else
@@ -363,7 +364,7 @@ export class CoqTop extends events.EventEmitter {
     this.parser = new coqXml.XmlStream(this.mainChannelR, deserializer, {
       onFeedback: (feedback: coqProto.StateFeedback) => this.onFeedback(feedback),
       onMessage: (msg: coqProto.Message) => this.onMessage(msg),
-      onOther: (x: any) => this.onOther(x),
+      onOther: (tag: string, x: any) => this.onOther(tag, x),
       onError: (x: any) => this.onSerializationError(x)
     });
     
@@ -405,7 +406,7 @@ export class CoqTop extends events.EventEmitter {
     this.parser = new coqXml.XmlStream(this.mainChannelR, deserializer, {
       onFeedback: (feedback: coqProto.StateFeedback) => this.onFeedback(feedback),
       onMessage: (msg: coqProto.Message) => this.onMessage(msg),
-      onOther: (x: any) => this.onOther(x),
+      onOther: (tag: string, x: any) => this.onOther(tag, x),
       onError: (x: any) => this.onSerializationError(x)
     });
     
@@ -609,8 +610,8 @@ export class CoqTop extends events.EventEmitter {
       this.callbacks.onMessage(msg);
   }
 
-  private onOther(x: any) {
-      this.console.log("Unknown reponse: " + util.inspect(x));    
+  private onOther(tag: string, x: any) {
+      // this.console.log("reponse: " + tag + ": " + util.inspect(x));    
   }
   private onSerializationError(x: any) {}
 
@@ -742,8 +743,7 @@ export class CoqTop extends events.EventEmitter {
     this.mainChannelW.write('<call val="Goal"><unit/></call>');
     
     const value = coqProto.GetValue('Goal', await coqResult);
-    // this.console.log(util.inspect(value,false,undefined));
-    if(value.goals.length > 0) {
+    if(value !== null) {
       const result : ProofView = {
         goals: value.goals,
         backgroundGoals: value.backgroundGoals,
