@@ -15,7 +15,7 @@ import {CoqTopSettings, LtacProfTactic, LtacProfResults} from '../protocol';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as xmlTypes from './xml-protocol/CoqXmlProtocolTypes';
-import {AnnotatedText} from '../util/AnnotatedText';
+import {AnnotatedText, normalizeText, textToDisplayString} from '../util/AnnotatedText';
 import {createDeserializer} from './xml-protocol/deserialize';
 
 // import entities = require('entities'); 
@@ -57,9 +57,11 @@ export class CallFailure {
     public message: AnnotatedText,
     public stateId?: number,
     public range?: coqProto.Location)
-  {}
+  {
+    this.message = normalizeText(this.message);
+  }
   public toString() {
-    return this.message +
+    return textToDisplayString(this.message) +
       (this.range || this.stateId
         ? "  (" +
           (this.range ? `offsets ${this.range.start}-${this.range.stop}` : (this.stateId ? " " : "")) +
