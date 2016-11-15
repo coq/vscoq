@@ -154,8 +154,8 @@ export class CoqDocument implements vscode.Disposable {
       this.noticeOut.append(text.textToDisplayString(params.message));
       return;
       // vscode.window.showInformationMessage(params.message); return;
-    case 'error':
-      vscode.window.showErrorMessage(text.textToDisplayString(params.message)); return;
+    // case 'error':
+    //   vscode.window.showErrorMessage(text.textToDisplayString(params.message)); return;
     }
   }
 

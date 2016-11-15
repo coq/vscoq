@@ -20,8 +20,7 @@ interface Decorations {
   readonly stateError: vscode.TextEditorDecorationType;
   readonly processed: vscode.TextEditorDecorationType
   readonly incomplete: vscode.TextEditorDecorationType; // Example: a Qed. whose proof failed.
-  readonly complete: vscode.TextEditorDecorationType;
-  readonly inProgress: vscode.TextEditorDecorationType;
+  readonly axiom: vscode.TextEditorDecorationType;
   readonly focus : vscode.TextEditorDecorationType;
   readonly focusBefore : vscode.TextEditorDecorationType;
 }
@@ -32,8 +31,7 @@ interface DecorationsInternal extends Decorations {
   stateError: vscode.TextEditorDecorationType;
   processed: vscode.TextEditorDecorationType
   incomplete: vscode.TextEditorDecorationType; // Example: a Qed. whose proof failed.
-  complete: vscode.TextEditorDecorationType;
-  inProgress: vscode.TextEditorDecorationType;
+  axiom: vscode.TextEditorDecorationType;
   focus : vscode.TextEditorDecorationType;
   focusBefore : vscode.TextEditorDecorationType;
 }
@@ -52,10 +50,10 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
     parsing: create({
       outlineWidth: '1px',
       outlineStyle: 'solid', 
-      overviewRulerColor: 'yellow', 
+      overviewRulerColor: 'cyan', 
       overviewRulerLane: vscode.OverviewRulerLane.Right,
-      light: {outlineColor: 'rgba(218, 165, 32,0.7)', backgroundColor: 'rgba(255, 255, 0,0.2)'},
-      dark: {outlineColor: 'rgba(218, 165, 32,0.7)', backgroundColor: 'rgba(255, 255, 0,0.2)'},
+      light: {outlineColor: 'rgba(32, 165, 218,0.7)', backgroundColor: 'rgba(0, 255, 255, 0.2)'},
+      dark: {outlineColor: 'rgba(32, 165, 218,0.7)', backgroundColor: 'rgba(0, 255, 255, 0.2)'},
     }),
     processing: create({
       overviewRulerColor: 'blue', 
@@ -81,19 +79,13 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
       light: {backgroundColor: 'rgba(0,150,0,0.2)'},
       dark: {backgroundColor: 'rgba(0,150,0,0.2)'},
     }),
-    incomplete: create({
+    axiom: create({
       overviewRulerColor: 'yellow',
       overviewRulerLane: vscode.OverviewRulerLane.Center,
       light: {backgroundColor: 'rgba(255,255,0,0.2)'},
       dark: {backgroundColor: 'rgba(255,255,0,0.2)'},
     }),
-    complete: create({
-      overviewRulerColor: 'green', 
-      overviewRulerLane: vscode.OverviewRulerLane.Center,
-      light: {backgroundColor: 'rgba(0,255,255,0.2)'},
-      dark: {backgroundColor: 'rgba(0,255,255,0.2)'},
-    }),
-    inProgress: create({
+    incomplete: create({
       overviewRulerColor: 'purple', 
       overviewRulerLane: vscode.OverviewRulerLane.Center,
       light: {backgroundColor: 'lightpurple'},

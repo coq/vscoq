@@ -403,9 +403,9 @@ export class CoqStateMachine {
 
       return null;
     } catch (error) {
-      if(error instanceof AddCommandFailure)
+      if(error instanceof AddCommandFailure) {
         return Object.assign(Object.assign(error, <proto.FailureTag>{type: 'failure'}), <proto.FocusPosition>{focus: this.getFocusedPosition()});
-      else
+      } else
         throw error;
     } finally {
       endCommand();
@@ -424,7 +424,7 @@ export class CoqStateMachine {
         state = this.getParentSentence(position).getStateId();
       await this.refreshOptions();
       const results = await this.coqtop.coqQuery(query, state, this.routeId++);
-      return server.project.getPrettifySymbols().prettify(results);
+      return text.normalizeText(server.project.getPrettifySymbols().prettify(results));
     } finally {
       endCommand();
     }
@@ -881,7 +881,7 @@ private routeId = 1;
   // }
 
   private onCoqMessage(msg: coqProto.Message, stateId?: StateId) {
-    const prettyMessage = server.project.getPrettifySymbols().prettify(msg.message);
+    const prettyMessage = text.normalizeText(server.project.getPrettifySymbols().prettify(msg.message));
     if(msg.level === coqProto.MessageLevel.Error && stateId!==undefined) {
       const sent = this.sentences.get(stateId);
       if(sent) {
@@ -890,9 +890,8 @@ private routeId = 1;
       } else {
         this.console.warn(`Error for unknown stateId: ${stateId}; message: ${msg.message}`);
       }
-    }
-
-    this.callbacks.message(msg.level, prettyMessage);
+    } else
+      this.callbacks.message(msg.level, prettyMessage);
   }
 
   private onFeedback(feedback: coqProto.StateFeedback) {
@@ -911,9 +910,9 @@ private routeId = 1;
         this.console.warn(`LtacProf results for unknown stateId: ${stateId}`);
       }
     } else if(feedback.feedbackKind === "message") {
+      // this.console.log("Message feedback: " + util.inspect(feedback));
       this.onCoqMessage(feedback, stateId /* can be undefined */);
     } else if(feedback.feedbackKind === "sentence-status" && hasStateId) {
-      this.console.log("Sentence feedback: " + util.inspect(feedback));
       const sent = this.sentences.get(stateId);
       if(sent) {
         sent.updateStatus(feedback.status);
@@ -923,6 +922,8 @@ private routeId = 1;
         // So we will buffer these messages until we get the next 'value' response.
         this.bufferedFeedback.push({stateId: stateId, type: "status", status: feedback.status, worker: feedback.worker});
       }
+    } else {
+      this.console.log("Unknown feedback: " + util.inspect(feedback));
     }
     // We could track this info, but why?
     //   const sent = this.sentences.get(stateId);

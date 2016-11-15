@@ -19,8 +19,8 @@ function toRange(range: {start: {line: number, character: number}, end: {line: n
 export class Highlights {
   // private textHighlights : {decoration: vscode.TextEditorDecorationType, ranges: RangeSet}[] = [];
   // private textHighlights : vscode.TextEditorDecorationType[];
-  private current : {ranges: [ vscode.Range[], vscode.Range[], vscode.Range[], vscode.Range[], vscode.Range[], vscode.Range[], vscode.Range[] ]}
-    = { ranges: [ [], [], [], [], [], [], [] ] };
+  private current : {ranges: [ vscode.Range[], vscode.Range[], vscode.Range[], vscode.Range[], vscode.Range[], vscode.Range[] ]}
+    = { ranges: [ [], [], [], [], [], [] ] };
 
   constructor() {
     // this.textHighlights[proto.HighlightType.Parsing   ] = parsingTextDecoration;
@@ -40,13 +40,12 @@ export class Highlights {
        , highlights.ranges[3].map(toRange)
        , highlights.ranges[4].map(toRange)
        , highlights.ranges[5].map(toRange)
-       , highlights.ranges[6].map(toRange)
        ]};
     this.applyCurrent(editors);
   }
 
   public clearAll(editors: Iterable<TextEditor>) {
-    this.current = { ranges: [ [], [], [], [], [], [], [] ] };
+    this.current = { ranges: [ [], [], [], [], [], [] ] };
     this.applyCurrent(editors);
   }
 
@@ -60,8 +59,7 @@ export class Highlights {
       editor.setDecorations(decorations.parsing    , this.current.ranges[proto.HighlightType.Parsing]);
       editor.setDecorations(decorations.processing , this.current.ranges[proto.HighlightType.Processing]);
       editor.setDecorations(decorations.incomplete , this.current.ranges[proto.HighlightType.Incomplete]);
-      editor.setDecorations(decorations.complete   , this.current.ranges[proto.HighlightType.Complete]);
-      editor.setDecorations(decorations.inProgress , this.current.ranges[proto.HighlightType.InProgress]);
+      editor.setDecorations(decorations.axiom      , this.current.ranges[proto.HighlightType.Axiom]);
       editor.setDecorations(decorations.processed  , this.current.ranges[proto.HighlightType.Processed]); 
     }
   }

@@ -190,12 +190,11 @@ export class CoqDocument implements TextDocument {
 
   private sentenceToHighlightType(status: StateStatus) : thmProto.HighlightType {
     switch(status) {
+      case StateStatus.Axiom:           return thmProto.HighlightType.Axiom;
       case StateStatus.Error:           return thmProto.HighlightType.StateError;
       case StateStatus.Parsing:         return thmProto.HighlightType.Parsing;
-      case StateStatus.ProcessingInput: return thmProto.HighlightType.Processing;
+      case StateStatus.Processing:      return thmProto.HighlightType.Processing;
       case StateStatus.Incomplete:      return thmProto.HighlightType.Incomplete;
-      case StateStatus.Complete:        return thmProto.HighlightType.Complete;
-      case StateStatus.InProgress:      return thmProto.HighlightType.InProgress;
       case StateStatus.Processed:       return thmProto.HighlightType.Processed;
     }    
   }
@@ -203,7 +202,7 @@ export class CoqDocument implements TextDocument {
   /** creates the current highlights from scratch */
   private createHighlights() : thmProto.Highlights {
     const highlights : thmProto.Highlights =
-      { ranges: [ [], [], [], [], [], [], [] ] };
+      { ranges: [ [], [], [], [], [], [] ] };
     let count1 = 0;
     let count2 = 0;
     for(let sent of this.stm.getSentences()) {
@@ -331,7 +330,7 @@ export class CoqDocument implements TextDocument {
         if (highlight) {// Preliminary "parsing" highlight
           this.parsingRanges.push(result.range);
 
-          this.updateHighlights(true);
+        this.updateHighlights(true);
         }
       } else
         return;

@@ -27,28 +27,38 @@ export interface StatusError extends StatusErrorInternal {
 }
 
 export enum StateStatus {
-  Parsing,
-  ProcessingInput,
-  Processed,
-  InProgress,
-  Incomplete,
-  Complete,
-  Error
+  Parsing, Processing, Processed, Error, Axiom, Incomplete,
 }
 
-function convertStatus(status: coqProto.SentenceStatus) : StateStatus {
-  switch(status) {
-    case coqProto.SentenceStatus.Parsing:            return StateStatus.Parsing;
-    case coqProto.SentenceStatus.ProcessingInWorker: return StateStatus.ProcessingInput;
-    case coqProto.SentenceStatus.Processed:          return StateStatus.Processed;
-    case coqProto.SentenceStatus.InProgress:         return StateStatus.InProgress;
-    case coqProto.SentenceStatus.Incomplete:         return StateStatus.Incomplete;
-    case coqProto.SentenceStatus.Complete:           return StateStatus.Complete;
-  }
+enum StateStatusFlags {
+  Parsing = 0,
+  Processing = 1 << 0,
+  Incomplete = 1 << 1,
+  Unsafe = 1 << 2,
+  Error = 1 << 3,
+  Warning = 1 << 4,
+  // Parsing,
+  // ProcessingInWorker,
+  // Processed,
+  // InProgress,
+  // Incomplete,
+  // Complete,
+  // Error,
 }
+
+// function convertStatus(status: coqProto.SentenceStatus) : StateStatus {
+//   switch(status) {
+//     case coqProto.SentenceStatus.Parsing:            return StateStatus.Parsing;
+//     case coqProto.SentenceStatus.ProcessingInWorker: return StateStatus.ProcessingInWorker;
+//     case coqProto.SentenceStatus.Processed:          return StateStatus.Processed;
+//     case coqProto.SentenceStatus.InProgress:         return StateStatus.InProgress;
+//     case coqProto.SentenceStatus.Incomplete:         return StateStatus.Incomplete;
+//     case coqProto.SentenceStatus.Complete:           return StateStatus.Complete;
+//   }
+// }
 
 export class State {
-  private status: coqProto.SentenceStatus|null;
+  private status: StateStatusFlags;
   // private proofView: CoqTopGoalResult;
   private computeTimeMS: number;
   private error?: StatusErrorInternal = undefined;
@@ -64,7 +74,7 @@ export class State {
     , private next: State | null
     , private computeStart: [number,number] = [0,0]
   ) {
-    this.status = coqProto.SentenceStatus.Parsing;
+    this.status = StateStatusFlags.Parsing;
     // this.proofView = {};
     this.computeTimeMS = 0;
   }
@@ -162,8 +172,40 @@ export class State {
       this.next.prev = this.prev;
   }
 
+  /** Handle sentence-status updates as they come from coqtop */
   public updateStatus(status: coqProto.SentenceStatus) {
-    this.status = status;
+    switch(status) {
+      case coqProto.SentenceStatus.Parsing:
+        this.status = StateStatusFlags.Parsing;
+        this.computeStart = process.hrtime();
+        this.computeTimeMS = 0;
+        break;
+      case coqProto.SentenceStatus.AddedAxiom:
+        this.status &= ~(StateStatusFlags.Processing | StateStatusFlags.Error);
+        this.status |= StateStatusFlags.Unsafe;
+        break;
+      case coqProto.SentenceStatus.Processed:
+        if(this.status & StateStatusFlags.Processing) {
+          const duration = process.hrtime(this.computeStart);
+          this.computeTimeMS = duration[0] * 1000.0 + (duration[1] / 1000000.0);
+          this.status &= ~StateStatusFlags.Processing;
+        }
+        break;
+      case coqProto.SentenceStatus.ProcessingInWorker:
+        if(!(this.status & StateStatusFlags.Processing)) {
+          this.computeStart = process.hrtime();
+          this.status |= StateStatusFlags.Processing;
+        }
+        break;
+      case coqProto.SentenceStatus.Incomplete:
+        this.status |= StateStatusFlags.Incomplete;
+        break;
+      case coqProto.SentenceStatus.Complete:
+        this.status &= ~StateStatusFlags.Incomplete;
+        break;
+      case coqProto.SentenceStatus.InProgress:
+        break;
+    }
   }
 
   public getRange() : Range {
@@ -277,25 +319,33 @@ export class State {
   }
 
   public getStatus() : StateStatus {
-    if(this.error)
+    if (this.status & StateStatusFlags.Error)
       return StateStatus.Error;
+    else if (this.status & StateStatusFlags.Processing)
+      return StateStatus.Processing;
+    else if (this.status & StateStatusFlags.Unsafe)
+      return StateStatus.Axiom;
+    else if (this.status & StateStatusFlags.Incomplete)
+      return StateStatus.Incomplete;
+    else if (this.status & StateStatusFlags.Parsing)
+      return StateStatus.Parsing;
     else
-      return convertStatus(this.status);
+      return StateStatus.Processed;
   }
 
-  public setStatus(status: coqProto.SentenceStatus) : void {
-    if(this.status > status)
-      return;
-    else {
-      this.status = status;
-      if(this.computeStart && this.status < status) {
-        const duration = process.hrtime(this.computeStart);
-        this.computeTimeMS = duration[0] * 1000.0 + (duration[1] / 1000000.0);
-        // if(status == coqProto.SentenceStatus.Processed)
-        //   this.clientConsole.log(`processed in time ${sentence.stateId}: ${sentence.computeTimeMS/1000.0} sec`);
-      }      
-    }
-  }
+  // public setStatus(status: coqProto.SentenceStatus) : void {
+  //   if(this.status > status)
+  //     return;
+  //   else {
+  //     this.status = status;
+  //     if(this.computeStart && this.status < status) {
+  //       const duration = process.hrtime(this.computeStart);
+  //       this.computeTimeMS = duration[0] * 1000.0 + (duration[1] / 1000000.0);
+  //       // if(status == coqProto.SentenceStatus.Processed)
+  //       //   this.clientConsole.log(`processed in time ${sentence.stateId}: ${sentence.computeTimeMS/1000.0} sec`);
+  //     }      
+  //   }
+  // }
 
   /** @returns `true` if this sentence appears strictly before `position` */
   public isBefore(position: Position) : boolean {
@@ -330,6 +380,8 @@ export class State {
   public setError(message: AnnotatedText, location?: coqProto.Location) : void {
     this.error = {message: message};
     if(location && location.start !== location.stop) {
+      this.status |= StateStatusFlags.Error;
+      this.status &= ~StateStatusFlags.Processing;
       const sentRange = this.getRange();
       const sentText = this.getText();
       this.error.range =

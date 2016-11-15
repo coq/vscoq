@@ -48,14 +48,15 @@ export interface WorkerStatus {
 }
 
 export enum SentenceStatus {
-  Parsing,ProcessingInWorker,Processed,InProgress,Incomplete,Complete,
+  Parsing,ProcessingInWorker,Processed,InProgress,Incomplete,Complete,AddedAxiom,
   // NOTE!
   // Coq uses IDs like 'processingin'; the below lets us convert into SentenceStatus
   processingin=ProcessingInWorker,
   processed=Processed,
   inprogress=InProgress,
   incomplete=Incomplete,
-  complete=Complete
+  complete=Complete,
+  addedaxiom=AddedAxiom,
 }
 
 export interface FailValue {
@@ -77,6 +78,7 @@ export interface SentenceFeedback {
   feedbackKind: "sentence-status",
   status: SentenceStatus;
   worker: string;
+  inProgressDelta: number;
 }
 
 export interface CustomFeedback {

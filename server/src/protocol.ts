@@ -261,7 +261,7 @@ export namespace GetSentencePrefixTextRequest {
 } 
 
 export enum HighlightType {
-  StateError=0, Parsing=1, Processing=2, Incomplete=3, Complete=4, InProgress=5, Processed=6 
+  StateError=0, Parsing=1, Processing=2, Incomplete=3, Processed=4, Axiom=5 
 }
 
 // export interface Highlight {
@@ -274,7 +274,7 @@ export interface NotificationParams {
 }
 
 export interface Highlights {
-  ranges: [vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[]];
+  ranges: [vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[],vscode.Range[]];
 }
 
 export type NotifyHighlightParams = NotificationParams & Highlights;
