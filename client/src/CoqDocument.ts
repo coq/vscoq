@@ -297,12 +297,12 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateReady();
   }
 
-  public async interpretToCursorPosition(editor: TextEditor) {
+  public async interpretToCursorPosition(editor: TextEditor, synchronous = false) {
     this.statusBar.setStateWorking('Interpretting to point');
     try {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
-      const value = await this.langServer.interpretToPoint(editor.document.offsetAt(editor.selection.active));
+      const value = await this.langServer.interpretToPoint(editor.selection.active, synchronous);
       if(value.type === 'busy')
         return;
       if(value.type === 'not-running')
@@ -320,11 +320,11 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateReady();
   }
 
-  public async interpretToEnd(editor: TextEditor) {
+  public async interpretToEnd(editor: TextEditor, synchronous = false) {
     this.statusBar.setStateWorking('Interpreting to end');
     try {
       const params = { uri: this.documentUri };
-      const value = await this.langServer.interpretToEnd();
+      const value = await this.langServer.interpretToEnd(synchronous);
       if(value.type === 'busy')
         return;
       if(value.type === 'not-running')

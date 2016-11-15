@@ -801,10 +801,6 @@ export class CoqDocument implements TextDocument {
   public async stepForward(token: CancellationToken) : Promise<thmProto.CommandResult> {
     this.assertStm();
     try {
-    //   const parsingHighlights = [
-    //     { style: thmProto.HighlightType.Parsing, textBegin: startOffset, textEnd: stopPos }
-    //     ];
-    //   this.callbacks.sendHighlightUpdates(parsingHighlights);
       this.parsingRanges = [];
       const error = await this.stm.stepForward(this.commandSequence(true));
       if(error)
@@ -828,14 +824,14 @@ export class CoqDocument implements TextDocument {
     }
   }
 
-  public async interpretToPoint(offset: number, token: CancellationToken) : Promise<thmProto.CommandResult> {
+  public async interpretToPoint(location: number|vscode.Position, synchronous = false, token: CancellationToken) : Promise<thmProto.CommandResult> {
     this.assertStm();
     try {
-      const pos = this.positionAt(offset);
+      const pos = (typeof location === 'number') ? this.positionAt(location) : location;
 
       this.parsingRanges = [Range.create(this.stm.getFocusedPosition(),pos)];
       this.updateHighlights(true);
-      const error = await this.stm.interpretToPoint(pos,this.commandSequence(false), this.project.settings.coq.interpretToEndOfSentence, token);
+      const error = await this.stm.interpretToPoint(pos,this.commandSequence(false), this.project.settings.coq.interpretToEndOfSentence, synchronous, token);
       if(error)
         return error;
       return this.toGoal(await this.stm.getGoal());
@@ -847,8 +843,8 @@ export class CoqDocument implements TextDocument {
 
   }
 
-  public async interpretToEnd(token: CancellationToken) : Promise<thmProto.CommandResult> {
-    return await this.interpretToPoint(this.document.getText().length,token);
+  public async interpretToEnd(synchronous = false, token: CancellationToken) : Promise<thmProto.CommandResult> {
+    return await this.interpretToPoint(this.document.getText().length,synchronous,token);
   }
 
   public async getGoal() : Promise<thmProto.CommandResult> {

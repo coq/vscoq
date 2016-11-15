@@ -158,7 +158,7 @@ export class CoqProject implements vscode.Disposable {
     this.activeEditor = editor;
   }
 
-  private async tryDocumentCommand(command: (editor: vscode.TextEditor) => Promise<void>, useActive=true, makeVisible = true) {
+  private async tryDocumentCommand(command: (editor: vscode.TextEditor) => Promise<void>, useActive=true, makeVisible = true, ...args) {
     let editor = vscode.window.activeTextEditor;
     let doc : CoqDocument;
     try {
@@ -174,7 +174,7 @@ export class CoqProject implements vscode.Disposable {
       if(makeVisible && !vscode.window.visibleTextEditors.some((d) => d.document===doc.getDocument()))
         await vscode.window.showTextDocument(doc.getDocument(), undefined, true);
 
-      await command.call(doc,editor);
+      await command.call(doc,editor, ...args);
     }
   }
 
@@ -194,12 +194,12 @@ export class CoqProject implements vscode.Disposable {
     return this.tryDocumentCommand(CoqDocument.prototype.stepBackward);
   }
 
-  public interpretToPoint() {
-    return this.tryDocumentCommand(CoqDocument.prototype.interpretToCursorPosition,false,false);
+  public interpretToPoint(options : {synchronous?: boolean} = {}) {
+    return this.tryDocumentCommand(CoqDocument.prototype.interpretToCursorPosition,false,false,options.synchronous);
   }
 
-  public interpretToEnd() {
-    return this.tryDocumentCommand(CoqDocument.prototype.interpretToEnd,false,false);
+  public interpretToEnd(options : {synchronous?: boolean} = {}) {
+    return this.tryDocumentCommand(CoqDocument.prototype.interpretToEnd,false,false,options.synchronous);
   }
 
   public interruptCoq() {

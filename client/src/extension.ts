@@ -45,7 +45,9 @@ export function activate(context: ExtensionContext) {
   regProjectCmd('stepForward', project.stepForward);
   regProjectCmd('stepBackward', project.stepBackward);
   regProjectCmd('interpretToPoint', project.interpretToPoint);
+  regProjectCmd('interpretToPointSynchronous', () => project.interpretToPoint({synchronous: true}));
   regProjectCmd('interpretToEnd', project.interpretToEnd);
+  regProjectCmd('interpretToEndSynchronous', () => project.interpretToEnd({synchronous: true}));
   regProjectCmd('moveCursorToFocus', project.setCursorToFocus);
   regTCmd('query.check', check);
   regTCmd('query.locate', locate);

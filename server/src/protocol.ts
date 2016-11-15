@@ -160,7 +160,12 @@ export type CommandResult =
 
 
 export interface CoqTopInterpretToPointParams extends CoqTopParams {
-  offset: number;
+  location: number|vscode.Position,
+  synchronous?: boolean,
+}
+
+export interface InterpretToEndParams extends CoqTopParams {
+  synchronous?: boolean,
 }
 
 export interface LtacProfTactic {
@@ -206,7 +211,7 @@ export namespace InterpretToPointRequest {
   , _:undefined }; 
 } 
 export namespace InterpretToEndRequest { 
-  export const type: RequestType<CoqTopParams, CommandResult, void> = 
+  export const type: RequestType<InterpretToEndParams, CommandResult, void> = 
   { get method() { return 'coqtop/interpretToEnd' }
   , _:undefined }; 
 } 

@@ -158,16 +158,17 @@ export class CoqLanguageServer implements vscode.Disposable {
     return this.server.sendRequest(proto.StepBackwardRequest.type, { uri: uri }, this.cancelRequest.token);
   }
 
-  public interpretToPoint(uri: string, offset: number): Thenable<proto.CommandResult> {
-    const params = {
+  public interpretToPoint(uri: string, location: number|vscode.Position, synchronous?): Thenable<proto.CommandResult> {
+    const params : proto.CoqTopInterpretToPointParams = {
       uri: uri,
-      offset: offset
+      location: location,
+      synchronous: synchronous,
     };
     return this.server.sendRequest(proto.InterpretToPointRequest.type, params, this.cancelRequest.token);
   }
 
-  public interpretToEnd(uri: string): Thenable<proto.CommandResult> {
-    return this.server.sendRequest(proto.InterpretToEndRequest.type, { uri: uri }, this.cancelRequest.token);
+  public interpretToEnd(uri: string, synchronous: boolean): Thenable<proto.CommandResult> {
+    return this.server.sendRequest(proto.InterpretToEndRequest.type, { uri: uri, synchronous: synchronous }, this.cancelRequest.token);
   }
 
   public resizeView(uri: string, columns: number): Thenable<void> {
@@ -302,12 +303,12 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
     return this.server.stepBackward(this.uri);
   }
 
-  public interpretToPoint(offset: number): Thenable<proto.CommandResult> {
-    return this.server.interpretToPoint(this.uri, offset);
+  public interpretToPoint(offset: number|vscode.Position, synchronous: boolean): Thenable<proto.CommandResult> {
+    return this.server.interpretToPoint(this.uri, offset, synchronous);
   }
 
-  public interpretToEnd(): Thenable<proto.CommandResult> {
-    return this.server.interpretToEnd(this.uri);
+  public interpretToEnd(synchronous: boolean): Thenable<proto.CommandResult> {
+    return this.server.interpretToEnd(this.uri, synchronous);
   }
 
   public resizeView(columns: number): Thenable<void> {

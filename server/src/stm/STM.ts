@@ -382,7 +382,7 @@ export class CoqStateMachine {
    * This may not fully process everything, or it may rewind the state.
    * @throws proto.FailValue if advancing failed
    */
-  public async interpretToPoint(position: Position, commandSequence: CommandIterator, interpretToEndOfSentence: boolean, token: CancellationToken) : Promise<(proto.FailureResult & proto.FocusPosition)|null> {
+  public async interpretToPoint(position: Position, commandSequence: CommandIterator, interpretToEndOfSentence: boolean, synchronous: boolean, token: CancellationToken) : Promise<(proto.FailureResult & proto.FocusPosition)|null> {
     const endCommand = await this.startCommand();
     if(!endCommand)
       return;
@@ -399,6 +399,7 @@ export class CoqStateMachine {
         , commandSequence: commandSequence
         , end: interpretToEndOfSentence ? undefined : position
         , verbose: true
+        , synchronous: synchronous
         });
       if(token && token.isCancellationRequested)
         throw "operation interrupted"
@@ -636,7 +637,10 @@ private routeId = 1;
    * 
    * @param params.end: optionally specify and end position to speed up command parsing (for params.commandSequence) 
    * */
-  private async iterateAdvanceFocus(params: {iterateCondition: (command: {text:string,range:Range}, contiguousFocus: boolean)=>boolean, commandSequence: CommandIterator, verbose: boolean, end?: Position}) : Promise<void> {
+  private async iterateAdvanceFocus(params: {iterateCondition: (command: {text:string,range:Range}, contiguousFocus: boolean)=>boolean, commandSequence: CommandIterator, verbose: boolean, end?: Position, synchronous?: boolean}) : Promise<void> {
+    if(params.synchronous === undefined)
+      params.synchronous = false;
+
     // true if the focus has not jumped elsewhere in the document
     let contiguousFocus = true;
     // Start advancing sentences
@@ -655,6 +659,9 @@ private routeId = 1;
 
       const result = await this.addCommand(command,params.verbose);
       contiguousFocus = !result.unfocused;
+
+      if(params.synchronous)
+        await this.coqtop.coqGoal();
 
       // If we have jumped to a new position, create a new iterator since the next command will not be adjacent
       if(result.unfocused)

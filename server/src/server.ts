@@ -179,11 +179,11 @@ connection.onRequest(coqproto.StepBackwardRequest.type, (params: coqproto.CoqTop
 });
 connection.onRequest(coqproto.InterpretToPointRequest.type, (params: coqproto.CoqTopInterpretToPointParams, token: CancellationToken) => {
   return project.lookup(params.uri)
-    .interpretToPoint(params.offset, token);
+    .interpretToPoint(params.location, params.synchronous, token);
 });
-connection.onRequest(coqproto.InterpretToEndRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
+connection.onRequest(coqproto.InterpretToEndRequest.type, (params: coqproto.InterpretToEndParams, token: CancellationToken) => {
   return project.lookup(params.uri)
-    .interpretToEnd(token);
+    .interpretToEnd(params.synchronous, token);
 });
 connection.onRequest(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams, token: CancellationToken) => {
   return project.lookup(params.uri)
