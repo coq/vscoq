@@ -926,6 +926,7 @@ private routeId = 1;
         // So we will buffer these messages until we get the next 'value' response.
         this.bufferedFeedback.push({stateId: stateId, type: "status", status: feedback.status, worker: feedback.worker});
       }
+    }
     // We could track this info, but why?
     //   const sent = this.sentences.get(stateId);
     //   if(sent) {
