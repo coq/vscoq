@@ -54,8 +54,9 @@ export class SentenceCollection implements vscode.TextDocument {
 
   public positionAt(offset: number) : Position {
     for(let sent of this.sentences) {
-      const sentOffset = sent.getDocumentEndOffset();
-      if(sent.getDocumentOffset() <= offset && offset < sentOffset) {
+      const sentOffset = sent.getDocumentOffset();
+      const sentEndOffset = sent.getDocumentEndOffset();
+      if(sentOffset <= offset && offset < sentEndOffset) {
         return sent.positionAt(offset - sentOffset);
       }
     }
