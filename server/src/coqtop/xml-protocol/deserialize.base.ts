@@ -148,6 +148,18 @@ export namespace Nodes {
     $: {val: "globdef"},
     $children: {[0]: Location, [1]: string, [2]: string, [3]: string } & {}[],
   }
+  export interface MessageFeedbackNode {
+    $name: 'feedback_content',
+    $kind: "message", // set for type narrowing
+    $: {val: "message"},
+    $children: {[0]: Message} & {}[],
+  }
+  export interface SentenceStatusAddedAxiomNode {
+    $name: 'feedback_content',
+    $kind: "addedaxiom", // set for type narrowing
+    $: {val: "addedaxiom"},
+    $children: {}[],
+  }
   export interface ErrorMessageNode {
     $name: 'feedback_content',
     $kind: "errormsg", // set for type narrowing
@@ -172,6 +184,12 @@ export namespace Nodes {
     $: {val: "complete"},
     $children: {}[],
   }
+  export interface SentenceStatusInProgressNode {
+    $name: 'feedback_content',
+    $kind: "inprogress", // set for type narrowing
+    $: {val: "inprogress"},
+    $children: {[0]: number } & {}[],
+  }
   export interface SentenceStatusProcessingInNode {
     $name: 'feedback_content',
     $kind: "processingin", // set for type narrowing
@@ -193,8 +211,8 @@ export namespace Nodes {
 
   export type FeedbackContentNode =
     WorkerStatusNode | FileDependencyNode | FileLoadedNode |
-    GlobReferenceNode | GlobDefinitionNode | ErrorMessageNode |
-    SentenceStatusProcessedNode | SentenceStatusIncompleteNode | SentenceStatusCompleteNode | SentenceStatusProcessingInNode |
+    GlobReferenceNode | GlobDefinitionNode | MessageFeedbackNode | ErrorMessageNode |
+    SentenceStatusAddedAxiomNode | SentenceStatusProcessedNode | SentenceStatusIncompleteNode | SentenceStatusCompleteNode | SentenceStatusInProgressNode | SentenceStatusProcessingInNode |
     CustomFeeedbackNode | LtacProfFeeedbackNode;
 
   export interface LtacProfTacticNode {
@@ -284,8 +302,6 @@ export namespace Nodes {
     $name: 'value',
     $: {val: 'fail', loc_s?: string, loc_e?: string},
     $children: {[0]: StateId, [1]: AnnotatedText} & {}[],
-    state_id: StateId,
-    message: AnnotatedText,
   }
 
 
@@ -443,7 +459,7 @@ export abstract class Deserialize {
       case 'message':
         return check(value.$name, {
           level: value.message_level, 
-          message: value.$children[1]
+          message: value.$children[1] || ""
         });
       case 'value':
         if(Nodes.isGoodValue(value))
@@ -451,8 +467,8 @@ export abstract class Deserialize {
         else
           return check(value.$name, {
             status: 'fail',
-            stateId: value.state_id,
-            message: value.message,
+            stateId: value.$children[0],
+            message: value.$children[1] || "",
             location: {start: +value.$.loc_s, stop: +value.$.loc_e},
           } as FailValue);
       case 'ltacprof_tactic':
@@ -471,6 +487,7 @@ export abstract class Deserialize {
           tactics: value.$children
         });
       case 'feedback_content':
+        value.$kind = value.$.val;
         return check(value.$name, this.deserializeFeedbackContent(value as Node));
       case 'feedback': {
         let objectId : coqProto.ObjectId;
@@ -494,8 +511,6 @@ export abstract class Deserialize {
   }
 
   private doDeserializeFeedbackContent(value: Nodes.FeedbackContentNode) : FeedbackContent {
-    value.$kind = value.$.val;
-
     let result : coqProto.FeedbackContent;
     switch (value.$kind)
     { case 'workerstatus': {
@@ -554,6 +569,13 @@ console.log("glob-ref: " + util.inspect(result));
       }
 console.log("glob-def: " + util.inspect(result));
       return result;
+    case 'message':
+      return {
+        feedbackKind: "message",
+        level: value.$children[0].level,
+        location: value.$children[0].location,
+        message: value.$children[0].message,
+      };
     case 'errormsg':
       return {
         feedbackKind: "message",
@@ -561,20 +583,31 @@ console.log("glob-def: " + util.inspect(result));
         location: value.$children[0],
         message: value.$children[1]
       };
+    case 'addedaxiom':
     case 'processed':
     case 'incomplete':
     case 'complete':
       result = {
         feedbackKind: 'sentence-status',
         status: SentenceStatus[value.$.val],
-        worker: ""
+        worker: "",
+        inProgressDelta: 0,
       }
       return result;
-    case 'processingin': // has worker id
+    case 'inprogress': // has worker id
       result = {
         feedbackKind: 'sentence-status',
         status: SentenceStatus[value.$.val],
-        worker: value.$children[0]
+        worker: "",
+        inProgressDelta: value.$children[0],
+      }
+      return result;
+    case 'processingin': // change in the nuber of proofs being worked on
+      result = {
+        feedbackKind: 'sentence-status',
+        status: SentenceStatus[value.$.val],
+        worker: value.$children[0],
+        inProgressDelta: 0,
       }
       return result;
     case 'custom': {
@@ -592,7 +625,7 @@ console.log("glob-def: " + util.inspect(result));
     } default:
       result = {
         feedbackKind: "unknown",
-        data: value,
+        data: (value as Node),
       };
       return result;
     }

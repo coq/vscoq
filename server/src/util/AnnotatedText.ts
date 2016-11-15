@@ -12,11 +12,11 @@ export interface Annotation {
 }
 
 export function isScopedText(text: AnnotatedText): text is ScopedText {
-  return text.hasOwnProperty('scope');
+  return text && text.hasOwnProperty('scope');
 }
 
 export function isTextAnnotation(text: AnnotatedText): text is TextAnnotation {
-  return typeof (text as any).text === 'string'
+  return typeof text && (text as any).text === 'string'
 }
 
 export function textToString(text: AnnotatedText) : string {

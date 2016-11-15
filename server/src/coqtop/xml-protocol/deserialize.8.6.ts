@@ -12,12 +12,29 @@ namespace Nodes_8_6 {
     message_level: coqProto.MessageLevel,
   }
 
+  export interface MessageFeedbackNode {
+    $name: 'feedback_content',
+    $kind: "message", // set for type narrowing
+    $: {val: "message"},
+    $children: {[0]: coqProto.MessageLevel, [1]: coqProto.Location, [2]: AnnotatedText} & {}[],
+  }
+
+
   export interface LtacProfTacticNode {
     $name: 'ltacprof_tactic',
     $: {name: string, total: string, local: string, ncalls: string, max_total: string }
     $children: coqProto.LtacProfTactic[],
   }
- 
+
+   export type FeedbackContentNode =
+    /* 8.6 */
+    MessageFeedbackNode |
+    /* Base */
+    Nodes.WorkerStatusNode | Nodes.FileDependencyNode | Nodes.FileLoadedNode |
+    Nodes.GlobReferenceNode | Nodes.GlobDefinitionNode |
+    Nodes.SentenceStatusProcessedNode | Nodes.SentenceStatusIncompleteNode | Nodes.SentenceStatusCompleteNode | Nodes.SentenceStatusProcessingInNode |
+    Nodes.CustomFeeedbackNode | Nodes.LtacProfFeeedbackNode;
+
   
   export type TypedNode =
     /** 8.6 */
@@ -32,6 +49,8 @@ namespace Nodes_8_6 {
     Nodes.LtacProfResultsNode |
     Nodes.FeedbackNode | Nodes.FeedbackContentNode |
     Nodes.ValueNode;
+
+  
 }
 
 export class Deserialize_8_6 extends Deserialize {
@@ -68,9 +87,9 @@ export class Deserialize_8_6 extends Deserialize {
     }
   }
 
-  // public deserializeFeedbackContent(value: Node) : any {
-  //   const [ type, children ] = [value.$['val'], value.$children];
-  //   switch (type) {
+  // public deserializeFeedbackContent(v: Node) : any {
+  //   const value = v as Nodes_8_6.FeedbackContentNode;
+  //   switch (value.$kind) {
   //   default:
   //     return super.deserializeFeedbackContent(value);
   //   }
