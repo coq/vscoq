@@ -172,6 +172,10 @@ export class State {
       this.next.prev = this.prev;
   }
 
+  public updateWorkerStatus(workerId: string, status: string) {
+    
+  }
+
   /** Handle sentence-status updates as they come from coqtop */
   public updateStatus(status: coqProto.SentenceStatus) {
     switch(status) {

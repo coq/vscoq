@@ -909,6 +909,10 @@ private routeId = 1;
       } else {
         this.console.warn(`LtacProf results for unknown stateId: ${stateId}`);
       }
+    } else if(feedback.feedbackKind === "worker-status" && hasStateId) {
+      const sent = this.sentences.get(stateId);
+      if(sent)
+        sent.updateWorkerStatus(feedback.id, feedback.ident);
     } else if(feedback.feedbackKind === "message") {
       // this.console.log("Message feedback: " + util.inspect(feedback));
       this.onCoqMessage(feedback, stateId /* can be undefined */);
@@ -922,9 +926,6 @@ private routeId = 1;
         // So we will buffer these messages until we get the next 'value' response.
         this.bufferedFeedback.push({stateId: stateId, type: "status", status: feedback.status, worker: feedback.worker});
       }
-    } else {
-      this.console.log("Unknown feedback: " + util.inspect(feedback));
-    }
     // We could track this info, but why?
     //   const sent = this.sentences.get(stateId);
     //   if(sent) {
