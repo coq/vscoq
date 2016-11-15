@@ -76,6 +76,11 @@
           "type": "boolean",
           "default": true,
           "description": "Move the editor's cursor position as Coq interactively steps forward/backward a command"
+        },
+        "coq.interpretToEndOfSentence": {
+          "type": "boolean",
+          "default": false,
+          "description": "Interpret to point will interpret up to *and including* the sentence at the cursor"
         }
 			}
 		},

@@ -308,7 +308,7 @@ export class CoqDocument implements TextDocument {
   private *commandSequenceGenerator(begin: Position, end?: Position, highlight: boolean = false) : IterableIterator<{text: string, range: Range}> {
     const documentText = this.document.getText();
     let endOffset : number;
-    if(end == undefined)
+    if(end === undefined)
       endOffset = documentText.length;
     else
       endOffset = Math.min(this.offsetAt(end), documentText.length);
@@ -835,7 +835,7 @@ export class CoqDocument implements TextDocument {
 
       this.parsingRanges = [Range.create(this.stm.getFocusedPosition(),pos)];
       this.updateHighlights(true);
-      const error = await this.stm.interpretToPoint(pos,this.commandSequence(false), token);
+      const error = await this.stm.interpretToPoint(pos,this.commandSequence(false), this.project.settings.coq.interpretToEndOfSentence, token);
       if(error)
         return error;
       return this.toGoal(await this.stm.getGoal());

@@ -93,7 +93,7 @@ export class CoqStateMachine {
   // lazy init
   private root : State = null;
   // map id to sentence; lazy init  
-  private sentences : Map<StateId,State> = null;
+  private sentences = new Map<StateId,State>();
   // The sentence that coqtop considers "focused"; lazy init
   private focusedSentence : State = null;
   // The sentence that is closest to the end of the document; lazy init
@@ -382,27 +382,34 @@ export class CoqStateMachine {
    * This may not fully process everything, or it may rewind the state.
    * @throws proto.FailValue if advancing failed
    */
-  public async interpretToPoint(position: Position, commandSequence: CommandIterator, token: CancellationToken) : Promise<(proto.FailureResult & proto.FocusPosition)|null> {
+  public async interpretToPoint(position: Position, commandSequence: CommandIterator, interpretToEndOfSentence: boolean, token: CancellationToken) : Promise<(proto.FailureResult & proto.FocusPosition)|null> {
     const endCommand = await this.startCommand();
     if(!endCommand)
       return;
     try {
+
       await this.validateState(true);
       // Advance the focus until we reach or exceed the location
       await this.iterateAdvanceFocus(
-        { iterateCondition: (command,contiguousFocus) =>
-            textUtil.positionIsAfterOrEqual(position,command.range.end) && (!token || !token.isCancellationRequested)
+        { iterateCondition: (command,contiguousFocus) => {
+            return ((!interpretToEndOfSentence && textUtil.positionIsAfterOrEqual(position,command.range.end))
+              || (interpretToEndOfSentence && textUtil.positionIsAfter(position,command.range.start))) &&
+            (!token || !token.isCancellationRequested)
+        }
         , commandSequence: commandSequence
-        , end: position
+        , end: interpretToEndOfSentence ? undefined : position
         , verbose: true
         });
       if(token && token.isCancellationRequested)
         throw "operation interrupted"
 
-      if(textUtil.positionIsBefore(position,this.getFocusedPosition())) {
+      if(!interpretToEndOfSentence && textUtil.positionIsBefore(position,this.getFocusedPosition())) {
         // We exceeded the desired position
         await this.focusSentence(this.getParentSentence(position));
+      } else if(interpretToEndOfSentence && textUtil.positionIsBeforeOrEqual(position,this.focusedSentence.getRange().start)) {
+        await this.focusSentence(this.getParentSentence(position).getNext());
       }
+
 
       return null;
     } catch (error) {
@@ -583,7 +590,7 @@ private routeId = 1;
     if(!this.isRunning())
       throw "Cannot reinitialize the STM once it has died; create a new one."
     this.root = State.newRoot(rootStateId);
-    this.sentences = new Map<StateId,State>([ [this.root.getStateId(),this.root] ]);
+    this.sentences.set(this.root.getStateId(),this.root);
     this.lastSentence = this.root;
     this.setFocusedSentence(this.root);
   }

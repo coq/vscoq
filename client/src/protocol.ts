@@ -47,6 +47,8 @@ export interface CoqSettings {
   loadCoqProject: boolean,
   /** Move the editor's cursor position as Coq interactively steps forward/backward a command. @default `true` */
   moveCursorToFocus : boolean,
+  /** Interpret to end of sentence */
+  interpretToEndOfSentence: boolean,
 }
 
 export interface FailValue {
