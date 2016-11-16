@@ -37,9 +37,7 @@ function writeFile(filename: string, data: any) : Promise<void> {
 }
 
 function edit(editor: vscode.TextEditor) : Promise<vscode.TextEditorEdit> {
-  return new Promise<vscode.TextEditorEdit>((resolve) => {
-    editor.edit(resolve);
-  });
+  return new Promise<vscode.TextEditorEdit>((resolve) => editor.edit(resolve));
 }
 
 function coqViewToFileUri(uri: vscode.Uri) {
@@ -110,30 +108,29 @@ export class HtmlLtacProf {
   
   private createBuffer() {
     this.bufferReady = new Promise<void>(async (resolve, reject) => {
-    try {
-      await this.serverReady;
-      const serverAddress = this.httpServer.address();
+      try {
+        await this.serverReady;
+        const serverAddress = this.httpServer.address();
 
-      const templateFileName = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/ltacprof/LtacProf.html'));
-      this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
-      console.log("LtacProf: " + this.coqViewUri.toString());
-
-    } catch(err) {
-      vscode.window.showErrorMessage(err.toString());
-      reject();
-    }
-    resolve();
-    this.show(true);
+        const templateFileName = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/ltacprof/LtacProf.html'));
+        this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
+        console.log("LtacProf: " + this.coqViewUri.toString());
+        resolve();
+        // this.show(true);
+      } catch(err) {
+        vscode.window.showErrorMessage(err.toString());
+        reject();
+      }
     });
   }
 
   public async update(results) {
     await this.bufferReady;
     this.results = results;
-    await Promise.all(
+    await Promise.all<void>(
       this.server.clients.map((c) => {
         if(c.readyState === c.OPEN)
-          return new Promise((resolve,reject) => c.send(JSON.stringify(this.results), (err) => resolve()));
+          return new Promise<void>((resolve,reject) => c.send(JSON.stringify(this.results), (err) => resolve()));
         else
           return Promise.resolve();
       }));

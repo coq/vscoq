@@ -65,9 +65,7 @@ function writeFile(filename: string, data: any) : Promise<void> {
 }
 
 function edit(editor: vscode.TextEditor) : Promise<vscode.TextEditorEdit> {
-  return new Promise<vscode.TextEditorEdit>((resolve) => {
-    editor.edit(resolve);
-  });
+  return new Promise<vscode.TextEditorEdit>((resolve,reject) => editor.edit(resolve));
 }
 
 function coqViewToFileUri(uri: vscode.Uri) {
