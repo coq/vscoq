@@ -37,25 +37,7 @@ enum StateStatusFlags {
   Unsafe = 1 << 2,
   Error = 1 << 3,
   Warning = 1 << 4,
-  // Parsing,
-  // ProcessingInWorker,
-  // Processed,
-  // InProgress,
-  // Incomplete,
-  // Complete,
-  // Error,
 }
-
-// function convertStatus(status: coqProto.SentenceStatus) : StateStatus {
-//   switch(status) {
-//     case coqProto.SentenceStatus.Parsing:            return StateStatus.Parsing;
-//     case coqProto.SentenceStatus.ProcessingInWorker: return StateStatus.ProcessingInWorker;
-//     case coqProto.SentenceStatus.Processed:          return StateStatus.Processed;
-//     case coqProto.SentenceStatus.InProgress:         return StateStatus.InProgress;
-//     case coqProto.SentenceStatus.Incomplete:         return StateStatus.Incomplete;
-//     case coqProto.SentenceStatus.Complete:           return StateStatus.Complete;
-//   }
-// }
 
 export class State {
   private status: StateStatusFlags;
@@ -98,13 +80,6 @@ export class State {
     return this.commandText;
   }
 
-  // public remove() {
-  //   if(this.next)
-  //     this.next.remove();
-  //   if(this.prev)
-  //     this.prev.next = null;
-  //   this.proofView = undefined;
-  // }
   public getText() : string {
     return this.commandText;
   }
@@ -336,20 +311,6 @@ export class State {
     else
       return StateStatus.Processed;
   }
-
-  // public setStatus(status: coqProto.SentenceStatus) : void {
-  //   if(this.status > status)
-  //     return;
-  //   else {
-  //     this.status = status;
-  //     if(this.computeStart && this.status < status) {
-  //       const duration = process.hrtime(this.computeStart);
-  //       this.computeTimeMS = duration[0] * 1000.0 + (duration[1] / 1000000.0);
-  //       // if(status == coqProto.SentenceStatus.Processed)
-  //       //   this.clientConsole.log(`processed in time ${sentence.stateId}: ${sentence.computeTimeMS/1000.0} sec`);
-  //     }      
-  //   }
-  // }
 
   /** @returns `true` if this sentence appears strictly before `position` */
   public isBefore(position: Position) : boolean {
