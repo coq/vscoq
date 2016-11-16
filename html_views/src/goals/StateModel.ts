@@ -63,28 +63,37 @@ function isScopedText(text: AnnotatedText): text is ScopedText {
   return text.hasOwnProperty('scope');
 }
 
+
 function createAnnotatedText(text: AnnotatedText) : Node[] {
-  if(typeof text === 'string')
-    return makeBreakingText(text)
-  else if(text instanceof Array)
-    return Array.prototype.concat(...text.map(createAnnotatedText))
-  else if(isScopedText(text))
-    return [$('<span>')
-      .addClass('scope' + text.scope)
-      .append(createAnnotatedText(text.text))
-      .get(0)];
-  else if(text.substitution) // TextAnnotation
-    return [$('<span>')
-      .addClass('substitution')
-      .addClass(getTextDiffClass(text.diff))
-      .attr("subst",text.substitution)
-      .append(makeBreakingText(text.text))
-      .get(0)];
-  else // TextAnnotation
-    return [$('<span>')
-      .addClass(getTextDiffClass(text.diff))
-      .append(makeBreakingText(text.text))
-      .get(0)];
+  function helper(text: AnnotatedText) : Node[] {
+    if(typeof text === 'string')
+      return makeBreakingText(text)
+    else if(text instanceof Array)
+      return Array.prototype.concat(...text.map(helper))
+    else if(isScopedText(text))
+      return text.scope.trim()!== ""
+        ? [$('<span>')
+          .addClass(text.scope.replace('.', '-'))
+          .append(helper(text.text))
+          .get(0)]
+        : helper(text.text);
+    else if(text.substitution) // TextAnnotation
+      return [$('<span>')
+        .addClass('substitution')
+        .addClass(getTextDiffClass(text.diff))
+        .attr("subst",text.substitution)
+        .append(makeBreakingText(text.text))
+        .get(0)];
+    else // TextAnnotation
+      return [$('<span>')
+        .addClass(getTextDiffClass(text.diff))
+        .append(makeBreakingText(text.text))
+        .get(0)];
+  }
+  return [$('<span>')
+    .addClass('richpp')
+    .append(helper(text))
+    .get(0)];
 }
 
 function onDoubleClickBreakableText(event: JQueryMouseEventObject) {
