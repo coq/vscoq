@@ -16,7 +16,7 @@ export function isScopedText(text: AnnotatedText): text is ScopedText {
 }
 
 export function isTextAnnotation(text: AnnotatedText): text is TextAnnotation {
-  return typeof text && (text as any).text === 'string'
+  return text && typeof (text as any).text === 'string'
 }
 
 export function textToString(text: AnnotatedText) : string {
@@ -167,7 +167,7 @@ export function mapAnnotation(text: AnnotatedText, map: (text: string, annotatio
  * 1) neither has a substitution or
  * 2) both have substitutions and one will be substituted with ""
  */
-export function compatibleAnnotations(ann1: Annotation, ann2: Annotation) : boolean {
+export function compatibleAnnotations<T extends Annotation>(ann1: T, ann2: T) : boolean {
   return ann1.diff === ann2.diff && ((ann1.substitution === undefined && ann2.substitution === undefined) || (ann1.substitution === "" || ann2.substitution === ""))
 }
 
@@ -182,7 +182,7 @@ function concatText(text1: AnnotatedText, text2: AnnotatedText) : AnnotatedText 
     return [text1,text2]
 }
 
-function tryCombineText(text1: string|TextAnnotation|ScopedText, text2: string|TextAnnotation|ScopedText) : string|TextAnnotation|ScopedText|undefined {
+export function tryCombineText(text1: string|TextAnnotation|ScopedText, text2: string|TextAnnotation|ScopedText) : string|TextAnnotation|ScopedText|undefined {
   if(typeof text1 === 'string' && typeof text2 === 'string')
     return text1 + text2;
   else if(isScopedText(text1) && isScopedText(text2) && text1.scope === text2.scope && text1.attributes === text2.attributes) {

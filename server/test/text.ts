@@ -47,6 +47,24 @@ suite("AnnotatedText", () => {
     assert.equal(text.textDisplayLength([{scope:"aa", text: [{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]}, "dee"]), 11);
   }));
 
+  test("isScopedText", (() => {
+    assert(!text.isScopedText({text:'aa',diff:'added'}));
+    assert(!text.isScopedText({text:'bb',diff:'added'}));
+  }));
+
+  test("isTextAnnotation", (() => {
+    assert(text.isTextAnnotation({text:'aa',diff:'added'}));
+    assert(text.isTextAnnotation({text:'bb',diff:'added'}));
+  }));
+
+  test("compatibleAnnotations", (() => {
+    assert(text.compatibleAnnotations({text:'aa',diff:'added'},{text:'bb',diff:'added'}));
+  }));
+
+  test("tryCombineText", (() => {
+    assert.deepStrictEqual(text.tryCombineText({text:'aa',diff:'added'},{text:'bb',diff:'added'}), { diff: 'added', text: 'aabb' });
+  }));
+
   test("normalizeText", (() => {
     assert.equal(text.normalizeText("foo"), "foo");
     assert.equal(text.normalizeText(["foo","bar"]), "foobar");
@@ -58,6 +76,7 @@ suite("AnnotatedText", () => {
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:{scope:"",text:["foo","!!"]}},"bar"]), [{scope:"aa",text:"foo!!"},"bar"]);
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:{scope:"",text:["foo","!!"]}},{scope:"aa",text:["bar"]}]), {scope:"aa",text:"foo!!bar"});
     assert.deepStrictEqual(text.normalizeText({diff:"added",text:"aabbaa"}),{diff:"added",text:"aabbaa"});
+    assert.deepStrictEqual(text.normalizeText([{text: 'aa',diff: 'added'},{text: 'bb',diff: 'added'},{text: 'aa',diff: 'added'}]), { diff: 'added', text: 'aabbaa' });
   }));
 
   test("textSplit", (() => {
