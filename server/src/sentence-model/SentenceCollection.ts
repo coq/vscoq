@@ -7,7 +7,7 @@ import * as parser from '../parsing/coq-parser';
 import {TextDocumentItem} from '../document'
 import * as server from '../server'
 import * as util from 'util'
-
+import {QualId, ScopeFlags, SymbolInformation} from './Scopes'
 
 export type SentencesInvalidatedCallback = (invalidatedSentences: Sentence[]) => void; 
 
@@ -50,6 +50,62 @@ export class SentenceCollection implements vscode.TextDocument {
 
   public getText() : string {
     return this.documentText;
+  }
+
+  public getSentenceLine(pos: Position) : string|null {
+    const sent = this.getSentenceAt(pos);
+    if(sent)
+      return sent.getLine(pos);
+    else
+      return null;
+  }
+
+  public getLine(line: number) : {text: string, range: Range, offset: number}|null {
+    const lineRE = /.*/g;
+
+    const offset = this.offsetAt(Position.create(line,0));
+    lineRE.lastIndex = offset;
+    const match = lineRE.exec(this.documentText);
+    if(match) {
+      return {
+        text: match[0],
+        range: Range.create(this.positionAt(match.index), this.positionAt(match.index + match[0].length)),
+        offset: match.index,
+      }
+    } else
+      return null;
+  }
+
+  public getDefinitionAt(pos: Position) : {id: QualId, range: Range, offset: number}|null {
+    const line = this.getLine(pos.line);
+    if(!line)
+      return null;
+    const identRE = /[a-zA-Z_][a-z-A-Z0-9_']*(?:[.][a-zA-Z_][a-z-A-Z0-9_']*)*/g;
+    identRE.lastIndex = 0;
+    let match : RegExpExecArray;
+    while(match = identRE.exec(line.text)) {
+      if(match.index <= pos.character && pos.character <= match.index + match[0].length) {
+        console.log("qualid: " + match[0]);
+        const start = textUtil.positionAtRelative(line.range.start,line.text,match.index);
+        const end = textUtil.positionAtRelative(line.range.start,line.text,match.index+match[0].length);
+        return {
+          id: match[0].split('.'),
+          range: Range.create(start,end),
+          offset: line.offset + match.index,
+        }
+      }
+    }
+    return null;
+  }
+
+  public lookupDefinition(pos: vscode.Position) : SymbolInformation<Sentence>[] {
+    const def = this.getDefinitionAt(pos);
+    if(!def)
+      return [];
+    const sent = this.getSentenceIndexBeforeOrAt(pos);
+    if(sent < 0)
+      return [];
+    return this.sentences[sent].getScope().lookup(def.id,ScopeFlags.All);
   }
 
   public positionAt(offset: number) : Position {
@@ -287,6 +343,7 @@ export class SentenceCollection implements vscode.TextDocument {
     let currentOffset = this.getSentenceOffset(start);
 
     const reparsed : Sentence[] = [];
+    let prev = this.sentences[start-1] || null;
 
     try {
       for(let idx = 0; /**/; ++idx) {
@@ -300,13 +357,33 @@ export class SentenceCollection implements vscode.TextDocument {
         } if(idx >= minCount && start+idx < this.sentences.length && currentOffset+sent.text.length === this.sentences[start+idx].getDocumentEndOffset()) {
           // no need to parse further; keep remaining sentences
           const removed = this.sentences.splice(start, idx, ...reparsed)
+          // adjust prev/next references among the sentences
+          if(reparsed.length > 0) {
+            const lastReparsed = reparsed[reparsed.length-1];
+            lastReparsed.next = this.sentences[start+reparsed.length] || null;
+            if(lastReparsed.next)
+              lastReparsed.next.prev = lastReparsed;
+          } else {
+            if(this.sentences[start-1])
+              this.sentences[start-1].next = this.sentences[start] || null;
+            if(this.sentences[start])
+            this.sentences[start].prev = this.sentences[start-1] || null;
+          }
+          this.sentences[start+reparsed.length-1].next = this.sentences[start+reparsed.length]||null;
+          if(start+reparsed.length < this.sentences.length)           
+            this.sentences[start+reparsed.length].prev = this.sentences[start+reparsed.length-1]||null;           
+          //
           removed.forEach((sent) => sent.dispose());
           return {removed: removed, added: reparsed, endOfSentences: false};
         }
 
         const command = sent.text;
         const range = Range.create(currentPosition, textUtil.positionAtRelative(currentPosition, command, sent.text.length));
-        reparsed.push(new Sentence(command, range, currentOffset, sem.parseAstForSymbols(sent, currentPosition)));
+        const newSent = new Sentence(command, range, currentOffset, prev, sent);
+        reparsed.push(newSent);
+        if(prev)
+          prev.next = newSent;
+        prev = newSent;
         currentPosition = range.end;
         currentOffset+= sent.text.length;
       }

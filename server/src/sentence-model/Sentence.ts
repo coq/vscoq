@@ -4,27 +4,53 @@ import * as vscode from 'vscode-languageserver';
 import {SentenceSemantics} from '../parsing/SentenceSemantics';
 import {State} from '../stm/State'
 import * as parser from '../parsing/coq-parser';
+import * as ast from '../parsing/SentenceSemantics';
+import {ScopeDeclaration, parseAstForScopeDeclarations} from './Scopes';
+
+
+
+/*
+every sentence has a scope
+* a basic scope points to a parent scope, which could be a section def, module def, or top of the document
+* a basic scope points to a previous and next siblings (often corresponds to prev/next sentence)
+* some sentences may have private scopes: available only within the sentence
+* some sentences may 
+*/
 
 export class Sentence {
   private state: State = undefined;
+  public next: Sentence|null = null;
+  private scopeDeclaration: ScopeDeclaration<Sentence>|null = null;
+  private symbols: vscode.SymbolInformation[] = [];
 
   public constructor(
     private text: string,
     private documentRange: Range,
     private documentOffset: number,
-    private symbols?: vscode.SymbolInformation[],
-  ) {}
+    public prev: Sentence|null,
+    parseSent: parser.Sentence,    
+  ) {
+    this.scopeDeclaration = parseAstForScopeDeclarations<Sentence>(parseSent, this, documentRange.start);
+    this.symbols = ast.parseAstForSymbols(parseSent, documentRange.start);
+  }
 
   public dispose() {
-
   }
 
   public getState() : State {
     return this.state;
   }
 
+  public getScope() : ScopeDeclaration<Sentence>|null {
+    return this.scopeDeclaration;
+  }
+
   public setState(state: State) : void {
     this.state = state;
+  }
+
+  public getSymbols() {
+    return this.symbols;
   }
 
   public getText() : string {
@@ -58,6 +84,21 @@ export class Sentence {
   public offsetAt(position: Position) : number {
     return textUtil.relativeOffsetAtAbsolutePosition(this.text, this.documentRange.start, position);
   }
+
+  /**
+   * @param line -- the line number (absolute position in the document) to retrieve 
+   * @return the corresponding line of text that exists within this sentence.
+   */
+  public getLine(line: number|Position) : string|null {
+    if(typeof line === 'number')
+      line = Position.create(line,0);
+
+    const offset = this.offsetAt(line);
+    if(offset < 0)
+      return null;
+    return this.text.substr(offset).match(/^.*/)[0];
+  }
+
 
   /**
    * @param position -- position w.r.t. the whole document
@@ -104,10 +145,6 @@ export class Sentence {
       return "after";
     else
       return "contains";
-  }
-
-  public getSymbols() : vscode.SymbolInformation[] {
-    return this.symbols;
   }
 
   // public addSemantics(sem: SentenceSemantics) {

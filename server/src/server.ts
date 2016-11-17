@@ -67,7 +67,7 @@ connection.onInitialize((params): InitializeResult => {
         resolveProvider: true
       },
       documentSymbolProvider: true,
-      // definitionProvider: true,
+      definitionProvider: true,
 		}
 	}
 });
@@ -121,23 +121,23 @@ connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): Comp
 	// The pass parameter contains the position of the text document in 
 	// which code complete got requested. For the example we ignore this
 	// info and always provide the same completion items.
-	return [
-		{
-			label: 'idtac',
-			kind: CompletionItemKind.Snippet,
-			data: 1
-		},
-		{
-			label: 'Definition',
-			kind: CompletionItemKind.Keyword,
-			data: 2
-		},
-		{
-			label: 'reflexivity.',
-			kind: CompletionItemKind.Text,
-			data: 4
-		}
-	]
+	return [];
+	// 	{
+	// 		label: 'idtac',
+	// 		kind: CompletionItemKind.Snippet,
+	// 		data: 1
+	// 	},
+	// 	{
+	// 		label: 'Definition',
+	// 		kind: CompletionItemKind.Keyword,
+	// 		data: 2
+	// 	},
+	// 	{
+	// 		label: 'reflexivity.',
+	// 		kind: CompletionItemKind.Text,
+	// 		data: 4
+	// 	}
+	// ]
 });
 
 
@@ -257,10 +257,13 @@ export interface DocumentLinkParams {
     textDocument: TextDocumentIdentifier;
 }
 
-// connection.onDefinition((params: vscodeLangServer.TextDocumentPositionParams) : vscodeLangServer.Location|vscodeLangServer.Location[] => {
-//   params.
-//   return [];
-// })
+connection.onDefinition((params: vscodeLangServer.TextDocumentPositionParams) : Promise<vscodeLangServer.Location|vscodeLangServer.Location[]>|vscodeLangServer.Location|vscodeLangServer.Location[] => {
+  const doc = project.lookup(params.textDocument.uri);
+  if(!doc)
+    return [];
+  else
+    return doc.provideDefinition(params.position);
+})
 
 connection.onDocumentSymbol((params:vscodeLangServer.DocumentSymbolParams) : vscodeLangServer.SymbolInformation[] => {
   const doc = project.lookup(params.textDocument.uri);

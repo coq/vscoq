@@ -926,11 +926,24 @@ export class CoqDocument implements TextDocument {
   }
 
   public provideSymbols() : vscode.SymbolInformation[] {
-    const results : vscode.SymbolInformation[] = [];
-    for(let sent of this.document.getSentences()) {
-      results.push(...sent.getSymbols());
+    try {
+      const results : vscode.SymbolInformation[] = [];
+      for(let sent of this.document.getSentences()) {
+        results.push(...sent.getSymbols());
+      }
+      return results;
+    } catch(err) {
+      return [];
     }
-    return results;
+  }
+
+  public async provideDefinition(pos: vscode.Position) : Promise<vscode.Location|vscode.Location[]> {
+    try {
+      const symbols = this.document.lookupDefinition(pos);
+      return symbols.map(s => vscode.Location.create(this.uri,s.symbol.range));
+    } catch(err) {
+      return [];
+    }
   }
 
   public async provideDocumentLinks(token: CancellationToken) : Promise<vscode.DocumentLink[]> {
