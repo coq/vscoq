@@ -175,17 +175,17 @@ suite("Deserialize 8.5", () => {
       {feedbackKind: "message", level: proto.MessageLevel.Error, location: {start: 1, stop: 3}, message: "hi"}]);
   });
 
-  test("feedback - (sentence-state)", async function () {
+  test("feedback - (sentence-status)", async function () {
     const results = await parse([
       '<feedback_content val="processed"></feedback_content>',
       '<feedback_content val="incomplete"></feedback_content>',
       '<feedback_content val="complete"></feedback_content>',
       '<feedback_content val="processingin"><string>worker</string></feedback_content>',
       ]);
-    assert.deepStrictEqual(results[0],{feedbackKind: "sentence-status", status: proto.SentenceStatus.Processed, worker: ""});
-    assert.deepStrictEqual(results[1],{feedbackKind: "sentence-status", status: proto.SentenceStatus.Incomplete, worker: ""});
-    assert.deepStrictEqual(results[2],{feedbackKind: "sentence-status", status: proto.SentenceStatus.Complete, worker: ""});
-    assert.deepStrictEqual(results[3],{feedbackKind: "sentence-status", status: proto.SentenceStatus.ProcessingInWorker, worker: "worker"});
+    assert.deepStrictEqual(results[0],{feedbackKind: "sentence-status", status: proto.SentenceStatus.Processed, worker: "", inProgressDelta: 0});
+    assert.deepStrictEqual(results[1],{feedbackKind: "sentence-status", status: proto.SentenceStatus.Incomplete, worker: "", inProgressDelta: 0});
+    assert.deepStrictEqual(results[2],{feedbackKind: "sentence-status", status: proto.SentenceStatus.Complete, worker: "", inProgressDelta: 0});
+    assert.deepStrictEqual(results[3],{feedbackKind: "sentence-status", status: proto.SentenceStatus.ProcessingInWorker, worker: "worker", inProgressDelta: 0});
   });
 
   suite("LtacProf", () => {
