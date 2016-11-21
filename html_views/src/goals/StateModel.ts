@@ -74,7 +74,6 @@ function createAnnotatedText(text: AnnotatedText) : Node[] {
       return text.scope.trim()!== ""
         ? [$('<span>')
           .addClass(text.scope.replace('.', '-'))
-          .attr("title",text.scope)
           .append(helper(text.text))
           .get(0)]
         : helper(text.text);
@@ -83,7 +82,7 @@ function createAnnotatedText(text: AnnotatedText) : Node[] {
         .addClass('substitution')
         .addClass(getTextDiffClass(text.diff))
         .attr("subst",text.substitution)
-        // .attr("title",text.text)
+        .attr("title",text.text)
         .append(makeBreakingText(text.text))
         .get(0)];
     else // TextAnnotation

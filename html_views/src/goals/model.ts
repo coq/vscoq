@@ -80,6 +80,11 @@ const observer = new MutationObserver(function(mutations) {
     // });    
 });
 
+function togglePrettifySymbolsMode() {
+  $(document.body)
+    .toggleClass("prettifySymbolsMode");
+}
+
 var connection : WebSocket = null;
 function load() {
 
@@ -91,7 +96,10 @@ function load() {
       window.addEventListener("focus", onWindowGetFocus, true);
       observer.observe(parent.document.body, { attributes : true, attributeFilter: ['class'] });
       inheritStyles(parent.parent);
-      $(document.body).attr('class',getVSCodeTheme());
+      $(document.body)
+        .removeClass("vscode-dark")
+        .removeClass("vscode-light")
+        .addClass(getVSCodeTheme());
     } catch(error) {
       $('#stdout').text(error.toString());    
       $('#error').text(error.toString());
