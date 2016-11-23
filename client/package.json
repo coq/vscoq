@@ -7,7 +7,7 @@
     "email": "siegebell@gmail.com",
     "url": "http://people.csail.mit.edu/cj/"
   },
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "siegebell",
   "license": "MIT",
 	"engines": {
@@ -118,7 +118,7 @@
       {"command": "extension.coq.display.toggle.allLowLevelContents", "title": "Display All LowLevel Contents", "category": "Coq"},
       {"command": "extension.coq.proofView.open", "title": "Open proof view", "category": "Coq"},
       {"command": "extension.coq.proofView.openExternal", "title": "Open proof view in external browser", "category": "Coq"},
-      {"command": "extension.coq.ltacProf.getResults", "title": "Get the results of Ltac profiling", "category": "Coq"}
+      {"command": "extension.coq.ltacProf.getResults", "title": "View ltac profile", "category": "Coq"}
     ],
     "keybindings": [
       {"key": "ctrl+alt+.", "command": "extension.coq.moveCursorToFocus", "when": "editorTextFocus && editorLangId == coq"},
