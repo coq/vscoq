@@ -64,6 +64,8 @@ function isScopedText(text: AnnotatedText): text is ScopedText {
 }
 
 
+let hasSubstitutions = false;
+
 function createAnnotatedText(text: AnnotatedText) : Node[] {
   function helper(text: AnnotatedText) : Node[] {
     if(typeof text === 'string')
@@ -77,7 +79,8 @@ function createAnnotatedText(text: AnnotatedText) : Node[] {
           .append(helper(text.text))
           .get(0)]
         : helper(text.text);
-    else if(text.substitution) // TextAnnotation
+    else if(text.substitution) {// TextAnnotation
+      hasSubstitutions = true;
       return [$('<span>')
         .addClass('substitution')
         .addClass(getTextDiffClass(text.diff))
@@ -85,7 +88,7 @@ function createAnnotatedText(text: AnnotatedText) : Node[] {
         .attr("title",text.text)
         .append(makeBreakingText(text.text))
         .get(0)];
-    else // TextAnnotation
+    } else // TextAnnotation
       return [$('<span>')
         .addClass(getTextDiffClass(text.diff))
         .append(makeBreakingText(text.text))
@@ -184,6 +187,7 @@ class StateModel {
 
   public updateState(state: CommandResult) {
     try {
+      hasSubstitutions = false;
       this.focusedState = 0;
       this.clearErrorMessage();
       $('#stdout').text('');
@@ -214,6 +218,11 @@ class StateModel {
             this.setMessage("There are unfocused goals.");
           }
         }
+
+      if(hasSubstitutions)
+        $('#togglePrettifySymbols').removeClass("hidden")
+      else
+        $('#togglePrettifySymbols').addClass("hidden")
     }
       //   case 'not-running':
       //     return DisplayState.NotRunning;

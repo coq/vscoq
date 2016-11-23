@@ -309,7 +309,7 @@
     }
 
     #togglePrettifySymbols {
-      text-decoration: line-through
+      text-decoration: line-through;
     }
     .prettifySymbolsMode #togglePrettifySymbols {
       text-decoration: none
@@ -322,7 +322,7 @@
 <body onload="load()" class="prettifySymbolsMode">
   <div id="toolbar">
     <button value="R" onclick="location.reload(true)">Refresh</button>
-    <button value="P" id="togglePrettifySymbols" onclick="togglePrettifySymbolsMode()" title:"Toggle prettify-symbols-mode">Prettify</button>
+    <button title:"Toggle prettify-symbols-mode" value="P" id="togglePrettifySymbols" onclick="togglePrettifySymbolsMode()">Prettify</button>
   </div>
   <div id="measureTest"></div>
   <canvas id="textMeasurer" style="display: none"></canvas>
