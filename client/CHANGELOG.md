@@ -1,3 +1,11 @@
+## 0.1.6
+* Support for Coq 8.6
+* LtacProfiling results view
+* basic symbols/definition lookup within document
+* some coloring for richpp message in proof-view
+* new feature: *synchronous* interpret to point
+* new option: interpretToEndIfLine
+
 ## 0.1.5
 * fixed broken dependencies
 
