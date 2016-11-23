@@ -67,7 +67,7 @@ function load() {
   // }
   connection.onmessage = function (event) {
     const results = <LtacProfResults>JSON.parse(event.data);
-    updateResults(results);
+    addResults(results);
   }
 
 }
@@ -281,43 +281,89 @@ function updateResultsAlternatingBackground(delay?: number) {
     $('#results tr:visible:odd').addClass('result-odd');
   }
 }
-function updateResults(results: LtacProfResults) {
+
+
+const currentResults : LtacProfResults = {total_time: 0, tactics: []};
+function clearResults() {
+  currentResults.total_time = 0;
+  currentResults.tactics = []
   let tbody = $('#results tbody'); 
   if(tbody.length > 0)
     tbody.empty();
-  else {
+}
+
+// function calculateTotalTime(tactic: LtacProfTactic) {
+//   tactic.statistics.total
+// }
+
+function addResults(results: LtacProfResults) {
+  if(results.total_time === 0) {
+    // This could be 0 because of a bug in Coq 8.6 :/
+    // Recompute the total by hand...
+    currentResults.total_time = results.tactics.map(x=>x.statistics.total).reduce((s,v) => s+v, 0);
+  }
+  currentResults.total_time += results.total_time;
+  currentResults.tactics = currentResults.tactics.concat(results.tactics);
+  updateResults();
+}
+
+function onKeyDown(e: JQueryKeyEventObject) {
+  const f = $(':focus');
+  switch(e.which)
+  {
+    case 39: // right
+      expandNode(f, e.shiftKey);
+      break;
+    case 37: // left
+      if(isExpanded(f))
+        collapseNode(f, e.shiftKey);
+      else {
+        getParentNode(f).focus();
+        collapseNode(getParentNode(f), e.shiftKey);
+      }
+      break;
+    case 38: // up
+      f.prevAll('tr:visible').first().focus();
+      break;
+    case 40: //down
+      f.nextAll('tr:visible').first().focus();
+      break;
+    default:
+      return;
+  }
+  e.preventDefault();
+} 
+
+
+function updateResults() {
+  let tbody = $('#results tbody'); 
+  if(tbody.length > 0)
+    tbody.empty();
+  else {// Set up the table
     tbody = $('<tbody>');
     $('#results').append(tbody);
+    $('#results').keydown(onKeyDown);
+
+    $('#local-unit').change((ev: JQueryEventObject) => {
+      const tag = $('#local-unit option:selected').val(); 
+      $('#results span.local').not('.'+tag).hide();
+      $('#results span.local').filter('.'+tag).show();
+    });
+    $('#total-unit').change((ev: JQueryEventObject) => {
+      const tag = $('#total-unit option:selected').val(); 
+      $('#results span.total').not('.'+tag).hide();
+      $('#results span.total').filter('.'+tag).show();
+    });
+    $('#local-column').click((ev:JQueryEventObject) => { 
+      if(ev.target === $('#local-column').get(0))
+        $('#local-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#local-unit').change()
+    });
+    $('#total-column').click((ev:JQueryEventObject) => {
+      if(ev.target === $('#total-column').get(0))
+        $('#total-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#total-unit').change()
+    });
   }
-  loadResultsTable(results, tbody);
-
-  $('#results').keydown((e) => {
-    const f = $(':focus');
-    switch(e.which)
-    {
-      case 39: // right
-        expandNode(f, e.shiftKey);
-        break;
-      case 37: // left
-        if(isExpanded(f))
-          collapseNode(f, e.shiftKey);
-        else {
-          getParentNode(f).focus();
-          collapseNode(getParentNode(f), e.shiftKey);
-        }
-        break;
-      case 38: // up
-        f.prevAll('tr:visible').first().focus();
-        break;
-      case 40: //down
-        f.nextAll('tr:visible').first().focus();
-        break;
-      default:
-        return;
-    }
-    e.preventDefault();
-  });
-
+  loadResultsTable(currentResults, tbody);
 
   // time('treegrid', () => {
   // $('#results').treegrid({
@@ -361,20 +407,6 @@ function updateResults(results: LtacProfResults) {
 
   // });
 
-  $('#local-unit').change((ev: JQueryEventObject) => {
-    const tag = $('#local-unit option:selected').val(); 
-    $('#results span.local').not('.'+tag).hide();
-    $('#results span.local').filter('.'+tag).show();
-  });
-  $('#total-unit').change((ev: JQueryEventObject) => {
-    const tag = $('#total-unit option:selected').val(); 
-    $('#results span.total').not('.'+tag).hide();
-    $('#results span.total').filter('.'+tag).show();
-  });
-  $('#local-column').click((ev:JQueryEventObject) => { 
-    if(ev.target === $('#local-column').get(0))
-      $('#local-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#local-unit').change() });
-  $('#total-column').click(() => { $('#total-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#total-unit').change() });
 
   // $('#results').floatThead('reflow');
   // time('floatThead', () => {

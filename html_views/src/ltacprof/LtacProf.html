@@ -110,10 +110,11 @@ table.rc-table-resizing thead > th > a {
       display: block;
       margin: 0px 0px 0px 0px;
       position: fixed;
+      height: 1em;
       top: 0px;
-      bottom: 1em;
       left: 0px;
-      right: 100%;
+      right: 0px;
+      z-index: 1000;
     }
     #toolbar button {
       background: none;
@@ -124,6 +125,9 @@ table.rc-table-resizing thead > th > a {
       color: green;
       padding: 0pt;
       font-size: 8pt;
+    }
+    #toolbar-placeholder {
+      height: 1em;
     }
 
     #local-unit, #total-unit {
@@ -202,9 +206,11 @@ table.rc-table-resizing thead > th > a {
   <script src="ltacprof.js"></script>
 </head>
 <body onload="load()">
-  <div id="toolbar" style="z-index: 10000">
+  <div id="toolbar">
     <button value="R" onclick="location.reload(true)">Refresh</button>
+    <button value="C" onclick="clearResults()">Clear</button>
   </div>
+  <div id="toolbar-placeholder"></div>
   <!--<table id="sticky-results-header">
     <thead>
     <tr><th>tactic</th><th>total (s)</th><th>local (s)</th><th>#calls</th><th>max total (s)</th></tr>
