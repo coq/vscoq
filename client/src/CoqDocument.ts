@@ -416,6 +416,7 @@ export class CoqDocument implements vscode.Disposable {
        return;
       const offset = editor.document.offsetAt(editor.selection.active);
       this.currentLtacProfView = new HtmlLtacProf({total_time: 0, tactics: []});
+      this.currentLtacProfView.show(true);
       await this.langServer.ltacProfGetResults(offset);
       // const view = new HtmlLtacProf(results); 
       // const out = vscode.window.createOutputChannel("LtacProfiler");

@@ -114,7 +114,7 @@ export class HtmlLtacProf {
 
         const templateFileName = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/ltacprof/LtacProf.html'));
         this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
-        console.log("LtacProf: " + this.coqViewUri.toString());
+        console.log("LtacProf: " + decodeURIComponent(this.coqViewUri.with({scheme: 'file'}).toString()));
         resolve();
         // this.show(true);
       } catch(err) {

@@ -156,7 +156,7 @@ export class HtmlCoqView implements view.CoqView {
       const templateFileName = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/goals/Coq.html'));
       // const templateFileName = vscode.Uri.file(__dirname + '/HtmlView/Coq.html');
       this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
-      console.log("Goals: " + this.coqViewUri.toString());
+      console.log("Goals: " + decodeURIComponent(this.coqViewUri.with({scheme: 'file'}).toString()));
     } catch(err) {
       vscode.window.showErrorMessage(err.toString());
     }    
