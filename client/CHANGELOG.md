@@ -1,3 +1,6 @@
+## 0.2.0
+* graceful handling of 'coqtop not found'
+
 ## 0.1.6
 * Support for Coq 8.6
 * LtacProfiling results view
