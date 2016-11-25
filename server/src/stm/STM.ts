@@ -15,6 +15,7 @@ import {Mutex} from './../util/Mutex';
 import * as server from '../server';
 import {AnnotatedText} from '../util/AnnotatedText'
 import * as text from '../util/AnnotatedText'
+import {CoqProject} from '../CoqProject'
 
 export {StateStatus} from './State';
 
@@ -124,17 +125,20 @@ export class CoqStateMachine {
   private editLock = new Mutex();
 
 
-  constructor(private settings: proto.CoqTopSettings
+  constructor(private project: CoqProject
     , private scriptFile: string
-    , private projectRoot: string
     , private callbacks: StateMachineCallbacks
-    , private console: RemoteConsole
   ) {
-    this.coqtop = new coqtop.CoqTop(settings, scriptFile, projectRoot, console, {
+    this.coqtop = new coqtop.CoqTop(this.project.settings.coqtop, scriptFile, this.project.getWorkspaceRoot(), this.console, {
       onFeedback: (x1) => this.onFeedback(x1),
       onMessage: (x1) => this.onCoqMessage(x1),
       onClosed: (error?: string) => this.onCoqClosed(error),
     });
+  }
+
+  private get console() : RemoteConsole {
+    return this.project.connection.console;
+    
   }
 
   public dispose() {
@@ -143,7 +147,7 @@ export class CoqStateMachine {
     this.status = STMStatus.Shutdown;
     this.sentences = undefined;
     this.bufferedFeedback = undefined;
-    this.console = undefined;
+    this.project = undefined;
     this.setFocusedSentence(undefined);
     this.callbacks = undefined;
     if(this.coqtop)
@@ -291,7 +295,7 @@ export class CoqStateMachine {
    * @param verbose - generate feedback messages with more info
    * @throw proto.FailValue if advancing failed
    */
-  public async stepForward(commandSequence: CommandIterator, verbose: boolean = false) : Promise<(proto.FailureResult & proto.FocusPosition)|null>  {
+  public async stepForward(commandSequence: CommandIterator, verbose: boolean = false) : Promise<(proto.FailureResult & proto.FocusPosition)|proto.NotRunningResult|null>  {
     const endCommand = await this.startCommand();
     if(!endCommand)
       return;
@@ -308,6 +312,8 @@ export class CoqStateMachine {
     } catch (error) {
       if(error instanceof AddCommandFailure)
         return Object.assign(Object.assign(error, <proto.FailureTag>{type: 'failure'}), <proto.FocusPosition>{focus: this.getFocusedPosition()});
+      else if(error instanceof coqtop.CoqtopSpawnError)
+        return {type: "not-running", reason: "spawn-failed", coqtop: error.binPath}
       else
         throw error;
     } finally {
@@ -320,16 +326,22 @@ export class CoqStateMachine {
    * @param verbose - generate feedback messages with more info
    * @throws proto.FailValue if advancing failed
    */
-  public async stepBackward() : Promise<void>  {
+  public async stepBackward() : Promise<proto.NotRunningResult|null>  {
     const endCommand = await this.startCommand();
     if(!endCommand)
-      return;
+      return null;
     try {
       await this.validateState(false);
       if(this.focusedSentence === this.root)
-        this.coqtop.resetCoq();
+        this.coqtop.resetCoq(this.project.settings.coqtop);
       else
         await this.cancelSentence(this.focusedSentence);
+      return null;
+    } catch (error) {
+      if(error instanceof coqtop.CoqtopSpawnError)
+        return {type: "not-running", reason: "spawn-failed", coqtop: error.binPath}
+      else
+        throw error;
     } finally {
       endCommand();
     }
@@ -339,8 +351,8 @@ export class CoqStateMachine {
   private convertCoqTopError(err) : GoalErrorResult {
     if(err instanceof coqtop.Interrupted)
       return {type: 'interrupted', range: this.sentences.get(err.stateId).getRange()}
-    else if(err instanceof coqtop.CoqtopError)
-      return {type: 'not-running', message: err.message}
+    else if(err instanceof coqtop.CoqtopSpawnError)
+      return {type: 'not-running', reason: "spawn-failed", coqtop: err.binPath}
     // else if(err instanceof coqtop.CallFailure) {
     //   const sent = this.sentences.get(err.stateId);
     //   const start = textUtil.positionAtRelative(sent.getRange().start,sent.getText(),err.range.start);
@@ -357,7 +369,7 @@ export class CoqStateMachine {
    */
   public async getGoal() : Promise<GoalResult> {
     if(!this.isCoqReady())
-      return {type: 'not-running'}
+      return {type: 'not-running', reason: "not-started"}
     const endCommand = await this.startCommand();
     if(!endCommand)
       return {type: 'busy'};
@@ -382,7 +394,7 @@ export class CoqStateMachine {
    * This may not fully process everything, or it may rewind the state.
    * @throws proto.FailValue if advancing failed
    */
-  public async interpretToPoint(position: Position, commandSequence: CommandIterator, interpretToEndOfSentence: boolean, synchronous: boolean, token: CancellationToken) : Promise<(proto.FailureResult & proto.FocusPosition)|null> {
+  public async interpretToPoint(position: Position, commandSequence: CommandIterator, interpretToEndOfSentence: boolean, synchronous: boolean, token: CancellationToken) : Promise<(proto.FailureResult & proto.FocusPosition)|proto.NotRunningResult|null> {
     const endCommand = await this.startCommand();
     if(!endCommand)
       return;
@@ -416,7 +428,9 @@ export class CoqStateMachine {
     } catch (error) {
       if(error instanceof AddCommandFailure) {
         return Object.assign(Object.assign(error, <proto.FailureTag>{type: 'failure'}), <proto.FocusPosition>{focus: this.getFocusedPosition()});
-      } else
+      } else if(error instanceof coqtop.CoqtopSpawnError)
+        return {type: "not-running", reason: "spawn-failed", coqtop: error.binPath}
+      else
         throw error;
     } finally {
       endCommand();
@@ -616,7 +630,7 @@ private routeId = 1;
     else if(this.coqtop.isRunning())
       return true;
     else if(initialize) {
-      let value = await this.coqtop.resetCoq();
+      let value = await this.coqtop.resetCoq(this.project.settings.coqtop);
       this.initialize(value.stateId);
       return true;
     } else

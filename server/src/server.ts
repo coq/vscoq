@@ -53,7 +53,7 @@ connection.onInitialize((params): InitializeResult => {
   //   info: (x) => {}
   // }
   // project = new CoqProject(params.rootPath, x);
-  project = new CoqProject(params.rootPath, connection.console);
+  project = new CoqProject(params.rootPath, connection);
 
   // var x : ServerCapabilities;
 	return {
@@ -309,8 +309,12 @@ connection.onDidOpenTextDocument((params: vscodeLangServer.DidOpenTextDocumentPa
 });
 
 connection.onDidChangeTextDocument((params) => {
-  return project.lookup(params.textDocument.uri)
-    .applyTextEdits(params.contentChanges, params.textDocument.version);
+  try {
+    return project.lookup(params.textDocument.uri)
+      .applyTextEdits(params.contentChanges, params.textDocument.version);
+  } catch(err) {
+    connection.console.error(err.toString());
+  }
 });
 
 connection.onDidCloseTextDocument((params) => {

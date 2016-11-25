@@ -4,7 +4,7 @@ import * as util from 'util';
 import {TextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic, DiagnosticSeverity} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
 import {CancellationToken} from 'vscode-jsonrpc';
-import {Interrupted, CoqtopError, CallFailure, AddResult, EditAtResult} from './coqtop/coqtop';
+import {Interrupted, CoqtopSpawnError, CallFailure, AddResult, EditAtResult} from './coqtop/coqtop';
 import * as thmProto from './protocol';
 import * as coqProto from './coqtop/coq-proto';
 import * as coqParser from './parsing/coq-parser';
@@ -83,10 +83,9 @@ export class CoqDocument implements TextDocument {
   // private interactionLoopStatus = InteractionLoopStatus.Idle;
   // we'll use this as a callback, so protect it with an arrow function so it gets the correct "this" pointer
 
-  constructor(project : CoqProject, document: TextDocumentItem, projectRoot: string, clientConsole: RemoteConsole, callbacks: DocumentCallbacks) {
+  constructor(project : CoqProject, document: TextDocumentItem, clientConsole: RemoteConsole, callbacks: DocumentCallbacks) {
     this.clientConsole = clientConsole;
     this.document = new SentenceCollection(document);
-    this.projectRoot = projectRoot;
     this.callbacks = callbacks;
     this.project = project;
     this.feedback = new FeedbackSync(callbacks, 200);
@@ -278,7 +277,7 @@ export class CoqDocument implements TextDocument {
   public async resetCoq() {
     if(this.stm && this.stm.isRunning())
       this.stm.shutdown(); // Don't bother awaiting
-    this.stm = new CoqStateMachine(this.project.settings.coqtop, this.uri, this.projectRoot, {
+    this.stm = new CoqStateMachine(this.project, this.uri, {
       sentenceStatusUpdate: (x1,x2) => this.onCoqStateStatusUpdate(x1,x2),
       clearSentence: (x1) => this.onClearSentence(x1),
       updateStmFocus: (x1) => this.onUpdateStmFocus(x1),
@@ -286,7 +285,7 @@ export class CoqDocument implements TextDocument {
       message: (x1,x2) => this.onCoqMessage(x1,x2),
       ltacProfResults: (x1,x2) => this.onCoqStateLtacProf(x1,x2),
       coqDied: (error?: string) => this.onCoqDied(error),
-    }, this.clientConsole);
+    });
   }
 
   private onUpdateStmFocus(focus: Position) {
@@ -816,7 +815,9 @@ export class CoqDocument implements TextDocument {
   public async stepBackward(token: CancellationToken) : Promise<thmProto.CommandResult> {
     this.assertStm();
     try {
-    await this.stm.stepBackward();
+    const error = await this.stm.stepBackward();
+    if(error)
+      return error;
     return this.toGoal(await this.stm.getGoal());
     } finally {
       this.updateHighlights(true);      
@@ -849,7 +850,7 @@ export class CoqDocument implements TextDocument {
 
   public async getGoal() : Promise<thmProto.CommandResult> {
     if(!this.stm || !this.stm.isRunning())
-      return {type: 'not-running'};
+      return {type: 'not-running', reason: "not-started"};
     try {
       return this.toGoal(await this.stm.getGoal());
     } finally {

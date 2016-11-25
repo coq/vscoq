@@ -42,13 +42,16 @@ export class Interrupted {
 }
 
 /** A fatal error of coqtop */
-export class CoqtopError {
-  constructor(
-    public message: string)
+export class CoqtopSpawnError {
+  constructor(private path: string, private message: string)
   {}
 
+  public get binPath() : string {
+    return this.path;
+  }
+
   public toString() {
-    return this.message;
+    return "Could not start coqtop: " + this.path + (this.message? "\n" + this.message : "");
   }
 }
 /** A call did not succeed; a nonfatal error */
@@ -284,8 +287,7 @@ export class CoqTop extends events.EventEmitter {
     return this.coqtopVersion;
   }
 
-  public static detectVersion(binPath: string, cwd: string, console?: {log: (string)=>void}) : Promise<string> {
-    var coqtopModule = path.join(binPath.trim(), 'coqtop');
+  public static detectVersion(coqtopModule: string, cwd: string, console?: {log: (string)=>void, warn: (string)=>void}) : Promise<string|null> {
     if(console)
       console.log('exec: ' + coqtopModule + ' -v');
     return new Promise<string>((resolve,reject) => {
@@ -299,22 +301,27 @@ export class CoqTop extends events.EventEmitter {
 
         coqtop.on('close', (code:number) => {
           const ver = /^\s*The Coq Proof Assistant, version (.+?)\s/.exec(result);
+          // if(!ver)
+          //   console.warn('Could not detect coqtop version');
           resolve(!ver ? undefined : ver[1]);
         });
         coqtop.on('error', (code:number) => {
-          reject(`Could not start coqtop; error code: ${code}`);
+          // console.warn(`Could not start coqtop; error code: ${code}`)
+          reject(new CoqtopSpawnError(coqtopModule, `error code: ${code}`));
         });
       } catch(err) {
-        reject(err);
+        reject(new CoqtopSpawnError(coqtopModule, err));
       }
     })
   }
   
-  public async resetCoq() : Promise<InitResult> {    
+  public async resetCoq(settings?: CoqTopSettings) : Promise<InitResult> {
+    if(settings)
+      this.settings = settings;    
     this.console.log('reset');
     this.cleanup(undefined);
 
-    this.coqtopVersion = await CoqTop.detectVersion(this.settings.binPath, this.projectRoot, this.console);
+    this.coqtopVersion = await CoqTop.detectVersion(this.coqtopBin, this.projectRoot, this.console);
     if(this.coqtopVersion)
       this.console.log(`Detected coqtop version ${this.coqtopVersion}`)
     else
@@ -350,7 +357,7 @@ export class CoqTop extends events.EventEmitter {
         this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
     } catch(error) {
       this.console.error('Could not spawn coqtop: ' + error);
-      throw new CoqtopError('Could not spawn coqtop');
+      throw new CoqtopSpawnError(this.coqtopBin, error);
     }
 
     let channels = await Promise.all([
@@ -390,7 +397,7 @@ export class CoqTop extends events.EventEmitter {
       this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
     } catch(error) {
       this.console.error('Could not spawn coqtop: ' + error);
-      throw new CoqtopError('Could not spawn coqtop');
+      throw new CoqtopSpawnError(this.coqtopBin, error);
     }
 
     let channels = await Promise.all([
@@ -439,10 +446,14 @@ export class CoqTop extends events.EventEmitter {
       this.cleanup('coqtop could not be started: ' + code);
     });
     // this.coqtopProc.stdin.write('\n');
- }
+  }
+
+  private get coqtopBin() {
+    return path.join(this.settings.binPath.trim(), 'coqtop');
+  }
 
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
-    var coqtopModule = path.join(this.settings.binPath.trim(), 'coqtop');
+    var coqtopModule = this.coqtopBin;
     // var coqtopModule = 'cmd';
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',
@@ -456,13 +467,11 @@ export class CoqTop extends events.EventEmitter {
   }
 
   private spawnCoqTopWrapper(wrapper: string, mainAddr : string, controlAddr: string, traceFile?: string) : ChildProcess {
-    // var coqtopModule = this.coqPath + '/coqtop';
     this.supportsInterruptCall = true;
     var coqtopModule = wrapper;
-    // var coqtopModule = 'cmd';
     var args = [
       // '/D /C', this.coqPath + '/coqtop.exe',
-      '-coqtopbin', path.join(this.settings.binPath.trim(), 'coqtop'),
+      '-coqtopbin', this.coqtopBin,
       '-main-channel', mainAddr,
       '-control-channel', controlAddr,
       '-ideslave',

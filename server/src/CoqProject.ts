@@ -14,7 +14,6 @@ export class CoqProject {
   private coqInstances = new Map<string,CoqDocument>();
   private currentSettings : Settings;
   private workspaceRoot: string;
-  private console: vscode.RemoteConsole;
   private coqProjectWatcher: fs.FSWatcher = null;
   private coqProjectModifiedDate : Date = null;
   private loadingCoqProjectInProcess = false;
@@ -25,9 +24,12 @@ export class CoqProject {
   private ready = {event: Promise.resolve<{}>({}), signal: ()=>{} };
   private psm = new PrettifySymbolsMode([]);
   
-  constructor(workspaceRoot: string, console: vscode.RemoteConsole) {
+  constructor(workspaceRoot: string, public readonly connection: vscode.IConnection) {
     this.workspaceRoot = workspaceRoot;
-    this.console = console;
+  }
+
+  private get console() : vscode.RemoteConsole {
+    return this.connection.console;
   }
 
   public getWorkspaceRoot() : string {
@@ -86,7 +88,7 @@ export class CoqProject {
   
   public async open(textDocument: TextDocumentItem, callbacks: DocumentCallbacks): Promise<CoqDocument> {
     await this.ready.event;
-    const doc = new CoqDocument(this, textDocument, this.getWorkspaceRoot(), this.console, callbacks);
+    const doc = new CoqDocument(this, textDocument, this.console, callbacks);
     this.coqInstances.set(doc.uri, doc);
     return doc;
   }
@@ -187,3 +189,4 @@ export class CoqProject {
   }
   
 }
+

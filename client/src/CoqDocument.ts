@@ -20,6 +20,9 @@ import {adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
 import {CoqProject} from './CoqProject';
 import * as text from './AnnotatedText';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 namespace DisplayOptionPicks {
   type T = vscode.QuickPickItem & {displayItem: number};
@@ -257,20 +260,79 @@ export class CoqDocument implements vscode.Disposable {
     }
   }
 
+  private async userSetCoqtopPath(global = false) {
+    const current = vscode.workspace.getConfiguration("coqtop").get("binPath", "");
+    const newPath = await vscode.window.showInputBox({ignoreFocusOut: true, value: current, validateInput: v => {
+      try {
+        const statDir = fs.statSync(v);
+        if(!statDir.isDirectory())
+          return "not a directory";
+      } catch(err) {
+        return "invalid path";
+      }
+      let stat : fs.Stats = undefined;
+      try {
+        stat = fs.statSync(path.join(v, 'coqtop'));
+      } catch(err) {}
+      if(!stat && os.platform()==='win32') {
+        try {
+          stat = fs.statSync(path.join(v, 'coqtop.exe'));
+        } catch(err) { }        
+      }
+      if(!stat)
+        return "coqtop not found here"
+      if(!stat.isFile())
+        return "coqtop found here, but is not an executable file";
+
+      return null;
+    } });
+    async function checkCoqtopExists(newPath: string) {
+      if(!newPath)
+        return false;
+      try {
+        return await fs.existsSync(path.join(newPath, 'coqtop')) || await fs.existsSync(path.join(newPath, 'coqtop.exe'))
+      } catch(err) {
+        return false;
+      } 
+    } 
+
+    if(await checkCoqtopExists(newPath))
+      await vscode.workspace.getConfiguration("coqtop").update("binPath", newPath, global);
+  }
+
+  private handleResult(value: proto.CommandResult) {
+    if(value.type === 'busy')
+      return false;
+    if(value.type === 'not-running') {
+      this.updateFocus(undefined, false);
+      if(value.reason === 'spawn-failed') {
+        const getCoq = {title: "Get Coq", id: 0};
+        const setPathLocal = {title: "Set path for this project", id: 1};
+        const setPathGlobal = {title: "Set path globally", id: 2};
+        vscode.window.showErrorMessage(`Could not start coqtop ${value.coqtop ? ` (${value.coqtop})` : ""}`, getCoq, setPathLocal, setPathGlobal)
+          .then(async act => {
+            if(act && act.id === getCoq.id) {
+              vscode.commands.executeCommand("vscode.open", vscode.Uri.parse('https://coq.inria.fr/download'))
+            } else if(act && (act.id === setPathLocal.id || act.id === setPathGlobal.id)) {
+              await this.userSetCoqtopPath(act.id === setPathGlobal.id);
+            }
+          })
+      }
+    } else
+      this.updateFocus(value.focus, this.project.settings.moveCursorToFocus);
+    if(value.type === 'interrupted')
+      this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
+
+    return true;
+  }
+
   public async stepForward(editor: TextEditor) {
     this.statusBar.setStateWorking('Stepping forward');
     try {
       this.rememberCursors();
       const value = await this.langServer.stepForward();
       this.view.update(value);
-      if(value.type === 'busy')
-        return;
-      if(value.type === 'not-running')
-        this.updateFocus(undefined, false);
-      else
-        this.updateFocus(value.focus, this.project.settings.moveCursorToFocus);
-      if(value.type === 'interrupted')
-        this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
+      this.handleResult(value);
     } catch (err) {
     }
     this.statusBar.setStateReady();
@@ -282,19 +344,12 @@ export class CoqDocument implements vscode.Disposable {
       this.rememberCursors();
       const value = await this.langServer.stepBackward();
       this.view.update(value);
-      if(value.type === 'busy')
-        return;
-      if(value.type === 'not-running')
-        this.updateFocus(undefined, false);
-      else
-        this.updateFocus(value.focus, this.project.settings.moveCursorToFocus)
-      if(value.type === 'interrupted')
-        this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
+      if(this.handleResult(value))
+        this.statusBar.setStateReady();
       // const range = new vscode.Range(editor.document.positionAt(value.commandStart), editor.document.positionAt(value.commandEnd));
       // clearHighlight(editor, range);
     } catch (err) {
     }
-    this.statusBar.setStateReady();
   }
 
   public async interpretToCursorPosition(editor: TextEditor, synchronous = false) {
@@ -303,15 +358,8 @@ export class CoqDocument implements vscode.Disposable {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
       const value = await this.langServer.interpretToPoint(editor.selection.active, synchronous);
-      if(value.type === 'busy')
-        return;
-      if(value.type === 'not-running')
-        this.updateFocus(undefined, false);
-      else
-        this.updateFocus(value.focus);
-      if(value.type === 'interrupted')
-        this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
       this.view.update(value);
+      this.handleResult(value);
     } catch (err) {
       console.warn("Interpret to point failed: " + err.toString());
       if(err.stack)
@@ -325,15 +373,8 @@ export class CoqDocument implements vscode.Disposable {
     try {
       const params = { uri: this.documentUri };
       const value = await this.langServer.interpretToEnd(synchronous);
-      if(value.type === 'busy')
-        return;
-      if(value.type === 'not-running')
-        this.updateFocus(undefined, false);
-      else
-        this.updateFocus(value.focus,true);
-      if(value.type === 'interrupted')
-        this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
       this.view.update(value);
+      this.handleResult(value);
     } catch (err) { }
     this.statusBar.setStateReady();
   }

@@ -98,7 +98,7 @@ export class HtmlCoqView implements view.CoqView {
   private httpServer : http.Server;
   // private connection : Promise<WebSocket>;
   private serverReady : Promise<void>;
-  private currentState : proto.CommandResult = {type: 'not-running'}; 
+  private currentState : proto.CommandResult = {type: 'not-running', reason: 'not-started'}; 
   public onresize: (columns: number) => Thenable<void> = null;
   private coqViewUri : vscode.Uri;
   private currentSettings : SettingsState = {}; 
