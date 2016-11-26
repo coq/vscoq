@@ -7,7 +7,7 @@
 * basic symbols/definition lookup within document
 * some coloring for richpp message in proof-view
 * new feature: *synchronous* interpret to point
-* new option: interpretToEndIfLine
+* new option: interpretToEndOfLine
 
 ## 0.1.5
 * fixed broken dependencies
