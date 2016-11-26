@@ -113,6 +113,9 @@ export class CoqDocument implements TextDocument {
 
     this.document.applyTextChanges(newVersion, changes);
 
+    if(!this.isStmRunning())
+      return;
+
     try {
       const passive = this.stm.applyChanges(sortedChanges, newVersion, this.document.getText());
       // if(!passive)
@@ -200,6 +203,8 @@ export class CoqDocument implements TextDocument {
 
   /** creates the current highlights from scratch */
   private createHighlights() : thmProto.Highlights {
+    if(!this.isStmRunning())
+      return;
     const highlights : thmProto.Highlights =
       { ranges: [ [], [], [], [], [], [] ] };
     let count1 = 0;
@@ -219,6 +224,8 @@ export class CoqDocument implements TextDocument {
 
   /** creates the current diagnostics from scratch */
   private createDiagnostics() {
+    if(!this.isStmRunning())
+      return;
     let diagnostics : Diagnostic[] = [];
     for(let error of this.stm.getErrors()) {
       diagnostics.push(
@@ -275,7 +282,7 @@ export class CoqDocument implements TextDocument {
   }
 
   public async resetCoq() {
-    if(this.stm && this.stm.isRunning())
+    if(this.isStmRunning())
       this.stm.shutdown(); // Don't bother awaiting
     this.stm = new CoqStateMachine(this.project, this.uri, {
       sentenceStatusUpdate: (x1,x2) => this.onCoqStateStatusUpdate(x1,x2),
@@ -564,9 +571,8 @@ export class CoqDocument implements TextDocument {
   // }
   
   public async close() {
-    if(this.stm) {
+    if(this.isStmRunning()) {
       await this.stm.shutdown();
-      this.stm.dispose();
       this.stm = null;
     }
   }
@@ -731,7 +737,7 @@ export class CoqDocument implements TextDocument {
 
   /** Make sure that the STM is running */
   private assertStm() {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       this.resetCoq();
   }
 
@@ -747,7 +753,9 @@ export class CoqDocument implements TextDocument {
 
   private toGoal(goal: GoalResult) : thmProto.CommandResult {
     if(goal.type === 'not-running')
-      return goal
+      return goal;
+    else if(!this.isStmRunning())
+      return {type: 'not-running', reason: 'not-started'};
     // This is silly (Typescript is not yet smart enough)
     else if(goal.type === 'proof-view')
       return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
@@ -781,6 +789,9 @@ export class CoqDocument implements TextDocument {
   }
 
   private updateDiagnostics(now = false) {
+    if(!this.isStmRunning())
+      return;
+
     this.feedback.updateDiagnostics(() => {
       const diagnostics : Diagnostic[] = [];
       for(let error of this.stm.getErrors()) {
@@ -849,7 +860,7 @@ export class CoqDocument implements TextDocument {
   }
 
   public async getGoal() : Promise<thmProto.CommandResult> {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return {type: 'not-running', reason: "not-started"};
     try {
       return this.toGoal(await this.stm.getGoal());
@@ -860,7 +871,7 @@ export class CoqDocument implements TextDocument {
   }
 
   public async locateIdent(ident: string) {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return "Coq is not running";
     try {
       return await this.stm.doQuery(`Locate ${ident}.`);
@@ -870,50 +881,50 @@ export class CoqDocument implements TextDocument {
   }
 
   public async checkTerm(term: string) {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return "Coq is not running";
     return await this.stm.doQuery(`Check ${term}.`);
   }
 
   public async printTerm(term: string) {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return "Coq is not running";
     return await this.stm.doQuery(`Print ${term}.`);
   }
 
   public async search(query: string) {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return "Coq is not running";
     return await this.stm.doQuery(`Search ${query}.`);
   }
 
   public async searchAbout(query: string) {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return "Coq is not running";
     return await this.stm.doQuery(`SearchAbout ${query}.`);
   }
 
   public async setWrappingWidth(columns: number) {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return;
     
     await this.stm.setWrappingWidth(columns);
   }
 
   public async requestLtacProfResults(offset?: number) {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return;
     await this.stm.requestLtacProfResults(offset ? this.positionAt(offset) : undefined);
   }
 
   public async interrupt() {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return;
     this.stm.interrupt();
   }
 
   public async quitCoq() {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return;
     await this.stm.shutdown();
     this.stm.dispose();
@@ -921,9 +932,13 @@ export class CoqDocument implements TextDocument {
   }
 
   public async setDisplayOptions(options: {item: thmProto.DisplayOption, value: thmProto.SetDisplayOption}[]) {
-    if(!this.stm || !this.stm.isRunning())
+    if(!this.isStmRunning())
       return;
     this.stm.setDisplayOptions(options);
+  }
+
+  public isStmRunning() : boolean {
+    return this.stm && this.stm.isRunning();
   }
 
   public provideSymbols() : vscode.SymbolInformation[] {
@@ -949,7 +964,7 @@ export class CoqDocument implements TextDocument {
 
   public async provideDocumentLinks(token: CancellationToken) : Promise<vscode.DocumentLink[]> {
     return [];
-    // if(!this.stm || !this.stm.isRunning())
+    // if(!this.isStmRunning())
     //   return;
     // const results : vscode.DocumentLink[] = [];
     // for(let sent of this.stm.getSentences()) {

@@ -51,6 +51,16 @@ export interface StateMachineCallbacks {
   coqDied(error?: string) : void;
 }
 
+const dummyCallbacks : StateMachineCallbacks = {
+  sentenceStatusUpdate(range: Range, status: StateStatus) : void {},
+  clearSentence(range: Range) : void {},
+  updateStmFocus(focus: Position): void {},
+  error(sentenceRange: Range, errorRange: Range, message: AnnotatedText) : void {},
+  message(level: coqProto.MessageLevel, message: AnnotatedText) : void {},
+  ltacProfResults(range: Range, results: coqProto.LtacProfResults) : void {},
+  coqDied(error?: string) : void {},
+}
+
 export type CommandIterator = (begin: Position, end?: Position) => Iterable<{text: string, range: Range}>;
 
 export type GoalErrorResult = proto.NotRunningResult | proto.FailureResult | proto.InterruptedResult
@@ -143,13 +153,13 @@ export class CoqStateMachine {
 
   public dispose() {
     if(this.status === STMStatus.Shutdown)
-      this.console.warn("The STM manager is being disposed before being shut down");
+      return; // already disposed
     this.status = STMStatus.Shutdown;
     this.sentences = undefined;
     this.bufferedFeedback = undefined;
     this.project = undefined;
     this.setFocusedSentence(undefined);
-    this.callbacks = undefined;
+    this.callbacks = dummyCallbacks;
     if(this.coqtop)
       this.coqtop.dispose();
   }

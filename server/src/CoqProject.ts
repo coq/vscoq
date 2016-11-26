@@ -25,6 +25,10 @@ export class CoqProject {
   private psm = new PrettifySymbolsMode([]);
   
   constructor(workspaceRoot: string, public readonly connection: vscode.IConnection) {
+    if(workspaceRoot)
+      connection.console.log("Loaded project at " + workspaceRoot)
+    else
+      connection.console.log("Loading project with no root directory")
     this.workspaceRoot = workspaceRoot;
   }
 
@@ -33,7 +37,7 @@ export class CoqProject {
   }
 
   public getWorkspaceRoot() : string {
-      return this.workspaceRoot;
+    return this.workspaceRoot;
   }
   
   public lookup(uri: string) : CoqDocument {
@@ -102,7 +106,10 @@ export class CoqProject {
   }
   
   private coqProjectFile() {
-    return path.join(this.workspaceRoot, coqProjectFileName);
+    if(this.workspaceRoot)
+      return path.join(this.workspaceRoot, coqProjectFileName);
+    else
+      return undefined;
   }
 
   public shutdown() {
@@ -122,6 +129,8 @@ export class CoqProject {
   private watchCoqProject() {
     if(this.coqProjectWatcher != null)
       this.coqProjectWatcher.close();
+    if(!this.workspaceRoot)
+      return;
     this.coqProjectWatcher = fs.watch(this.workspaceRoot, async (event, filename) => {
       var d = (await this.getFileStats(this.coqProjectFile())).mtime;
       switch(event) {
@@ -152,6 +161,9 @@ export class CoqProject {
   }
   
   private async loadCoqProject() : Promise<void> {
+    if(!this.workspaceRoot)
+      return;
+
     if(this.loadingCoqProjectInProcess)
       return;
     this.loadingCoqProjectInProcess = true;

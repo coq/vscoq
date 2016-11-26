@@ -327,13 +327,9 @@ export class CoqTop extends events.EventEmitter {
     else
       this.console.warn(`Could not detect coqtop version`)
 
-    // await this.setupCoqTopWindows();
     const wrapper = this.findWrapper();
     if (wrapper !== null)
       await this.setupCoqTop(wrapper);
-    // else if(false && os.platform() === 'linux')
-    //   await this.setupCoqTop(false);
-    // else
     else
       await this.setupCoqTopReadAndWritePorts();
     
@@ -350,8 +346,10 @@ export class CoqTop extends events.EventEmitter {
 
     try {
       const scriptUri = decodeURIComponent(this.scriptFile); 
-      if(wrapper !==null && scriptUri.startsWith("file:///")) {
-        const traceFile = this.settings.traceXmlProtocol? scriptUri.substring("file:///".length) + ".coq-trace.xml" : undefined;
+      if(wrapper !== null) {
+        const traceFile = (scriptUri.startsWith("file:///") && this.settings.traceXmlProtocol)
+          ? scriptUri.substring("file:///".length) + ".coq-trace.xml"
+          : undefined;
         this.startCoqTop(this.spawnCoqTopWrapper(wrapper, mainAddressArg, controlAddressArg, traceFile));
       } else
         this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
