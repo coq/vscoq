@@ -252,7 +252,7 @@ Pseudocode for listing all of the goals in order: `rev (flat_map fst background)
 -------------------------------
 
 
-### <a name="command-status">**Status(force: integer)**</a>
+### <a name="command-status">**Status(force: bool)**</a>
 CoqIDE typically sets `force` to `false`. 
 ```html
 <call val="Status"><bool val="${force}"/></call>
