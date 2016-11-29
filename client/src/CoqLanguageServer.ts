@@ -32,7 +32,8 @@ function createServerLocalExtension(serverModule: string, debugOptions: string[]
   }
   return options;
 }
-var x: vscode.DocumentSelector;
+
+
 export class CoqLanguageServer implements vscode.Disposable {
   private static instance: CoqLanguageServer | null = null;
   private subscriptions: vscode.Disposable[] = [];
@@ -72,17 +73,17 @@ export class CoqLanguageServer implements vscode.Disposable {
     // Create the language client and start the client.
     this.server = new LanguageClient('Coq Language Server', serverOptions, clientOptions, startedInDebugMode());
     this.server.onReady()
-      .then(() => console.log("Coq language server ready"))
+      .then(() => {
+        this.server.onNotification(proto.UpdateHighlightsNotification.type, (p) => this.onUpdateHighlightsHandlers.forEach((h) => h(p)));
+        this.server.onNotification(proto.CoqMessageNotification.type, (p) => this.onMessageHandlers.forEach((h) => h(p)));
+        this.server.onNotification(proto.CoqResetNotification.type, (p) => this.onResetHandlers.forEach((h) => h(p)));
+        this.server.onNotification(proto.CoqStmFocusNotification.type, (p) => this.onUpdateCoqStmFocusHandlers.forEach((h) => h(p)));
+        this.server.onNotification(proto.CoqLtacProfResultsNotification.type, (p) => this.onLtacProfResultsHandlers.forEach((h) => h(p)));
+        console.log("Coq language server ready")
+      })
       .catch((reason) => console.log("Coq language server failed to load: " + reason.toString()))
 
-
     this.subscriptions.push(this.server.start());
-
-    this.server.onNotification(proto.UpdateHighlightsNotification.type, (p) => this.onUpdateHighlightsHandlers.forEach((h) => h(p)));
-    this.server.onNotification(proto.CoqMessageNotification.type, (p) => this.onMessageHandlers.forEach((h) => h(p)));
-    this.server.onNotification(proto.CoqResetNotification.type, (p) => this.onResetHandlers.forEach((h) => h(p)));
-    this.server.onNotification(proto.CoqStmFocusNotification.type, (p) => this.onUpdateCoqStmFocusHandlers.forEach((h) => h(p)));
-    this.server.onNotification(proto.CoqLtacProfResultsNotification.type, (p) => this.onLtacProfResultsHandlers.forEach((h) => h(p)));
   }
 
   public static create(context: ExtensionContext): CoqLanguageServer {

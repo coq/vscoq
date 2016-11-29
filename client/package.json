@@ -196,8 +196,8 @@
 		"@types/node": "^6.0.40"
 	},
 	"dependencies": {
-    "vscode-jsonrpc": "3.0.0-alpha.3",
-    "vscode-languageclient": "3.0.0-alpha.2",
+    "vscode-jsonrpc": "3.0.1-alpha.2",
+    "vscode-languageclient": "3.0.1-alpha.3",
     "xml2js": "0.4.17",
     "ws": "1.1.1",
     "opener": "1.4.2",

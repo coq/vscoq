@@ -115,7 +115,6 @@ process.on('SIGBREAK', function () {
   connection.console.log('SIGBREAK fired')
 });
 
-
 // This handler provides the initial list of the completion items.
 connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
 	// The pass parameter contains the position of the text document in 
@@ -284,7 +283,6 @@ return link;
   // connection.console.log("onDocumentLinkResolve: " + link);
   // return link;  
 })
-
 
 connection.onDidOpenTextDocument((params: vscodeLangServer.DidOpenTextDocumentParams) => {
   const uri = params.textDocument.uri; 

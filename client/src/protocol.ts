@@ -180,48 +180,48 @@ export interface LtacProfResults {
 
 
 export namespace InterruptCoqRequest { 
-  export const type: RequestType<CoqTopParams, void, void> =
+  export const type: RequestType<CoqTopParams, void, void, void> =
   { get method() { return 'coqtop/interrupt' }
   , _: undefined
   }
 } 
 export namespace QuitCoqRequest { 
-  export const type: RequestType<CoqTopParams, void, void> =
+  export const type: RequestType<CoqTopParams, void, void, void> =
   { get method() { return 'coqtop/quitCoq' }
   , _:undefined }; 
 } 
 export namespace ResetCoqRequest { 
-  export const type: RequestType<CoqTopParams, void, void> = 
+  export const type: RequestType<CoqTopParams, void, void, void> = 
   { get method() { return 'coqtop/resetCoq' }
   , _:undefined }; 
 } 
 export namespace StepForwardRequest { 
-  export const type: RequestType<CoqTopParams, CommandResult, void> = 
+  export const type: RequestType<CoqTopParams, CommandResult, void, void> = 
   { get method() { return 'coqtop/stepForward' }
   , _:undefined }; 
 } 
 export namespace StepBackwardRequest { 
-  export const type: RequestType<CoqTopParams, CommandResult, void> = 
+  export const type: RequestType<CoqTopParams, CommandResult, void, void> = 
   { get method() { return 'coqtop/stepBackward' }
   , _:undefined }; 
 } 
 export namespace InterpretToPointRequest { 
-  export const type: RequestType<CoqTopInterpretToPointParams, CommandResult, void> = 
+  export const type: RequestType<CoqTopInterpretToPointParams, CommandResult, void, void> = 
   { get method() { return 'coqtop/interpretToPoint' }
   , _:undefined }; 
 } 
 export namespace InterpretToEndRequest { 
-  export const type: RequestType<InterpretToEndParams, CommandResult, void> = 
+  export const type: RequestType<InterpretToEndParams, CommandResult, void, void> = 
   { get method() { return 'coqtop/interpretToEnd' }
   , _:undefined }; 
 } 
 export namespace GoalRequest { 
-  export const type: RequestType<CoqTopParams, CommandResult, void> = 
+  export const type: RequestType<CoqTopParams, CommandResult, void, void> = 
   { get method() { return 'coqtop/goal' }
   , _:undefined }; 
 }
 export namespace QueryRequest { 
-  export const type: RequestType<CoqTopQueryParams, CoqTopQueryResult, void> = 
+  export const type: RequestType<CoqTopQueryParams, CoqTopQueryResult, void, void> = 
   { get method() { return 'coqtop/query' }
   , _:undefined }; 
 }
@@ -238,7 +238,7 @@ export interface CoqTopResizeWindowParams extends CoqTopParams {
   columns: number;
 }
 export namespace ResizeWindowRequest { 
-  export const type: RequestType<CoqTopResizeWindowParams, void, void> =
+  export const type: RequestType<CoqTopResizeWindowParams, void, void, void> =
   { get method() { return 'coqtop/resizeWindow' }
   , _:undefined }; 
 } 
@@ -247,7 +247,7 @@ export interface CoqTopSetDisplayOptionsParams extends CoqTopParams {
   options: {item: DisplayOption, value: SetDisplayOption}[]
 }
 export namespace SetDisplayOptionsRequest { 
-  export const type: RequestType<CoqTopSetDisplayOptionsParams, void, void> =
+  export const type: RequestType<CoqTopSetDisplayOptionsParams, void, void, void> =
   { get method() { return 'coqtop/setDisplayOptions' }
   , _:undefined }; 
 } 
@@ -256,13 +256,13 @@ export interface CoqTopLtacProfResultsParams extends CoqTopParams {
   offset?: number;
 }
 export namespace LtacProfResultsRequest { 
-  export const type: RequestType<CoqTopLtacProfResultsParams, void, void> =
+  export const type: RequestType<CoqTopLtacProfResultsParams, void, void, void> =
   { get method() { return 'coqtop/ltacProfResults' }
   , _:undefined }; 
 }
 
 export namespace GetSentencePrefixTextRequest { 
-  export const type: RequestType<DocumentPositionParams, string, void> =
+  export const type: RequestType<DocumentPositionParams, string, void, void> =
   { get method() { return 'coqtop/getSentencePrefixText' }
   , _:undefined }; 
 } 
@@ -287,7 +287,7 @@ export interface Highlights {
 export type NotifyHighlightParams = NotificationParams & Highlights;
 
 export namespace UpdateHighlightsNotification { 
-  export const type: NotificationType<NotifyHighlightParams> =
+  export const type: NotificationType<NotifyHighlightParams,void> =
   { get method() { return 'coqtop/updateHighlights' }
   , _:undefined }; 
 } 
@@ -297,13 +297,13 @@ export interface NotifyMessageParams extends NotificationParams {
   message: AnnotatedText;
 }
 export namespace CoqMessageNotification { 
-  export const type: NotificationType<NotifyMessageParams> =
+  export const type: NotificationType<NotifyMessageParams,void> =
   { get method() { return 'coqtop/message' }
   , _:undefined }; 
 } 
 
 export namespace CoqResetNotification { 
-  export const type: NotificationType<NotificationParams> =
+  export const type: NotificationType<NotificationParams,void> =
   { get method() { return 'coqtop/wasReset' }
   , _:undefined }; 
 } 
@@ -313,7 +313,7 @@ export interface DocumentPositionParams extends NotificationParams {
 }
 
 export namespace CoqStmFocusNotification { 
-  export const type: NotificationType<DocumentPositionParams> =
+  export const type: NotificationType<DocumentPositionParams,void> =
   { get method() { return 'coqtop/stmFocus' }
   , _:undefined }; 
 } 
@@ -334,7 +334,7 @@ export interface NotifyLtacProfResultsParams extends NotificationParams {
   results: LtacProfResults
 }
 export namespace CoqLtacProfResultsNotification { 
-  export const type: NotificationType<NotifyLtacProfResultsParams> =
+  export const type: NotificationType<NotifyLtacProfResultsParams,void> =
   { get method() { return 'coqtop/ltacProfResults' }
   , _:undefined }; 
 } 
