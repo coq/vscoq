@@ -20,6 +20,7 @@
     "async": "2.0.1",
     "diff": "2.2.3",
     "pegjs": "0.10.0",
+    "string-argv": "0.0.2",
     "@types/sax": "^0.0.28",
     "@types/xml2js": "^0.0.28",
     "@types/diff": "0.0.31"

@@ -6,6 +6,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as readline from 'readline';
 import {PrettifySymbolsMode} from './util/PrettifySymbols';
+import * as nodeAsync from './util/nodejs-async';
+
+
 
 const coqProjectFileName = '_CoqProject';
 
@@ -17,12 +20,13 @@ export class CoqProject {
   private coqProjectWatcher: fs.FSWatcher = null;
   private coqProjectModifiedDate : Date = null;
   private loadingCoqProjectInProcess = false;
+  private ready = {event: Promise.resolve<{}>({}), signal: ()=>{} };
+  private psm = new PrettifySymbolsMode([]);
+
   // we independently track the settings contributed by the vscode project settings and _CoqProject
   // so they can be modified seperately
   private settingsCoqTopArgs: string[] = [];
   private coqProjectArgs: string[] = [];
-  private ready = {event: Promise.resolve<{}>({}), signal: ()=>{} };
-  private psm = new PrettifySymbolsMode([]);
   
   constructor(workspaceRoot: string, public readonly connection: vscode.IConnection) {
     if(workspaceRoot)
@@ -157,9 +161,26 @@ export class CoqProject {
         else
           resolve(stats);
       });      
-    })    
+    })
   }
-  
+
+  private static parseCoqProject(text: string) : string[] {
+    const args : string[] = [];
+    const projectArgs : string[] = require('string-argv')(text);
+    for(let idx = 0; idx < projectArgs.length; ++idx) {
+      const opt = projectArgs[idx]
+      if(opt === '-R')
+        args.push('-R', projectArgs[++idx], projectArgs[++idx])
+      else if(opt === '-I')
+        args.push('-I', projectArgs[++idx])
+      else if(opt === '-Q')
+        args.push('-Q', projectArgs[++idx], projectArgs[++idx])
+      else if(opt === '-arg')
+        args.push(...require('string-argv')(projectArgs[++idx]))
+    }
+    return args;
+  }
+
   private async loadCoqProject() : Promise<void> {
     if(!this.workspaceRoot)
       return;
@@ -169,26 +190,11 @@ export class CoqProject {
     this.loadingCoqProjectInProcess = true;
       
     try {
-      this.coqProjectArgs = [];
       const stats = await this.getFileStats(this.coqProjectFile());
       this.coqProjectModifiedDate = stats.mtime;
-      const projectFile = readline.createInterface({
-        input: fs.createReadStream(this.coqProjectFile())
-      });
-      return await new Promise<void>((resolve,reject) => {
-        projectFile
-          .on('line', (line:string) => {
-            const arg = line.trim();
-            if(arg.startsWith('-')) {
-              this.coqProjectArgs = this.coqProjectArgs.concat(arg.split(' '));
-            }
-          })
-          .on('close', () => {
-            this.console.log('loaded settings from ' + coqProjectFileName);
-            this.currentSettings.coqtop.args = this.settingsCoqTopArgs.concat(this.coqProjectArgs);
-            resolve();
-          })
-      });
+      const projectFile = await nodeAsync.fs.readFile(this.coqProjectFile(), 'utf8');
+      this.coqProjectArgs = CoqProject.parseCoqProject(projectFile);
+      this.currentSettings.coqtop.args = [...this.coqProjectArgs, ...this.settingsCoqTopArgs];
     } catch(err) {
       this.coqProjectModifiedDate = null;
     } finally {
