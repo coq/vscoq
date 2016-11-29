@@ -21,4 +21,9 @@ compile: node_modules
 vsix: clean node_modules
 	cd client && vsce package
 
+
+deps:
+	npm install --global vsce
+
+
 all: vsix
