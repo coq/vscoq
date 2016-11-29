@@ -614,7 +614,7 @@ console.log("glob-def: " + util.inspect(result));
       if(value.$children[1] === 'ltacprof_results')
         result = Object.assign<{feedbackKind: "ltacprof"},LtacProfResults>(
           {feedbackKind: "ltacprof"}, value.$children[2])
-      else        
+      else
         result = {
           feedbackKind: "custom",
           location: value.$children[0],

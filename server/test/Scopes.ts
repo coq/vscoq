@@ -113,7 +113,7 @@ describe("Scopes", function() {
 
   })
 
-  describe('single-scope', function() {
+  describe.skip('single-scope', function() {
     let s : MockSentence;
     let symb;
 
@@ -310,7 +310,7 @@ describe("Scopes", function() {
       ]);
     })
 
-    it("getPrefix", function() {
+    it.skip("getPrefix", function() {
       function testGetPrefix(tests: [number,QualId][]) {
         tests.forEach(([idx,expected]) => assert.deepStrictEqual(s[idx].scope.getPrefixes(), expected, `s[${idx}].prefix === ${expected.toString()}`));
       }      
@@ -327,7 +327,7 @@ describe("Scopes", function() {
       ]);
     })
 
-    it.only("lookup", function() {
+    it.skip("lookup", function() {
       function testLookup(tests: [number,QualId,ScopeFlags,number[],QualId[]][]) {
         tests.forEach(([idx,id,f,expectedSource,expectedId]) => {
           const x = s[idx].scope.lookup(id,f);

@@ -31,18 +31,22 @@ class TraceConsole {
   public info(s: string) { this.state.info.push(s); }
 }
 
+function coqtopBin() {
+  return path.join(COQBIN_8_5, '/coqtop')
+}
+
 // Defines a Mocha test suite to group tests of similar kind together
 describe("Coqtop 8.5", function() {
   before("check if coqtop exists", function() {
     if(!fs.existsSync(path.join(COQBIN_8_5, '/coqtop')) && (os.platform()!=='win32' || !fs.existsSync(path.join(COQBIN_8_5, '/coqtop.exe')))) {
-      console.warn("Cannot find coqtop: " + path.join(COQBIN_8_5, '/coqtop'));
+      console.warn("Cannot find coqtop: " + coqtopBin());
       console.warn("Please make sure you have set env-var COQBIN_8_5 to point to the binaries directory of Coq 8.5.");
       this.skip();
     }
   })
 
   it("version", async function() {
-    const version = await CoqTop.detectVersion(COQBIN_8_5, "./", dummyConsole);
+    const version = await CoqTop.detectVersion(coqtopBin(), "./", dummyConsole);
     assert(version.startsWith("8.5"), "Coqtop does not appear to be version 8.5.\nPlease make sure you have set env-var COQBIN_8_5 to point to the binaries directory of Coq 8.5.")
     const knownVersions = ["8.5", "8.5pl1", "8.5pl2", "8.5pl3"];
     const isKnownVersion = knownVersions.some((v) => v === version);

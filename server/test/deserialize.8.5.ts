@@ -222,7 +222,7 @@ suite("Deserialize 8.5", () => {
     });
 
     test("feedback_content - ltacprof", async function () {
-      const results = await parse(`<feedback_content val="custom"><option val="none"/><string>ltacprof</string><ltacprof total_time="10.1">${ltacprof_tactic('abc',0,0,0,0,[])}${ltacprof_tactic('foo',1,2,3,4,[])}</ltacprof></feedback_content>`);
+      const results = await parse(`<feedback_content val="custom"><option val="none"/><string>ltacprof_results</string><ltacprof total_time="10.1">${ltacprof_tactic('abc',0,0,0,0,[])}${ltacprof_tactic('foo',1,2,3,4,[])}</ltacprof></feedback_content>`);
       assert.deepStrictEqual(results,[{
         feedbackKind: 'ltacprof',
         total_time: 10.1,
