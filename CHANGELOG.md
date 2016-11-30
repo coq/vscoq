@@ -1,6 +1,7 @@
 ## 0.2.2
 * improve mac keybindings
 * fix #84: _CoqProject handling (args were not being correctly filtered and passed to coqtop)
+* fix #85: diff view poorly matches goals for diffing
 
 ## 0.2.0
 * graceful handling of 'coqtop not found'
