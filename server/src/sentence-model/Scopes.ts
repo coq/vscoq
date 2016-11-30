@@ -580,7 +580,7 @@ export function parseAstForScopeDeclarations<S extends {prev: S, next: S, getSco
       return new ScopeDeclaration(sent,[], null);
     }
   } catch(err) {
-    debugger;
+    // debugger;
     return new ScopeDeclaration(sent,[], null);
   }
 }

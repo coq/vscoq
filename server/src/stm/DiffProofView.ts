@@ -45,7 +45,7 @@ function diffGoals(oldGoals: Goal[], newGoals: Goal[]) : Goal[] {
   if(!newGoals || !oldGoals || oldGoals.length <= 0)
     return newGoals;
 
-console.log(`[${oldGoals.map(g=>g.id).join(',')}] --> [${newGoals.map(g=>g.id).join(',')}]`);
+// console.log(`[${oldGoals.map(g=>g.id).join(',')}] --> [${newGoals.map(g=>g.id).join(',')}]`);
   const results : Goal[] = [];
   const old = oldGoals.filter(o => newGoals.findIndex(n => n.id === o.id) === -1);
   let oIdx = 0;
