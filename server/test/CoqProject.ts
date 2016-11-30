@@ -52,5 +52,6 @@ describe("CoqProject", function() {
     assertArgs("-arg foo -byte -R aaa bbb -o file -R ccc ddd", ['foo', '-R', 'aaa', 'bbb','-R', 'ccc', 'ddd']);
     assertArgs('-byte -arg "foo -bar doo" test.v', ['foo','-bar','doo']);
     assertArgs("-arg foo -byte\n-R aaa bbb\n-o file -R ccc ddd\nsome.v\ntest.v", ['foo', '-R', 'aaa', 'bbb','-R', 'ccc', 'ddd']);
+    assertArgs("-R . mindless\n-arg -impredicative-set\nutils.v\nhypiter.v", ["-R", ".", "mindless", "-impredicative-set"])
   })
 });
