@@ -25,14 +25,15 @@ export class GoalsCache {
 
   public constructor() {}
 
+  private cacheUnfocusedGoals(goals: UnfocusedGoalStack|null) {
+    if(!goals)
+      return;
+    goals.before.forEach(g => this.goalsCache.set(g.id,g));
+    goals.after.forEach(g => this.goalsCache.set(g.id,g));
+    this.cacheUnfocusedGoals(goals.next);
+  }
+
   public cacheProofView(pv: ProofView) : ProofViewReference {
-    function cacheUnfocusedGoals(goals: UnfocusedGoalStack|null) {
-      if(!goals)
-        return;
-      goals.before.forEach(g => this.goals.set(g.id,g));
-      goals.after.forEach(g => this.goals.set(g.id,g));
-      cacheUnfocusedGoals(goals.next);
-    }
     function getUnfocusedIds(goals: UnfocusedGoalStack|null) : UnfocusedGoalStackReference|null {
       if(!goals)
         return null;
@@ -46,7 +47,7 @@ export class GoalsCache {
     pv.goals.forEach(g => this.goalsCache.set(g.id,g));
     pv.abandonedGoals.forEach(g => this.goalsCache.set(g.id,g));
     pv.shelvedGoals.forEach(g => this.goalsCache.set(g.id,g));
-    cacheUnfocusedGoals(pv.backgroundGoals);
+    this.cacheUnfocusedGoals(pv.backgroundGoals);
 
     return {
       goals: pv.goals.map(g => g.id),
