@@ -16,6 +16,7 @@ import * as server from '../server';
 import {AnnotatedText} from '../util/AnnotatedText'
 import * as text from '../util/AnnotatedText'
 import {CoqProject} from '../CoqProject'
+import {GoalsCache, ProofViewReference, GoalId} from './GoalsCache';
 
 export {StateStatus} from './State';
 
@@ -133,6 +134,8 @@ export class CoqStateMachine {
   private coqLock = new Mutex();
   /** Sequentialize edits */
   private editLock = new Mutex();
+  /** goals */
+  private goalsCache = new GoalsCache();
 
 
   constructor(private project: CoqProject
@@ -761,6 +764,7 @@ private routeId = 1;
 
   private parseConvertGoal(goal: coqProto.Subgoal) : proto.Goal {
     return <proto.Goal>{
+      id: goal.id,
       goal: server.project.getPrettifySymbols().prettify(goal.goal),
       hypotheses: goal.hypotheses.map((hyp) => {
         let h = text.textSplit(hyp,/(:=|:)([^]*)/,2);
@@ -783,20 +787,21 @@ private routeId = 1;
     else
       return null;
   }
+
   
   private convertGoals(goals: coqtop.GoalResult) : GoalResult {
     switch(goals.mode) {
       case 'no-proof':
         return {type: 'no-proof'}
       case 'proof':
-        const result : GoalResult = {type: 'proof-view',
+        const pv = this.goalsCache.cacheProofView({
           goals: goals.goals.map(this.parseConvertGoal),
           backgroundGoals: this.convertUnfocusedGoals(goals.backgroundGoals),
           shelvedGoals: (goals.shelvedGoals || []).map(this.parseConvertGoal),
           abandonedGoals: (goals.abandonedGoals || []).map(this.parseConvertGoal),
-        };
-        this.focusedSentence.setGoal(result);
-        return result;
+        });
+        this.focusedSentence.setGoal(pv);
+        return Object.assign({type: 'proof-view'} as {type: 'proof-view'}, this.focusedSentence.getGoal(this.goalsCache));
       default:
         this.console.warn("Goal returned an unexpected value: " + util.inspect(goals,false,undefined));
     }
