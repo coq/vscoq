@@ -16,7 +16,7 @@ export function isScopedText(text: AnnotatedText): text is ScopedText {
 }
 
 export function isTextAnnotation(text: AnnotatedText): text is TextAnnotation {
-  return text && typeof (text as any).text === 'string'
+  return text && typeof (text as any).text === 'string' && !text.hasOwnProperty('scope')
 }
 
 export function textToString(text: AnnotatedText) : string {

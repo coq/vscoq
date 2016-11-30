@@ -10,9 +10,10 @@ import * as db from '../src/coqtop/xml-protocol/deserialize.base';
 import * as d from '../src/coqtop/xml-protocol/deserialize.8.6';
 import * as p from '../src/coqtop/xml-protocol/coq-xml';
 import * as stream from 'stream';
+import * as util from 'util';
 
 // Defines a Mocha test suite to group tests of similar kind together
-suite("Deserialize 8.6", () => {
+describe("Deserialize 8.6", () => {
   let data : stream.PassThrough;
   let deserializer : db.Deserialize;
   let parser : p.XmlStream;
@@ -37,7 +38,7 @@ suite("Deserialize 8.6", () => {
     })
   }
 
-  test("message", async function () {
+  it("message", async function () {
     const results = await parse([
       '<message><message_level val="error"/><loc start="1" stop="3"/><string>hi</string></message>',
       ]);
@@ -45,13 +46,39 @@ suite("Deserialize 8.6", () => {
       {level: proto.MessageLevel.Error, location: {start: 1, stop: 3}, message: "hi"}]);
   });
 
+  it("richpp", async function () {
+    function richpp(s: text.AnnotatedText) : (string | text.TextAnnotation | text.ScopedText) {
+      return {scope: "_", text: s}
+    }
+    function notation(s: text.AnnotatedText) : (string | text.TextAnnotation | text.ScopedText) {
+      return {scope: "constr.notation", text: s}
+    }
+    function variable(s: text.AnnotatedText) : (string | text.TextAnnotation | text.ScopedText) {
+      return {scope: "constr.variable", text: s}
+    }
+    const results = await parse(`
+      <message><message_level val="error"/><loc start="1" stop="3"/><richpp>
+      <_>
+        <constr.notation>[</constr.notation>
+        <constr.variable>d</constr.variable>
+        <constr.notation>]</constr.notation>&nbsp;
+        <constr.notation>=</constr.notation>&nbsp;
+        <constr.notation>[</constr.notation>
+        <constr.notation>]</constr.notation>
+      </_>
+      </richpp></message>`.replace(/>\s*</g, '><').replace(/\s*&nbsp;\s*/g, '&nbsp;'));
+    const x = text.normalizeText((results[0] as proto.Message).message);
+    assert.deepStrictEqual(x,richpp([notation("["),variable("d"),notation("]"),`\u00a0`,notation("="),`\u00a0`,notation("[]"),]));
+  });
 
-  suite("LtacProf", () => {
+
+
+  describe("LtacProf", () => {
     function ltacprof_tactic(name,total,self,num_calls,max_total,children: string[]) {
       return `<ltacprof_tactic name="${name.toString()}" total="${total.toString()}" local="${self.toString()}" ncalls="${num_calls.toString()}" max_total="${max_total.toString()}">${children.join('')}</ltacprof_tactic>`;
     }
 
-    test("ltacprof_tactic", async function () {
+    it("ltacprof_tactic", async function () {
       const results = await parse([
         ltacprof_tactic('abc',0,0,0,0,[]),
         ltacprof_tactic('foo',4.4,3.3,2,1.1,[]),
@@ -69,7 +96,7 @@ suite("Deserialize 8.6", () => {
       });
     });
 
-    test("ltacprof", async function () {
+    it("ltacprof", async function () {
       const results = await parse(`<ltacprof total_time="10.1">${ltacprof_tactic('abc',0,0,0,0,[])}${ltacprof_tactic('foo',1,2,3,4,[])}</ltacprof>`);
       assert.deepStrictEqual(results,[{
         total_time: 10.1,
@@ -79,7 +106,7 @@ suite("Deserialize 8.6", () => {
         ]}]);
     });
 
-    test("feedback_content - ltacprof", async function () {
+    it("feedback_content - ltacprof", async function () {
       const results = await parse(`<feedback_content val="custom"><option val="none"/><string>ltacprof_results</string><ltacprof total_time="10.1">${ltacprof_tactic('abc',0,0,0,0,[])}${ltacprof_tactic('foo',1,2,3,4,[])}</ltacprof></feedback_content>`);
       assert.deepStrictEqual(results,[{
         feedbackKind: 'ltacprof',

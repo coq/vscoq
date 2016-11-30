@@ -1,15 +1,16 @@
 // The module 'assert' provides assertion methods from node
 import * as assert from 'assert';
 import * as diff from 'diff';
+import * as util from 'util';
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as text from '../src/util/AnnotatedText';
 
 // Defines a Mocha test suite to group tests of similar kind together
-suite("AnnotatedText", () => {
+describe("AnnotatedText", () => {
 
-  test("textToString", (() => {
+  it("textToString", (() => {
     assert.equal(text.textToString("foo"), "foo");
     assert.equal(text.textToString(["foo","bar"]), "foobar");
     assert.equal(text.textToString([{scope:"aa",text:"foo"},"bar"]), "foobar");
@@ -19,7 +20,7 @@ suite("AnnotatedText", () => {
     assert.equal(text.textToString(["0 = 0 ",{substitution:"∨",text:"\\/"}," ",{substitution:"⊥",text:"False"}]), "0 = 0 \\/ False");
   }));
 
-  test("textToDisplayString", (() => {
+  it("textToDisplayString", (() => {
     assert.equal(text.textToDisplayString("foo"), "foo");
     assert.equal(text.textToDisplayString(["foo","bar"]), "foobar");
     assert.equal(text.textToDisplayString([{scope:"aa",text:"foo"},"bar"]), "foobar");
@@ -30,7 +31,7 @@ suite("AnnotatedText", () => {
     assert.equal(text.textToDisplayString([{scope:"aa", text: [{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]}, "dee"]), "FOO!!bardee");
   }));
 
-  test("textLength", (() => {
+  it("textLength", (() => {
     assert.equal(text.textLength("foo"), 3);
     assert.equal(text.textLength(["foo","bar"]), 6);
     assert.equal(text.textLength([{scope:"aa",text:"foo"},"bar"]), 6);
@@ -38,7 +39,7 @@ suite("AnnotatedText", () => {
     assert.equal(text.textLength([{substitution:"FOO",diff:"added",text:"foo"},"bar"]), 6);
   }));
 
-  test("textDisplayLength", (() => {
+  it("textDisplayLength", (() => {
     assert.equal(text.textDisplayLength("foo"), 3);
     assert.equal(text.textDisplayLength(["foo","bar"]), 6);
     assert.equal(text.textDisplayLength([{scope:"aa",text:"foo"},"bar"]), 6);
@@ -47,25 +48,25 @@ suite("AnnotatedText", () => {
     assert.equal(text.textDisplayLength([{scope:"aa", text: [{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]}, "dee"]), 11);
   }));
 
-  test("isScopedText", (() => {
+  it("isScopedText", (() => {
     assert(!text.isScopedText({text:'aa',diff:'added'}));
     assert(!text.isScopedText({text:'bb',diff:'added'}));
   }));
 
-  test("isTextAnnotation", (() => {
+  it("isTextAnnotation", (() => {
     assert(text.isTextAnnotation({text:'aa',diff:'added'}));
     assert(text.isTextAnnotation({text:'bb',diff:'added'}));
   }));
 
-  test("compatibleAnnotations", (() => {
+  it("compatibleAnnotations", (() => {
     assert(text.compatibleAnnotations({text:'aa',diff:'added'},{text:'bb',diff:'added'}));
   }));
 
-  test("tryCombineText", (() => {
+  it("tryCombineText", (() => {
     assert.deepStrictEqual(text.tryCombineText({text:'aa',diff:'added'},{text:'bb',diff:'added'}), { diff: 'added', text: 'aabb' });
   }));
 
-  test("normalizeText", (() => {
+  it("normalizeText", (() => {
     assert.equal(text.normalizeText("foo"), "foo");
     assert.equal(text.normalizeText(["foo","bar"]), "foobar");
     assert.deepStrictEqual(text.normalizeText({scope:"aa",attributes: {}, text:"foo"}), {scope:"aa", text:"foo"});
@@ -77,9 +78,21 @@ suite("AnnotatedText", () => {
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:{scope:"",text:["foo","!!"]}},{scope:"aa",text:["bar"]}]), {scope:"aa",text:"foo!!bar"});
     assert.deepStrictEqual(text.normalizeText({diff:"added",text:"aabbaa"}),{diff:"added",text:"aabbaa"});
     assert.deepStrictEqual(text.normalizeText([{text: 'aa',diff: 'added'},{text: 'bb',diff: 'added'},{text: 'aa',diff: 'added'}]), { diff: 'added', text: 'aabbaa' });
-  }));
 
-  test("textSplit", (() => {
+    function notation(s: text.AnnotatedText) : (string | text.TextAnnotation | text.ScopedText) {
+      return {scope: "constr.notation", text: s}
+    }
+    function variable(s: text.AnnotatedText) : (string | text.TextAnnotation | text.ScopedText) {
+      return {scope: "constr.variable", text: s}
+    }
+    const x1 = [notation("["),variable("d")];
+    assert.deepStrictEqual(text.normalizeText(x1), x1);
+    const x2 = [notation("["),variable("d"),notation("]")," ",notation("=")," ",notation("[]")];
+    assert.deepStrictEqual(text.normalizeText(x2), x2);
+  }));
+  
+
+  it("textSplit", (() => {
     assert.deepStrictEqual(text.textSplit("foo bar", " "), {splits: ["foo", "bar"], rest: []});
     assert.deepStrictEqual(text.textSplit("foo  bar", " "), {splits: ["foo", "bar"], rest: []});
     assert.deepStrictEqual(text.textSplit(["foo  bar", " dee  doo "], " "), {splits: ["foo", "bar", "dee", "doo"], rest: []});
@@ -92,7 +105,7 @@ suite("AnnotatedText", () => {
 
   }));
 
-  test("mapAnnotation", (() => {    
+  it("mapAnnotation", (() => {    
     let hist : [string,text.Annotation,number,number][] = [];
     let x : text.AnnotatedText = "foo";
     assert.deepStrictEqual(text.mapAnnotation(x,(plainText,annotation,start, startD) => {
@@ -113,7 +126,7 @@ suite("AnnotatedText", () => {
       ]);
   }));
 
-  test("diffText", (() => {
+  it("diffText", (() => {
     assert.deepStrictEqual(text.diffText("aaaa","aabbaa").text, {diff:"added",text:"aabbaa"});
     assert.deepStrictEqual(text.diffText("aa aa","aa bb aa").text, ["aa ",{diff:"added",text:"bb "},"aa"]);
     assert.deepStrictEqual(text.diffText("aa bb aa","aa aa",false).text, ["aa ","aa"]);
@@ -142,7 +155,7 @@ suite("AnnotatedText", () => {
     assert.deepStrictEqual(text.diffText(x,y).text,[{diff: "added", text: "0"}, " = ", {diff: "added", text: "0"}, " ", {substitution:"∨", text:"\\/"}, " ", {substitution:"⊥", text:"False"}]);
   }));
 
-  // test("cancelAll: three lockers", asyncTest (async () => {
+  // it("cancelAll: three lockers", asyncTest (async () => {
   //   const c = new CancellationSignal();
   //   const m = new Mutex();
   //   const unlock1 = await m.lock(c.event);
@@ -165,7 +178,7 @@ suite("AnnotatedText", () => {
   //   assert(!m.isLocked());
   // }));
 
-//   test("cancelAll: two lockers", asyncTest (async () => {
+//   it("cancelAll: two lockers", asyncTest (async () => {
 //     const m = new Mutex();
 //     const unlock1 = await m.lock();
 //     const waitLock = m.lock();
@@ -182,7 +195,7 @@ suite("AnnotatedText", () => {
 //     assert(!m.isLocked());
 //   }));
 // 
-//   test("cancelAll: three lockers", asyncTest (async () => {
+//   it("cancelAll: three lockers", asyncTest (async () => {
 //     const m = new Mutex();
 //     const unlock1 = await m.lock();
 //     const waitLock2 = m.lock();
