@@ -143,26 +143,38 @@
     .hypotheses .changed .ident {
       font-style: italic;
     } 
-    .hypotheses .expr .charsAdded {
-      color: lightgreen;
+    .expr .charsAdded {
+      background-color: rgba(0,250,0,0.1);
+      font-style: italic;
+    }
+    .expr span[class~=charsAdded][class~=substitution]::before {
+      background-color: rgba(0,250,0,0.1);
       font-style: italic;
     } 
-    .vscode-light .hypotheses .expr .charsAdded {
-      color: rgba(0,180,0,1);
+
+    .vscode-light .expr .charsAdded {
+      background-color: rgba(0,250,0,0.2);
+    }
+    .vscode-light .expr span[class~=charsAdded][class~=substitution]::before {
+      background-color: rgba(0,250,0,0.2);
     } 
-    .hypotheses .expr .charsRemoved {
+
+    /*.vscode-light .hypotheses .expr .charsAdded {
+      color: rgba(0,180,0,1);
+    } */
+    .expr .charsRemoved {
       display: none;
     } 
-    .goal .expr .charsAdded {
+    /*.goal .expr .charsAdded {
       color: lightgreen;
     }
     .vscode-light .goal .expr .charsAdded {
       color: rgba(0,180,0,1);
-    }
+    }*/
     
-    .goal .expr .charsRemoved {
+    /*.goal .expr .charsRemoved {
       display: none;
-    }
+    }*/
     .hypothesese, .hypothesis, .goal, #stdout, #textMeasurer, #measureTest {
       font-family: var(--code-font-family);
       font-weight: var(--code-font-weight);
