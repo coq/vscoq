@@ -15,7 +15,9 @@ A plugin for the [Coq Proof Assistant 8.5 and 8.6](https://coq.inria.fr/) in [Vi
 * LtacProf results treeview
 
 ## Screenshots
-<img alt="Simple example" src="https://cloud.githubusercontent.com/assets/16118166/19991384/3a8ed38c-a20b-11e6-88f6-cf9a9b04fe83.png" width="45%"/> <img alt="Screenshot of Proof Goal" src="https://cloud.githubusercontent.com/assets/16118166/15950935/9c8537dc-2e81-11e6-9954-5eefeac23a7a.png" width="45%"/>
+<img alt="Simple example" src="https://cloud.githubusercontent.com/assets/16118166/19991384/3a8ed38c-a20b-11e6-88f6-cf9a9b04fe83.png" width="65%"/>
 
-LtacProfiling view:
-<img alt="Simple example" src="https://cloud.githubusercontent.com/assets/16118166/15950939/a00a8e02-2e81-11e6-98c4-9425bf6ab9c9.png" width="45%"/>
+<img alt="Screenshot of Proof Goal" src="https://cloud.githubusercontent.com/assets/16118166/15950935/9c8537dc-2e81-11e6-9954-5eefeac23a7a.png" width="100%"/>
+
+LtacProfiling view:  
+<img alt="Simple example" src="https://cloud.githubusercontent.com/assets/16118166/15950939/a00a8e02-2e81-11e6-98c4-9425bf6ab9c9.png" width="100%"/>
