@@ -7,6 +7,9 @@
   settings: coq.editor.indentAfterBullet, 
 * support custom command to externally view proof-state (#95)
   settings: coq.externalViewUrlCommand
+* feature: reveal cached proof state at cursor (#66)
+  settings: coq.autoRevealProofStateAtCursor
+  command: "View the proof-state at the cursor position" --> "extension.coq.proofView.viewStateAt"
 * fix #94 #93 #92
 
 ## 0.2.0-0.2.3
