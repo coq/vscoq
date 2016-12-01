@@ -1,6 +1,7 @@
 ## 0.2.4
 * "finish computations" command (#24)
 * customize proof-view theme (#91)
+* better auto-indenting (#87 #88)
 * fix #94 #93 #92
 
 ## 0.2.0-0.2.3
