@@ -1,15 +1,15 @@
 ## 0.2.4
 * "finish computations" command (#24)
-  command: "Finish Computations" --> "extension.coq.finishComputations"
+    * command: "Finish Computations" --> "extension.coq.finishComputations"
 * customize proof-view theme (#91)
-  command: "Customize proof-view styling" --> "extension.coq.proofView.customizeProofViewStyle"
+    * command: "Customize proof-view styling" --> "extension.coq.proofView.customizeProofViewStyle"
 * better auto-indenting (#87 #88)
-  settings: coq.editor.indentAfterBullet, 
+    * settings: coq.editor.indentAfterBullet, 
 * support custom command to externally view proof-state (#95)
-  settings: coq.externalViewUrlCommand
+    * settings: coq.externalViewUrlCommand
 * feature: reveal cached proof state at cursor (#66)
-  settings: coq.autoRevealProofStateAtCursor
-  command: "View the proof-state at the cursor position" --> "extension.coq.proofView.viewStateAt"
+    * settings: coq.autoRevealProofStateAtCursor
+    * command: "View the proof-state at the cursor position" --> "extension.coq.proofView.viewStateAt"
 * fix #94 #93 #92
 
 ## 0.2.0-0.2.3

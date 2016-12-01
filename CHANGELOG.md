@@ -1,9 +1,21 @@
-## 0.2.2
+## 0.2.4
+* "finish computations" command (#24)
+    * command: "Finish Computations" --> "extension.coq.finishComputations"
+* customize proof-view theme (#91)
+    * command: "Customize proof-view styling" --> "extension.coq.proofView.customizeProofViewStyle"
+* better auto-indenting (#87 #88)
+    * settings: coq.editor.indentAfterBullet, 
+* support custom command to externally view proof-state (#95)
+    * settings: coq.externalViewUrlCommand
+* feature: reveal cached proof state at cursor (#66)
+    * settings: coq.autoRevealProofStateAtCursor
+    * command: "View the proof-state at the cursor position" --> "extension.coq.proofView.viewStateAt"
+* fix #94 #93 #92
+
+## 0.2.0-0.2.3
 * improve mac keybindings
 * fix #84: _CoqProject handling (args were not being correctly filtered and passed to coqtop)
 * fix #85: diff view poorly matches goals for diffing
-
-## 0.2.0
 * graceful handling of 'coqtop not found'
 
 ## 0.1.6
