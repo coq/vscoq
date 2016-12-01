@@ -42,6 +42,10 @@ export interface CoqTopSettings {
   traceXmlProtocol: boolean;
 }
 
+export interface CoqEditorSettings {
+  indentAfterBullet: "none" | "indent",
+}
+
 export interface CoqSettings {
   /** Load settings from _CoqProject (if found at the root of the Code project). @default `true` */
   loadCoqProject: boolean,
@@ -49,6 +53,7 @@ export interface CoqSettings {
   moveCursorToFocus : boolean,
   /** Interpret to end of sentence */
   interpretToEndOfSentence: boolean,
+  editor: CoqEditorSettings,
 }
 
 export interface FailValue {

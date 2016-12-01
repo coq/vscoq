@@ -81,6 +81,12 @@
           "type": "boolean",
           "default": false,
           "description": "Interpret to point will interpret up to *and including* the sentence at the cursor"
+        },
+        "coq.editor.indentAfterBullet": {
+          "type": "string",
+          "enum": ["none", "indent"],
+          "default": "none",
+          "description": "Control how to indent the line after a bullet. \"none\" - no indent; \"indent\" - tab-indent"
         }
 			}
 		},

@@ -7,9 +7,9 @@ import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } 
 import * as proto from './protocol';
 import {CoqProject, CoqDocument} from './CoqProject';
 import * as snippets from './Snippets';
-const regenerate = require('regenerate');
 import {initializeDecorations} from './Decorations';
 import {HtmlCoqView} from './HtmlCoqView';
+import * as editorAssist from './EditorAssist';
 
 vscode.Range.prototype.toString = function rangeToString() {return `[${this.start.toString()},${this.end.toString()})`}
 vscode.Position.prototype.toString = function positionToString() {return `{${this.line}@${this.character}}`}
@@ -99,39 +99,7 @@ export function activate(context: ExtensionContext) {
   regCmd('display.toggle.allLowLevelContents', () => project.setDisplayOption(proto.DisplayOption.AllLowLevelContents, proto.SetDisplayOption.Toggle));
   regCmd('display.toggle', () => project.setDisplayOption());
 
-  vscode.languages.setLanguageConfiguration('coq', {
-    indentationRules: {increaseIndentPattern: /^\s*(?:\bProof\b|\*|\+|\-)/, decreaseIndentPattern: /^\s*(?:\bQed\b)/},
-    wordPattern: new RegExp(
-      "(?:" +
-      regenerate()
-      .add(require('unicode-9.0.0/General_Category/Lowercase_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Uppercase_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Other_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Titlecase_Letter/code-points'))
-      .addRange(0x1D00, 0x1D7F) // Phonetic Extensions.
-      .addRange(0x1D80, 0x1DBF) // Phonetic Extensions Suppl.
-      .addRange(0x1DC0, 0x1DFF) // Combining Diacritical Marks Suppl.
-      .add(0x005F)              // Underscore.
-      .add(0x00A0)              // Non-breaking space.
-      .toString()
-      + ")" + "(?:" +
-      regenerate()
-      .add(require('unicode-9.0.0/General_Category/Lowercase_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Uppercase_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Other_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Titlecase_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Decimal_Number/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Letter_Number/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Other_Number/code-points'))
-      .addRange(0x1D00, 0x1D7F) // Phonetic Extensions.
-      .addRange(0x1D80, 0x1DBF) // Phonetic Extensions Suppl.
-      .addRange(0x1DC0, 0x1DFF) // Combining Diacritical Marks Suppl.
-      .add(0x005F)              // Underscore.
-      .add(0x00A0)              // Non-breaking space.
-      .add(0x0027)              // Special space/
-      .toString()
-      + ")*")
-  })
+  context.subscriptions.push(editorAssist.reload());
 
   snippets.setupSnippets(context.subscriptions);
 }
