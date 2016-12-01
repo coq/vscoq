@@ -135,31 +135,39 @@ export class CoqLanguageServer implements vscode.Disposable {
   }
 
   public async interruptCoq(uri: string) {
+    await this.server.onReady();
     this.cancelRequest.dispose();
     this.cancelRequest = new vscode.CancellationTokenSource();
     await this.server.sendRequest(proto.InterruptCoqRequest.type, { uri: uri }, this.cancelRequest.token);
   }
 
-  public quitCoq(uri: string) {
-    return this.server.sendRequest(proto.QuitCoqRequest.type, { uri: uri });
+  public async quitCoq(uri: string) {
+    await this.server.onReady();
+    return await this.server.sendRequest(proto.QuitCoqRequest.type, { uri: uri });
   }
 
-  public resetCoq(uri: string) {
-    return this.server.sendRequest(proto.ResetCoqRequest.type, { uri: uri });
-  }
-  public getGoal(uri: string): Thenable<proto.CommandResult> {
-    return this.server.sendRequest(proto.GoalRequest.type, { uri: uri }, this.cancelRequest.token);
+  public async resetCoq(uri: string) {
+    await this.server.onReady();
+    return await this.server.sendRequest(proto.ResetCoqRequest.type, { uri: uri });
   }
 
-  public stepForward(uri: string): Thenable<proto.CommandResult> {
+  public async getGoal(uri: string): Promise<proto.CommandResult> {
+    await this.server.onReady();
+    return await this.server.sendRequest(proto.GoalRequest.type, { uri: uri }, this.cancelRequest.token);
+  }
+
+  public async stepForward(uri: string): Promise<proto.CommandResult> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.StepForwardRequest.type, { uri: uri }, this.cancelRequest.token);
   }
 
-  public stepBackward(uri: string): Thenable<proto.CommandResult> {
+  public async stepBackward(uri: string): Promise<proto.CommandResult> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.StepBackwardRequest.type, { uri: uri }, this.cancelRequest.token);
   }
 
-  public interpretToPoint(uri: string, location: number|vscode.Position, synchronous?): Thenable<proto.CommandResult> {
+  public async interpretToPoint(uri: string, location: number|vscode.Position, synchronous?): Promise<proto.CommandResult> {
+    await this.server.onReady();
     const params : proto.CoqTopInterpretToPointParams = {
       uri: uri,
       location: location,
@@ -168,23 +176,28 @@ export class CoqLanguageServer implements vscode.Disposable {
     return this.server.sendRequest(proto.InterpretToPointRequest.type, params, this.cancelRequest.token);
   }
 
-  public interpretToEnd(uri: string, synchronous: boolean): Thenable<proto.CommandResult> {
+  public async interpretToEnd(uri: string, synchronous: boolean): Promise<proto.CommandResult> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.InterpretToEndRequest.type, { uri: uri, synchronous: synchronous }, this.cancelRequest.token);
   }
 
-  public resizeView(uri: string, columns: number): Thenable<void> {
+  public async resizeView(uri: string, columns: number): Promise<void> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.ResizeWindowRequest.type, <proto.CoqTopResizeWindowParams>{ uri: uri, columns: columns }, this.cancelRequest.token);
   }
 
-  public ltacProfGetResults(uri: string, offset?: number): Thenable<void> {
+  public async ltacProfGetResults(uri: string, offset?: number): Promise<void> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.LtacProfResultsRequest.type, { uri: uri, offset: offset }, this.cancelRequest.token);
   }
 
-  public getPrefixText(uri: string, pos: vscode.Position, token?: vscode.CancellationToken): Thenable<string> {
+  public async getPrefixText(uri: string, pos: vscode.Position, token?: vscode.CancellationToken): Promise<string> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.GetSentencePrefixTextRequest.type, { uri: uri, position: pos }, token || this.cancelRequest.token);
   }
 
-  public locate(uri: string, query: string): Thenable<proto.CoqTopQueryResult> {
+  public async locate(uri: string, query: string): Promise<proto.CoqTopQueryResult> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,
       queryFunction: proto.QueryFunction.Locate,
@@ -192,7 +205,8 @@ export class CoqLanguageServer implements vscode.Disposable {
     }, this.cancelRequest.token);
   }
 
-  public check(uri: string, query: string): Thenable<proto.CoqTopQueryResult> {
+  public async check(uri: string, query: string): Promise<proto.CoqTopQueryResult> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,
       queryFunction: proto.QueryFunction.Check,
@@ -200,7 +214,8 @@ export class CoqLanguageServer implements vscode.Disposable {
     }, this.cancelRequest.token);
   }
 
-  public print(uri: string, query: string): Thenable<proto.CoqTopQueryResult> {
+  public async print(uri: string, query: string): Promise<proto.CoqTopQueryResult> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,
       queryFunction: proto.QueryFunction.Print,
@@ -208,7 +223,8 @@ export class CoqLanguageServer implements vscode.Disposable {
     }, this.cancelRequest.token);
   }
 
-  public search(uri: string, query: string): Thenable<proto.CoqTopQueryResult> {
+  public async search(uri: string, query: string): Promise<proto.CoqTopQueryResult> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,
       queryFunction: proto.QueryFunction.Search,
@@ -216,7 +232,8 @@ export class CoqLanguageServer implements vscode.Disposable {
     }, this.cancelRequest.token);
   }
 
-  public searchAbout(uri: string, query: string): Thenable<proto.CoqTopQueryResult> {
+  public async searchAbout(uri: string, query: string): Promise<proto.CoqTopQueryResult> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,
       queryFunction: proto.QueryFunction.SearchAbout,
@@ -224,7 +241,8 @@ export class CoqLanguageServer implements vscode.Disposable {
     }, this.cancelRequest.token);
   }
 
-  public setDisplayOptions(uri: string, options: { item: proto.DisplayOption, value: proto.SetDisplayOption }[]): Thenable<void> {
+  public async setDisplayOptions(uri: string, options: { item: proto.DisplayOption, value: proto.SetDisplayOption }[]): Promise<void> {
+    await this.server.onReady();
     return this.server.sendRequest(proto.SetDisplayOptionsRequest.type, <proto.CoqTopSetDisplayOptionsParams>{
       uri: uri,
       options: options
