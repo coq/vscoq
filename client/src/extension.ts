@@ -67,6 +67,7 @@ export function activate(context: ExtensionContext) {
   regProjectCmd('quit', project.quitCoq);
   regProjectCmd('reset', project.resetCoq);
   regProjectCmd('interrupt', project.interruptCoq);
+  regProjectCmd('finishComputations', project.finishComputations);
   regProjectCmd('stepForward', project.stepForward);
   regProjectCmd('stepBackward', project.stepBackward);
   regProjectCmd('interpretToPoint', project.interpretToPoint);

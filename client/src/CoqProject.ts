@@ -206,6 +206,10 @@ export class CoqProject implements vscode.Disposable {
     return this.tryDocumentCommand(CoqDocument.prototype.interruptCoq);
   }
 
+  public finishComputations() {
+    return this.tryDocumentCommand(CoqDocument.prototype.finishComputations);
+  }
+
   public ltacProfGetResults() {
     return this.tryDocumentCommand(CoqDocument.prototype.ltacProfGetResults);
   }

@@ -219,6 +219,11 @@ connection.onRequest(coqproto.SetDisplayOptionsRequest.type, (params: coqproto.C
     .setDisplayOptions(params.options);
 });
 
+connection.onRequest(coqproto.FinishComputationsRequest.type, (params: coqproto.CoqTopSetDisplayOptionsParams, token: CancellationToken) => {
+  return project.lookup(params.uri)
+    .finishComputations();
+});
+
 connection.onRequest(coqproto.GetSentencePrefixTextRequest.type, (params: coqproto.DocumentPositionParams, token: CancellationToken) => {
   return project.lookup(params.uri)
     .getSentencePrefixTextAt(params.position);

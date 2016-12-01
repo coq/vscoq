@@ -352,6 +352,15 @@ export class CoqDocument implements vscode.Disposable {
     }
   }
 
+  public async finishComputations(editor: TextEditor) {
+    this.statusBar.setStateWorking('Finishing computations');
+    try {
+      const value = await this.langServer.finishComputations();
+      this.statusBar.setStateReady();
+    } catch (err) {
+    }
+  }
+
   public async interpretToCursorPosition(editor: TextEditor, synchronous = false) {
     this.statusBar.setStateWorking('Interpretting to point');
     try {

@@ -867,7 +867,21 @@ export class CoqDocument implements TextDocument {
     } finally {
       this.updateDiagnostics(true);
     }
+  }
 
+  public async getStatus(force: boolean) : Promise<thmProto.CommandResult> {
+    if(!this.isStmRunning())
+      return {type: 'not-running', reason: "not-started"};
+    try {
+      return await this.stm.getStatus(force);
+    } finally {
+      this.updateDiagnostics(true);
+    }
+  }
+
+  public async finishComputations() {
+    if(this.isStmRunning())
+      this.stm.finishComputations();
   }
 
   public async locateIdent(ident: string) {

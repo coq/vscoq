@@ -88,6 +88,7 @@
       {"command": "extension.coq.quit", "title": "Quit", "category": "Coq"},
       {"command": "extension.coq.reset", "title": "Reset", "category": "Coq"},
       {"command": "extension.coq.interrupt", "title": "Interrupt", "category": "Coq"},
+      {"command": "extension.coq.finishComputations", "title": "Finish Computations", "category": "Coq"},
       {"command": "extension.coq.stepForward", "title": "Step Forward", "category": "Coq"},
       {"command": "extension.coq.stepBackward", "title": "Step Backward", "category": "Coq"},
       {"command": "extension.coq.interpretToPoint", "title": "Interpret To Point", "category": "Coq"},

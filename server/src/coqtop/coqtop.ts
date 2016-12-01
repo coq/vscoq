@@ -783,6 +783,18 @@ export class CoqTop extends events.EventEmitter {
     //   result.abandonedGoals.forEach((g, i) => this.console.log(`    ${i + 1}) ${util.inspect(g, false, null)}`));
     // }
  }
+
+  public async getStatus(force: boolean) : Promise<coqProto.CoqStatus> {
+    this.checkState();
+
+    const coqResult = this.coqGetResultOnce('Status');
+    // const verboseStr = verbose===true ? "true" : "false";
+    this.console.log('--------------------------------');
+    this.console.log(`Call Status(force: ${force})`);
+    this.mainChannelW.write(`<call val="Status"><bool val="${force ? "true" : "false"}" /></call>`);
+
+    return coqProto.GetValue('Status', await coqResult);
+  }
   
   public async coqAddCommand(command: string, editId: number, stateId: number, verbose?: boolean) : Promise<AddResult> {
     this.checkState();

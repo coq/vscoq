@@ -220,6 +220,11 @@ export namespace GoalRequest {
   { get method() { return 'coqtop/goal' }
   , _:undefined }; 
 }
+export namespace FinishComputationsRequest { 
+  export const type: RequestType<CoqTopParams, void, void, void> = 
+  { get method() { return 'coqtop/finishComputations' }
+  , _:undefined }; 
+}
 export namespace QueryRequest { 
   export const type: RequestType<CoqTopQueryParams, CoqTopQueryResult, void, void> = 
   { get method() { return 'coqtop/query' }

@@ -7,7 +7,7 @@ export {Node} from './coq-xml';
 import {StateId, EditId, Pair, StateFeedback, LtacProfTactic, LtacProfResults,
   UnionL, UnionR, Union, OptionState, Subgoal, Goals, Location, MessageLevel,
   Message, FailValue, UnfocusedGoalStack, SentenceStatus, FeedbackContent,
-  ValueReturn, CoqValue, CoqValueList, UnionCoqValue} from '../coq-proto';
+  ValueReturn, CoqValue, CoqValueList, UnionCoqValue, CoqStatus} from '../coq-proto';
 import {AnnotatedText} from '../../util/AnnotatedText';
 
 // export interface TypedNode {
@@ -296,6 +296,7 @@ export namespace Nodes {
     LocationNode | MessageLevelNode | MessageNode |
     LtacProfTacticNode | LtacProfResultsNode |
     FeedbackNode | FeedbackContentNode |
+    StatusNode |
     ValueNode;
 
   export interface FailValueNode {
@@ -371,6 +372,7 @@ function check(t:'goals', r?: Goals);
 function check(t:'loc', r?: Location );
 function check(t:'message_level', r?: MessageLevel );
 function check(t:'message', r?: Message );
+function check(t:'status', r?: CoqStatus );
 function check(t:'value', r?: ValueReturn|FailValue );
 function check(tag:string, result:CoqValue) : CoqValue {
   return result;
@@ -460,6 +462,13 @@ export abstract class Deserialize {
         return check(value.$name, {
           level: value.message_level, 
           message: value.$children[1] || ""
+        });
+      case 'status':
+        return check(value.$name, {
+          path: value.$children[0],
+          proofName: value.$children[1],
+          allProofs: value.$children[2],
+          proofNumber: value.$children[3],
         });
       case 'value':
         if(Nodes.isGoodValue(value))

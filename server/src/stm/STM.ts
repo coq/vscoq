@@ -402,6 +402,24 @@ export class CoqStateMachine {
     }
   }
 
+  public async getStatus(force: boolean) : Promise<(proto.FailureResult & proto.FocusPosition)|proto.NotRunningResult|null> {
+    if(!this.isCoqReady())
+      return {type: 'not-running', reason: "not-started"}
+    const endCommand = await this.startCommand();
+    if(!endCommand)
+      return null;
+    try {
+      const result = await this.coqtop.getStatus(force);
+    } finally {
+      endCommand();
+    }
+    return null;
+  }
+
+  public async finishComputations() {
+    await this.getStatus(true);
+  }
+
   /** Interpret to point
    * Tell Coq to process the proof script up to the given point
    * This may not fully process everything, or it may rewind the state.

@@ -241,6 +241,7 @@ export type CoqValue =
   AnnotatedText |
   Location | MessageLevel | Message |
   FeedbackContent | LtacProfTactic | LtacProfResults |
+  CoqStatus |
   ValueReturn | FailValue;
 
 

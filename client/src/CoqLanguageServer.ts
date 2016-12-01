@@ -156,6 +156,11 @@ export class CoqLanguageServer implements vscode.Disposable {
     return await this.server.sendRequest(proto.GoalRequest.type, { uri: uri }, this.cancelRequest.token);
   }
 
+  public async finishComputations(uri: string): Promise<void> {
+    await this.server.onReady();
+    return await this.server.sendRequest(proto.FinishComputationsRequest.type, { uri: uri }, this.cancelRequest.token);
+  }
+
   public async stepForward(uri: string): Promise<proto.CommandResult> {
     await this.server.onReady();
     return this.server.sendRequest(proto.StepForwardRequest.type, { uri: uri }, this.cancelRequest.token);
@@ -312,6 +317,10 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
 
   public getGoal(): Thenable<proto.CommandResult> {
     return this.server.getGoal(this.uri);
+  }
+
+  public finishComputations(): Thenable<proto.CommandResult> {
+    return this.server.finishComputations(this.uri);
   }
 
   public stepForward(): Thenable<proto.CommandResult> {
