@@ -181,8 +181,14 @@ export class HtmlCoqView implements view.CoqView {
     //   await vscode.window.showTextDocument(focusedDoc);
   }
 
-  public showExternal() : Promise<void> {
-    return Promise.resolve(opener(decodeURIComponent(coqViewToFileUri(this.coqViewUri).toString()), {command:"firefox"}));
+  public showExternal(command? : (url:string)=>{module: string, args: string[]}) : Promise<void> {
+    const url = decodeURIComponent(coqViewToFileUri(this.coqViewUri).toString());
+    if(!command)
+      return Promise.resolve(opener(url));
+    else {
+      const c = command(url);
+      return Promise.resolve(opener(c.args.join(' '), {command: c.module}));
+    }
   }
 
   public dispose() {

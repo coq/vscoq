@@ -55,6 +55,6 @@ export interface CoqView extends vscode.Disposable {
   onresize: (columns: number) => Thenable<void>;
 
   show(preserveFocus: boolean, pane: vscode.ViewColumn) : Promise<void>;
-  showExternal() : Promise<void>;
+  showExternal(command?: (url:string)=>{module: string, args: string[]}) : Promise<void>;
 
 }

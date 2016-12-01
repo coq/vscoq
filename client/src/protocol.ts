@@ -55,6 +55,8 @@ export interface CoqSettings {
   interpretToEndOfSentence: boolean,
   /* Auto-reveal proof-state at cursor */
   autoRevealProofStateAtCursor: boolean,
+  /* Command to view a uri in an external browser */
+  externalViewUrlCommand: string,
   editor: CoqEditorSettings,
 }
 

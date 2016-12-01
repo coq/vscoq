@@ -87,6 +87,11 @@
           "default": false,
           "description": "If true, then auto-update the proof view with the cached state at the cursor"
         },
+        "coq.externalViewUrlCommand": {
+          "type": "string",
+          "default": "firefox ${url}",
+          "description": "The command to use to view a url"
+        },
         "coq.editor.indentAfterBullet": {
           "type": "string",
           "enum": ["none", "indent"],
@@ -217,6 +222,7 @@
     "opener": "1.4.2",
     "regenerate": "1.3.1",
     "unicode-9.0.0": "0.7.0",
+    "string-argv": "0.0.2",
     "@types/xml2js": "^0.0.28",
     "@types/chalk": "0.4.31",
     "@types/ws": "^0.0.34"
