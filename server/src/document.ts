@@ -869,6 +869,16 @@ export class CoqDocument implements TextDocument {
     }
   }
 
+  public async getCachedGoal(pos: vscode.Position) : Promise<thmProto.CommandResult> {
+    if(!this.isStmRunning())
+      return {type: 'not-running', reason: "not-started"};
+    try {
+      return this.toGoal(await this.stm.getCachedGoal(pos));
+    } finally {
+      this.updateDiagnostics(true);
+    }
+  }
+
   public async getStatus(force: boolean) : Promise<thmProto.CommandResult> {
     if(!this.isStmRunning())
       return {type: 'not-running', reason: "not-started"};

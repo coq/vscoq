@@ -82,6 +82,11 @@
           "default": false,
           "description": "Interpret to point will interpret up to *and including* the sentence at the cursor"
         },
+        "coq.autoRevealProofStateAtCursor": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, then auto-update the proof view with the cached state at the cursor"
+        },
         "coq.editor.indentAfterBullet": {
           "type": "string",
           "enum": ["none", "indent"],
@@ -125,6 +130,7 @@
       {"command": "extension.coq.display.toggle.allLowLevelContents", "title": "Display All LowLevel Contents", "category": "Coq"},
       {"command": "extension.coq.proofView.open", "title": "Open proof view", "category": "Coq"},
       {"command": "extension.coq.proofView.openExternal", "title": "Open proof view in external browser", "category": "Coq"},
+      {"command": "extension.coq.proofView.viewStateAt", "title": "View the proof-state at the cursor position", "category": "Coq"},
       {"command": "extension.coq.ltacProf.getResults", "title": "View ltac profile", "category": "Coq"},
       {"command": "extension.coq.proofView.customizeProofViewStyle", "title": "Customize proof-view styling", "category": "Coq"}
     ],

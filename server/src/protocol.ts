@@ -42,6 +42,10 @@ export interface CoqTopSettings {
   traceXmlProtocol: boolean;
 }
 
+export interface CoqEditorSettings {
+  indentAfterBullet: "none" | "indent",
+}
+
 export interface CoqSettings {
   /** Load settings from _CoqProject (if found at the root of the Code project). @default `true` */
   loadCoqProject: boolean,
@@ -49,6 +53,9 @@ export interface CoqSettings {
   moveCursorToFocus : boolean,
   /** Interpret to end of sentence */
   interpretToEndOfSentence: boolean,
+  /* Auto-reveal proof-state at cursor */
+  autoRevealProofStateAtCursor: boolean,
+  editor: CoqEditorSettings,
 }
 
 export interface FailValue {
@@ -218,6 +225,14 @@ export namespace InterpretToEndRequest {
 export namespace GoalRequest { 
   export const type: RequestType<CoqTopParams, CommandResult, void, void> = 
   { get method() { return 'coqtop/goal' }
+  , _:undefined }; 
+}
+export interface CachedGoalParams extends CoqTopParams {
+  position: vscode.Position,
+}
+export namespace CachedGoalRequest { 
+  export const type: RequestType<CachedGoalParams, CommandResult, void, void> = 
+  { get method() { return 'coqtop/cachedGoal' }
   , _:undefined }; 
 }
 export namespace FinishComputationsRequest { 

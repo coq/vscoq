@@ -402,6 +402,30 @@ export class CoqStateMachine {
     }
   }
 
+  /**
+   * Return the cached goal for the given position
+   * @throws FailValue
+   */
+  public async getCachedGoal(pos: vscode.Position) : Promise<GoalResult> {
+    try {
+      const state = this.getStateAt(pos);
+      if(state && state.getParent())
+        return Object.assign({type: 'proof-view'} as {type: 'proof-view'}, state.getParent().getGoal(this.goalsCache));
+      else
+        return {type: "no-proof"}
+    } catch(error) {
+       return {type: "no-proof"}
+    }
+  }
+
+  private getStateAt(pos: vscode.Position) : State|null {
+    for(let s of this.sentences.values()) {
+      if(s.contains(pos))
+        return s;
+    }
+    return null;
+  }
+
   public async getStatus(force: boolean) : Promise<(proto.FailureResult & proto.FocusPosition)|proto.NotRunningResult|null> {
     if(!this.isCoqReady())
       return {type: 'not-running', reason: "not-started"}

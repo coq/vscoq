@@ -53,6 +53,8 @@ export interface CoqSettings {
   moveCursorToFocus : boolean,
   /** Interpret to end of sentence */
   interpretToEndOfSentence: boolean,
+  /* Auto-reveal proof-state at cursor */
+  autoRevealProofStateAtCursor: boolean,
   editor: CoqEditorSettings,
 }
 
@@ -223,6 +225,14 @@ export namespace InterpretToEndRequest {
 export namespace GoalRequest { 
   export const type: RequestType<CoqTopParams, CommandResult, void, void> = 
   { get method() { return 'coqtop/goal' }
+  , _:undefined }; 
+}
+export interface CachedGoalParams extends CoqTopParams {
+  position: vscode.Position,
+}
+export namespace CachedGoalRequest { 
+  export const type: RequestType<CachedGoalParams, CommandResult, void, void> = 
+  { get method() { return 'coqtop/cachedGoal' }
   , _:undefined }; 
 }
 export namespace FinishComputationsRequest { 

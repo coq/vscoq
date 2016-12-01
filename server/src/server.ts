@@ -188,6 +188,10 @@ connection.onRequest(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams, 
   return project.lookup(params.uri)
     .getGoal();
 });
+connection.onRequest(coqproto.CachedGoalRequest.type, (params: coqproto.CachedGoalParams, token: CancellationToken) => {
+  return project.lookup(params.uri)
+    .getCachedGoal(params.position);
+});
 connection.onRequest(coqproto.QueryRequest.type, async (params: coqproto.CoqTopQueryParams, token: CancellationToken) => {
   switch(params.queryFunction) {
   case coqproto.QueryFunction.Check:

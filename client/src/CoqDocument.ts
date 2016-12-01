@@ -95,6 +95,8 @@ export class CoqDocument implements vscode.Disposable {
     };
 
     this.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((e:vscode.TextEditorSelectionChangeEvent) => {
+      if(this.project.settings.autoRevealProofStateAtCursor && e.textEditor.document === this.document && e.selections.length === 1)
+        this.viewGoalAt(e.textEditor,e.selections[0].active);
       if(this.cursorUnmovedSinceCommandInitiated.has(e.textEditor))
         this.cursorUnmovedSinceCommandInitiated.delete(e.textEditor);
     }));
@@ -518,6 +520,16 @@ export class CoqDocument implements vscode.Disposable {
       const proofview = await this.langServer.getGoal();
       this.view.update(proofview);
     } catch(err) { }
+ }
+
+ public async viewGoalAt(editor: vscode.TextEditor, pos?: vscode.Position) {
+    try {
+      if(!pos)
+        pos = editor.selection.active;
+      const proofview = await this.langServer.getCachedGoal(pos);
+      if(proofview.type === "proof-view")
+        this.view.update(proofview);
+    } catch(err) { }   
  }
   
 }
