@@ -88,8 +88,8 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
     incomplete: create({
       overviewRulerColor: 'purple', 
       overviewRulerLane: vscode.OverviewRulerLane.Center,
-      light: {backgroundColor: 'lightpurple'},
-      dark: {backgroundColor: 'darkpurple'},
+      light: {backgroundColor: 'violet'},
+      dark: {backgroundColor: 'darkmagenta'},
     }),
     focus: create({
       gutterIconPath: context.asAbsolutePath(STM_FOCUS_IMAGE),
