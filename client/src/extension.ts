@@ -9,6 +9,7 @@ import {CoqProject, CoqDocument} from './CoqProject';
 import * as snippets from './Snippets';
 const regenerate = require('regenerate');
 import {initializeDecorations} from './Decorations';
+import {HtmlCoqView} from './HtmlCoqView';
 
 vscode.Range.prototype.toString = function rangeToString() {return `[${this.start.toString()},${this.end.toString()})`}
 vscode.Position.prototype.toString = function positionToString() {return `{${this.line}@${this.character}}`}
@@ -61,6 +62,7 @@ export function activate(context: ExtensionContext) {
   regTCmd('query.prompt.print', queryPrint);
   regTCmd('proofView.open', viewGoalState); 
   regTCmd('proofView.openExternal', viewGoalStateExternal);
+  regCmd('proofView.customizeProofViewStyle', customizeProofViewStyle);
   regProjectCmd('ltacProf.getResults', project.ltacProfGetResults);
   regCmd('display.toggle.implicitArguments', () => project.setDisplayOption(proto.DisplayOption.ImplicitArguments, proto.SetDisplayOption.Toggle)); 
   regCmd('display.toggle.coercions', () => project.setDisplayOption(proto.DisplayOption.Coercions, proto.SetDisplayOption.Toggle)); 
@@ -206,4 +208,8 @@ function viewGoalStateExternal(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
     doc.viewGoalState(editor,true)
   )
+}
+
+function customizeProofViewStyle() {
+  HtmlCoqView.customizeProofViewStyle();
 }

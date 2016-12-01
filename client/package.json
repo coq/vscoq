@@ -118,7 +118,8 @@
       {"command": "extension.coq.display.toggle.allLowLevelContents", "title": "Display All LowLevel Contents", "category": "Coq"},
       {"command": "extension.coq.proofView.open", "title": "Open proof view", "category": "Coq"},
       {"command": "extension.coq.proofView.openExternal", "title": "Open proof view in external browser", "category": "Coq"},
-      {"command": "extension.coq.ltacProf.getResults", "title": "View ltac profile", "category": "Coq"}
+      {"command": "extension.coq.ltacProf.getResults", "title": "View ltac profile", "category": "Coq"},
+      {"command": "extension.coq.proofView.customizeProofViewStyle", "title": "Customize proof-view styling", "category": "Coq"}
     ],
     "keybindings": [
       {"key": "ctrl+alt+.", "mac": "cmd+ctrl+.", "command": "extension.coq.moveCursorToFocus", "when": "editorTextFocus && editorLangId == coq"},

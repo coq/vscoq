@@ -11,7 +11,7 @@ var path = require('path');
 var util = require('util');
 
 gulp.task('copy-html', function() {
-    return gulp.src('./src/**/*.html')
+    return gulp.src('./src/**/*.{css,html}')
         .pipe(gulp.dest(tsProjectGoals.options.outDir));
 });
 gulp.task('compile-goals-ts', function() {
@@ -49,7 +49,7 @@ gulp.task('jquery', function() {
 
 // Watch Files For Changes
 gulp.task('watch-html', function() {
-    gulp.watch('src/**/*.html', ['copy-html']);
+    gulp.watch('src/**/*.{html,css}', ['copy-html']);
     gulp.watch(['./src/goals/**/*.ts'], ['compile-goals-ts']);
     gulp.watch(['./src/ltacprof/**/*.ts'], ['compile-ltacprof-ts']);
     // gulp.watch('./src/HtmlView/jquery/**/*.{js,css,png}', ['jquery']);

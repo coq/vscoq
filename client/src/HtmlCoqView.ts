@@ -12,6 +12,7 @@ import * as http from 'http';
 import * as path from 'path';
 import * as util from 'util';
 import * as docs from './CoqProject';
+import * as nasync from './nodejs-async';
 
 const opener = require('opener');
 
@@ -63,6 +64,11 @@ function writeFile(filename: string, data: any) : Promise<void> {
     } );
   })
 }
+
+function proofViewHtmlPath() {
+  return vscode.Uri.file(extensionContext.asAbsolutePath('html_views/goals/Coq.html'));
+}
+
 
 function edit(editor: vscode.TextEditor) : Promise<vscode.TextEditorEdit> {
   return new Promise<vscode.TextEditorEdit>((resolve,reject) => editor.edit(resolve));
@@ -146,16 +152,15 @@ export class HtmlCoqView implements view.CoqView {
         return;        
     }
   }
-  
+
+ 
   private async createBuffer() : Promise<void> {
     try {
       await this.serverReady;
       const serverAddress = this.httpServer.address();
 
-      // const templateFileName = vscode.Uri.file('html_views/goals/Coq.html');
-      const templateFileName = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/goals/Coq.html'));
-      // const templateFileName = vscode.Uri.file(__dirname + '/HtmlView/Coq.html');
-      this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
+      await HtmlCoqView.prepareStyleSheet();
+      this.coqViewUri = vscode.Uri.parse(`coq-view://${proofViewHtmlPath().path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
       console.log("Goals: " + decodeURIComponent(this.coqViewUri.with({scheme: 'file'}).toString()));
     } catch(err) {
       vscode.window.showErrorMessage(err.toString());
@@ -203,5 +208,44 @@ export class HtmlCoqView implements view.CoqView {
     this.currentSettings.fontSize = `${vscode.workspace.getConfiguration("editor").get("fontSize") as number}px`;
     this.currentSettings.fontWeight = vscode.workspace.getConfiguration("editor").get("fontWeight") as string;
     this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>(this.currentSettings,{command: 'settings-update'}), clients);
+  }
+
+  private static async shouldResetStyleSheet() : Promise<boolean> {
+    try {
+      const styleFile = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/goals/proof-view.css'));
+      if(!await nasync.fs.exists(styleFile.fsPath))
+        return true;
+      const stat = await nasync.fs.stat(styleFile.fsPath);
+      if(stat.size < 5 && (await nasync.fs.readFile(styleFile.fsPath, 'utf8')).trim() === "")
+        return true;
+    } catch(err) {
+      console.error(err.toString());
+    }
+    return false;
+  }
+
+  /** makes sure that the style sheet is available */
+  private static async prepareStyleSheet() {
+    try {
+      const styleFile = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/goals/proof-view.css'));
+      if(await HtmlCoqView.shouldResetStyleSheet() === true) {
+        const defaultFile = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/goals/default-proof-view.css'));
+        await nasync.fs.copyFile(defaultFile.fsPath,styleFile.fsPath);
+      }
+    } catch(err) {
+      console.error(err.toString());
+    }
+  }
+
+
+  public static async customizeProofViewStyle() {
+    try {
+      await HtmlCoqView.prepareStyleSheet();
+      const styleFile = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/goals/proof-view.css'));
+      const doc = await vscode.workspace.openTextDocument(styleFile.fsPath);
+      const ed = await vscode.window.showTextDocument(doc);
+    } catch(err) {
+      console.error(err.toString());
+    }
   }
 }

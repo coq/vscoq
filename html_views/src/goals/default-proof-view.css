@@ -1,0 +1,324 @@
+html, body {
+  width:100%;
+  height:100%;
+  margin:0px;
+  padding:0px;
+  border:none;
+  position:absolute;
+  top:0px;
+  left:0px;
+  right:0px;
+  bottom:0px;
+  }
+body {      
+  background-color: var(--background-color, black);
+  color: var(--color, white);
+  font-family: var(--font-family,"'Segoe WPC','Segoe UI',SFUIText-Light,HelveticaNeue-Light,sans-serif,'Droid Sans Fallback'");
+  font-weight: var(--font-weight);
+  font-size: var(--font-size);
+}
+#messages {
+  color: white
+  }
+.vscode-light #messages {
+  color: black
+  }
+#stdout {
+  padding-left: 4pt;
+}
+#error {
+  color: red;
+}
+.hidden {
+  display: none;
+}
+
+.prettifySymbolsMode span .substitution::before {
+  content: attr(subst);
+  font-size: 1000em;
+}
+.prettifySymbolsMode span .substitution {
+  content: attr(subst);
+  font-size: 0.001em;
+}
+
+.hypotheses {
+  border-bottom: 2pt solid white;
+  padding: 0pt;
+  padding-bottom: 1em;
+}
+.vscode-light .hypotheses {
+  border-bottom-color: black;
+}
+.hypotheses .hypothesis .rel {
+  margin-right: 1ex;
+  margin-left: 3pt;
+}
+.hypotheses .hypothesis .ident {
+  color: lightseagreen;
+}
+.vscode-light .hypotheses .hypothesis .ident {
+  color: darkgreen;
+}
+.hypotheses .hypothesis > ul {
+  list-style-type: none;
+  display: block;
+  margin-left: 0pt;
+  padding-left: 0pt;
+  text-indent: 0pt
+}
+.hypotheses > li {
+  list-style-type: none;
+  display: block;
+  padding-left: 0pt;
+  text-indent: 0pt
+}
+.hypotheses li:nth-child(odd) {
+  background-color: rgba(255,255,255,0.04)
+}
+.hypotheses .new {
+  background-color: rgba(0,255,0,0.09) !important;
+} 
+.hypotheses .changed {
+  background-color: rgba(0,0,255,0.15) !important;
+} 
+.vscode-light .hypotheses li:nth-child(odd) {
+  background-color: rgba(0,0,0,0.02)
+}
+.vscode-light .hypotheses .new {
+  background-color: rgba(00,170,00,0.25) !important;
+} 
+.vscode-light .hypotheses .changed {
+  background-color: rgba(0,0,255,0.05) !important;
+} 
+.hypothesis {
+  white-space: nowrap;
+}
+.breakText {
+  white-space: pre;
+}
+.noBreakText .expr {
+  white-space: nowrap;
+}
+.noBreakText .ident {
+  text-decoration: underline;
+}
+/*.noBreakContainedText .breakText {
+  white-space: normal;
+}*/
+/*.noBreakContainedText .breakText .hypLine:before {
+  content: ' ';
+}*/
+/*.noBreakContainedText,.breakContainedText  {
+  opacity: 1;
+}*/
+.goal .goalId {
+  color: lightblue;
+  /*display: block;*/
+  margin-right: 1ex; 
+}
+.vscode-light .goal .goalId {
+  color: darkblue;
+}
+.goal .goalId:before {
+  content: '(';
+}
+.goal .goalId:after {
+  content: ')';
+}
+.goal {
+  list-style-type: none;
+  white-space: pre;
+}
+.goal .expr {
+  display: block;
+}
+.hypotheses .new .ident {
+  font-weight: bold;
+} 
+.hypotheses .changed .ident {
+  font-style: italic;
+} 
+.expr .charsAdded {
+  background-color: rgba(0,250,0,0.1);
+  font-style: italic;
+}
+.expr span[class~=charsAdded][class~=substitution]::before {
+  background-color: rgba(0,250,0,0.1);
+  font-style: italic;
+} 
+
+.vscode-light .expr .charsAdded {
+  background-color: rgba(0,250,0,0.2);
+}
+.vscode-light .expr span[class~=charsAdded][class~=substitution]::before {
+  background-color: rgba(0,250,0,0.2);
+} 
+
+/*.vscode-light .hypotheses .expr .charsAdded {
+  color: rgba(0,180,0,1);
+} */
+.expr .charsRemoved {
+  display: none;
+} 
+/*.goal .expr .charsAdded {
+  color: lightgreen;
+}
+.vscode-light .goal .expr .charsAdded {
+  color: rgba(0,180,0,1);
+}*/
+
+/*.goal .expr .charsRemoved {
+  display: none;
+}*/
+.hypothesese, .hypothesis, .goal, #stdout, #textMeasurer, #measureTest {
+  font-family: var(--code-font-family);
+  font-weight: var(--code-font-weight);
+  font-size: var(--code-font-size);
+}
+
+.goalsList {
+  margin-left: 0;
+  padding-left: 0;
+}
+.goalsList li:first-child {
+  background-color: inherit;
+  border-top: 0pt;
+}
+.goalsList li {
+  border-top: 1pt solid gray;
+  padding-bottom: 1em;
+  background-color: rgba(80,80,80,0.25);
+}
+.vscode-light .goalsList li:first-child {
+  background-color: inherit;
+}
+.vscode-light .goalsList li {
+  border-top-color: gray;
+  background-color: rgba(200,200,200,0.5);
+}
+.goalsList li:last-child {
+  padding-bottom: 0em;
+}
+#measureTest {
+  display: none;
+}
+
+#toolbar {
+  display: block;
+  height: 1em;
+}
+#toolbar button {
+  background: none;
+  border-color: blue;
+  border-width: 1px;
+  height: 1.5em;
+  min-width: 1.5em;
+  color: green;
+  padding: 0pt;
+  font-size: 0.7em;
+}
+
+.vscode-dark .richpp .constr-notation {
+  color: darkorange;
+}
+.vscode-dark .richpp .constr-keyword {
+  color: cornflowerblue;
+}
+.vscode-dark .richpp .constr-evar {
+  color: darkorange;
+  font-style: italic;
+}
+.vscode-dark .richpp .constr-keyword {
+  color: cornflowerblue;
+}
+.vscode-dark .richpp .constr-path {
+  color: mediumpurple;
+}
+.vscode-dark .richpp .constr-reference {
+  color: lawngreen;
+}
+.vscode-dark .richpp .constr-type {
+  color: lightcoral;
+}
+.vscode-dark .richpp .constr-variable {
+  color: chartreuse;
+}
+.vscode-dark .richpp .message-debug {
+  color: mediumpurple;
+}
+.vscode-dark .richpp .message-error {
+  color: red;
+  text-decoration: underline;
+}
+.vscode-dark .richpp .message-warning {
+  color: yellow;
+}
+.vscode-dark .richpp .module-keyword {
+  color: cornflowerblue;
+}
+.vscode-dark .richpp .tactic-keyword {
+  color: cornflowerblue;
+}
+.vscode-dark .richpp .tactic-primitive {
+  color: cadetblue;
+}
+.vscode-dark .richpp .tactic-string {
+  color: orange;
+}
+
+
+.vscode-light .richpp .constr-notation {
+  color: darkorange;
+}
+.vscode-light .richpp .constr-keyword {
+  color: cornflowerblue;
+}
+.vscode-light .richpp .constr-evar {
+  color: darkorange;
+  font-style: italic;
+}
+.vscode-light .richpp .constr-keyword {
+  color: cornflowerblue;
+}
+.vscode-light .richpp .constr-path {
+  color: mediumpurple;
+}
+.vscode-light .richpp .constr-reference {
+  color: limegreen;
+}
+.vscode-light .richpp .constr-type {
+  color: lightcoral;
+}
+.vscode-light .richpp .constr-variable {
+  color: lightseagreen;
+}
+.vscode-light .richpp .message-debug {
+  color: mediumpurple;
+}
+.vscode-light .richpp .message-error {
+  color: red;
+  text-decoration: underline;
+}
+.vscode-light .richpp .message-warning {
+  color: goldenrod;
+}
+.vscode-light .richpp .module-keyword {
+  color: cornflowerblue;
+}
+.vscode-light .richpp .tactic-keyword {
+  color: cornflowerblue;
+}
+.vscode-light .richpp .tactic-primitive {
+  color: cadetblue;
+}
+.vscode-light .richpp .tactic-string {
+  color: orange;
+}
+
+#togglePrettifySymbols {
+  text-decoration: line-through;
+}
+.prettifySymbolsMode #togglePrettifySymbols {
+  text-decoration: none
+}
