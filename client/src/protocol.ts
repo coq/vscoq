@@ -57,6 +57,8 @@ export interface CoqSettings {
   autoRevealProofStateAtCursor: boolean,
   /* Command to view a uri in an external browser */
   externalViewUrlCommand: string,
+  /** How to host external proof-views */
+  externalViewScheme: "file" | "http",
   editor: CoqEditorSettings,
 }
 

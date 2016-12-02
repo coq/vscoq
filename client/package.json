@@ -88,9 +88,15 @@
           "description": "If true, then auto-update the proof view with the cached state at the cursor"
         },
         "coq.externalViewUrlCommand": {
+          "anyOf": [{"enum": ["firefox ${url}","chrome ${url}","'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' ${url}"]}, {"type": "string"}],
+          "default": "${url}",
+          "description": "The command to execute to view a url."
+        },
+        "coq.externalViewScheme": {
           "type": "string",
-          "default": "firefox ${url}",
-          "description": "The command to use to view a url"
+          "enum": ["file", "http"],
+          "default": "http",
+          "description": "Choose to host external proof-views either via the file system or a web service. \"file\": let the filesystem host the webpage (file:///); \"http\": run a webserver to host the wepage. Some external viewers (like Window's 'start' and OSX's 'open') do not preserve query parameters when viewing \"file\" schemes, so you may try \"http\" instead."
         },
         "coq.editor.indentAfterBullet": {
           "type": "string",
@@ -223,6 +229,8 @@
     "regenerate": "1.3.1",
     "unicode-9.0.0": "0.7.0",
     "string-argv": "0.0.2",
+    "glob": "7.1.1",
+    "@types/glob": "5.0.30",
     "@types/xml2js": "^0.0.28",
     "@types/chalk": "0.4.31",
     "@types/ws": "^0.0.34"

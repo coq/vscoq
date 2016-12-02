@@ -455,7 +455,7 @@ export class CoqDocument implements vscode.Disposable {
   public async viewGoalState(editor: TextEditor, external: boolean) {
     try {
       if(external) {
-        await this.view.showExternal((url:string) => {
+        await this.view.showExternal(this.project.settings.externalViewScheme, (url:string) => {
           const command = this.project.settings.externalViewUrlCommand.replace(/\$\{url\}/g, url);
           const parts = require('string-argv')(command) as string[];
           return {module: parts[0], args: parts.slice(1)};
