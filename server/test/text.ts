@@ -69,11 +69,13 @@ describe("AnnotatedText", () => {
   it("normalizeText", (() => {
     assert.equal(text.normalizeText("foo"), "foo");
     assert.equal(text.normalizeText(["foo","bar"]), "foobar");
+    assert.equal(text.normalizeText(["foo","\n","bar"]), "foo\nbar");
     assert.deepStrictEqual(text.normalizeText({scope:"aa",attributes: {}, text:"foo"}), {scope:"aa", text:"foo"});
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:"foo"},"bar"]), [{scope:"aa",text:"foo"},"bar"]);
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:["foo","!!"]},"bar"]), [{scope:"aa",text:"foo!!"},"bar"]);
     assert.deepStrictEqual(text.normalizeText([{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]), [{substitution:"FOO!!",diff:"added",text:"foo"},"bar"]);
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:["foo","!!"]},{scope:"aa",text:["bar"]}]), {scope:"aa",text:"foo!!bar"});
+    assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:["foo","!!"]},"\n",{scope:"aa",text:["bar"]}]), [{scope:"aa",text:"foo!!"},"\n",{scope:"aa",text:"bar"}]);
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:{scope:"",text:["foo","!!"]}},"bar"]), [{scope:"aa",text:"foo!!"},"bar"]);
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:{scope:"",text:["foo","!!"]}},{scope:"aa",text:["bar"]}]), {scope:"aa",text:"foo!!bar"});
     assert.deepStrictEqual(text.normalizeText({diff:"added",text:"aabbaa"}),{diff:"added",text:"aabbaa"});
