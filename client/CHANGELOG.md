@@ -1,6 +1,7 @@
 ## 0.2.5
 * external view: option to host the proof-view via a webserver (#96)
     * settings: `coq.externalViewScheme`
+* fixes: #96 #98 #99
 
 ## 0.2.4
 * "finish computations" command (#24)
