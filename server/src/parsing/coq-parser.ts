@@ -20,7 +20,7 @@ const sentenceParser = peg.generate(String.raw `
 Start = TrySentence
 
 SentenceLength
-  = NoMoreSentences / Sentence {
+  = NoMoreSentences / SAny {
     throw text().length;
   }
 
@@ -124,13 +124,13 @@ Binder
 Name
   = ident:Identifier {return ident.text} / "_"
 StuffUntilColonEquals
-  = $(!(":=" / EndOfSentence) .)*
+  = $(WellBracketed / (!(":=" / [(){}[\]."] / EndOfSentence) .))*
 StuffUntilPipe
-  = $(!("|" / EndOfSentence) .)*
+  = $(WellBracketed / (!("|" / [(){}[\]."] / EndOfSentence) .))*
 StuffUntilPipeOrWith
-  = $(!("|" / (__ "with" __) / EndOfSentence) .)*
+  = $(WellBracketed / (!("|" / [(){}[\]."] / (__ "with" __) / EndOfSentence) .))*
 StuffUntilWith
-  = $(!((__ "with" __) / EndOfSentence) .)*
+  = $(WellBracketed / (!((__ "with" __) / [(){}[\]."] / EndOfSentence) .))*
   
   
 SAssumption
@@ -190,11 +190,14 @@ IsEndOfSentence
 Term = Command
 TermP = CommandP
 
+WellBracketed
+  = RoundParenCommand / SquareParenCommand / CurlyParenCommand / String
+
 Command
-  = (_ (RoundParenCommand / SquareParenCommand / CurlyParenCommand / String / CommandText))*
+  = (_ (WellBracketed / CommandText))*
 /* Once we're nested, commands may have periods */
 CommandP "command"
-  = (_ (RoundParenCommand / SquareParenCommand / CurlyParenCommand / String / CommandTextP))*
+  = (_ (WellBracketed / CommandTextP))*
 
 RoundParenCommand
   = lb:LBround _
