@@ -1,4 +1,7 @@
 ## 0.2.5
+* fixes #101 #102 #103 #104 (UI & parsing)
+
+## 0.2.5
 * external view: option to host the proof-view via a webserver (#96)
     * settings: `coq.externalViewScheme`
 * fixes: #96 #98 #99
