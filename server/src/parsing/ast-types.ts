@@ -6,7 +6,7 @@ import {Range, Position} from 'vscode-languageserver'
 import * as server from './../server'
 import * as peg from 'pegjs'
 import {ExpectedItem} from 'pegjs';
-export {ExpectedItem} from 'pegjs';
+export {ExpectedItem, LocationRange} from 'pegjs';
 
 export interface SentenceBase {
   text: string,
@@ -167,6 +167,7 @@ export interface Constructor {
 
 export interface InductiveBody {
   ident: Identifier,
+  termType: string|null,
   constructors: Constructor[],
   binders: Binder[],  
 }

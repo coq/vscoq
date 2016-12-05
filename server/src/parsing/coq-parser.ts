@@ -103,21 +103,21 @@ SInductive
 IndKind
   = "Inductive" / "CoInductive"
 IndBody
-  = ident:Identifier binders:Binder* _ ":" _ term:StuffUntilColonEquals _ ":=" _ constructors:ConstructorList
-  { return {ident:ident, constructors:constructors, binders:binders} }
+  = ident:Identifier binders:Binder* _ termType:(":" !"=" _ x:StuffUntilColonEquals {return x.trim()})? _ ":=" _ constructors:ConstructorList
+  { return {ident:ident, termType: termType, constructors:constructors, binders:binders} }
 ConstructorList
   = first:("|"? _ id:ConstructorItem {return id} )
     rest:("|" _ id:ConstructorItem {return id} )*
   { return [first, ...rest] }
 ConstructorItem
-  = ident:Identifier binders:Binders? term:(_ ":" stuff:StuffUntilPipeOrWith { return stuff })?
+  = ident:Identifier binders:Binder* term:(_ ":" !"=" stuff:StuffUntilPipeOrWith { return stuff.trim() })?
   { return {ident: ident, binders: binders, term: term} }
 Binders
   = Binder+
 Binder
   = __ name:Name
     { return {binderType:"name", name:name} }
-  / _ LBround _ name:Name type:(_ ":" _ id:StuffUntilColonEquals {return id})? _ ":=" _ term:$TermP _ RBround
+  / _ LBround _ name:Name type:(_ ":" _ id:StuffUntilColonEquals {return id.trim()})? _ ":=" _ term:$TermP _ RBround
     {return {binderType: "name-term", name: name, type:type, term:term} }
   / _ LBround _ first:Name rest:(__ id:Name {return id})* _ ":" _ type:$TermP _ RBround
     {return {binderType: "name-list", names: [first, ...rest], type: type } }
@@ -283,7 +283,8 @@ No = [\u00B2-\u00B3\u00B9\u00BC-\u00BE\u09F4-\u09F9\u0B72-\u0B77\u0BF0-\u0BF2\u0
 // Punctuation, Connector
 Pc = [\u005F\u203F-\u2040\u2054\uFE33-\uFE34\uFE4D-\uFE4F\uFF3F]
 // Separator, Space
-Zs = [\u0020\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]`,{output: "parser", allowedStartRules: ["SentenceLength", "TrySentence"]});
+Zs = [\u0020\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]
+`,{output: "parser", allowedStartRules: ["SentenceLength", "TrySentence"]});
 
 
 export function locationRangeToRange(loc: peg.LocationRange) {
