@@ -82,8 +82,8 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
     axiom: create({
       overviewRulerColor: 'yellow',
       overviewRulerLane: vscode.OverviewRulerLane.Center,
-      light: {backgroundColor: 'rgba(255,255,0,0.2)'},
-      dark: {backgroundColor: 'rgba(255,255,0,0.2)'},
+      light: {backgroundColor: 'rgba(180,180,0,0.7)'},
+      dark: {backgroundColor: 'rgba(120,120,0,0.7)'},
     }),
     incomplete: create({
       overviewRulerColor: 'purple', 
