@@ -31,7 +31,7 @@ var throttleEventHandler = <X>(handler: (X) => void) => (event:X) => {
   // }, 10);
 }
 
-function onWindowResize(event: UIEvent) {
+function computePrintingWidth() {
   try {
     const stateView = $('#states')[0];
     const ctx = ($('#textMeasurer')[0] as HTMLCanvasElement).getContext("2d");
@@ -92,7 +92,7 @@ function load() {
     $(document.body).css({backgroundColor: 'black'});
   } else {
     try {
-      window.onresize = throttleEventHandler(onWindowResize);
+      window.onresize = throttleEventHandler(event => computePrintingWidth);
       window.addEventListener("focus", onWindowGetFocus, true);
       observer.observe(parent.document.body, { attributes : true, attributeFilter: ['class'] });
       inheritStyles(parent.parent);
@@ -111,7 +111,6 @@ function load() {
   connection = new WebSocket(address);
   connection.onopen = function (event) {
     $('#stdout').text("connected");
-    onWindowResize(null);
   }
   connection.onclose = function (event) {
     $('#stdout').text("connection closed");
@@ -124,6 +123,7 @@ function load() {
     handleMessage(message);
   }
 
+  computePrintingWidth();
 }
 
 function updateSettings(settings: SettingsState) : void {
@@ -133,6 +133,7 @@ function updateSettings(settings: SettingsState) : void {
     document.documentElement.style.setProperty(`--code-font-size`, settings.fontSize);
   if(settings.fontWeight)
     document.documentElement.style.setProperty(`--code-font-weight`, settings.fontWeight);
+  computePrintingWidth();
 }
 
 function handleMessage(message: ProofViewProtocol) : void {
