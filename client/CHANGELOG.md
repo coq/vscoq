@@ -1,4 +1,4 @@
-## 0.2.5
+## 0.2.6
 * partial resolution to #100 - allow specifying where user-settings should go. Note: this setting may be removed in the future when vscode supports this functionality.
     * setting: `coq.hacks.userSettingsLocation`
 * fixes #101 #102 #103 #104 (UI & parsing)
