@@ -39,6 +39,7 @@ interface SettingsState {
   fontFamily?: string,
   fontSize?: string,
   fontWeight?: string,
+  cssFile?: string,
 }
 
 
@@ -67,6 +68,13 @@ function writeFile(filename: string, data: any) : Promise<void> {
 }
 
 const VIEW_PATH = 'html_views';
+
+function proofViewCSSFile() {
+  const userDir = vscode.workspace.getConfiguration("coq.hacks")
+    .get("userSettingsLocation", null)
+    || extensionContext.asAbsolutePath(path.join(VIEW_PATH,'goals'));
+  return vscode.Uri.file(path.join(userDir,'proof-view.css'));
+}
 
 function proofViewFile(file: string = "") {
   return vscode.Uri.file(extensionContext.asAbsolutePath(path.join(VIEW_PATH,'goals',file)));
@@ -227,12 +235,13 @@ export class HtmlCoqView implements view.CoqView {
     this.currentSettings.fontFamily = vscode.workspace.getConfiguration("editor").get("fontFamily") as string;
     this.currentSettings.fontSize = `${vscode.workspace.getConfiguration("editor").get("fontSize") as number}px`;
     this.currentSettings.fontWeight = vscode.workspace.getConfiguration("editor").get("fontWeight") as string;
+    this.currentSettings.cssFile = decodeURIComponent(proofViewCSSFile().toString());
     this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>(this.currentSettings,{command: 'settings-update'}), clients);
   }
 
   private static async shouldResetStyleSheet() : Promise<boolean> {
     try {
-      const styleFile = proofViewFile('proof-view.css');
+      const styleFile = proofViewCSSFile();
       if(!await nasync.fs.exists(styleFile.fsPath))
         return true;
       const stat = await nasync.fs.stat(styleFile.fsPath);
@@ -247,7 +256,7 @@ export class HtmlCoqView implements view.CoqView {
   /** makes sure that the style sheet is available */
   private static async prepareStyleSheet() {
     try {
-      const styleFile = proofViewFile('proof-view.css');
+      const styleFile = proofViewCSSFile();
       if(await HtmlCoqView.shouldResetStyleSheet() === true) {
         const defaultFile = proofViewFile('default-proof-view.css');
         await nasync.fs.copyFile(defaultFile.fsPath,styleFile.fsPath);
@@ -261,7 +270,7 @@ export class HtmlCoqView implements view.CoqView {
   public static async customizeProofViewStyle() {
     try {
       await HtmlCoqView.prepareStyleSheet();
-      const styleFile = proofViewFile('proof-view.css');
+      const styleFile = proofViewCSSFile();
       const doc = await vscode.workspace.openTextDocument(styleFile.fsPath);
       const ed = await vscode.window.showTextDocument(doc);
     } catch(err) {

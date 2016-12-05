@@ -103,6 +103,11 @@
           "enum": ["none", "indent"],
           "default": "none",
           "description": "Control how to indent the line after a bullet. \"none\" - no indent; \"indent\" - tab-indent"
+        },
+        "coq.hacks.userSettingsLocation": {
+          "type": "string",
+          "default": null,
+          "description": "Hack: vscode does not currently indicate to extensions where user-settings should be stored. Currently, we store such settings in this extension's own directory, but these will be overriden when this extension is updated. This setting allows you to override where user-settings are stored. WARNING: this setting will eventually go away."
         }
 			}
 		},

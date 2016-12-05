@@ -19,6 +19,7 @@ interface SettingsState {
   fontFamily?: string,
   fontSize?: string,
   fontWeight?: string,
+  cssFile?: string,
 }
 
 type ProofViewProtocol = GoalUpdate | SettingsUpdate;

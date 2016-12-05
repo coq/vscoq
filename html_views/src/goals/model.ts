@@ -126,6 +126,26 @@ function load() {
   computePrintingWidth();
 }
 
+
+let currentCSSNode : HTMLLinkElement|null = null;
+function loadCSS(filename: string) {
+  // ref: http://stackoverflow.com/questions/9979415/dynamically-load-and-unload-stylesheets
+  unloadCSS();
+  var head = document.getElementsByTagName("head")[0];
+  currentCSSNode = document.createElement('link');
+  currentCSSNode.type = 'text/css';
+  currentCSSNode.rel = 'stylesheet';
+  currentCSSNode.media = 'screen';
+  currentCSSNode.href = filename;
+  head.appendChild(currentCSSNode);
+}
+function unloadCSS() {
+  if(!currentCSSNode)
+    return;
+  var head = document.getElementsByTagName("head")[0];
+  head.removeChild(currentCSSNode);
+}
+
 function updateSettings(settings: SettingsState) : void {
   if(settings.fontFamily)
     document.documentElement.style.setProperty(`--code-font-family`, settings.fontFamily);
@@ -133,6 +153,9 @@ function updateSettings(settings: SettingsState) : void {
     document.documentElement.style.setProperty(`--code-font-size`, settings.fontSize);
   if(settings.fontWeight)
     document.documentElement.style.setProperty(`--code-font-weight`, settings.fontWeight);
+  if(settings.cssFile)
+    loadCSS(settings.cssFile);
+
   computePrintingWidth();
 }
 
