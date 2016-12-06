@@ -10,7 +10,7 @@ export {ExpectedItem} from 'pegjs';
 import * as ast from './ast-types'
 export * from './ast-types'
 
-const sentenceParser = peg.generate(String.raw `
+export const coqGrammar = String.raw `
 {
   function errorUnclosedBracket(lb, end) {
     error("unterminated bracket '" + lb.text + "'", {start: lb.loc.start, end: end})
@@ -20,7 +20,7 @@ const sentenceParser = peg.generate(String.raw `
 Start = TrySentence
 
 SentenceLength
-  = NoMoreSentences / SAny {
+  = (Bullet / SAny / NoMoreSentences) {
     throw text().length;
   }
 
@@ -245,7 +245,7 @@ Comment "comment"
 
 CommentText "commentText"
   = (String / Comment / ([^"*(] / ("(" !"*") / ("*" !")"))+ )*
-  
+
 UnicodeLetter
   = Ll / Lu / Lt / Lo
   / [\u1D00-\u1D7F]  // Phonetic Extensions.
@@ -284,7 +284,9 @@ No = [\u00B2-\u00B3\u00B9\u00BC-\u00BE\u09F4-\u09F9\u0B72-\u0B77\u0BF0-\u0BF2\u0
 Pc = [\u005F\u203F-\u2040\u2054\uFE33-\uFE34\uFE4D-\uFE4F\uFF3F]
 // Separator, Space
 Zs = [\u0020\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]
-`,{output: "parser", allowedStartRules: ["SentenceLength", "TrySentence"]});
+`
+
+const sentenceParser = peg.generate(coqGrammar,{output: "parser", allowedStartRules: ["SentenceLength", "TrySentence"]});
 
 
 export function locationRangeToRange(loc: peg.LocationRange) {

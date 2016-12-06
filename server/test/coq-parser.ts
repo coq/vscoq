@@ -12,7 +12,7 @@ import * as parser from '../src/parsing/coq-parser';
 import * as ast from '../src/parsing/ast-types';
 
 
-describe.only("coq-parser", function() {
+describe("coq-parser", function() {
   function loc(start: number, end?: number) : ast.LocationRange {
     return {
       start: {
@@ -39,14 +39,15 @@ describe.only("coq-parser", function() {
 
 
   it('parseSentenceLength', function() {
+    assert.equal(parser.parseSentenceLength('* auto.'), 1); // bug #105
     assert.equal(parser.parseSentenceLength('Inductive w(k:E):=(). ('), 21);
   })
 
-  it('sentenceLength - SAny', function() {
+  it('parseSentence - SAny', function() {
     assert.deepStrictEqual(parser.parseSentence('Inductive w(k:E):=(). ('), {type: 'any', text: 'Inductive w(k:E):=().', rest: ' ('});
   })
 
-  it('sentenceLength - SInductive', function() {
+  it('parseSentence - SInductive', function() {
     assert.deepStrictEqual(parser.parseSentence('Inductive w := a. ('),
       inductive([indBody("w",10, [], [{ident: ident("a", 15), binders: [], term: null}])], 'Inductive w := a.', ' ('));
     assert.deepStrictEqual(parser.parseSentence('Inductive w : Prop := a. ('),
