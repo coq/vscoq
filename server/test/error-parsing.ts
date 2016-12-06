@@ -27,6 +27,10 @@ describe("error-parsing", () => {
     assert.deepStrictEqual(x4.perr, ['\nError:\nThe term ""a"" has type "', {diff: "removed", text: "string"}, '"\nwhile it is expected to have type\n"', {diff: "added", text: "bool"}, '".']);
     const x5 = parse('The file ident.vo contains library dirpath and not library dirpath’')
     assert.deepStrictEqual(x5.perr, ['The file ident.vo contains library dirpath and not library dirpath', {diff: "added", text: "’"}]);
+    const x6 = parse('Error:  Found target  class "foo" instead  of "Foo".')
+    assert.deepStrictEqual(x6.perr, ['Error:  Found target  class "', {diff: "removed", text: "f"}, 'oo" instead  of "', {diff: "added", text: "F"}, 'oo".']);
+    const x7 = parse('Error: Refiner was given an argument "asdf234 3 5r ()23 " of type foo instead of fOO.')
+    assert.deepStrictEqual(x7.perr, ['Error: Refiner was given an argument "asdf234 3 5r ()23 " of type f', {diff: "removed", text: "oo"}, ' instead of f', {diff: "added", text: "OO"}, '.']);
   }));
 
 });
