@@ -1,3 +1,7 @@
+## 0.2.7
+* feature: diff in error messages (#106)
+* fix #105 (bad parsing of bullets, introduced by 0.2.6)
+
 ## 0.2.6
 * partial resolution to #100 - allow specifying where user-settings should go. Note: this setting may be removed in the future when vscode supports this functionality.
     * setting: `coq.hacks.userSettingsLocation`
