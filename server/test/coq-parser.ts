@@ -40,6 +40,9 @@ describe("coq-parser", function() {
 
   it('parseSentenceLength', function() {
     assert.equal(parser.parseSentenceLength('* auto.'), 1); // bug #105
+    assert.equal(parser.parseSentenceLength('  * auto.'), 3); // bug #105
+    assert.equal(parser.parseSentenceLength('(*c*)* auto.'), 6);
+    assert.equal(parser.parseSentenceLength('   '), -1);
     assert.equal(parser.parseSentenceLength('Inductive w(k:E):=(). ('), 21);
   })
 
