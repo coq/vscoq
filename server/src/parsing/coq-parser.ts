@@ -20,7 +20,7 @@ export const coqGrammar = String.raw `
 Start = TrySentence
 
 SentenceLength
-  = (Bullet / SAny / NoMoreSentences) {
+  = (Bullet / SAny) {
     throw text().length;
   }
 
