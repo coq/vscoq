@@ -57,6 +57,8 @@ export interface CoqSettings {
   autoRevealProofStateAtCursor: boolean,
   /* Command to view a uri in an external browser */
   externalViewUrlCommand: string,
+  /** How to host external proof-views */
+  externalViewScheme: "file" | "http",
   editor: CoqEditorSettings,
 }
 
@@ -92,7 +94,7 @@ export interface Substitution {
 	style?: any;         // stylings to apply to the "pretty" text, if specified, or else the ugly text
 }
 
-export type TextDifference = "added";
+export type TextDifference = "added"|"removed";
 
 export interface TextAnnotation {
   /** the relationship this text has to the text of another state */

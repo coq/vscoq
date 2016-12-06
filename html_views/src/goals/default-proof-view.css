@@ -139,28 +139,38 @@ body {
 .hypotheses .changed .ident {
   font-style: italic;
 } 
-.expr .charsAdded {
+.charsAdded {
   background-color: rgba(0,250,0,0.1);
   font-style: italic;
 }
-.expr span[class~=charsAdded][class~=substitution]::before {
+span[class~=charsAdded][class~=substitution]::before {
   background-color: rgba(0,250,0,0.1);
   font-style: italic;
 } 
-
-.vscode-light .expr .charsAdded {
-  background-color: rgba(0,250,0,0.2);
+.charsRemoved {
+  background-color: rgba(250,0,0,0.6);
+  text-decoration: line-through;
 }
-.vscode-light .expr span[class~=charsAdded][class~=substitution]::before {
-  background-color: rgba(0,250,0,0.2);
+span[class~=charsRemoved][class~=substitution]::before {
+  background-color: rgba(250,0,0,0.6);
+  text-decoration: line-through;
 } 
 
+.vscode-light .charsAdded {
+  background-color: rgba(0,250,0,0.2);
+}
+.vscode-light span[class~=charsAdded][class~=substitution]::before {
+  background-color: rgba(0,250,0,0.2);
+} 
+.vscode-light .charsRemoved {
+  background-color: rgba(250,0,0,0.2);
+}
+.vscode-light span[class~=charsRemoved][class~=substitution]::before {
+  background-color: rgba(250,0,0,0.2);
+}
 /*.vscode-light .hypotheses .expr .charsAdded {
   color: rgba(0,180,0,1);
 } */
-.expr .charsRemoved {
-  display: none;
-} 
 /*.goal .expr .charsAdded {
   color: lightgreen;
 }
@@ -168,9 +178,6 @@ body {
   color: rgba(0,180,0,1);
 }*/
 
-/*.goal .expr .charsRemoved {
-  display: none;
-}*/
 .hypothesese, .hypothesis, .goal, #stdout, #textMeasurer, #measureTest {
   font-family: var(--code-font-family);
   font-weight: var(--code-font-weight);

@@ -1,0 +1,32 @@
+// The module 'assert' provides assertion methods from node
+import * as assert from 'assert';
+import * as diff from 'diff';
+import * as util from 'util';
+
+// You can import and use all API from the 'vscode' module
+// as well as import your extension to test it
+import * as text from '../src/util/AnnotatedText';
+import * as perr from '../src/parsing/error-parsing';
+
+// Defines a Mocha test suite to group tests of similar kind together
+describe("error-parsing", () => {
+  function parse(err: text.AnnotatedText) {
+    return {err: err, perr: perr.parseError(err)}
+  }
+
+  it("parseError", (() => {
+    const x0 = parse("Impossible to unify an expression with an expression");
+    assert.equal(x0.err, x0.perr);
+    const x1 = parse("Impossible to unify an expression with an Expression");
+    assert.deepStrictEqual(x1.perr, ["Impossible to unify an ",{diff: "removed", text: "e"}, "xpression with an ",{diff: "added", text: "E"}, "xpression"]);
+    const x2 = parse("Impossible to unify an expression with an xpression");
+    assert.deepStrictEqual(x2.perr, ["Impossible to unify an ", {diff: "removed", text: "e"}, "xpression with an xpression"]);
+    const x3 = parse('Error: Unable to unify "True" with "False".');
+    assert.deepStrictEqual(x3.perr, ['Error: Unable to unify "', {diff: "removed", text: "Tru"}, 'e" with "', {diff: "added", text: "Fals"}, 'e".']);
+    const x4 = parse('\nError:\nThe term ""a"" has type "string"\nwhile it is expected to have type\n"bool".');
+    assert.deepStrictEqual(x4.perr, ['\nError:\nThe term ""a"" has type "', {diff: "removed", text: "string"}, '"\nwhile it is expected to have type\n"', {diff: "added", text: "bool"}, '".']);
+    const x5 = parse('The file ident.vo contains library dirpath and not library dirpath’')
+    assert.deepStrictEqual(x5.perr, ['The file ident.vo contains library dirpath and not library dirpath', {diff: "added", text: "’"}]);
+  }));
+
+});

@@ -55,6 +55,8 @@ function getDifferenceClass(diff: HypothesisDifference) {
 function getTextDiffClass(diff?: TextDifference) : string {
   if(diff === "added")
     return 'charsAdded'
+  if(diff === "removed")
+    return 'charsRemoved'
   else
     return ''
 }

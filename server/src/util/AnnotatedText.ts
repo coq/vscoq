@@ -6,7 +6,7 @@ export {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAn
 
 export interface Annotation {
   /** the relationship this text has to the text of another state */
-  diff?: "added",
+  diff?: "added"|"removed",
   /** what to display instead of this text */
   substitution?: string,
 }
@@ -80,7 +80,9 @@ export function copyAnnotation(x: Annotation) : Annotation {
     return {};
 }
 
-
+/**
+ * Splits the text into parts separated by `separator`.
+ */
 export function textSplit(text: AnnotatedText, separator: string|RegExp, limit?: number) : {splits: (string | TextAnnotation | ScopedText)[], rest: AnnotatedText} {
   if(typeof text === 'string') {
     const result = text.split(separator as any).filter((v) => v!=="");
@@ -128,6 +130,47 @@ export function textSplit(text: AnnotatedText, separator: string|RegExp, limit?:
     //   rest: {diff: text.diff, substitution: text.substitution, text: rest} as TextAnnotation};
     // return result;
   }
+}
+
+function subtextHelper<T extends AnnotatedText>(text: T, pos: number, start: number, end?: number) : {result: T, length: number, next: number} {
+  if(typeof text === 'string') {
+    const t = text as string;
+    const s = t.substring(start-pos, end===undefined ? undefined : end-pos);
+    return {result: s as T, length: s.length, next: pos + t.length};
+  } else if(text instanceof Array) {
+    const strs : (string | TextAnnotation | ScopedText)[] = [];
+    let rest : AnnotatedText = [];
+    let len = 0;
+    for(let idx = 0 ; idx < text.length && (end===undefined || pos < end); ++idx) {
+      const s = subtextHelper<string | TextAnnotation | ScopedText>(text[idx], pos, start, end);
+      if(s.length > 0) {
+        if(s.result instanceof Array)
+          strs.push(...s.result);
+        else
+          strs.push(s.result);
+      }
+      len+= s.length;
+      pos = s.next;
+    }
+    return {result: strs as T, length: len, next: pos}
+  } else if(isScopedText(text)) {
+    const s = subtextHelper(text.text, pos, start, end);
+    return {result: {scope: text.scope, attributes: text.attributes, text: s.result} as any as T, length: s.length, next: s.next};
+  } else {// TextAnnotation
+    const t = text as TextAnnotation;
+    const s = t.text.substring(start-pos, end===undefined ? undefined : end-pos);
+    return {result: {diff: t.diff, substitution: t.substitution, text: s} as any as T, length: s.length, next: pos+s.length};
+  }
+}
+
+export function subtext(text: AnnotatedText, start: number, end?: number) : AnnotatedText {
+  const s = subtextHelper(text, 0, start, end);
+  return normalizeText(s.result);
+}
+
+export function subtextCount(text: AnnotatedText, start: number, count: number) : AnnotatedText {
+  const s = subtextHelper(text, 0, start, start+count);
+  return normalizeText(s.result);
 }
 
 function mapAnnotationInternal(text: AnnotatedText, map: (text: string, annotation: Annotation, start: number, displayStart: number) => AnnotatedText, currentOffset: number, currentDisplayOffset: number) : {text: AnnotatedText, endOffset: number, endDisplayOffset: number } {
@@ -185,6 +228,10 @@ function concatText(text1: AnnotatedText, text2: AnnotatedText) : AnnotatedText 
 export function tryCombineText(text1: string|TextAnnotation|ScopedText, text2: string|TextAnnotation|ScopedText) : string|TextAnnotation|ScopedText|undefined {
   if(typeof text1 === 'string' && typeof text2 === 'string')
     return text1 + text2;
+  else if(text1 === '')
+    return text2;
+  else if(text2 === '')
+    return text1;
   else if(isScopedText(text1) && isScopedText(text2) && text1.scope === text2.scope && text1.attributes === text2.attributes) {
     if(text1.attributes)
       return {scope: text1.scope, attributes: text1.attributes, text: normalizeText(concatText(text1.text,text2.text))};
@@ -288,22 +335,39 @@ export function combineAnnotationText(text: TextAnnotation|string, baseAnn: Anno
   return normalizeTextAnnotationOrString(result);
 }
 
-function annotateDiff(text: AnnotatedText, differences: diff.IDiffResult[], diffSubstitutions: boolean) : AnnotatedText {
+function toDiff(d: diff.IDiffResult, mode: "old"|"new") : "added"|"removed"|undefined{
+  if(mode === "new" && d.added)
+    return "added";
+  else if(mode === "old" && d.removed)
+    return "removed";
+  else
+    return undefined;
+}
+
+/**
+ * @param mode - whether `text` is the old or new string 
+ */
+export function annotateDiffAdded(text: AnnotatedText, differences: diff.IDiffResult[], options: {diffSubstitutions: boolean, mode: "old"|"new"}) : AnnotatedText {
   let idx = 0; // the current diff
   let offset = 0; // position of current diff w.r.t. textToString() (not textToDisplayString())
   let diffOffset = 0; // the offset into the current diff; used when a diff spans multiple text parts
-  // we're only interested in added or unchanged parts
-  differences = differences.filter((d) => !d.removed);
+
+  // we're only interested in unchanged parts and either added(mode="new") or removed(mode="old") parts 
+  if(options.mode === "new")
+    differences = differences.filter((d) => !d.removed);
+  else
+    differences = differences.filter((d) => !d.added);
+
   const result = mapAnnotation(text, (plainText, annotation, startOffset, startDisplayOffset) => {
     let text: string;
     let start: number;
     let doSubst = false;
-    if(diffSubstitutions)
+    if(options.diffSubstitutions)
       start = startDisplayOffset;
     else
       start = startOffset;
 
-    if(annotation.substitution && diffSubstitutions) {
+    if(annotation.substitution && options.diffSubstitutions) {
       text = annotation.substitution;
       doSubst = true;
     } else
@@ -318,11 +382,11 @@ function annotateDiff(text: AnnotatedText, differences: diff.IDiffResult[], diff
       if(doSubst) {
         parts.push(combineAnnotationText({ text: plainText
           , substitution: diff.value.substr(diffOffset)
-          , diff: diff.added ? "added" : undefined
+          , diff: toDiff(diff, options.mode)
           }, annotation));
         plainText = ""; // remaining parts will have empty text
       } else
-        parts.push(combineAnnotationText({text: diff.value.substr(diffOffset), diff: diff.added ? "added" : undefined},annotation))
+        parts.push(combineAnnotationText({text: diff.value.substr(diffOffset), diff: toDiff(diff, options.mode)},annotation))
       offset+= diff.value.length;
       // In case we are breaking a substitution into multiple parts,
       // we only want the first part to apply the full substitution;
@@ -342,10 +406,10 @@ function annotateDiff(text: AnnotatedText, differences: diff.IDiffResult[], diff
         parts.push(combineAnnotationText(
           { text: plainText
           , substitution: text.substring(offset+diffOffset-start)
-          , diff: differences[idx].added ? "added" : undefined
+          , diff: toDiff(differences[idx], options.mode)
           }, annotation));
       } else
-        parts.push(combineAnnotationText({text: text.substring(offset+diffOffset-start), diff: differences[idx].added ? "added": undefined},annotation))
+        parts.push(combineAnnotationText({text: text.substring(offset+diffOffset-start), diff: toDiff(differences[idx], options.mode)},annotation))
       // NOTE: do not advance idx or offset, but advance diffOffset
       diffOffset+= text.length + start - offset - diffOffset;
     }
@@ -368,9 +432,26 @@ export function diffText(oldText: AnnotatedText, newText: AnnotatedText, normali
   if(!oldText)
     return {text: newText, different: false};
   const difference = diff.diffWords(textToDisplayString(oldText), textToDisplayString(newText));
-  const result = annotateDiff(newText, difference, true);
+  const result = annotateDiffAdded(newText, difference, {diffSubstitutions: true, mode: "new"});
   if(normalize)
     return {text: normalizeText(result), different: difference.length > 1 }
   else
     return {text: result, different: difference.length > 1 }
 }
+
+
+export function append(...texts: AnnotatedText[]) : AnnotatedText {
+  const results : (string|TextAnnotation|ScopedText)[] = [];
+  for(let txt of texts) {
+    if(txt instanceof Array)
+      results.push(...txt);
+    else
+      results.push(txt);
+  }
+  if(results.length === 0)
+    return "";
+  else if(results.length === 1)
+    return results[0];
+  else
+    return results;
+} 

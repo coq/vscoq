@@ -9,6 +9,7 @@ import * as proto from './../protocol';
 import * as textUtil from './../util/text-util';
 import * as coqtop from './../coqtop/coqtop';
 import * as coqParser from './../parsing/coq-parser';
+import * as errorParsing from '../parsing/error-parsing';
 import {State, StatusError, StateStatus} from './State';
 import {LoadModule, SentenceSemantics} from './../parsing/SentenceSemantics';
 import {Mutex} from './../util/Mutex';
@@ -795,13 +796,14 @@ private routeId = 1;
       , textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.stop)
       );
 
-    this.currentError = {message: error.message, range: errorRange, sentence: command.range}
+    const prettyMessage = text.normalizeText(server.project.getPrettifySymbols().prettify(errorParsing.parseError(error.message)));
+    this.currentError = {message: prettyMessage, range: errorRange, sentence: command.range}
 
     // Some errors tell us the new state to assume
     if(error.stateId !== undefined && error.stateId != 0)
       await this.gotoErrorFallbackState(error.stateId);
     
-    return {message: error.message, range: errorRange, sentence: command.range}
+    return this.currentError;
   }
 
   private parseConvertGoal(goal: coqProto.Subgoal) : proto.Goal {
@@ -969,11 +971,11 @@ private routeId = 1;
   // }
 
   private onCoqMessage(msg: coqProto.Message, stateId?: StateId) {
-    const prettyMessage = text.normalizeText(server.project.getPrettifySymbols().prettify(msg.message));
+    const prettyMessage = text.normalizeText(server.project.getPrettifySymbols().prettify(errorParsing.parseError(msg.message)));
     if(msg.level === coqProto.MessageLevel.Error && stateId!==undefined) {
       const sent = this.sentences.get(stateId);
       if(sent) {
-        sent.setError(msg.message, msg.location);
+        sent.setError(prettyMessage, msg.location);
         this.callbacks.error(sent.getRange(), sent.getError().range, prettyMessage);
       } else {
         this.console.warn(`Error for unknown stateId: ${stateId}; message: ${msg.message}`);

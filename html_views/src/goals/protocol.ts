@@ -24,7 +24,7 @@ interface SettingsState {
 
 type ProofViewProtocol = GoalUpdate | SettingsUpdate;
 
-type TextDifference = "added";
+type TextDifference = "added"|"removed";
 
 interface TextAnnotation {
   /** the relationship this text has to the text of another state */
