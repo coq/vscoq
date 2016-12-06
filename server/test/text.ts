@@ -64,12 +64,15 @@ describe("AnnotatedText", () => {
 
   it("tryCombineText", (() => {
     assert.deepStrictEqual(text.tryCombineText({text:'aa',diff:'added'},{text:'bb',diff:'added'}), { diff: 'added', text: 'aabb' });
+    assert.deepStrictEqual(text.tryCombineText({text:'aa',diff:'added'},""), { diff: 'added', text: 'aa' });
+    assert.deepStrictEqual(text.tryCombineText("",{text:'aa',diff:'added'}), { diff: 'added', text: 'aa' });
   }));
 
   it("normalizeText", (() => {
     assert.equal(text.normalizeText("foo"), "foo");
     assert.equal(text.normalizeText(["foo","bar"]), "foobar");
     assert.equal(text.normalizeText(["foo","\n","bar"]), "foo\nbar");
+    assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:"foo"}, ""]), {scope:"aa", text:"foo"});
     assert.deepStrictEqual(text.normalizeText({scope:"aa",attributes: {}, text:"foo"}), {scope:"aa", text:"foo"});
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:"foo"},"bar"]), [{scope:"aa",text:"foo"},"bar"]);
     assert.deepStrictEqual(text.normalizeText([{scope:"aa",text:["foo","!!"]},"bar"]), [{scope:"aa",text:"foo!!"},"bar"]);
@@ -157,68 +160,15 @@ describe("AnnotatedText", () => {
     assert.deepStrictEqual(text.diffText(x,y).text,[{diff: "added", text: "0"}, " = ", {diff: "added", text: "0"}, " ", {substitution:"∨", text:"\\/"}, " ", {substitution:"⊥", text:"False"}]);
   }));
 
-  // it("cancelAll: three lockers", asyncTest (async () => {
-  //   const c = new CancellationSignal();
-  //   const m = new Mutex();
-  //   const unlock1 = await m.lock(c.event);
-  //   const waitLock2 = m.lock(c.event);
-  //   const waitLock3 = m.lock(c.event);
-  //   c.cancel();
-  //   try {
-  //     await waitLock2;
-  //     assert(false, 'Should not be able to acquire the cancelled lock');
-  //   } catch(reason) {
-  //      assert.equal(reason,Mutex.reasonCancelled,`lock() for the wrong reason`);
-  //   }
-  //   try {
-  //     await waitLock3;
-  //     assert(false, 'Should not be able to acquire the cancelled lock');
-  //   } catch(reason) {
-  //      assert.equal(reason,Mutex.reasonCancelled,`lock() for the wrong reason`);
-  //   }
-  //   await unlock1();
-  //   assert(!m.isLocked());
-  // }));
 
-//   it("cancelAll: two lockers", asyncTest (async () => {
-//     const m = new Mutex();
-//     const unlock1 = await m.lock();
-//     const waitLock = m.lock();
-//     const waitCancelling = m.cancelAll();
-//     try {
-//       await waitLock;
-//       assert(false, 'Should not be able to acquire the cancelled lock');
-//     } catch(reason) {
-//        assert.equal(reason,Mutex.reasonAllCancelled,`lock() for the wrong reason`);
-//     }
-//     await waitCancelling;
-//     assert(m.isLocked()); // cancelling does not affect the current owner
-//     await unlock1();
-//     assert(!m.isLocked());
-//   }));
-// 
-//   it("cancelAll: three lockers", asyncTest (async () => {
-//     const m = new Mutex();
-//     const unlock1 = await m.lock();
-//     const waitLock2 = m.lock();
-//     const waitLock3 = m.lock();
-//     const waitCancelling = m.cancelAll();
-//     try {
-//       await waitLock2;
-//       assert(false, 'Should not be able to acquire the cancelled lock');
-//     } catch(reason) {
-//        assert.equal(reason,Mutex.reasonAllCancelled,`lock() for the wrong reason`);
-//     }
-//     try {
-//       await waitLock3;
-//       assert(false, 'Should not be able to acquire the cancelled lock');
-//     } catch(reason) {
-//        assert.equal(reason,Mutex.reasonAllCancelled,`lock() for the wrong reason`);
-//     }
-//     await waitCancelling;
-//     assert(m.isLocked()); // cancelling does not affect the current owner
-//     await unlock1();
-//     assert(!m.isLocked());
-//   }));
-  
+  it("subtext", function() {
+    assert.deepStrictEqual(text.subtext("abcdefghij", 0), "abcdefghij")
+    assert.deepStrictEqual(text.subtext("abcdefghij", 5), "fghij")
+    assert.deepStrictEqual(text.subtext("abcdefghij", 3, 8), "defgh")
+    assert.deepStrictEqual(text.subtext(["a","bcd","ef","ghij"], 3), "defghij")
+    assert.deepStrictEqual(text.subtext(["a","bcd","ef","ghij"], 3, 8), "defgh")
+    assert.deepStrictEqual(text.subtext({scope: "foo", text:"aa bb aa"},3,5), {scope: "foo", text: "bb"});
+    assert.deepStrictEqual(text.subtext([{scope: "a", text:"aa"},{scope: "b", text:"bb"}],1,3), [{scope: "a", text:"a"},{scope: "b", text:"b"}]);
+})
+
 });
