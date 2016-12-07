@@ -1,4 +1,8 @@
 {
+  "reflexivity": {
+    "prefix": "reflexivity",
+    "body": ["reflexivity."]
+  },
   "Abstract": {
     "prefix": "abstract",
     "body": ["abstract ${1}.\n$0"],
@@ -8,6 +12,16 @@
     "prefix": "abstract",
     "body": ["abstract ${1} using ${2}.\n$0"],
     "description": "abstract $expr using $ident."
+  },
+  "Lemma": {
+    "prefix": "Lemma",
+    "body": [
+      "Lemma ${1}: ${2}.",
+      "Proof.",
+      "\t$0",
+      "Qed.\n"
+      ],
+    "description": "Lemma..."
   },
   "Theorem": {
     "prefix": "Theorem",
@@ -56,6 +70,15 @@
       "End ${name}.\n"
       ],
     "description": "Module..."
+  },
+  "Module Type": {
+    "prefix": "Module Type",
+    "body": [
+      "Module Type ${name}.",
+      "\t$0",
+      "End ${name}.\n"
+      ],
+    "description": "Module Type..."
   },
   "Obligation Tactic": {
     "prefix": "Obligation Tactic",

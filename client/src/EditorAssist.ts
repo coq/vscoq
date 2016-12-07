@@ -21,7 +21,7 @@ export function reload() : vscode.Disposable {
     : /^\s*(?:\bProof\b)/;
 
   subscriptions.push(vscode.languages.setLanguageConfiguration('coq', {
-    indentationRules: {increaseIndentPattern: increaseIndentPattern, decreaseIndentPattern: /^\s*(?:\bQed\b)/},
+    indentationRules: {increaseIndentPattern: increaseIndentPattern, decreaseIndentPattern: undefined},
     wordPattern: new RegExp(
       "(?:" +
       regenerate()
