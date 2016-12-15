@@ -79,7 +79,7 @@ export class PrettifySymbolsMode {
     }
     // add the rest of the text (no substitutions found)
     if(currentIdx < text.length)
-      newText.push(text.substring(currentIdx));
+      newText.push(combineAnnotationText(text.substring(currentIdx), baseAnn));
     return newText;
   }
 
