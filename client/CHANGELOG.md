@@ -1,3 +1,13 @@
+## 0.2.8
+* auto-formatting
+    * Note: `editor.formatOnType` must be set to `true` for some of these options to work
+    * `coq.format.unindentOnCloseProof` - better unindent on `Qed.`, `Defined.`, and `Admitted.`
+    * `coq.format.indentAfterBullet` - can be set to `"align"`, which will align the newline after a bullet to prior line's tactic
+    * `coq.format.enable` - set to `false` to disable all auto formatting
+    * `coq.format.indentAfterOpenProof` - option to indent after `Proof`
+* prettify-symbols-mode: use exported API to detect when the mode is enabled/disabled and adjust proof-view and output accordingly
+
+
 ## 0.2.7
 * feature: diff in error messages (#106)
 * fix #105 (bad parsing of bullets, introduced by 0.2.6)
