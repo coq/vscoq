@@ -19,15 +19,20 @@ body {
 }
 #messages {
   color: white
-  }
+}
 .vscode-light #messages {
   color: black
-  }
+}
 #stdout {
   padding-left: 4pt;
 }
 #error {
   color: red;
+  white-space: pre-wrap;
+  font-family: var(--code-font-family);
+}
+.vscode-dark #error {
+  color: pink;
 }
 .hidden {
   display: none;
