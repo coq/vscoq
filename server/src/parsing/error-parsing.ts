@@ -161,12 +161,12 @@ import * as text from '../util/AnnotatedText'
 
 /** Error messages that compare two terms that should be equal */
 const diffMessages = [
-  {pre: /^\s*(?:Error:\s+)?Found\s+target\s+class\s+/, mid: /\s+instead\s+of\s+/g, post: /[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?Impossible\s+to\s+unify\s+/, mid: /\s+with\s+/g, post: /[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?Unable\s+to\s+unify\s+/, mid: /\s+with\s+/g, post: /[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?Refiner\s+was\s+given\s+an\s+argument\s+".*?"\s+of\s+type\s+/, mid: /\s+instead\s+of\s+/g, post: /[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?The\s+file\s+.*?\.vo\s+contains\s+library\s+/, mid: /\s+and\s+not\s+library\s+/, post: /[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?The\s+term\s+.*?\s+has\s+type\s+/, mid: /\s+while\s+it\s+is\s+expected\s+to\s+have\s+type\s+/, post: /[.]?$/},
+  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Found\s+target\s+class\s+"/, mid: /"\s+instead\s+of\s+"/g, post: /"[.]?$/},
+  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Impossible\s+to\s+unify\s+"/, mid: /"\s+with\s+"/g, post: /"[.]?$/},
+  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Unable\s+to\s+unify\s+"/, mid: /"\s+with\s+"/g, post: /"[.]?$/},
+  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Refiner\s+was\s+given\s+an\s+argument\s+".*?"\s+of\s+type\s+"/, mid: /"\s+instead\s+of\s+"/g, post: /"[.]?$/},
+  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*The\s+file\s+.*?\.vo\s+contains\s+library\s+"/, mid: /"\s+and\s+not\s+library\s+"/, post: /"[.]?$/},
+  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*The\s+term\s+.*?\s+has\s+type\s+"/, mid: /"\s+while\s+it\s+is\s+expected\s+to\s+have\s+type\s+"/, post: /"[.]?$/},
 ];
 
 function* indicesOf(str: string, substr: string|RegExp, start?: number, end?: number) : Iterable<[number,number]> {
@@ -212,7 +212,7 @@ export function parseError(txt: AnnotatedText) : AnnotatedText {
       for(let mid of indicesOf(str,df.mid, preLen, str.length-postLen)) {
         const x = str.substring(preLen, mid[0]);
         const y = str.substring(mid[1], str.length-postLen);
-        const xy = diff.diffChars(x,y);
+        const xy = diff.diffWords(x,y);
         diffMatches.push({x:x, y:y, mid: mid, diff: xy, cost: costOfDifference(xy)})
       }
       if(diffMatches.length === 0)

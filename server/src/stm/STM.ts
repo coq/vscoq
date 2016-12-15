@@ -796,8 +796,10 @@ private routeId = 1;
       , textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.stop)
       );
 
-    const prettyMessage = text.normalizeText(server.project.getPrettifySymbols().prettify(errorParsing.parseError(error.message)));
-    this.currentError = {message: prettyMessage, range: errorRange, sentence: command.range}
+    const diffError = errorParsing.parseError(error.message);
+    const prettyError = server.project.getPrettifySymbols().prettify(diffError)
+    const message = text.normalizeText(prettyError);
+    this.currentError = {message: message, range: errorRange, sentence: command.range}
 
     // Some errors tell us the new state to assume
     if(error.stateId !== undefined && error.stateId != 0)
