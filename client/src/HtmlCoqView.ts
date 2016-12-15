@@ -14,6 +14,7 @@ import * as util from 'util';
 import * as docs from './CoqProject';
 import * as nasync from './nodejs-async';
 import * as webServer from './WebServer';
+import * as psm from './prettify-symbols-mode';
 
 const opener = require('opener');
 
@@ -40,6 +41,7 @@ interface SettingsState {
   fontSize?: string,
   fontWeight?: string,
   cssFile?: string,
+  prettifySymbolsMode?: boolean,
 }
 
 
@@ -149,6 +151,11 @@ export class HtmlCoqView implements view.CoqView {
       this.updateSettings([ws]);
       this.sendMessage({command: 'goal-update', goal: this.currentState}, [ws]);
     })
+
+    psm.onEnabledChange((enabled) => {
+      this.currentSettings.prettifySymbolsMode = enabled;
+      this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>({prettifySymbolsMode: enabled},{command: 'settings-update'}));      
+    });
   }
   
   private handleClientResize(event: ResizeEvent) {
@@ -218,6 +225,8 @@ export class HtmlCoqView implements view.CoqView {
   }
 
   private sendMessage(message: ProofViewProtocol, clients = this.server.clients) {
+    if(!clients)
+      clients = this.server.clients;
     for(const connection of clients) {
       try {
         connection.send(JSON.stringify(message));
@@ -236,6 +245,7 @@ export class HtmlCoqView implements view.CoqView {
     this.currentSettings.fontSize = `${vscode.workspace.getConfiguration("editor").get("fontSize") as number}px`;
     this.currentSettings.fontWeight = vscode.workspace.getConfiguration("editor").get("fontWeight") as string;
     this.currentSettings.cssFile = decodeURIComponent(proofViewCSSFile().toString());
+    this.currentSettings.prettifySymbolsMode = psm.isEnabled();
     this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>(this.currentSettings,{command: 'settings-update'}), clients);
   }
 

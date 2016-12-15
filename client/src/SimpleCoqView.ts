@@ -5,7 +5,7 @@ import * as vscode from 'vscode'
 import * as view from './CoqView'
 export {CoqView} from './CoqView'
 import * as proto from './protocol'
-import * as text from './AnnotatedText';
+import * as psm from './prettify-symbols-mode';
 
 
 export class SimpleCoqView implements view.CoqView {
@@ -23,7 +23,7 @@ export class SimpleCoqView implements view.CoqView {
   }
 
   private displayError(state: proto.FailureResult) {
-    this.out.appendLine(text.textToDisplayString(state.message));
+    this.out.appendLine(psm.prettyTextToString(state.message));
   }
 
   private displayProof(state: proto.CommandResult) {

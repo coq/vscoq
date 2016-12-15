@@ -5,6 +5,9 @@ import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } f
 import { LanguageClient } from 'vscode-languageclient';
 import * as vscodeTypes from 'vscode-languageserver-types';
 import * as vc from 'vscode-languageclient';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 import {decorations} from './Decorations';
 import {Highlights} from './Highlights';
@@ -19,10 +22,7 @@ import {CoqDocumentLanguageServer} from './CoqLanguageServer';
 import {adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
 import {CoqProject} from './CoqProject';
-import * as text from './AnnotatedText';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import * as psm from './prettify-symbols-mode';
 
 namespace DisplayOptionPicks {
   type T = vscode.QuickPickItem & {displayItem: number};
@@ -89,8 +89,7 @@ export class CoqDocument implements vscode.Disposable {
     this.view.onresize = async (columns:number) => {
       try {
         await this.langServer.resizeView(Math.floor(columns));
-        const value = await this.langServer.getGoal();
-        this.view.update(value);
+        await this.refreshGoal();
       } catch(err) {}
     };
 
@@ -104,6 +103,18 @@ export class CoqDocument implements vscode.Disposable {
     if(vscode.window.activeTextEditor.document.uri.toString() == this.documentUri)
       this.statusBar.focus();
     this.statusBar.setStateReady();
+  }
+
+  private async refreshGoal(e?: vscode.TextEditor) {
+    if(!e)
+      e = vscode.window.activeTextEditor;
+    if(this.project.settings.autoRevealProofStateAtCursor && e.document === this.document && e.selections.length === 1)
+      this.viewGoalAt(e,e.selections[0].active);
+    else {
+      const value = await this.langServer.getGoal();
+      this.view.update(value);
+    }
+    
   }
   
   public getUri() {
@@ -146,21 +157,21 @@ export class CoqDocument implements vscode.Disposable {
     case 'warning':
       // vscode.window.showWarningMessage(params.message); return;
       this.infoOut.show(true);
-      this.infoOut.appendLine(text.textToDisplayString(params.message));
+      this.infoOut.appendLine(psm.prettyTextToString(params.message));
     case 'info':
       // this.infoOut.appendLine(params.message); return;
       // this.view.message(params.message);
       this.infoOut.show(true);
-      this.infoOut.appendLine(text.textToDisplayString(params.message));
+      this.infoOut.appendLine(psm.prettyTextToString(params.message));
       return;
     case 'notice':
       this.noticeOut.clear();
       this.noticeOut.show(true);
-      this.noticeOut.append(text.textToDisplayString(params.message));
+      this.noticeOut.append(psm.prettyTextToString(params.message));
       return;
       // vscode.window.showInformationMessage(params.message); return;
     // case 'error':
-    //   vscode.window.showErrorMessage(text.textToDisplayString(params.message)); return;
+    //   vscode.window.showErrorMessage(psm.prettyTextToString(params.message)); return;
     }
   }
 
@@ -415,7 +426,7 @@ export class CoqDocument implements vscode.Disposable {
   private displayQueryResults(results: proto.CoqTopQueryResult) {
     this.queryOut.clear();
     this.queryOut.show(true);
-    this.queryOut.append(text.textToDisplayString(results.searchResults));
+    this.queryOut.append(psm.prettyTextToString(results.searchResults));
     
   }
   
@@ -521,8 +532,7 @@ export class CoqDocument implements vscode.Disposable {
     }
     try {
       await this.langServer.setDisplayOptions([{item: item, value: value}]);
-      const proofview = await this.langServer.getGoal();
-      this.view.update(proofview);
+      await this.refreshGoal();
     } catch(err) { }
  }
 

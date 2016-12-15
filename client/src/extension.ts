@@ -10,6 +10,7 @@ import * as snippets from './Snippets';
 import {initializeDecorations} from './Decorations';
 import {HtmlCoqView} from './HtmlCoqView';
 import * as editorAssist from './EditorAssist';
+import * as psm from './prettify-symbols-mode';
 
 vscode.Range.prototype.toString = function rangeToString() {return `[${this.start.toString()},${this.end.toString()})`}
 vscode.Position.prototype.toString = function positionToString() {return `{${this.line}@${this.character}}`}
@@ -18,31 +19,8 @@ console.log(`Coq Extension: process.version: ${process.version}, process.arch: $
 
 let project : CoqProject;
 
-export var extensionContext : ExtensionContext;
 
-// export function activate(context: ExtensionContext) {
-//   const dec = vscode.window.createTextEditorDecorationType({
-//     before: {contentText: "_$_", textDecoration: 'none; letter-spacing: normal; overflow: visible; font-size: 10em'},
-//     textDecoration: 'none; font-size: 0.1em; letter-spacing: -0.55em; overflow: hidden; width: 0px; visibility: hidden',
-//     // before: {contentText: "WORD", textDecoration: 'none; content: "WORD2"'},
-//     // textDecoration: 'none; content: url(file:///C:/Users/cj/Research/vscoq/client/images/1x1.png)',
-//     // textDecoration: 'none; position: absolute !important; top: -9999px !important; left: -9999px !important; letter-spacing: -1px',
-//   });
-//   function lineRange(line, start, end) { return new vscode.Range(line,start,line,end) }
-//   const editor = vscode.window.activeTextEditor;
-//   if (editor) {
-//     const lines = [
-//       "line1",
-//       "small word: word",
-//       "try selecting the previous line",
-//       "END OF EXAMPLE", "", "", ]
-//     editor.edit((edit) => {
-//       edit.insert(new vscode.Position(0,0), lines.join('\n'));
-//     }).then(() => {
-//       editor.setDecorations(dec, [lineRange(1,12,16)]);
-//     });
-//   }  
-// }
+export var extensionContext : ExtensionContext;
 
 export function activate(context: ExtensionContext) {
   console.log(`execArgv: ${process.execArgv.join(' ')}`);
@@ -103,7 +81,10 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(editorAssist.reload());
 
   snippets.setupSnippets(context.subscriptions);
+
+  context.subscriptions.push(psm.load());
 }
+
 
 async function withDocAsync<T>(editor: TextEditor, callback: (doc: CoqDocument) => Promise<T>) : Promise<void> {
   const doc = project.getOrCurrent(editor ? editor.document.uri.toString() : null);

@@ -80,9 +80,9 @@ const observer = new MutationObserver(function(mutations) {
     // });    
 });
 
-function togglePrettifySymbolsMode() {
+function setPrettifySymbolsMode(enabled: boolean) {
   $(document.body)
-    .toggleClass("prettifySymbolsMode");
+    .toggleClass("prettifySymbolsMode", enabled);
 }
 
 var connection : WebSocket = null;
@@ -147,14 +147,16 @@ function unloadCSS() {
 }
 
 function updateSettings(settings: SettingsState) : void {
-  if(settings.fontFamily)
+  if(settings.fontFamily !== undefined)
     document.documentElement.style.setProperty(`--code-font-family`, settings.fontFamily);
-  if(settings.fontSize)
+  if(settings.fontSize !== undefined)
     document.documentElement.style.setProperty(`--code-font-size`, settings.fontSize);
-  if(settings.fontWeight)
+  if(settings.fontWeight !== undefined)
     document.documentElement.style.setProperty(`--code-font-weight`, settings.fontWeight);
-  if(settings.cssFile)
+  if(settings.cssFile !== undefined)
     loadCSS(settings.cssFile);
+  if(settings.prettifySymbolsMode !== undefined)
+    setPrettifySymbolsMode(settings.prettifySymbolsMode);
 
   computePrintingWidth();
 }
