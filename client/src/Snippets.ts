@@ -292,30 +292,30 @@ export function setupSnippets(subscriptions: vscode.Disposable[]) {
     }
   }, ...triggerTerminators));
 
-  const qedCompletion = new vscode.CompletionItem("Qed.", vscode.CompletionItemKind.Snippet);
-  const definedCompletion = new vscode.CompletionItem("Defined.", vscode.CompletionItemKind.Snippet);
-  const admittedCompletion = new vscode.CompletionItem("Admitted.", vscode.CompletionItemKind.Snippet);
-  const outdentCompletions = [qedCompletion, definedCompletion, admittedCompletion];
-  subscriptions.push(vscode.languages.registerCompletionItemProvider('coq', {
-    provideCompletionItems: async (doc, pos, token) => {
-      try {
-        const line = doc.lineAt(pos.line);
+  // const qedCompletion = new vscode.CompletionItem("Qed.", vscode.CompletionItemKind.Snippet);
+  // const definedCompletion = new vscode.CompletionItem("Defined.", vscode.CompletionItemKind.Snippet);
+  // const admittedCompletion = new vscode.CompletionItem("Admitted.", vscode.CompletionItemKind.Snippet);
+  // const outdentCompletions = [qedCompletion, definedCompletion, admittedCompletion];
+  // subscriptions.push(vscode.languages.registerCompletionItemProvider('coq', {
+  //   provideCompletionItems: async (doc, pos, token) => {
+  //     try {
+  //       const line = doc.lineAt(pos.line);
 
-        // outdent the text
-        const indentSize = getIndentSize(doc);
-        const insertLine = {command: "editor.action.insertLineAfter", arguments: [], title: "insert line"};
-        const outdentRange = new vscode.Range(line.lineNumber, Math.max(0,line.firstNonWhitespaceCharacterIndex-indentSize), line.lineNumber, line.firstNonWhitespaceCharacterIndex);
-        const outdent = new vscode.TextEdit(outdentRange, '');
-        outdentCompletions.forEach(o => {
-          o.additionalTextEdits = [outdent];
-          o.command = insertLine;
-        });
-        return outdentCompletions;
-      } catch(err) {
-        return [];
-      }
-    }
-  }));
+  //       // outdent the text
+  //       const indentSize = getIndentSize(doc);
+  //       const insertLine = {command: "editor.action.insertLineAfter", arguments: [], title: "insert line"};
+  //       const outdentRange = new vscode.Range(line.lineNumber, Math.max(0,line.firstNonWhitespaceCharacterIndex-indentSize), line.lineNumber, line.firstNonWhitespaceCharacterIndex);
+  //       const outdent = new vscode.TextEdit(outdentRange, '');
+  //       outdentCompletions.forEach(o => {
+  //         o.additionalTextEdits = [outdent];
+  //         o.command = insertLine;
+  //       });
+  //       return outdentCompletions;
+  //     } catch(err) {
+  //       return [];
+  //     }
+  //   }
+  // }));
 
 
 }

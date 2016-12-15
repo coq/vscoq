@@ -98,11 +98,26 @@
           "default": "http",
           "description": "Choose to host external proof-views either via the file system or a web service. \"file\": let the filesystem host the webpage (file:///); \"http\": run a webserver to host the webpage. Some external viewers (like Window's 'start' and OSX's 'open') do not preserve query parameters when viewing \"file\" schemes, so you may try \"http\" instead."
         },
-        "coq.editor.indentAfterBullet": {
+        "coq.format.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "If `false`, then all auto-formatting under `coq.format` is disabled"
+        },
+        "coq.format.indentAfterBullet": {
           "type": "string",
-          "enum": ["none", "indent"],
+          "enum": ["none", "indent", "align"],
           "default": "none",
-          "description": "Control how to indent the line after a bullet. \"none\" - no indent; \"indent\" - tab-indent"
+          "description": "Control how to indent the line after a bullet. \"none\" - no indent; \"indent\" - tab-indent; \"align\" - align to the previous line's tactic"
+        },
+        "coq.format.indentAfterOpenProof": {
+          "type": "boolean",
+          "default": true,
+          "description": "Indent after opening a proof with 'Proof'"
+        },
+        "coq.format.unindentOnCloseProof": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-unindent `Qed.`, `Defined.`, and `Admitted.`. Note: requires `editor.formatOnType' to be set to `true` in settings.json"
         },
         "coq.hacks.userSettingsLocation": {
           "type": "string",

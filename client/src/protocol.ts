@@ -42,8 +42,11 @@ export interface CoqTopSettings {
   traceXmlProtocol: boolean;
 }
 
-export interface CoqEditorSettings {
-  indentAfterBullet: "none" | "indent",
+export interface AutoFormattingSettings {
+  enable: boolean, // mast switch
+  indentAfterBullet: "none" | "indent" | "align",
+  indentAfterOpenProof: boolean,
+  unindentOnCloseProof: boolean,
 }
 
 export interface CoqSettings {
@@ -53,13 +56,13 @@ export interface CoqSettings {
   moveCursorToFocus : boolean,
   /** Interpret to end of sentence */
   interpretToEndOfSentence: boolean,
-  /* Auto-reveal proof-state at cursor */
+  /** Auto-reveal proof-state at cursor */
   autoRevealProofStateAtCursor: boolean,
-  /* Command to view a uri in an external browser */
+  /** Command to view a uri in an external browser */
   externalViewUrlCommand: string,
   /** How to host external proof-views */
   externalViewScheme: "file" | "http",
-  editor: CoqEditorSettings,
+  format: AutoFormattingSettings,
 }
 
 export interface FailValue {
