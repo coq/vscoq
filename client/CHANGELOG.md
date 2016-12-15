@@ -5,7 +5,8 @@
     * `coq.format.indentAfterBullet` - can be set to `"align"`, which will align the newline after a bullet to prior line's tactic
     * `coq.format.enable` - set to `false` to disable all auto formatting
     * `coq.format.indentAfterOpenProof` - option to indent after `Proof`
-* prettify-symbols-mode: use exported API to detect when the mode is enabled/disabled and adjust proof-view and output accordingly
+* prettify-symbols-mode 0.3.0: use exported API to detect when the mode is enabled/disabled and adjust proof-view and output accordingly
+* fixes: #107 #110 #111 #112
 
 
 ## 0.2.7
