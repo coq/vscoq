@@ -193,20 +193,7 @@ connection.onRequest(coqproto.CachedGoalRequest.type, (params: coqproto.CachedGo
     .getCachedGoal(params.position);
 });
 connection.onRequest(coqproto.QueryRequest.type, async (params: coqproto.CoqTopQueryParams, token: CancellationToken) => {
-  switch(params.queryFunction) {
-  case coqproto.QueryFunction.Check:
-    return { searchResults: await project.lookup(params.uri).checkTerm(params.query) };
-  case coqproto.QueryFunction.Print:
-    return { searchResults: await project.lookup(params.uri).printTerm(params.query) };
-  case coqproto.QueryFunction.Locate:
-    return { searchResults: await project.lookup(params.uri).locateIdent(params.query) };
-  case coqproto.QueryFunction.Search:
-    return { searchResults: await project.lookup(params.uri).search(params.query) };
-  case coqproto.QueryFunction.SearchAbout:
-    return { searchResults: await project.lookup(params.uri).searchAbout(params.query) };
-  default:
-    return { searchResults: "" };
-  }
+  return { searchResults: await project.lookup(params.uri).query(params.queryFunction, params.query) || "" };
 });
 connection.onRequest(coqproto.ResizeWindowRequest.type, (params: coqproto.CoqTopResizeWindowParams, token: CancellationToken) => {
   return project.lookup(params.uri)

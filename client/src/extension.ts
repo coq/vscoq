@@ -57,11 +57,13 @@ export function activate(context: ExtensionContext) {
   regTCmd('query.check', check);
   regTCmd('query.locate', locate);
   regTCmd('query.search', search);
+  regTCmd('query.about', about);
   regTCmd('query.searchAbout', searchAbout); 
   regTCmd('query.print', print); 
   regTCmd('query.prompt.check', queryCheck);
   regTCmd('query.prompt.locate', queryLocate);
   regTCmd('query.prompt.search', querySearch);
+  regTCmd('query.prompt.about', queryAbout);
   regTCmd('query.prompt.searchAbout', querySearchAbout); 
   regTCmd('query.prompt.print', queryPrint);
   regTCmd('proofView.viewStateAt', viewProofStateAt); 
@@ -116,61 +118,73 @@ async function queryStringFromPosition(prompt: string, editor: TextEditor) {
 
 function queryCheck(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.check(await queryStringFromPlaceholder("Check:", editor))
+    doc.query("check",await queryStringFromPlaceholder("Check:", editor))
   )
 }
 
 function queryLocate(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.locate(await queryStringFromPlaceholder("Locate:", editor))
+    doc.query("locate", await queryStringFromPlaceholder("Locate:", editor))
   )
 }
 
 function querySearch(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.search(await queryStringFromPlaceholder("Search:", editor))
+    doc.query("search", await queryStringFromPlaceholder("Search:", editor))
+  )
+}
+
+function queryAbout(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.query("about", await queryStringFromPlaceholder("Search:", editor))
   )
 }
 
 function querySearchAbout(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.searchAbout(await queryStringFromPlaceholder("Search About:", editor))
+    doc.query("searchAbout", await queryStringFromPlaceholder("Search About:", editor))
   )
 }
 
 function queryPrint(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.print(await queryStringFromPlaceholder("Print:", editor))
+    doc.query("print", await queryStringFromPlaceholder("Print:", editor))
   )
 }
 
 function check(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.check(await queryStringFromPosition("Check:", editor))
+    doc.query("check", await queryStringFromPosition("Check:", editor))
   )
 }
 
 function locate(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.locate(await queryStringFromPosition("Locate:", editor))
+    doc.query("locate", await queryStringFromPosition("Locate:", editor))
   )
 }
 
 function search(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.search(await queryStringFromPosition("Search:", editor))
+    doc.query("search", await queryStringFromPosition("Search:", editor))
+  )
+}
+
+function about(editor: TextEditor, edit: TextEditorEdit) {
+  return withDocAsync(editor, async (doc) =>
+    doc.query("about", await queryStringFromPosition("Search:", editor))
   )
 }
 
 function searchAbout(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.searchAbout(await queryStringFromPosition("Search About:", editor))
+    doc.query("searchAbout",await queryStringFromPosition("Search About:", editor))
   )
 }
 
 function print(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.print(await queryStringFromPosition("Search About:", editor))
+    doc.query("print", await queryStringFromPosition("Search About:", editor))
   )
 }
 

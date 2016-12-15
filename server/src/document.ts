@@ -894,38 +894,22 @@ export class CoqDocument implements TextDocument {
       this.stm.finishComputations();
   }
 
-  public async locateIdent(ident: string) {
+  public async query(query: "locate"|"check"|"print"|"search"|"about"|"searchAbout", term: string) {
     if(!this.isStmRunning())
       return "Coq is not running";
-    try {
-      return await this.stm.doQuery(`Locate ${ident}.`);
-    } catch(err) {
-      return await this.stm.doQuery(`Locate "${ident}".`);
+    switch(query) {
+      case "locate":
+        try {
+          return await this.stm.doQuery(`Locate ${term}.`);
+        } catch(err) {
+          return await this.stm.doQuery(`Locate "${term}".`);
+        }      
+      case "check":       return await this.stm.doQuery(`Check ${term}.`)
+      case "print":       return await this.stm.doQuery(`Print ${term}.`)
+      case "search":      return await this.stm.doQuery(`Search ${term}.`)
+      case "about":       return await this.stm.doQuery(`About ${term}.`)
+      case "searchAbout": return await this.stm.doQuery(`SearchAbout ${term}.`)
     }
-  }
-
-  public async checkTerm(term: string) {
-    if(!this.isStmRunning())
-      return "Coq is not running";
-    return await this.stm.doQuery(`Check ${term}.`);
-  }
-
-  public async printTerm(term: string) {
-    if(!this.isStmRunning())
-      return "Coq is not running";
-    return await this.stm.doQuery(`Print ${term}.`);
-  }
-
-  public async search(query: string) {
-    if(!this.isStmRunning())
-      return "Coq is not running";
-    return await this.stm.doQuery(`Search ${query}.`);
-  }
-
-  public async searchAbout(query: string) {
-    if(!this.isStmRunning())
-      return "Coq is not running";
-    return await this.stm.doQuery(`SearchAbout ${query}.`);
   }
 
   public async setWrappingWidth(columns: number) {

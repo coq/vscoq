@@ -252,7 +252,7 @@ export namespace QueryRequest {
   { get method() { return 'coqtop/query' }
   , _:undefined }; 
 }
-export enum QueryFunction { Check, Print, Search, SearchAbout, Locate}
+export type QueryFunction = "locate"|"check"|"print"|"search"|"about"|"searchAbout";
 export interface CoqTopQueryParams extends CoqTopParams {
   queryFunction: QueryFunction;
   query: string;

@@ -206,48 +206,12 @@ export class CoqLanguageServer implements vscode.Disposable {
     return this.server.sendRequest(proto.GetSentencePrefixTextRequest.type, { uri: uri, position: pos }, token || this.cancelRequest.token);
   }
 
-  public async locate(uri: string, query: string): Promise<proto.CoqTopQueryResult> {
+  public async query(uri: string, query: "locate"|"check"|"print"|"search"|"about"|"searchAbout", term: string): Promise<proto.CoqTopQueryResult> {
     await this.server.onReady();
     return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
       uri: uri,
-      queryFunction: proto.QueryFunction.Locate,
-      query: query
-    }, this.cancelRequest.token);
-  }
-
-  public async check(uri: string, query: string): Promise<proto.CoqTopQueryResult> {
-    await this.server.onReady();
-    return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
-      uri: uri,
-      queryFunction: proto.QueryFunction.Check,
-      query: query
-    }, this.cancelRequest.token);
-  }
-
-  public async print(uri: string, query: string): Promise<proto.CoqTopQueryResult> {
-    await this.server.onReady();
-    return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
-      uri: uri,
-      queryFunction: proto.QueryFunction.Print,
-      query: query
-    }, this.cancelRequest.token);
-  }
-
-  public async search(uri: string, query: string): Promise<proto.CoqTopQueryResult> {
-    await this.server.onReady();
-    return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
-      uri: uri,
-      queryFunction: proto.QueryFunction.Search,
-      query: query
-    }, this.cancelRequest.token);
-  }
-
-  public async searchAbout(uri: string, query: string): Promise<proto.CoqTopQueryResult> {
-    await this.server.onReady();
-    return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
-      uri: uri,
-      queryFunction: proto.QueryFunction.SearchAbout,
-      query: query
+      queryFunction: query,
+      query: term
     }, this.cancelRequest.token);
   }
 
@@ -356,24 +320,8 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
     return this.server.ltacProfGetResults(this.uri, offset);
   }
 
-  public locate(query: string): Thenable<proto.CoqTopQueryResult> {
-    return this.server.locate(this.uri, query);
-  }
-
-  public check(query: string): Thenable<proto.CoqTopQueryResult> {
-    return this.server.check(this.uri, query);
-  }
-
-  public print(query: string): Thenable<proto.CoqTopQueryResult> {
-    return this.server.print(this.uri, query);
-  }
-
-  public search(query: string): Thenable<proto.CoqTopQueryResult> {
-    return this.server.search(this.uri, query);
-  }
-
-  public searchAbout(query: string): Thenable<proto.CoqTopQueryResult> {
-    return this.server.searchAbout(this.uri, query);
+  public query(query: proto.QueryFunction, term: string): Thenable<proto.CoqTopQueryResult> {
+    return this.server.query(this.uri, query, term);
   }
 
   public setDisplayOptions(options: { item: proto.DisplayOption, value: proto.SetDisplayOption }[]): Thenable<void> {

@@ -401,10 +401,10 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateReady();
   }
 
-  public async check(query: string) {
+  public async query(query: proto.QueryFunction, term: string) {
     this.statusBar.setStateWorking('Running query');
     try {
-      const results = await this.langServer.check(query);
+      const results = await this.langServer.query(query, term);
       this.displayQueryResults(results);
     } catch (err) {
     } finally {
@@ -412,55 +412,12 @@ export class CoqDocument implements vscode.Disposable {
     }
   }
   
-  public async print(query: string) {
-    this.statusBar.setStateWorking('Running query');
-    try {
-      const results = await this.langServer.print(query);
-      this.displayQueryResults(results);
-    } catch (err) {
-    } finally {
-      this.statusBar.setStateReady();
-    }
-  }
   
   private displayQueryResults(results: proto.CoqTopQueryResult) {
     this.queryOut.clear();
     this.queryOut.show(true);
     this.queryOut.append(psm.prettyTextToString(results.searchResults));
     
-  }
-  
-  public async locate(query: string) {
-    this.statusBar.setStateWorking('Running query');
-    try {
-      const results = await this.langServer.locate(query);
-      this.displayQueryResults(results);
-    } catch (err) {
-    } finally {
-      this.statusBar.setStateReady();
-    }
-  }
-  
-  public async search(query: string) {
-    this.statusBar.setStateWorking('Running query');
-    try {
-      const results = await this.langServer.search(query);
-      this.displayQueryResults(results);
-    } catch (err) {
-    } finally {
-      this.statusBar.setStateReady();
-    }
-  }
-  
-  public async searchAbout(query: string) {
-    this.statusBar.setStateWorking('Running query');
-    try {
-      const results = await this.langServer.searchAbout(query);
-      this.displayQueryResults(results);
-    } catch (err) {
-    } finally {
-      this.statusBar.setStateReady();
-    }
   }
   
   public async viewGoalState(editor: TextEditor, external: boolean) {
