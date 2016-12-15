@@ -24,7 +24,7 @@ export function reload() : vscode.Disposable {
     : undefined;
 
   subscriptions.push(vscode.languages.setLanguageConfiguration('coq', {
-    indentationRules: {increaseIndentPattern: increaseIndentRE, decreaseIndentPattern: undefined},
+    indentationRules: { increaseIndentPattern: increaseIndentRE, decreaseIndentPattern: undefined },
     wordPattern: new RegExp(
       "(?:" +
       regenerate()
@@ -60,10 +60,11 @@ export function reload() : vscode.Disposable {
   formatAlignAfterBulletEdits.clear();
 
   if(settings.format.enable) {
-    if(settings.format.unindentOnCloseProof)
-      subscriptions.push(vscode.languages.registerOnTypeFormattingEditProvider("coq",{provideOnTypeFormattingEdits: formatCloseProof}, '.'));
+    const editProviders: { fun: (doc: vscode.TextDocument, pos: vscode.Position, ch: string, options: vscode.FormattingOptions, token: vscode.CancellationToken) => vscode.TextEdit[] | undefined, trigger: string}[] = [];
+    if (settings.format.unindentOnCloseProof)
+      editProviders.push({ fun: formatCloseProof, trigger: '.' });
     if(settings.format.indentAfterBullet === 'align') {
-      subscriptions.push(vscode.languages.registerOnTypeFormattingEditProvider("coq",{provideOnTypeFormattingEdits: formatAlignAfterBullet}, '\n'));
+      editProviders.push({ fun: formatAlignAfterBullet, trigger: '\n' });
       subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => {
         if(formatAlignAfterBulletEdits.size === 0)
           return;
@@ -82,6 +83,13 @@ export function reload() : vscode.Disposable {
           editor.selections = [new vscode.Selection(edit.newPosition, edit.newPosition)];
       }));
     }
+
+    if (editProviders.length > 0)
+      subscriptions.push(vscode.languages.registerOnTypeFormattingEditProvider("coq", {
+        provideOnTypeFormattingEdits: (...args) => {
+          return editProviders.reduce((result, f) => result ? result : f.fun.apply(this, args), undefined);
+      }}, editProviders[0].trigger, ...editProviders.map(x => x.trigger)));
+
   }
 
   return { dispose: () => unload() }
