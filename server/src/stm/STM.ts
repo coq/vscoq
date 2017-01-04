@@ -152,7 +152,6 @@ export class CoqStateMachine {
 
   private get console() : RemoteConsole {
     return this.project.connection.console;
-    
   }
 
   public dispose() {
@@ -196,8 +195,8 @@ export class CoqStateMachine {
     }
   }
 
-  public isRunning() {
-    return this.status !== STMStatus.Shutdown;
+  public isRunning() : boolean {
+    return this.status !== STMStatus.Shutdown && this.root !== null;
   }
 
   /**
@@ -208,6 +207,15 @@ export class CoqStateMachine {
     if(!this.focusedSentence)
       return Position.create(0,0);
     return this.focusedSentence.getRange().end;
+  }
+
+  public getStatesText() : string {
+    if(!this.isRunning())
+      return "";
+    const texts : string[] = [];
+    for(let sent of this.root.descendants())
+      texts.push(sent.getText())
+    return texts.join('');
   }
 
 
@@ -287,7 +295,7 @@ export class CoqStateMachine {
    * @returns `true` if no sentences were cancelled
   */
   public applyChanges(sortedChanges: TextDocumentContentChangeEvent[], newVersion: number, updatedDocumentText: string) : boolean {
-    if(!this.isRunning() || sortedChanges.length == 0 || this.root === null)
+    if(!this.isRunning() || sortedChanges.length == 0)
       return true;
 
     const invalidatedSentences = this.applyChangesToSentences(sortedChanges, updatedDocumentText);
@@ -410,7 +418,7 @@ export class CoqStateMachine {
   public async getCachedGoal(pos: vscode.Position) : Promise<GoalResult> {
     try {
       const state = this.getStateAt(pos);
-      if(state && state.getParent())
+      if(state && state.getParent() && state.getParent().hasGoal())
         return Object.assign({type: 'proof-view'} as {type: 'proof-view'}, state.getParent().getGoal(this.goalsCache));
       else
         return {type: "no-proof"}
@@ -613,15 +621,15 @@ private routeId = 1;
   }
 
 
-  public *getSentences() : Iterable<{range: Range, status: StateStatus}> {
-    if(!this.isRunning() || this.root===null)
+  public *getSentences() : IterableIterator<{range: Range, status: StateStatus}> {
+    if(!this.isRunning())
       return;
     for(let sent of this.root.descendants())
       yield { range: sent.getRange(), status: sent.getStatus()}
   }
 
-  public *getSentenceErrors() : Iterable<StatusError> {
-    if(!this.isRunning() || this.root===null)
+  public *getSentenceErrors() : IterableIterator<StatusError> {
+    if(!this.isRunning())
       return;
     for(let sent of this.root.descendants()) {
       if(sent.getError())
@@ -629,8 +637,8 @@ private routeId = 1;
     }
   }
 
-  public *getErrors() : Iterable<StatusError> {
-    if(!this.isRunning() || this.root===null)
+  public *getErrors() : IterableIterator<StatusError> {
+    if(!this.isRunning())
       return;
     yield *this.getSentenceErrors();
     if(this.currentError !== null)
@@ -658,7 +666,7 @@ private routeId = 1;
   private initialize(rootStateId: StateId) {
     if(this.root != null)
       throw "STM is already initialized."
-    if(!this.isRunning())
+    if(this.isShutdown())
       throw "Cannot reinitialize the STM once it has died; create a new one."
     this.root = State.newRoot(rootStateId);
     this.sentences.set(this.root.getStateId(),this.root);
@@ -679,11 +687,11 @@ private routeId = 1;
    * @returns true if it is safe to communicate with coq
   */
   private async validateState(initialize: boolean) : Promise<boolean> {
-    if(!this.isRunning() && initialize)
+    if(this.isShutdown() && initialize)
       throw "Cannot perform operation: coq STM manager has been shut down."
-    else if(!this.isRunning())
+    else if(this.isShutdown())
       return false;
-    else if(this.coqtop.isRunning())
+    else if(this.isCoqReady())
       return true;
     else if(initialize) {
       let value = await this.coqtop.resetCoq(this.project.settings.coqtop);
