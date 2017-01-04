@@ -165,7 +165,7 @@ const diffMessages = [
   {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Impossible\s+to\s+unify\s+"/, mid: /"\s+with\s+"/g, post: /"[.]?$/},
   {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Unable\s+to\s+unify\s+"/, mid: /"\s+with\s+"/g, post: /"[.]?$/},
   {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Refiner\s+was\s+given\s+an\s+argument\s+".*?"\s+of\s+type\s+"/, mid: /"\s+instead\s+of\s+"/g, post: /"[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*The\s+file\s+.*?\.vo\s+contains\s+library\s+"/, mid: /"\s+and\s+not\s+library\s+"/, post: /"[.]?$/},
+  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*The\s+file\s+.*?\.vo\s+contains\s+library\s+/, mid: /\s+and\s+not\s+library\s+/, post: /[.]?$/},
   {pre: /^\s*(?:Error:\s+)?(?:.*\n)*The\s+term\s+.*?\s+has\s+type\s+"/, mid: /"\s+while\s+it\s+is\s+expected\s+to\s+have\s+type\s+"/, post: /"[.]?$/},
 ];
 
