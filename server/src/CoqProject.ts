@@ -78,6 +78,11 @@ export class CoqProject {
     this.notReady();
     this.settingsCoqTopArgs = newSettings.coqtop.args;
     this.currentSettings = newSettings;
+
+    this.currentSettings.diagnostics = {
+      checkTextSynchronization: true
+    }
+    
     if(newSettings.coq.loadCoqProject) {
       this.watchCoqProject();
       await this.loadCoqProject();

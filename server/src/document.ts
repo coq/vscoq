@@ -113,19 +113,40 @@ export class CoqDocument implements TextDocument {
 
     this.document.applyTextChanges(newVersion, changes);
 
-    if(!this.isStmRunning())
-      return;
+    if(this.isStmRunning()) {
+      try {
+        const passive = this.stm.applyChanges(sortedChanges, newVersion, this.document.getText());
+        // if(!passive)
+        //   this.updateHighlights();
+      } catch (err) {
+        this.clientConsole.error("STM crashed while applying text edit: " + err.toString())
+      }
 
-    try {
-      const passive = this.stm.applyChanges(sortedChanges, newVersion, this.document.getText());
-      // if(!passive)
-      //   this.updateHighlights();
-    } catch (err) {
-      this.clientConsole.error("STM crashed while applying text edit: " + err.toString())
+      this.updateHighlights();
+      this.updateDiagnostics();
     }
 
-   this.updateHighlights();
-   this.updateDiagnostics();
+    if(this.project.settings.diagnostics.checkTextSynchronization) {
+      const documentText = this.document.getText();
+      const parsedSentencesText = this.document.getSentenceText();
+      const stmText = this.stm.getStatesText();
+      if(!documentText.startsWith(parsedSentencesText)) {
+        console.error("Document text differs from parsed-sentences text");
+        console.error("On applied changes: ");
+        changes.forEach(change => {
+          console.error("  > " + textUtil.rangeToString(change.range) + " -> " + change.text);
+        })
+      }
+      if(!documentText.startsWith(stmText)) {
+        console.error("Document text differs from STM text");
+        console.error("On applied changes: ");
+        changes.forEach(change => {
+          console.error("  > " + textUtil.rangeToString(change.range) + " -> " + change.text);
+        })
+      }
+    }
+
+
   }
 
   public getSentences() : SentenceCollection {
@@ -203,10 +224,10 @@ export class CoqDocument implements TextDocument {
 
   /** creates the current highlights from scratch */
   private createHighlights() : thmProto.Highlights {
-    if(!this.isStmRunning())
-      return;
     const highlights : thmProto.Highlights =
       { ranges: [ [], [], [], [], [], [] ] };
+    if(!this.isStmRunning())
+      return highlights;
     let count1 = 0;
     let count2 = 0;
     for(let sent of this.stm.getSentences()) {

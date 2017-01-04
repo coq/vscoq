@@ -26,6 +26,9 @@ export interface Settings {
   coqtop: CoqTopSettings,
   coq: CoqSettings,
   prettifySymbolsMode?: PrettifySymbolsModeSettings,
+  diagnostics?: {
+    checkTextSynchronization?: boolean
+  }
 }
 
 
