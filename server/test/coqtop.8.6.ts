@@ -13,7 +13,8 @@ import * as async from '../src/util/nodejs-async';
 // as well as import your extension to test it
 import * as text from '../src/util/AnnotatedText';
 import * as coqProto from '../src/coqtop/coq-proto';
-import {CoqTop} from '../src/coqtop/coqtop';
+import {CoqTop as CoqTop8} from '../src/coqtop/CoqTop8';
+import * as coqtop from '../src/coqtop/CoqTop';
 import * as proto from '../src/protocol';
 
 const COQBIN_8_6 = process.env.COQBIN_8_6 || 'C:/Coq_trunk_build/bin';
@@ -46,7 +47,7 @@ describe("Coqtop 8.6", function() {
   })
 
   it("version", async function() {
-    const version = await CoqTop.detectVersion(coqtopBin(), "./", dummyConsole);
+    const version = await coqtop.detectVersion(coqtopBin(), "./", dummyConsole);
     assert(version.startsWith("8.6"), "Coqtop does not appear to be version 8.5.\nPlease make sure you have set env-var COQBIN_8_5 to point to the binaries directory of Coq 8.5.")
     const knownVersions = ["8.6.0"];
     const isKnownVersion = knownVersions.some((v) => v === version);
@@ -68,7 +69,7 @@ describe("Coqtop 8.6", function() {
     warn: (s) => {},
     error: (s) => {},
   }
-  let coq : CoqTop;
+  let coq : coqtop.CoqTop;
   let feedback: coqProto.StateFeedback[];
   let messages: coqProto.Message[];
   let isClosed: boolean;
@@ -79,7 +80,7 @@ describe("Coqtop 8.6", function() {
       feedback = [];
       messages = [];
       isClosed = false;
-      coq = new CoqTop(settings, "test.v", "./", dummyConsole, {
+      coq = new CoqTop8(settings, "test.v", "./", dummyConsole, {
         onFeedback: (x1) => feedback.push(x1),
         onMessage: (x1) => messages.push(x1),
         onClosed: (error?: string) => isClosed = true,
@@ -87,7 +88,7 @@ describe("Coqtop 8.6", function() {
     })
 
     it("Init & Quit", async function() {
-      const result = await coq.resetCoq();
+      const result = await coq.startCoq();
       assert.equal(result.stateId, 1);
       await coq.coqQuit();
     })
@@ -101,12 +102,12 @@ describe("Coqtop 8.6", function() {
       feedback = [];
       messages = [];
       isClosed = false;
-      coq = new CoqTop(settings, "test.v", "./", dummyConsole, {
+      coq = new CoqTop8(settings, "test.v", "./", dummyConsole, {
         onFeedback: (x1) => feedback.push(x1),
         onMessage: (x1) => messages.push(x1),
         onClosed: (error?: string) => isClosed = true,
       });
-      rootState = (await coq.resetCoq()).stateId;
+      rootState = (await coq.startCoq()).stateId;
     })
 
     afterEach("quit coqtop", async function() {
