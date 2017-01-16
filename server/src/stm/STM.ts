@@ -7,7 +7,7 @@ import * as coqProto from './../coqtop/coq-proto';
 import * as util from 'util';
 import * as proto from './../protocol';
 import * as textUtil from './../util/text-util';
-import * as coqtop from './../coqtop/coqtop';
+import * as coqtop from './../coqtop/CoqTop';
 import * as coqParser from './../parsing/coq-parser';
 import * as errorParsing from '../parsing/error-parsing';
 import {State, StatusError, StateStatus} from './State';
@@ -16,9 +16,9 @@ import {Mutex} from './../util/Mutex';
 import * as server from '../server';
 import {AnnotatedText} from '../util/AnnotatedText'
 import * as text from '../util/AnnotatedText'
-import {CoqProject} from '../CoqProject'
 import {GoalsCache, ProofViewReference, GoalId} from './GoalsCache';
 
+import {Settings} from '../protocol';
 export {StateStatus} from './State';
 
 
@@ -40,6 +40,12 @@ interface BufferedFeedbackFileLoaded extends BufferedFeedbackBase {
   module: string,
 }
 
+
+interface CoqProject {
+  getWorkspaceRoot() : string,
+  readonly console : vscode.RemoteConsole,
+  readonly settings : Settings,
+}
 
 type BufferedFeedback = BufferedFeedbackStatus | BufferedFeedbackFileLoaded;
 
@@ -86,7 +92,6 @@ class AddCommandFailure implements proto.FailValue {
 }
 
 class CommandIsBusy {
-
 }
 
 enum STMStatus { Ready, Busy, Interrupting, Shutdown }
@@ -111,8 +116,6 @@ export class CoqStateMachine {
   private focusedSentence : State = null;
   // The sentence that is closest to the end of the document; lazy init
   private lastSentence : State = null;
-  // Handles communication with coqtop
-  private coqtop : coqtop.CoqTop;
   // feedback may arrive before a sentence is assigned a stateId; buffer feedback messages for later
   private bufferedFeedback: BufferedFeedback[] = [];
   private documentVersion: number;
@@ -137,21 +140,19 @@ export class CoqStateMachine {
   private editLock = new Mutex();
   /** goals */
   private goalsCache = new GoalsCache();
+  /** The connected instance of coqtop */
+  private coqtop : coqtop.CoqTop;
 
-
-  constructor(private project: CoqProject
-    , private scriptFile: string
+  constructor(private console: RemoteConsole
+    , private spawnCoqtop : ()=>coqtop.CoqTop
     , private callbacks: StateMachineCallbacks
   ) {
-    this.coqtop = new coqtop.CoqTop(this.project.settings.coqtop, scriptFile, this.project.getWorkspaceRoot(), this.console, {
-      onFeedback: (x1) => this.onFeedback(x1),
-      onMessage: (x1) => this.onCoqMessage(x1),
-      onClosed: (error?: string) => this.onCoqClosed(error),
-    });
-  }
-
-  private get console() : RemoteConsole {
-    return this.project.connection.console;
+    this.coqtop = this.spawnCoqtop();
+    // this.coqtop = new coqtop.CoqTop(this.project.settings.coqtop, scriptFile, this.project.getWorkspaceRoot(), this.console, {
+    //   onFeedback: (x1) => this.onFeedback(x1),
+    //   onMessage: (x1) => this.onCoqMessage(x1),
+    //   onClosed: (error?: string) => this.onCoqClosed(error),
+    // });
   }
 
   public dispose() {
@@ -160,7 +161,7 @@ export class CoqStateMachine {
     this.status = STMStatus.Shutdown;
     this.sentences = undefined;
     this.bufferedFeedback = undefined;
-    this.project = undefined;
+    // this.project = undefined;
     this.setFocusedSentence(undefined);
     this.callbacks = dummyCallbacks;
     if(this.coqtop)
@@ -343,6 +344,13 @@ export class CoqStateMachine {
     }
   }
 
+  private resetCoqtop() {
+    if(this.coqtop)
+      this.coqtop.dispose();
+    this.coqtop = null;
+    this.coqtop = this.spawnCoqtop();
+  }
+
   /**
    * Steps back from the currently focused sentence
    * @param verbose - generate feedback messages with more info
@@ -355,7 +363,7 @@ export class CoqStateMachine {
     try {
       await this.validateState(false);
       if(this.focusedSentence === this.root)
-        this.coqtop.resetCoq(this.project.settings.coqtop);
+        this.resetCoqtop();
       else
         await this.cancelSentence(this.focusedSentence);
       return null;
@@ -694,7 +702,9 @@ private routeId = 1;
     else if(this.isCoqReady())
       return true;
     else if(initialize) {
-      let value = await this.coqtop.resetCoq(this.project.settings.coqtop);
+      if(!this.coqtop)
+        this.coqtop = this.spawnCoqtop();
+      let value = await this.coqtop.startCoq();
       this.initialize(value.stateId);
       return true;
     } else

@@ -7,6 +7,8 @@ import * as fs from 'fs';
 import * as readline from 'readline';
 import {PrettifySymbolsMode} from './util/PrettifySymbols';
 import * as nodeAsync from './util/nodejs-async';
+import {CoqTop} from './coqtop/CoqTop';
+import {CoqTop as CoqTop8} from './coqtop/CoqTop8';
 
 
 
@@ -28,7 +30,7 @@ export class CoqProject {
   private settingsCoqTopArgs: string[] = [];
   private coqProjectArgs: string[] = [];
   
-  constructor(workspaceRoot: string, public readonly connection: vscode.IConnection) {
+  constructor(workspaceRoot: string, private readonly connection: vscode.IConnection) {
     if(workspaceRoot)
       connection.console.log("Loaded project at " + workspaceRoot)
     else
@@ -36,7 +38,7 @@ export class CoqProject {
     this.workspaceRoot = workspaceRoot;
   }
 
-  private get console() : vscode.RemoteConsole {
+  public get console() : vscode.RemoteConsole {
     return this.connection.console;
   }
 
@@ -51,6 +53,10 @@ export class CoqProject {
     return doc;
   }
   
+  public createCoqTopInstance(scriptFile: string) : CoqTop {
+    return new CoqTop8(this.settings.coqtop, scriptFile, this.getWorkspaceRoot(), this.console);
+  }
+
   /** reset the ready promise */
   private notReady() {
      this.ready.event = new Promise<{}>((resolve) => {

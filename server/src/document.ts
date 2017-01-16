@@ -8,6 +8,7 @@ import {Interrupted, CoqtopSpawnError, CallFailure, AddResult, EditAtResult} fro
 import * as thmProto from './protocol';
 import * as coqProto from './coqtop/coq-proto';
 import * as coqParser from './parsing/coq-parser';
+import {CoqTop} from './coqtop/CoqTop8';
 // import {Sentence, Sentences} from './sentences';
 import * as textUtil from './util/text-util';
 import {Mutex} from './util/Mutex';
@@ -305,15 +306,18 @@ export class CoqDocument implements TextDocument {
   public async resetCoq() {
     if(this.isStmRunning())
       this.stm.shutdown(); // Don't bother awaiting
-    this.stm = new CoqStateMachine(this.project, this.uri, {
-      sentenceStatusUpdate: (x1,x2) => this.onCoqStateStatusUpdate(x1,x2),
-      clearSentence: (x1) => this.onClearSentence(x1),
-      updateStmFocus: (x1) => this.onUpdateStmFocus(x1),
-      error: (x1,x2,x3) => this.onCoqStateError(x1,x2,x3),
-      message: (x1,x2) => this.onCoqMessage(x1,x2),
-      ltacProfResults: (x1,x2) => this.onCoqStateLtacProf(x1,x2),
-      coqDied: (error?: string) => this.onCoqDied(error),
-    });
+    this.stm = new CoqStateMachine(
+      this.project.console,
+      () => this.project.createCoqTopInstance(this.uri),
+      {
+        sentenceStatusUpdate: (x1,x2) => this.onCoqStateStatusUpdate(x1,x2),
+        clearSentence: (x1) => this.onClearSentence(x1),
+        updateStmFocus: (x1) => this.onUpdateStmFocus(x1),
+        error: (x1,x2,x3) => this.onCoqStateError(x1,x2,x3),
+        message: (x1,x2) => this.onCoqMessage(x1,x2),
+        ltacProfResults: (x1,x2) => this.onCoqStateLtacProf(x1,x2),
+        coqDied: (error?: string) => this.onCoqDied(error),
+      });
   }
 
   private onUpdateStmFocus(focus: Position) {
