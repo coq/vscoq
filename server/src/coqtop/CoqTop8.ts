@@ -18,13 +18,13 @@ import * as xmlTypes from './xml-protocol/CoqXmlProtocolTypes';
 import {AnnotatedText, normalizeText, textToDisplayString} from '../util/AnnotatedText';
 import {createDeserializer} from './xml-protocol/deserialize';
 
-import * as coqtop from './coqtop';
-export {Interrupted, CoqtopSpawnError, CallFailure, EventCallbacks} from './coqtop';
-export {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './coqtop';
-export {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './coqtop';
-import {Interrupted, CoqtopSpawnError, CallFailure, EventCallbacks} from './coqtop';
-import {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './coqtop';
-import {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './coqtop';
+import * as coqtop from './CoqTop';
+export {Interrupted, CoqtopSpawnError, CallFailure, EventCallbacks} from './CoqTop';
+export {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './CoqTop';
+export {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
+import {Interrupted, CoqtopSpawnError, CallFailure, EventCallbacks} from './CoqTop';
+import {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './CoqTop';
+import {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
 import {IdeSlave as IdeSlave8, IdeSlaveState} from './IdeSlave8';
 
 export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
@@ -46,6 +46,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private projectRoot: string;
   // private supportsInterruptCall = false;
   private coqtopVersion : string;
+  private sockets : net.Socket[] = [];
 
   constructor(settings : CoqTopSettings, scriptFile: string, projectRoot: string, console: vscode.RemoteConsole, callbacks?: EventCallbacks) {
     super(console, callbacks);
@@ -62,7 +63,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     this.mainChannelServer2.maxConnections = 1;
     this.controlChannelServer.maxConnections = 1;
     this.controlChannelServer2.maxConnections = 1;
-    
+
     this.readyToListen = [
       this.startListening(this.mainChannelServer),
       this.startListening(this.mainChannelServer2),
@@ -76,6 +77,10 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
 
   public /* override */ dispose() {
     super.dispose();
+
+    this.sockets.forEach(s => s.destroy());
+    this.sockets = [];
+    
     if(this.coqtopProc) {
       try {
         this.coqtopProc.kill();
@@ -84,20 +89,18 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
       } catch(e) {}
       this.coqtopProc = null;
     }
-    this.coqtopProc = undefined;
+    this.coqtopProc = null;
   }
 
   public isRunning() : boolean {
     return this.coqtopProc != null;
   }
 
-  public async startCoq(settings?: CoqTopSettings) : Promise<InitResult> {
+  public async startCoq() : Promise<InitResult> {
     if(this.state !== IdeSlaveState.Disconnected)
       throw new CoqtopSpawnError(this.coqtopBin, "coqtop is already started");
 
-    if(settings)
-      this.settings = settings;    
-    this.console.log('start');
+    this.console.log('starting coqtop');
 
     this.coqtopVersion = await coqtop.detectVersion(this.coqtopBin, this.projectRoot, this.console);
     if(this.coqtopVersion)
@@ -139,6 +142,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private acceptConnection(server: net.Server, name:string) : Promise<net.Socket> {
     return new Promise<net.Socket>((resolve) => {
       server.once('connection', (socket:net.Socket) => {
+        this.sockets.push(socket);
         this.console.log(`Client connected on ${name} (port ${socket.localPort})`);
         // socket.setEncoding('utf8');
         // // if (dataHandler)

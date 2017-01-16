@@ -98,7 +98,7 @@ export type GoalResult = NoProofResult | ProofModeResult
 export interface EventCallbacks {
   onFeedback? : (feedback: coqProto.StateFeedback) => void;
   onMessage? : (msg: coqProto.Message) => void;
-  onClosed?: (error?: string) => void;
+  onClosed?: (error?: any) => void;
 }
 
 export function detectVersion(coqtopModule: string, cwd: string, console?: {log: (string)=>void, warn: (string)=>void}) : Promise<string|null> {
@@ -130,8 +130,9 @@ export function detectVersion(coqtopModule: string, cwd: string, console?: {log:
 }
 
 export interface IdeSlave {
-  connect(version: string, mainR: stream.Readable, mainW: stream.Writable, controlR: stream.Readable, controlW: stream.Writable);
+  // connect(version: string, mainR: stream.Readable, mainW: stream.Writable, controlR: stream.Readable, controlW: stream.Writable);
   dispose() : void;
+  isConnected() : boolean;
   coqInterrupt() : Promise<boolean>;
   coqInit() : Promise<InitResult>;
   coqQuit() : Promise<void>;
@@ -146,18 +147,21 @@ export interface IdeSlave {
   coqSetOptions(options: CoqOptions) : Promise<void>;
 }
 
+export class CommunicationError extends Error {
+}
 
 export interface CoqTop {
   dispose(): void;
-  isRunning() : boolean;  
+  isRunning() : boolean;
   getVersion() : string;
-  startCoq(settings?: CoqTopSettings) : Promise<InitResult>;
-  setupCoqTop(wrapper: string|null) : Promise<void>;
+  startCoq() : Promise<InitResult>;
+  // setupCoqTop(wrapper: string|null) : Promise<void>;
 
   /** Start coqtop.
    * Use two ports: one for reading & one for writing; i.e. HOST:READPORT:WRITEPORT
    */
-  setupCoqTopReadAndWritePorts() : Promise<void>;
+  // setupCoqTopReadAndWritePorts() : Promise<void>;
+  isConnected() : boolean;
   coqInterrupt() : Promise<boolean>;
   coqInit() : Promise<InitResult>;
   coqQuit() : Promise<void>;

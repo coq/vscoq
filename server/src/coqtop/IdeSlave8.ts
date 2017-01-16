@@ -10,9 +10,13 @@ import {AnnotatedText, normalizeText, textToDisplayString} from '../util/Annotat
 import {createDeserializer} from './xml-protocol/deserialize';
 
 import * as coqtop from './coqtop';
-import {Interrupted, CoqtopSpawnError, CallFailure, EventCallbacks} from './coqtop';
+import {Interrupted, CoqtopSpawnError, CallFailure, EventCallbacks, CommunicationError} from './coqtop';
 import {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './coqtop';
 import {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './coqtop';
+
+import {timeout} from '../util/Timer';
+
+const QUIT_MESSAGE_TIMEOUT_MS = 1000;
 
 export enum IdeSlaveState {
   Disconnected,
@@ -44,7 +48,7 @@ export class IdeSlave implements coqtop.IdeSlave {
     this.callbacks = callbacks;
   }
 
-  public connect(version: string, mainR: NodeJS.ReadableStream, mainW: NodeJS.WritableStream, controlR: NodeJS.ReadableStream, controlW: NodeJS.WritableStream) {
+  protected connect(version: string, mainR: NodeJS.ReadableStream, mainW: NodeJS.WritableStream, controlR: NodeJS.ReadableStream, controlW: NodeJS.WritableStream) {
     this.mainChannelR = mainR;
     this.mainChannelW = mainW;
     this.controlChannelR = controlR;
@@ -81,7 +85,7 @@ export class IdeSlave implements coqtop.IdeSlave {
   private setupChannel(channel: NodeJS.ReadableStream|NodeJS.WritableStream, name: string, dataHandler?: (string) => void) {
     if (dataHandler)
       channel.on('data', (data:string) => dataHandler(data));
-    channel.on('error', (err:any) => this.onCoqTopError(err.toString() + ` (${name})`));
+    channel.on('error', (err:any) => this.onCoqTopError(err, name));
   }
 
   private writeMain(message: string) {
@@ -93,6 +97,7 @@ export class IdeSlave implements coqtop.IdeSlave {
   }
 
   public dispose() {
+    this.callbacks = {};
     this.state = IdeSlaveState.Shutdown;
     // if (this.mainChannelR)
     //   this.mainChannelR.end();
@@ -113,11 +118,14 @@ export class IdeSlave implements coqtop.IdeSlave {
     return this.state === IdeSlaveState.Connected;
   }
   
-  protected onCoqTopError(message: string) : void {
+  protected onCoqTopError(error: any, channelName: string) : void {
     try {
-      this.console.error('Error: ' + message);
-      if(this.state === IdeSlaveState.Connected)
-        this.callbacks.onClosed(message);
+      if(this.state !== IdeSlaveState.Connected)
+        return;
+
+      this.console.error(`Error on ${channelName}: ` + (error.message || error.toString()));
+      if(this.callbacks.onClosed)
+        this.callbacks.onClosed(error);
     } finally {
       this.dispose();      
       this.state = IdeSlaveState.Error;
@@ -172,6 +180,7 @@ export class IdeSlave implements coqtop.IdeSlave {
    */
   private coqGetResultOnce(logIdent?: string) : Promise<coqProto.ValueReturn> {
     return new Promise<coqProto.ValueReturn>((resolve,reject) => {
+      this.parser.once('error', err => reject(new CommunicationError(err)))
       this.parser.once('response: value', (value:coqProto.ValueReturn|coqProto.FailValue) => {
         try {
           if(value.status === 'good')
@@ -236,24 +245,15 @@ export class IdeSlave implements coqtop.IdeSlave {
     this.console.log('Call Init()');
     this.writeMain('<call val="Init"><option val="none"/></call>');
 
-    const timeout = 3000;
-    // try {
     const value = coqProto.GetValue('Init', await coqResult);
     const result = <InitResult>{stateId: value};
     this.console.log(`Init: () --> ${result.stateId}`);
     return result;
-    // } catch(error) {
-    //   this.console.warn(`Init: () --> TIMEOUT after ${timeout}ms`);
-    //   this.cleanup(`Init: () --> TIMEOUT after ${timeout}ms`);
-    //   throw error;
-    // }    
-// this.controlChannelR.write("PING\n");
   }
 
   public async coqQuit() : Promise<void> {
     if(!this.isConnected())
       return;
-    // this.console.log('quit');
     
     try {
       const coqResult = this.coqGetResultOnce('Quit');
@@ -261,10 +261,13 @@ export class IdeSlave implements coqtop.IdeSlave {
       this.console.log('Call Quit()');
       this.writeMain('<call val="Quit"><unit/></call>');
       try {
-        await Promise.race([coqResult, new Promise((resolve,reject) => setTimeout(reject, 1000, "timeout"))]);
+        await timeout(coqResult, QUIT_MESSAGE_TIMEOUT_MS, "timeout")
         this.console.log(`Quit: () --> ()`);
       } catch(err) {
-        this.console.log(`Forced Quit (timeout).`);
+        if(err instanceof CommunicationError)
+          this.console.log('Communication error: ' + err.message);
+        else
+          this.console.log(`Forced Quit (timeout).`);
       }
     } catch(error) {
       this.console.log(`Forced Quit.`);
