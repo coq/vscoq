@@ -290,18 +290,39 @@ export function positionRangeDeltaTranslate(pos: Position, delta: RangeDelta) : 
 }
 
 export function positionRangeDeltaTranslateEnd(pos: Position, delta: RangeDelta) : Position {
-  if(positionIsBeforeOrEqual(pos,delta.end))
+  if(positionIsBeforeOrEqual(pos,delta.start))
     return pos;
-  else if (delta.end.line === pos.line) {
-    let x = pos.character + delta.charactersDelta;
-    if (delta.linesDelta > 0) 
-      x = x - delta.end.character;
-    else if (delta.start.line === delta.end.line + delta.linesDelta && delta.linesDelta < 0) 
-      x = x + delta.start.character;
-    return Position.create(pos.line + delta.linesDelta, x);
+  else {
+    // Calculate the shifted position
+    let result : Position;
+    if (delta.end.line === pos.line) {
+      let x = pos.character + delta.charactersDelta;
+      if (delta.linesDelta > 0) 
+        x = x - delta.end.character;
+      else if (delta.start.line === delta.end.line + delta.linesDelta && delta.linesDelta < 0) 
+        x = x + delta.start.character;
+      result = Position.create(pos.line + delta.linesDelta, x);
+    } else // if(pos.line > delta.end.line)
+      result = Position.create(pos.line + delta.linesDelta, pos.character);    
+    // But do not move above that delta's start position
+    if(positionIsBefore(result,delta.start))
+      return delta.start;
+    else
+      return result;
   }
-  else // if(pos.line > delta.end.line)
-    return Position.create(pos.line + delta.linesDelta, pos.character);
+
+  // if(positionIsEqual(pos,delta.end) && (delta.linesDelta > 0 || (delta.linesDelta == 0 && delta.charactersDelta > 0)))
+  //   return pos; // equal, but the change is extending from the end instead of moving intop the end
+  // else if (delta.end.line === pos.line) {
+  //   let x = pos.character + delta.charactersDelta;
+  //   if (delta.linesDelta > 0) 
+  //     x = x - delta.end.character;
+  //   else if (delta.start.line === delta.end.line + delta.linesDelta && delta.linesDelta < 0) 
+  //     x = x + delta.start.character;
+  //   return Position.create(pos.line + delta.linesDelta, x);
+  // }
+  // else // if(pos.line > delta.end.line)
+  //   return Position.create(pos.line + delta.linesDelta, pos.character);
 }
 
 export function rangeDeltaTranslate(range: Range, delta: RangeDelta) {

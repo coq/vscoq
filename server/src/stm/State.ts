@@ -141,7 +141,7 @@ export class State {
     this.next = null;
   }
 
-  public clear() {
+  public unlink() {
     if(this.prev)
       this.prev.next = this.next;
     if(this.next)
@@ -192,11 +192,17 @@ export class State {
     return this.textRange;
   }
 
+  public hasGoal() : boolean {
+    return this.goal !== null;
+  }
+
   public setGoal(goal: ProofViewReference) {
     this.goal = goal;
   }
 
-  public getGoal(goalsCache: GoalsCache) : ProofView {
+  public getGoal(goalsCache: GoalsCache) : ProofView|null {
+    if(!this.goal)
+      return null;
     const newGoals = goalsCache.getProofView(this.goal);      
     if(this.prev && this.prev.goal) {
       const oldGoals = goalsCache.getProofView(this.prev.goal);
@@ -253,6 +259,7 @@ export class State {
             + change.text
             + newText.substring(beginOffset+change.rangeLength);
           // newRange = Range.create(newRange.start,textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta));
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
           newRange.end = textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta);
 
           if(newErrorRange)

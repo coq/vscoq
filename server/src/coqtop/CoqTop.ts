@@ -129,51 +129,70 @@ export function detectVersion(coqtopModule: string, cwd: string, console?: {log:
   })
 }
 
-export interface IdeSlave {
+export abstract class IdeSlave {
+  protected callbacks : EventCallbacks = {};
+  public onFeedback(handler: (feedback: coqProto.StateFeedback) => void) : {dispose: ()=>void}
+  {
+    this.callbacks.onFeedback = handler;
+    return { dispose: () => { this.callbacks.onFeedback = undefined; } }
+  }
+
+  public onMessage(handler: (msg: coqProto.Message) => void)
+  {
+    this.callbacks.onMessage = handler;
+    return { dispose: () => { this.callbacks.onMessage = undefined; } }
+  }
+
+  public onClosed(handler: (error?: any) => void)
+  {
+    this.callbacks.onClosed = handler;
+    return { dispose: () => { this.callbacks.onClosed = undefined; } }
+  }
+
   // connect(version: string, mainR: stream.Readable, mainW: stream.Writable, controlR: stream.Readable, controlW: stream.Writable);
-  dispose() : void;
-  isConnected() : boolean;
-  coqInterrupt() : Promise<boolean>;
-  coqInit() : Promise<InitResult>;
-  coqQuit() : Promise<void>;
-  coqGoal() : Promise<GoalResult>;
-  getStatus(force: boolean) : Promise<coqProto.CoqStatus>;
-  coqAddCommand(command: string, editId: number, stateId: number, verbose?: boolean) : Promise<AddResult>;
-  coqEditAt(stateId: number) : Promise<EditAtResult>;
-  coqLtacProfilingResults(stateId?: number, routeId?: number) : Promise<void>;
-  coqResizeWindow(columns: number) : Promise<void>;  
-  coqQuery(query: string, stateId?: number, routeId?: number) : Promise<AnnotatedText>;
-  coqGetOptions(options: CoqOptions) : Promise<void>;
-  coqSetOptions(options: CoqOptions) : Promise<void>;
+  public abstract dispose() : void;
+  public abstract isConnected() : boolean;
+  public abstract coqInterrupt() : Promise<boolean>;
+  public abstract coqInit() : Promise<InitResult>;
+  public abstract coqQuit() : Promise<void>;
+  public abstract coqGoal() : Promise<GoalResult>;
+  public abstract getStatus(force: boolean) : Promise<coqProto.CoqStatus>;
+  public abstract coqAddCommand(command: string, editId: number, stateId: number, verbose?: boolean) : Promise<AddResult>;
+  public abstract coqEditAt(stateId: number) : Promise<EditAtResult>;
+  public abstract coqLtacProfilingResults(stateId?: number, routeId?: number) : Promise<void>;
+  public abstract coqResizeWindow(columns: number) : Promise<void>;  
+  public abstract coqQuery(query: string, stateId?: number, routeId?: number) : Promise<AnnotatedText>;
+  public abstract coqGetOptions(options: CoqOptions) : Promise<void>;
+  public abstract coqSetOptions(options: CoqOptions) : Promise<void>;
 }
 
 export class CommunicationError extends Error {
 }
 
-export interface CoqTop {
-  dispose(): void;
-  isRunning() : boolean;
-  getVersion() : string;
-  startCoq() : Promise<InitResult>;
+export abstract class CoqTop extends IdeSlave {
+  public abstract dispose(): void;
+  public abstract isRunning() : boolean;
+  public abstract getVersion() : string;
+  public abstract startCoq() : Promise<InitResult>;
   // setupCoqTop(wrapper: string|null) : Promise<void>;
 
   /** Start coqtop.
    * Use two ports: one for reading & one for writing; i.e. HOST:READPORT:WRITEPORT
    */
   // setupCoqTopReadAndWritePorts() : Promise<void>;
-  isConnected() : boolean;
-  coqInterrupt() : Promise<boolean>;
-  coqInit() : Promise<InitResult>;
-  coqQuit() : Promise<void>;
-  coqGoal() : Promise<GoalResult>;
-  getStatus(force: boolean) : Promise<coqProto.CoqStatus>;
-  coqAddCommand(command: string, editId: number, stateId: number, verbose?: boolean) : Promise<AddResult>;
-  coqEditAt(stateId: number) : Promise<EditAtResult>;
-  coqLtacProfilingResults(stateId?: number, routeId?: number) : Promise<void>;
-  coqResizeWindow(columns: number) : Promise<void>;  
-  coqQuery(query: string, stateId?: number, routeId?: number) : Promise<AnnotatedText>;
-  coqGetOptions(options: CoqOptions) : Promise<void>;
-  coqSetOptions(options: CoqOptions) : Promise<void>;
+  public abstract isConnected() : boolean;
+  public abstract coqInterrupt() : Promise<boolean>;
+  public abstract coqInit() : Promise<InitResult>;
+  public abstract coqQuit() : Promise<void>;
+  public abstract coqGoal() : Promise<GoalResult>;
+  public abstract getStatus(force: boolean) : Promise<coqProto.CoqStatus>;
+  public abstract coqAddCommand(command: string, editId: number, stateId: number, verbose?: boolean) : Promise<AddResult>;
+  public abstract coqEditAt(stateId: number) : Promise<EditAtResult>;
+  public abstract coqLtacProfilingResults(stateId?: number, routeId?: number) : Promise<void>;
+  public abstract coqResizeWindow(columns: number) : Promise<void>;  
+  public abstract coqQuery(query: string, stateId?: number, routeId?: number) : Promise<AnnotatedText>;
+  public abstract coqGetOptions(options: CoqOptions) : Promise<void>;
+  public abstract coqSetOptions(options: CoqOptions) : Promise<void>;
 }
 
 export interface CoqOptions {

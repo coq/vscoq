@@ -219,10 +219,11 @@ export class Sentence {
         return false; // invalidate: bad or changed syntax
       }   
     }
+
+    this.documentRange = newRange;
     
     if(parser.isPassiveDifference(this.text, newText)) {
       this.text = newText;
-      this.documentRange = newRange;
       return true;
     } else
       this.invalidate();

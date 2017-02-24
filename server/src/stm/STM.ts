@@ -306,6 +306,9 @@ export class CoqStateMachine {
       this.callbacks.updateStmFocus(this.getFocusedPosition())
       return true;
     } else {
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      for(let sent of invalidatedSentences)
+        sent.unlink();
       // We do not bother to await this async function
       this.cancelInvalidatedSentences(invalidatedSentences);
       return false;
@@ -915,14 +918,14 @@ private routeId = 1;
       const error = <coqtop.CallFailure>err;
       if(error.stateId)
         await this.gotoErrorFallbackState(error.stateId);
-      
     }
   }
 
 
   private async cancelSentence(sentence: State) {
-    if(!this.sentences.has(sentence.getStateId()))
-      return;
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // if(!this.sentences.has(sentence.getStateId()))
+    //   return;
     await this.focusSentence(sentence.getParent());
   }
 
@@ -1078,6 +1081,11 @@ private routeId = 1;
 
   private isInterrupting() {
     return this.status === STMStatus.Interrupting
+  }
+
+  public async flushEdits() {
+    const releaseLock = await this.editLock.lock();
+    releaseLock();
   }
 
   private async acquireCoq<T>(callback: () => T): Promise<T> {

@@ -10,7 +10,7 @@ import {AnnotatedText, normalizeText, textToDisplayString} from '../util/Annotat
 import {createDeserializer} from './xml-protocol/deserialize';
 
 import * as coqtop from './coqtop';
-import {Interrupted, CoqtopSpawnError, CallFailure, EventCallbacks, CommunicationError} from './coqtop';
+import {Interrupted, CoqtopSpawnError, CallFailure, CommunicationError} from './coqtop';
 import {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './coqtop';
 import {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './coqtop';
 
@@ -31,7 +31,7 @@ export class IdeSlaveNotConnectedError extends Error {
   }
 }
 
-export class IdeSlave implements coqtop.IdeSlave {
+export class IdeSlave extends coqtop.IdeSlave {
   private mainChannelR : NodeJS.ReadableStream;
   private mainChannelW : NodeJS.WritableStream;
   private controlChannelR : NodeJS.ReadableStream;
@@ -39,13 +39,12 @@ export class IdeSlave implements coqtop.IdeSlave {
   private parser : coqXml.XmlStream|null = null;
   protected state = IdeSlaveState.Disconnected;
 
-  protected callbacks: EventCallbacks;
   protected console: vscode.RemoteConsole;
   protected useInterruptMessage = false;
 
-  constructor(console: vscode.RemoteConsole, callbacks?: EventCallbacks) {
+  constructor(console: vscode.RemoteConsole) {
+    super();
     this.console = console;
-    this.callbacks = callbacks;
   }
 
   protected connect(version: string, mainR: NodeJS.ReadableStream, mainW: NodeJS.WritableStream, controlR: NodeJS.ReadableStream, controlW: NodeJS.WritableStream) {
@@ -57,10 +56,10 @@ export class IdeSlave implements coqtop.IdeSlave {
   
     const deserializer = createDeserializer(version);
     this.parser = new coqXml.XmlStream(this.mainChannelR, deserializer, {
-      onFeedback: (feedback: coqProto.StateFeedback) => this.onFeedback(feedback),
-      onMessage: (msg: coqProto.Message) => this.onMessage(msg),
-      onOther: (tag: string, x: any) => this.onOther(tag, x),
-      onError: (x: any) => this.onSerializationError(x)
+      onFeedback: (feedback: coqProto.StateFeedback) => this.doOnFeedback(feedback),
+      onMessage: (msg: coqProto.Message) => this.doOnMessage(msg),
+      onOther: (tag: string, x: any) => this.doOnOther(tag, x),
+      onError: (x: any) => this.doOnSerializationError(x)
     });
     // this.mainChannelR.on('data', (data) => this.onMainChannelR(data));
     // this.controlChannelR.on('data', (data) => this.onControlChannelR(data));
@@ -146,20 +145,20 @@ export class IdeSlave implements coqtop.IdeSlave {
   }
   
 
-  private onFeedback(feedback: coqProto.StateFeedback) {
+  private doOnFeedback(feedback: coqProto.StateFeedback) {
     if(this.callbacks.onFeedback)
       this.callbacks.onFeedback(feedback);
   }
 
-  private onMessage(msg: coqProto.Message) {
+  private doOnMessage(msg: coqProto.Message) {
     if(this.callbacks.onMessage)
       this.callbacks.onMessage(msg);
   }
 
-  private onOther(tag: string, x: any) {
+  private doOnOther(tag: string, x: any) {
       // this.console.log("reponse: " + tag + ": " + util.inspect(x));    
   }
-  private onSerializationError(x: any) {}
+  private doOnSerializationError(x: any) {}
 
 
   private validateValue(value: coqProto.FailValue, logIdent?: string) : never {

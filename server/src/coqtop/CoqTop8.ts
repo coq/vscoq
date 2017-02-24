@@ -19,12 +19,12 @@ import {AnnotatedText, normalizeText, textToDisplayString} from '../util/Annotat
 import {createDeserializer} from './xml-protocol/deserialize';
 
 import * as coqtop from './CoqTop';
-export {Interrupted, CoqtopSpawnError, CallFailure, EventCallbacks} from './CoqTop';
-export {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './CoqTop';
-export {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
-import {Interrupted, CoqtopSpawnError, CallFailure, EventCallbacks} from './CoqTop';
-import {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './CoqTop';
-import {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
+export {Interrupted, CoqtopSpawnError, CallFailure,
+  InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView,
+  NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
+import {Interrupted, CoqtopSpawnError, CallFailure,
+  InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView,
+  NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
 import {IdeSlave as IdeSlave8, IdeSlaveState} from './IdeSlave8';
 
 export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
@@ -48,8 +48,8 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private coqtopVersion : string;
   private sockets : net.Socket[] = [];
 
-  constructor(settings : CoqTopSettings, scriptFile: string, projectRoot: string, console: vscode.RemoteConsole, callbacks?: EventCallbacks) {
-    super(console, callbacks);
+  constructor(settings : CoqTopSettings, scriptFile: string, projectRoot: string, console: vscode.RemoteConsole) {
+    super(console);
     this.settings = settings;
     this.scriptFile = scriptFile;
     this.projectRoot = projectRoot;
@@ -189,7 +189,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   //   return await this.coqInit();
   // }
 
-  public async setupCoqTop(wrapper: string|null) : Promise<void> {
+  private async setupCoqTop(wrapper: string|null) : Promise<void> {
     await Promise.all(this.readyToListen);
 
     var mainAddr = this.mainChannelServer.address();
@@ -222,7 +222,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   /** Start coqtop.
    * Use two ports: one for reading & one for writing; i.e. HOST:READPORT:WRITEPORT
    */
-  public async setupCoqTopReadAndWritePorts() : Promise<void> {    
+  private async setupCoqTopReadAndWritePorts() : Promise<void> {    
     await Promise.all(this.readyToListen);
 
     var mainAddr = this.mainChannelServer.address();

@@ -177,7 +177,7 @@ export class SentenceCollection implements vscode.TextDocument {
     const invalidatedSentences : number[] = [];
 
     for(let change of changes) {
-      if(textUtil.positionIsAfter(change.range.end, this.getLastPosition())) {
+      if(textUtil.positionIsAfterOrEqual(change.range.end, this.getLastPosition())) {
         invalidatedSentences.push(this.sentences.length);
         break;
       }
@@ -207,6 +207,10 @@ export class SentenceCollection implements vscode.TextDocument {
   public *getErrors() : Iterable<vscode.Diagnostic> {
     if(this.currentError)
       yield this.currentError;
+  }
+
+  public getSentenceText() : string {
+    return this.sentences.map(s => s.getText()).join('');
   }
 
   private getSentencePosition(sentenceIndex: number) : Position {
@@ -294,7 +298,7 @@ export class SentenceCollection implements vscode.TextDocument {
   }
 
   /**
-   * @param count -- minimum number of sentences to reparse
+   * @param indices -- a set of indices to reparse; parsing may continue after the sentence until a stable state is reached.
    * @return reparsed sentences
    */
   private reparseSentencesByIndices(indices: number[]) : {removed: Sentence[], added: Sentence[]} {
@@ -330,7 +334,8 @@ export class SentenceCollection implements vscode.TextDocument {
   }
 
   /**
-   * @param count -- minimum number of sentences to reparse
+   * @param start -- the index of the sentence to reparse
+   * @param minCount -- minimum number of sentences to reparse
    * @return removed sentences
    */
   private reparseSentences(start: number, minCount: number = 0) : {removed: Sentence[], added: Sentence[], endOfSentences: boolean} {
@@ -345,6 +350,13 @@ export class SentenceCollection implements vscode.TextDocument {
     const reparsed : Sentence[] = [];
     let prev = this.sentences[start-1] || null;
 
+    if(prev !== null && prev.getDocumentEndOffset() < currentOffset) {
+      // There is a gap between `start` and its predecessor sentence
+      // Begin parsing immediately after the predecessor.
+      currentPosition = prev.getRange().end;
+      currentOffset = prev.getDocumentEndOffset();
+    }
+
     try {
       for(let idx = 0; /**/; ++idx) {
         const parseText = this.documentText.substring(currentOffset);
@@ -352,12 +364,16 @@ export class SentenceCollection implements vscode.TextDocument {
 
         if(sent.type === "EOF") {// end of document
           const removed = this.sentences.splice(start, this.sentences.length - start, ...reparsed)
+          // next pointers are adjusted as sentences are reparsed; if none were reparsed, then adjust here:
+          if(reparsed.length == 0 && this.sentences[start-1])
+            this.sentences[start-1].next = null;
+          //
           removed.forEach((sent) => sent.dispose());
           return {removed: removed, added: reparsed, endOfSentences: true};
-        } if(idx >= minCount && start+idx < this.sentences.length && currentOffset+sent.text.length === this.sentences[start+idx].getDocumentEndOffset()) {
+        } if(idx >= minCount && start+idx < this.sentences.length && currentOffset+sent.text.length === this.sentences[start+idx].getDocumentEndOffset() && sent.text === this.sentences[start+idx].getText()) {
           // no need to parse further; keep remaining sentences
           const removed = this.sentences.splice(start, idx, ...reparsed)
-          // adjust prev/next references among the sentences
+          // adjust prev/next reference at the last reparsed sentence
           if(reparsed.length > 0) {
             const lastReparsed = reparsed[reparsed.length-1];
             lastReparsed.next = this.sentences[start+reparsed.length] || null;
@@ -367,11 +383,11 @@ export class SentenceCollection implements vscode.TextDocument {
             if(this.sentences[start-1])
               this.sentences[start-1].next = this.sentences[start] || null;
             if(this.sentences[start])
-            this.sentences[start].prev = this.sentences[start-1] || null;
+              this.sentences[start].prev = this.sentences[start-1] || null;
           }
-          this.sentences[start+reparsed.length-1].next = this.sentences[start+reparsed.length]||null;
-          if(start+reparsed.length < this.sentences.length)           
-            this.sentences[start+reparsed.length].prev = this.sentences[start+reparsed.length-1]||null;           
+          // this.sentences[start+reparsed.length-1].next = this.sentences[start+reparsed.length]||null;
+          // if(start+reparsed.length < this.sentences.length)           
+          //   this.sentences[start+reparsed.length].prev = this.sentences[start+reparsed.length-1]||null;           
           //
           removed.forEach((sent) => sent.dispose());
           return {removed: removed, added: reparsed, endOfSentences: false};
