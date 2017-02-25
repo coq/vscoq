@@ -130,15 +130,16 @@ export class CoqDocument implements TextDocument {
     if(this.project.settings.diagnostics.checkTextSynchronization) {
       const documentText = this.document.getText();
       const parsedSentencesText = this.document.getSentenceText();
+      await this.stm.flushEdits();
       const stmText = this.stm.getStatesText();
-      if(!documentText.startsWith(parsedSentencesText)) {
+      if(!documentText.startsWith(parsedSentencesText) && this.document.getDocumentVersion() === newVersion) {
         console.error("Document text differs from parsed-sentences text");
         console.error("On applied changes: ");
         changes.forEach(change => {
           console.error("  > " + textUtil.rangeToString(change.range) + " -> " + change.text);
         })
       }
-      if(!documentText.startsWith(stmText)) {
+      if(!documentText.startsWith(stmText) && this.stm.getDocumentVersion() === newVersion) {
         console.error("Document text differs from STM text");
         console.error("On applied changes: ");
         changes.forEach(change => {
@@ -146,8 +147,6 @@ export class CoqDocument implements TextDocument {
         })
       }
     }
-
-
   }
 
   public getSentences() : SentenceCollection {

@@ -85,7 +85,7 @@ export class SentenceCollection implements vscode.TextDocument {
     let match : RegExpExecArray;
     while(match = identRE.exec(line.text)) {
       if(match.index <= pos.character && pos.character <= match.index + match[0].length) {
-        console.log("qualid: " + match[0]);
+        // console.log("qualid: " + match[0]);
         const start = textUtil.positionAtRelative(line.range.start,line.text,match.index);
         const end = textUtil.positionAtRelative(line.range.start,line.text,match.index+match[0].length);
         return {
@@ -193,15 +193,20 @@ export class SentenceCollection implements vscode.TextDocument {
       }
     }
 
-    this.version = newVersion;
-
     try {
       const removed = this.reparseSentencesByIndices(invalidatedSentences);
       this.sentencesInvalidatedCallbacks.forEach((handler) => handler(removed.removed));
     } catch(err) {
       server.connection.console.warn("Error reparsing sentences: " + err.toString());
+    } finally {
+      this.version = newVersion;
     }
     
+  }
+
+  /** @returns the version of the document currently represented. The version is updated in response to each document change; the version is provided by the editor  */
+  public getDocumentVersion() : number {
+    return this.version;
   }
 
   public *getErrors() : Iterable<vscode.Diagnostic> {
@@ -306,7 +311,7 @@ export class SentenceCollection implements vscode.TextDocument {
       return {removed: [], added: [] };
 
     // sort in ascending order
-    indices = indices.sort();
+    indices = indices.sort((x,y) => x-y);
 
     const removed : Sentence[] = [];
     const added : Sentence[] = [];

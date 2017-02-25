@@ -147,12 +147,19 @@ export class CoqStateMachine {
     , private spawnCoqtop : ()=>coqtop.CoqTop
     , private callbacks: StateMachineCallbacks
   ) {
-    this.coqtop = this.spawnCoqtop();
+    this.startFreshCoqtop();
     // this.coqtop = new coqtop.CoqTop(this.project.settings.coqtop, scriptFile, this.project.getWorkspaceRoot(), this.console, {
     //   onFeedback: (x1) => this.onFeedback(x1),
     //   onMessage: (x1) => this.onCoqMessage(x1),
     //   onClosed: (error?: string) => this.onCoqClosed(error),
     // });
+  }
+
+  private startFreshCoqtop() {
+    this.coqtop = this.spawnCoqtop();
+    this.coqtop.onFeedback((x1) => this.onFeedback(x1));
+    this.coqtop.onMessage((x1) => this.onCoqMessage(x1));
+    this.coqtop.onClosed((error?: string) => this.onCoqClosed(error));
   }
 
   public dispose() {
@@ -226,7 +233,6 @@ export class CoqStateMachine {
    */
   private applyChangesToSentences(sortedChanges: TextDocumentContentChangeEvent[], updatedDocumentText: string) : State[] {
     const invalidatedSentences : State[] = [];
-
     try {
       const deltas = sortedChanges.map((c) => textUtil.toRangeDelta(c.range,c.text))
 
@@ -300,19 +306,27 @@ export class CoqStateMachine {
       return true;
 
     const invalidatedSentences = this.applyChangesToSentences(sortedChanges, updatedDocumentText);
-    this.version = newVersion;
 
-    if(invalidatedSentences.length === 0) {
-      this.callbacks.updateStmFocus(this.getFocusedPosition())
-      return true;
-    } else {
-//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      for(let sent of invalidatedSentences)
-        sent.unlink();
-      // We do not bother to await this async function
-      this.cancelInvalidatedSentences(invalidatedSentences);
-      return false;
+    try {
+      if(invalidatedSentences.length === 0) {
+        this.callbacks.updateStmFocus(this.getFocusedPosition())
+        return true;
+      } else {
+  //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        for(let sent of invalidatedSentences)
+          sent.unlink();
+        // We do not bother to await this async function
+        this.cancelInvalidatedSentences(invalidatedSentences);
+        return false;
+      }
+    } finally {
+      this.version = newVersion;
     }
+  }
+
+  /** @returns the version of the document that the STM recognizes */
+  public getDocumentVersion() : number {
+    return this.version;
   }
 
 
@@ -351,7 +365,7 @@ export class CoqStateMachine {
     if(this.coqtop)
       this.coqtop.dispose();
     this.coqtop = null;
-    this.coqtop = this.spawnCoqtop();
+    this.startFreshCoqtop()
   }
 
   /**
@@ -706,7 +720,7 @@ private routeId = 1;
       return true;
     else if(initialize) {
       if(!this.coqtop)
-        this.coqtop = this.spawnCoqtop();
+        this.startFreshCoqtop();
       let value = await this.coqtop.startCoq();
       this.initialize(value.stateId);
       return true;
@@ -1084,8 +1098,11 @@ private routeId = 1;
   }
 
   public async flushEdits() {
-    const releaseLock = await this.editLock.lock();
-    releaseLock();
+    // Wait until we can acquire the lock and there is no one else immediately waiting for the lock after us
+    while(this.editLock.isLocked()) {
+      const releaseLock = await this.editLock.lock();
+      releaseLock();
+    }
   }
 
   private async acquireCoq<T>(callback: () => T): Promise<T> {
