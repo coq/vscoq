@@ -292,7 +292,7 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
     return this.server.getCachedGoal(this.uri, pos);
   }
 
-  public finishComputations(): Thenable<proto.CommandResult> {
+  public finishComputations(): Thenable<void> {
     return this.server.finishComputations(this.uri);
   }
 
