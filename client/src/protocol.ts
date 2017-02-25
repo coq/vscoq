@@ -26,9 +26,6 @@ export interface Settings {
   coqtop: CoqTopSettings,
   coq: CoqSettings,
   prettifySymbolsMode?: PrettifySymbolsModeSettings,
-  diagnostics?: {
-    checkTextSynchronization?: boolean
-  }
 }
 
 
@@ -66,6 +63,11 @@ export interface CoqSettings {
   /** How to host external proof-views */
   externalViewScheme: "file" | "http",
   format: AutoFormattingSettings,
+  /** Misc. diagnostic options */
+  diagnostics?: {
+    /** After each document edit, check for inconsistencies between the STM, sentences, and document. */
+    checkTextSynchronization?: boolean,
+  }
 }
 
 export interface FailValue {

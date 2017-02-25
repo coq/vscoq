@@ -127,7 +127,7 @@ export class CoqDocument implements TextDocument {
       this.updateDiagnostics();
     }
 
-    if(this.project.settings.diagnostics.checkTextSynchronization) {
+    if(this.project.settings.coq.diagnostics && this.project.settings.coq.diagnostics.checkTextSynchronization) {
       const documentText = this.document.getText();
       const parsedSentencesText = this.document.getSentenceText();
       await this.stm.flushEdits();
