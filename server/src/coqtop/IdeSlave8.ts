@@ -9,10 +9,10 @@ import * as xmlTypes from './xml-protocol/CoqXmlProtocolTypes';
 import {AnnotatedText, normalizeText, textToDisplayString} from '../util/AnnotatedText';
 import {createDeserializer} from './xml-protocol/deserialize';
 
-import * as coqtop from './coqtop';
-import {Interrupted, CoqtopSpawnError, CallFailure, CommunicationError} from './coqtop';
-import {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './coqtop';
-import {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './coqtop';
+import * as coqtop from './CoqTop';
+import {Interrupted, CoqtopSpawnError, CallFailure, CommunicationError} from './CoqTop';
+import {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './CoqTop';
+import {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
 
 import {timeout} from '../util/Timer';
 
@@ -23,6 +23,9 @@ export enum IdeSlaveState {
   Connected,
   Error,
   Shutdown,
+}
+
+export class InternalError extends Error {
 }
 
 export class IdeSlaveNotConnectedError extends Error {
@@ -37,6 +40,9 @@ export class IdeSlave extends coqtop.IdeSlave {
   private controlChannelR : NodeJS.ReadableStream;
   private controlChannelW : NodeJS.WritableStream;
   private parser : coqXml.XmlStream|null = null;
+  private coqResultValueListener : {onValue: (value:coqProto.ValueReturn|coqProto.FailValue) => void, onError: (reason: any)=>void} | null = null;
+
+
   protected state = IdeSlaveState.Disconnected;
 
   protected console: vscode.RemoteConsole;
@@ -61,6 +67,15 @@ export class IdeSlave extends coqtop.IdeSlave {
       onOther: (tag: string, x: any) => this.doOnOther(tag, x),
       onError: (x: any) => this.doOnSerializationError(x)
     });
+    this.parser.on('error', err => {
+      if(this.coqResultValueListener)
+        this.coqResultValueListener.onError(err);
+    })
+    this.parser.on('response: value', value => {
+      if(this.coqResultValueListener)
+        this.coqResultValueListener.onValue(value);
+    });
+
     // this.mainChannelR.on('data', (data) => this.onMainChannelR(data));
     // this.controlChannelR.on('data', (data) => this.onControlChannelR(data));
 
@@ -178,18 +193,26 @@ export class IdeSlave extends coqtop.IdeSlave {
    * is installed on time
    */
   private coqGetResultOnce(logIdent?: string) : Promise<coqProto.ValueReturn> {
+    if(this.coqResultValueListener)
+       new InternalError('Multiple handlers are being registered for the same response value from Coqtop.') 
     return new Promise<coqProto.ValueReturn>((resolve,reject) => {
-      this.parser.once('error', err => reject(new CommunicationError(err)))
-      this.parser.once('response: value', (value:coqProto.ValueReturn|coqProto.FailValue) => {
-        try {
-          if(value.status === 'good')
-            resolve(value);
-          else
-            this.validateValue(value,logIdent);
-        } catch(error) {
-          reject(error);
+      this.coqResultValueListener = {
+        onValue: (value:coqProto.ValueReturn|coqProto.FailValue) => {
+          this.coqResultValueListener = null;
+          try {
+            if(value.status === 'good')
+              resolve(value);
+            else
+              this.validateValue(value,logIdent);
+          } catch(error) {
+            reject(error);
+          }
+        },
+        onError: err => {
+          this.coqResultValueListener = null;
+          reject(new CommunicationError(err));
         }
-      });
+      }
     });
   }
 
@@ -468,7 +491,7 @@ export class IdeSlave extends coqtop.IdeSlave {
     this.checkState();
 
     const coqResult = this.coqGetResultOnce('GetOptions');
-    const coqMessageResult = this.coqGetMessageOnce();
+    // const coqMessageResult = this.coqGetMessageOnce();
     this.console.log('--------------------------------');
     this.console.log(`Call GetOptions()`);
     this.writeMain(`<call val="GetOptions"><unit/></call>`);    
@@ -489,7 +512,7 @@ export class IdeSlave extends coqtop.IdeSlave {
       }
     }
     const coqResult = this.coqGetResultOnce('SetOptions');
-    const coqMessageResult = this.coqGetMessageOnce();
+    // const coqMessageResult = this.coqGetMessageOnce();
     this.console.log('--------------------------------');
     this.console.log(`Call SetOptions(...)`);
     // this.console.log(`Call SetOptions(${xmlTypes.encode(xmlOptions)})`);

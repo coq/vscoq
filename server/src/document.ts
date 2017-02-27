@@ -4,7 +4,7 @@ import * as util from 'util';
 import {TextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic, DiagnosticSeverity} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
 import {CancellationToken} from 'vscode-jsonrpc';
-import {Interrupted, CoqtopSpawnError, CallFailure, AddResult, EditAtResult} from './coqtop/coqtop';
+import {Interrupted, CoqtopSpawnError, CallFailure, AddResult, EditAtResult} from './coqtop/CoqTop';
 import * as thmProto from './protocol';
 import * as coqProto from './coqtop/coq-proto';
 import * as coqParser from './parsing/coq-parser';
