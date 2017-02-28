@@ -29,6 +29,15 @@ export class CoqProject implements vscode.Disposable {
 
     this.activeEditor = vscode.window.activeTextEditor;
 
+    this.currentSettings = vscode.workspace.getConfiguration("coq") as any as proto.CoqSettings;
+    this.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => {
+      editorAssist.reload();
+      this.currentSettings = vscode.workspace.getConfiguration("coq") as any as proto.CoqSettings;
+      if(this.currentSettings.moveCursorToFocus === undefined)
+        this.currentSettings.moveCursorToFocus = true;
+    }));
+
+
     vscode.workspace.onDidChangeTextDocument((params) => this.onDidChangeTextDocument(params));
     vscode.workspace.onDidOpenTextDocument((params) => this.onDidOpenTextDocument(params));
     vscode.workspace.onDidCloseTextDocument((params) => this.onDidCloseTextDocument(params));
@@ -37,13 +46,6 @@ export class CoqProject implements vscode.Disposable {
     vscode.workspace.textDocuments
       .forEach((textDoc) => this.tryLoadDocument(textDoc));
 
-    this.currentSettings = vscode.workspace.getConfiguration("coq") as any as proto.CoqSettings;
-    this.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => {
-      editorAssist.reload();
-      this.currentSettings = vscode.workspace.getConfiguration("coq") as any as proto.CoqSettings;
-      if(this.currentSettings.moveCursorToFocus === undefined)
-        this.currentSettings.moveCursorToFocus = true;
-    }));
   }
 
   public static create(context: vscode.ExtensionContext) {
