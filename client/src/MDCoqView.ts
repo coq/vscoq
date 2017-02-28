@@ -42,6 +42,7 @@ export class MDCoqView implements view.CoqView {
   private currentPos = new vscode.Position(0,0);
   private filename : string;
   public onresize: (columns: number) => Thenable<void> = null;
+  private visible = false;
 
   constructor(uri: vscode.Uri) {
     this.docUri = uri;
@@ -170,11 +171,16 @@ export class MDCoqView implements view.CoqView {
   }
   
   public async show() {
+    this.visible = true;
     await vscode.window.showTextDocument(this.editor.document,vscode.ViewColumn.Two);
   }
 
   public showExternal() : Promise<void> {
     return Promise.reject('external view is unsupported');
+  }
+
+  public isVisible() : boolean {
+    return this.visible;
   }
 
 }

@@ -61,6 +61,7 @@ describe("Coqtop 8.5", function() {
     wrapper: "",
     args: [],
     traceXmlProtocol: false,    
+    startOn: "open-script",
   }
 
   let dummyConsole = {

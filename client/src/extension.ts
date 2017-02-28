@@ -23,7 +23,6 @@ let project : CoqProject;
 export var extensionContext : ExtensionContext;
 
 export function activate(context: ExtensionContext) {
-
   console.log(`execArgv: ${process.execArgv.join(' ')}`);
   console.log(`argv: ${process.argv.join(' ')}`);
   extensionContext = context;

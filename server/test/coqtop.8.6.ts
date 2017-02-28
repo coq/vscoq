@@ -60,7 +60,8 @@ describe("Coqtop 8.6", function() {
     autoUseWrapper: false,
     wrapper: "",
     args: [],
-    traceXmlProtocol: false,    
+    traceXmlProtocol: false,
+    startOn: "open-script",
   }
 
   let dummyConsole = {

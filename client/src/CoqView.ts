@@ -57,4 +57,6 @@ export interface CoqView extends vscode.Disposable {
   show(preserveFocus: boolean, pane: vscode.ViewColumn) : Promise<void>;
   showExternal(scheme: "file"|"http", command?: (url:string)=>{module: string, args: string[]}) : Promise<void>;
 
+  isVisible() : boolean;
+
 }

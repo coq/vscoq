@@ -67,6 +67,12 @@
           "default": false,
           "description": "If using the coqtop-wrapper, instruct it to generate a trace file of its xml-protocol interactions. The trace file will be located adjacent to the Coq script with extension `.coq-trace.xml`"
         },
+        "coqtop.startOn": {
+          "type": "string",
+          "enum": ["open-script", "interaction"],
+          "default": "interaction",
+          "description": "When to start an instance of coqtop: when a Coq script is opened (`open-script`) or else when the user begins interaction (`interaction`; default)."
+        },
 				"coq.loadCoqProject": {
 					"type": "boolean",
 					"default": true,
@@ -86,6 +92,12 @@
           "type": "boolean",
           "default": false,
           "description": "If true, then auto-update the proof view with the cached state at the cursor"
+        },
+        "coq.showProofViewOn": {
+          "type": "string",
+          "enum": ["open-script", "first-interaction", "manual"],
+          "default": "first-interaction",
+          "description": "Create the proof view when a Coq script is opened, the user first interacts with coqtop, or else let the user do it manually."
         },
         "coq.externalViewUrlCommand": {
           "anyOf": [{"enum": ["firefox ${url}","chrome ${url}","'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' ${url}"]}, {"type": "string"}],

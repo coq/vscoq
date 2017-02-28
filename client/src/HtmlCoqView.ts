@@ -125,6 +125,7 @@ export class HtmlCoqView implements view.CoqView {
   public onresize: (columns: number) => Thenable<void> = null;
   private coqViewUri : vscode.Uri;
   private currentSettings : SettingsState = {}; 
+  private visible = false;
   
   constructor(uri: vscode.Uri, context: vscode.ExtensionContext) {
     if(coqViewProvider===null) {    
@@ -193,9 +194,15 @@ export class HtmlCoqView implements view.CoqView {
     return this.coqViewUri;
   }
 
+  public isVisible() {
+    return this.visible;
+  }
+
   public async show(preserveFocus: boolean, pane: vscode.ViewColumn) {
     if(!this.coqViewUri)
       await this.createBuffer();
+
+    this.visible = true;
 
     // const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
     await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, pane, "ProofView: " + path.basename(this.docUri.fsPath));
@@ -234,10 +241,14 @@ export class HtmlCoqView implements view.CoqView {
     }
   }
   
-  public async update(state: proto.CommandResult, clients = this.server.clients) {
+  private async updateClients(state: proto.CommandResult, clients = this.server.clients) {
     this.currentState = state;
     this.sendMessage({command: 'goal-update', goal: state}, clients);
   }
+
+  public update(state: proto.CommandResult) {
+    this.updateClients(state, this.server.clients);
+  } 
   
 
   private updateSettings(clients = this.server.clients) {

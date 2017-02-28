@@ -9,6 +9,7 @@ import * as psm from './prettify-symbols-mode';
 
 
 export class SimpleCoqView implements view.CoqView {
+  private visible = false;
   private out: vscode.OutputChannel;
   public onresize: (columns: number) => Thenable<void> = null;
 
@@ -57,11 +58,16 @@ export class SimpleCoqView implements view.CoqView {
   }
 
   public async show() {
+    this.visible = true;
     await this.out.show(vscode.ViewColumn.Two,true);
   }
 
   public showExternal() : Promise<void> {
     return Promise.reject('external view is unsupported');
+  }
+
+  public isVisible() : boolean {
+    return this.visible;
   }
 
 }

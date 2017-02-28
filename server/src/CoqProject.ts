@@ -113,7 +113,7 @@ export class CoqProject {
     var doc = this.coqInstances.get(uri);
     this.coqInstances.delete(uri);
     if(doc) {
-      doc.close();
+      doc.dispose();
     }
   }
   
@@ -125,7 +125,7 @@ export class CoqProject {
   }
 
   public shutdown() {
-    this.coqInstances.forEach((x) => x.close());
+    this.coqInstances.forEach((x) => x.dispose());
     this.coqInstances.clear();
   }
   

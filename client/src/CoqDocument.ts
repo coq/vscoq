@@ -11,7 +11,7 @@ import * as os from 'os';
 
 import {decorations} from './Decorations';
 import {Highlights} from './Highlights';
-import {CoqView, SimpleCoqView} from './SimpleCoqView';
+// import {CoqView, SimpleCoqView} from './SimpleCoqView';
 import {MDCoqView} from './MDCoqView';
 import {HtmlCoqView} from './HtmlCoqView';
 import {HtmlLtacProf} from './HtmlLtacProf';
@@ -19,7 +19,7 @@ import * as proto from './protocol';
 import * as textUtil from './text-util';
 import {extensionContext} from './extension';
 import {CoqDocumentLanguageServer} from './CoqLanguageServer';
-import {adjacentPane} from './CoqView';
+import {CoqView, adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
 import {CoqProject} from './CoqProject';
 import * as psm from './prettify-symbols-mode';
@@ -53,7 +53,7 @@ export class CoqDocument implements vscode.Disposable {
   public highlights = new Highlights();
   private document: vscode.TextDocument = null;
   private langServer: CoqDocumentLanguageServer;
-  private view : CoqView;
+  private view : CoqView|null = null;
   private infoOut: vscode.OutputChannel;
   private queryOut: vscode.OutputChannel;
   private noticeOut: vscode.OutputChannel;
@@ -78,7 +78,8 @@ export class CoqDocument implements vscode.Disposable {
     this.view = new HtmlCoqView(document.uri, extensionContext);
     // this.view = new SimpleCoqView(uri.toString());
     // this.view = new MDCoqView(uri);
-    this.view.show(true,adjacentPane(this.currentViewColumn()));
+    if(this.project.settings.showProofViewOn === "open-script")
+      this.view.show(true,adjacentPane(this.currentViewColumn()));
 
     this.langServer.onUpdateHighlights((p) => this.onDidUpdateHighlights(p));
     this.langServer.onMessage((p) => this.onCoqMessage(p));
@@ -112,7 +113,7 @@ export class CoqDocument implements vscode.Disposable {
       this.viewGoalAt(e,e.selections[0].active);
     else {
       const value = await this.langServer.getGoal();
-      this.view.update(value);
+      this.updateView(value, false);
     }
     
   }
@@ -339,12 +340,18 @@ export class CoqDocument implements vscode.Disposable {
     return true;
   }
 
+  private updateView(state: proto.CommandResult, interactive = false) {
+    if(interactive && !this.view.isVisible() && this.project.settings.showProofViewOn === "first-interaction")
+      this.view.show(true,adjacentPane(this.currentViewColumn()));
+    this.view.update(state);
+  }
+
   public async stepForward(editor: TextEditor) {
     this.statusBar.setStateWorking('Stepping forward');
     try {
       this.rememberCursors();
       const value = await this.langServer.stepForward();
-      this.view.update(value);
+      this.updateView(value, true);
       this.handleResult(value);
     } catch (err) {
     }
@@ -356,7 +363,7 @@ export class CoqDocument implements vscode.Disposable {
     try {
       this.rememberCursors();
       const value = await this.langServer.stepBackward();
-      this.view.update(value);
+      this.updateView(value, true);
       if(this.handleResult(value))
         this.statusBar.setStateReady();
       // const range = new vscode.Range(editor.document.positionAt(value.commandStart), editor.document.positionAt(value.commandEnd));
@@ -380,7 +387,7 @@ export class CoqDocument implements vscode.Disposable {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
       const value = await this.langServer.interpretToPoint(editor.selection.active, synchronous);
-      this.view.update(value);
+      this.updateView(value, true);
       this.handleResult(value);
     } catch (err) {
       console.warn("Interpret to point failed: " + err.toString());
@@ -395,7 +402,7 @@ export class CoqDocument implements vscode.Disposable {
     try {
       const params = { uri: this.documentUri };
       const value = await this.langServer.interpretToEnd(synchronous);
-      this.view.update(value);
+      this.updateView(value, true);
       this.handleResult(value);
     } catch (err) { }
     this.statusBar.setStateReady();
@@ -499,7 +506,7 @@ export class CoqDocument implements vscode.Disposable {
         pos = editor.selection.active;
       const proofview = await this.langServer.getCachedGoal(pos);
       if(proofview.type === "proof-view")
-        this.view.update(proofview);
+        this.updateView(proofview, false);
     } catch(err) { }   
  }
   

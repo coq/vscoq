@@ -40,6 +40,8 @@ export interface CoqTopSettings {
   args: string[];
   /** If using the coqtop-wrapper, instruct it to generate a trace file of its xml-protocol interactions. The trace file will be located adjacent to the Coq script with extension `.coq-trace.xml`. @default `false` */
   traceXmlProtocol: boolean;
+  /** When should an instance of coqtop be started for a Coq script */
+  startOn: "open-script" | "interaction",
 }
 
 export interface AutoFormattingSettings {
@@ -63,6 +65,8 @@ export interface CoqSettings {
   /** How to host external proof-views */
   externalViewScheme: "file" | "http",
   format: AutoFormattingSettings,
+  /** When to createa proof view for a script: when the script is opened, on first interaction, or else manually */
+  showProofViewOn: "open-script" | "first-interaction" | "manual",
   /** Misc. diagnostic options */
   diagnostics?: {
     /** After each document edit, check for inconsistencies between the STM, sentences, and document. */

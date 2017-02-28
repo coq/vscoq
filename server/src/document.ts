@@ -33,7 +33,6 @@ export interface TextDocumentItem {
 }
 
 
-
 export interface MessageCallback {
   sendMessage(level: string, message: AnnotatedText) : void;
 }
@@ -70,7 +69,7 @@ export class CoqDocument implements TextDocument {
   private project: CoqProject;
 
 
-  private stm: CoqStateMachine;
+  private stm: CoqStateMachine|null = null;
   private clientConsole: RemoteConsole;
   private callbacks : MessageCallback & ResetCallback & LtacProfCallback;
   private document: SentenceCollection = null;
@@ -91,11 +90,8 @@ export class CoqDocument implements TextDocument {
     this.project = project;
     this.feedback = new FeedbackSync(callbacks, 200);
 
-    this.resetCoq();
-    // this.reset();
-    
-    // Start a worker to handle incomming commands and text edits in a sequential manner
-    // this.interactionLoop();
+    if(project.settings.coqtop.startOn === "open-script")
+      this.resetCoq();
   }
 
 
@@ -127,7 +123,7 @@ export class CoqDocument implements TextDocument {
       this.updateDiagnostics();
     }
 
-    if(this.project.settings.coq.diagnostics && this.project.settings.coq.diagnostics.checkTextSynchronization) {
+    if(this.isStmRunning() && this.project.settings.coq.diagnostics && this.project.settings.coq.diagnostics.checkTextSynchronization) {
       const documentText = this.document.getText();
       const parsedSentencesText = this.document.getSentenceText();
       await this.stm.flushEdits();
@@ -594,7 +590,7 @@ export class CoqDocument implements TextDocument {
 
   // }
   
-  public async close() {
+  public async dispose() {
     if(this.isStmRunning()) {
       await this.stm.shutdown();
       this.stm = null;
