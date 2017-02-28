@@ -1,5 +1,4 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-    "terminal.integrated.shell.windows": "C:\\Windows\\system32\\WindowsPowerShell\\v1.0\\powershell.exe",
 	"typescript.tsdk": "./node_modules/typescript/lib" // we want to use the TS server from our node_modules folder to control its version
 }

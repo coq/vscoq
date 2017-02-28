@@ -300,7 +300,7 @@ span[class~=charsRemoved][class~=substitution]::before {
   color: limegreen;
 }
 .vscode-light .richpp .constr-type {
-  color: lightcoral;
+  color: coral;
 }
 .vscode-light .richpp .constr-variable {
   color: lightseagreen;
