@@ -237,15 +237,15 @@ export class CoqDocument implements vscode.Disposable {
   /** Bring the focus into the editor's view, but only scroll rightward
    * if the focus is not at the end of a line
    * */
-  public setCursorToFocus(editor: vscode.TextEditor, scroll: boolean = true, scrollHorizontal = false) {
+  public setCursorToPosition(pos: vscode.Position, editor: vscode.TextEditor, scroll: boolean = true, scrollHorizontal = false) {
     if(!editor)
       return;
-    editor.selections = [new vscode.Selection(this.focus, this.focus)]
+    editor.selections = [new vscode.Selection(pos, pos)]
     if(scroll) {
-      if (scrollHorizontal || textUtil.positionIsBefore(this.focus, this.document.lineAt(this.focus.line).range.end))
-        editor.revealRange(new vscode.Range(this.focus, this.focus), vscode.TextEditorRevealType.Default)
+      if (scrollHorizontal || textUtil.positionIsBefore(pos, this.document.lineAt(pos.line).range.end))
+        editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.Default)
       else
-        editor.revealRange(new vscode.Range(this.focus.line, 0, this.focus.line + 1, 0), vscode.TextEditorRevealType.Default)
+        editor.revealRange(new vscode.Range(pos.line, 0, pos.line + 1, 0), vscode.TextEditorRevealType.Default)
     }
   }
 
@@ -255,7 +255,7 @@ export class CoqDocument implements vscode.Disposable {
       if(moveCursor) {
         // adjust the cursor position
         for(let editor of this.cursorUnmovedSinceCommandInitiated)
-          this.setCursorToFocus(editor, editor === vscode.window.activeTextEditor);
+          this.setCursorToPosition(this.focus, editor, editor === vscode.window.activeTextEditor);
       }
 
       // update the focus decoration
@@ -309,7 +309,13 @@ export class CoqDocument implements vscode.Disposable {
   private handleResult(value: proto.CommandResult) {
     if(value.type === 'busy')
       return false;
-    if(value.type === 'not-running') {
+    else if(value.type === 'failure' && value.range) {
+      this.updateFocus(value.focus, false);
+      if(this.project.settings.moveCursorToFocus) {
+        for(let editor of this.cursorUnmovedSinceCommandInitiated)
+          this.setCursorToPosition(new vscode.Position(value.range.start.line, value.range.start.character), editor, editor === vscode.window.activeTextEditor);
+      }
+    } else if(value.type === 'not-running') {
       this.updateFocus(undefined, false);
       if(value.reason === 'spawn-failed') {
         const getCoq = {title: "Get Coq", id: 0};
@@ -324,10 +330,10 @@ export class CoqDocument implements vscode.Disposable {
             }
           })
       }
-    } else
-      this.updateFocus(value.focus, this.project.settings.moveCursorToFocus);
-    if(value.type === 'interrupted')
+    } else if(value.type === 'interrupted')
       this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
+    else
+      this.updateFocus(value.focus, this.project.settings.moveCursorToFocus);
 
     return true;
   }
@@ -528,6 +534,10 @@ export class CoqDocument implements vscode.Disposable {
       if(proofview.type === "proof-view")
         this.updateView(proofview, false);
     } catch(err) { }   
+ }
+
+ public getCurrentFocus() {
+   return this.focus;
  }
   
 }
