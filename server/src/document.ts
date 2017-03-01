@@ -777,16 +777,7 @@ export class CoqDocument implements TextDocument {
     else if(!this.isStmRunning())
       return {type: 'not-running', reason: 'not-started'};
     // This is silly (Typescript is not yet smart enough)
-    else if(goal.type === 'proof-view')
-      return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
-    else if(goal.type === 'no-proof')
-      return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
-    else if(goal.type === 'failure')
-      return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
-    else if(goal.type === 'interrupted')
-      return Object.assign(goal,<thmProto.FocusPosition>{focus: this.stm.getFocusedPosition()});
-    else if(goal.type === 'busy')
-      return goal;
+    return {focus: this.stm.getFocusedPosition(), ...goal};
 
   //     export type GoalResult = proto.NoProofTag | proto.NotRunningTag |
   // (proto.FailValue & proto.FailureTag) |

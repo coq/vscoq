@@ -155,7 +155,6 @@ export interface ProofView {
   backgroundGoals?: UnfocusedGoalStack,
   shelvedGoals: Goal[],
   abandonedGoals: Goal[],
-  /** The script location where the goal begins */
   focus: vscode.Position,
 }
 

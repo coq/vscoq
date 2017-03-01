@@ -351,7 +351,7 @@ export class CoqStateMachine {
       return null;
     } catch (error) {
       if(error instanceof AddCommandFailure)
-        return Object.assign(Object.assign(error, <proto.FailureTag>{type: 'failure'}), <proto.FocusPosition>{focus: this.getFocusedPosition()});
+        return {...error, type: 'failure', focus: this.getFocusedPosition()};
       else if(error instanceof coqtop.CoqtopSpawnError)
         return {type: "not-running", reason: "spawn-failed", coqtop: error.binPath}
       else
@@ -528,7 +528,7 @@ export class CoqStateMachine {
       return null;
     } catch (error) {
       if(error instanceof AddCommandFailure) {
-        return Object.assign(Object.assign(error, <proto.FailureTag>{type: 'failure'}), <proto.FocusPosition>{focus: this.getFocusedPosition()});
+        return {...error, type: 'failure', focus: this.getFocusedPosition()};
       } else if(error instanceof coqtop.CoqtopSpawnError)
         return {type: "not-running", reason: "spawn-failed", coqtop: error.binPath}
       else
@@ -892,7 +892,7 @@ private routeId = 1;
           backgroundGoals: this.convertUnfocusedGoals(goals.backgroundGoals),
           shelvedGoals: (goals.shelvedGoals || []).map(this.parseConvertGoal),
           abandonedGoals: (goals.abandonedGoals || []).map(this.parseConvertGoal),
-          focus: this.getFocusedPosition(),
+          focus: this.getFocusedPosition()
         });
         this.focusedSentence.setGoal(pv);
         return {type: 'proof-view', ...this.focusedSentence.getGoal(this.goalsCache)};

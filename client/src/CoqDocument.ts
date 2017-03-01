@@ -346,6 +346,17 @@ export class CoqDocument implements vscode.Disposable {
     if(interactive && !this.view.isVisible() && this.project.settings.showProofViewOn === "first-interaction")
       this.view.show(true,adjacentPane(this.currentViewColumn()));
     this.view.update(state);
+    if(state.type === 'proof-view' && state.focus.line !== this.focus.line) {
+      const focusRange = new vscode.Range(state.focus.line,0,state.focus.line,1);
+      for(let editor of this.allEditors()) {
+        editor.setDecorations(decorations.proofViewFocus, [focusRange]);
+      }
+    } else {
+      for(let editor of this.allEditors()) {
+        editor.setDecorations(decorations.proofViewFocus, []);
+      }
+    } 
+
   }
 
   public async stepForward(editor: TextEditor) {

@@ -3,17 +3,7 @@ import * as vscode from 'vscode';
 
 const STM_FOCUS_IMAGE = "./images/stm-focus.svg";
 const STM_FOCUS_IMAGE_BEFORE = "./images/stm-focus-before.svg";
-
-interface Decorations {
-  readonly parsing: vscode.TextEditorDecorationType;
-  readonly processing: vscode.TextEditorDecorationType;
-  readonly stateError: vscode.TextEditorDecorationType;
-  readonly processed: vscode.TextEditorDecorationType
-  readonly incomplete: vscode.TextEditorDecorationType; // Example: a Qed. whose proof failed.
-  readonly axiom: vscode.TextEditorDecorationType;
-  readonly focus : vscode.TextEditorDecorationType;
-  readonly focusBefore : vscode.TextEditorDecorationType;
-}
+const STM_FOCUS_IMAGE_PROOF_VIEW = "./images/stm-focus-proof-view.svg";
 
 interface DecorationsInternal extends Decorations {
   parsing: vscode.TextEditorDecorationType;
@@ -24,7 +14,10 @@ interface DecorationsInternal extends Decorations {
   axiom: vscode.TextEditorDecorationType;
   focus : vscode.TextEditorDecorationType;
   focusBefore : vscode.TextEditorDecorationType;
+  proofViewFocus : vscode.TextEditorDecorationType;
 }
+
+type Decorations = Readonly<DecorationsInternal>;
 
 
 export let decorations : Decorations;
@@ -88,7 +81,11 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
     focusBefore: create({
       gutterIconPath: context.asAbsolutePath(STM_FOCUS_IMAGE_BEFORE),
       gutterIconSize: "contain"
-    })
+    }),
+    proofViewFocus: create({
+      gutterIconPath: context.asAbsolutePath(STM_FOCUS_IMAGE_PROOF_VIEW),
+      gutterIconSize: "contain"
+    }),
   };
 
   decorations = decorationsInteral;
