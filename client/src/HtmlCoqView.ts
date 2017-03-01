@@ -206,7 +206,8 @@ export class HtmlCoqView implements view.CoqView {
     // this.editor.hide();
   }
 
-  private sendMessage(message: ProofViewProtocol, clients = this.server.clients) {
+  private async sendMessage(message: ProofViewProtocol, clients = this.server.clients) {
+    await this.serverReady;
     if(!clients)
       clients = this.server.clients;
     for(const connection of clients) {
@@ -218,7 +219,7 @@ export class HtmlCoqView implements view.CoqView {
   
   private async updateClients(state: proto.CommandResult, clients = this.server.clients) {
     this.currentState = state;
-    this.sendMessage({command: 'goal-update', goal: state}, clients);
+    await this.sendMessage({command: 'goal-update', goal: state}, clients);
   }
 
   public update(state: proto.CommandResult) {
@@ -226,13 +227,13 @@ export class HtmlCoqView implements view.CoqView {
   } 
   
 
-  private updateSettings(clients = this.server.clients) {
+  private async updateSettings(clients = this.server.clients) {
     this.currentSettings.fontFamily = vscode.workspace.getConfiguration("editor").get("fontFamily") as string;
     this.currentSettings.fontSize = `${vscode.workspace.getConfiguration("editor").get("fontSize") as number}px`;
     this.currentSettings.fontWeight = vscode.workspace.getConfiguration("editor").get("fontWeight") as string;
     this.currentSettings.cssFile = decodeURIComponent(proofViewCSSFile().toString());
     this.currentSettings.prettifySymbolsMode = psm.isEnabled();
-    this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>(this.currentSettings,{command: 'settings-update'}), clients);
+    await this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>(this.currentSettings,{command: 'settings-update'}), clients);
   }
 
   private static async shouldResetStyleSheet() : Promise<boolean> {
