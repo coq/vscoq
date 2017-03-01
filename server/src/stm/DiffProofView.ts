@@ -1,9 +1,10 @@
 // 'use strict';
 
 import * as coqProto from '../coqtop/coq-proto';
-import {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAnnotation, ScopedText} from '../protocol';
+import {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAnnotation, ScopedText, UnfocusedGoalStack} from '../protocol';
 import * as text from '../util/AnnotatedText';
 import * as server from '../server';
+import * as vscode from 'vscode-languageserver';
 
 
 
@@ -70,14 +71,15 @@ function diffGoals(oldGoals: Goal[], newGoals: Goal[]) : Goal[] {
 
 }
 
-export function diffProofView(oldState: ProofView, newState: ProofView) : ProofView {
+type ProofViewNoFocus = {
+    goals: Goal[];
+    backgroundGoals?: UnfocusedGoalStack,
+    shelvedGoals: Goal[],
+    abandonedGoals: Goal[],
+  };
+export function diffProofView(oldState: ProofViewNoFocus, newState: ProofView) : ProofView {
   try {
-    return {
-      goals: diffGoals(oldState.goals, newState.goals),
-      abandonedGoals: newState.abandonedGoals,
-      backgroundGoals: newState.backgroundGoals,
-      shelvedGoals: newState.shelvedGoals,
-    }
+    return {...newState, goals: diffGoals(oldState.goals, newState.goals)};
   } catch(err) {
     server.connection.console.error('diffGoals threw an exception: ' + err.toString());
     return newState;

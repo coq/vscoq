@@ -91,7 +91,13 @@
         "coq.autoRevealProofStateAtCursor": {
           "type": "boolean",
           "default": false,
-          "description": "If true, then auto-update the proof view with the cached state at the cursor"
+          "description": "If `true`, then auto-update the proof view with the cached state of the sentence the at the cursor. States are only cached when stepping through a proof, so the proof view will not be updated if e.g. the sentence was processed asynchronously and never had direct focus."
+        },
+        "coq.revealProofStateAtCursorDirection": {
+          "type": "string",
+          "enum": ["preceding", "subsequent"],
+          "default": "preceding",
+          "description": "Controls whether viewing the state of a sentence reveaks either the parent/source/preceding or child/subsequent state."
         },
         "coq.showProofViewOn": {
           "type": "string",

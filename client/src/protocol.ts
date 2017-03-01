@@ -60,6 +60,8 @@ export interface CoqSettings {
   interpretToEndOfSentence: boolean,
   /** Auto-reveal proof-state at cursor */
   autoRevealProofStateAtCursor: boolean,
+  /** Reveal the preceding or subsequent proof state w.r.t. a position */
+  revealProofStateAtCursorDirection: "preceding" | "subsequent"
   /** Command to view a uri in an external browser */
   externalViewUrlCommand: string,
   /** How to host external proof-views */
@@ -153,6 +155,8 @@ export interface ProofView {
   backgroundGoals?: UnfocusedGoalStack,
   shelvedGoals: Goal[],
   abandonedGoals: Goal[],
+  /** The script location where the goal begins */
+  focus: vscode.Position,
 }
 
 export interface CommandInterrupted {
@@ -228,6 +232,7 @@ export namespace GoalRequest {
 }
 export interface CachedGoalParams extends CoqTopParams {
   position: vscode.Position,
+  direction: "preceding"|"subsequent",
 }
 export namespace CachedGoalRequest { 
   export const type = new RequestType<CachedGoalParams, CommandResult, void, void>('coqtop/cachedGoal')

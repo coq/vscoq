@@ -187,7 +187,7 @@ function print(editor: TextEditor, edit: TextEditorEdit) {
 function viewProofStateAt(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
     doc.viewGoalAt(editor)
-  )
+  );
 }
 
 function viewCurrentProofState(editor: TextEditor, edit: TextEditorEdit) {

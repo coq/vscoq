@@ -55,7 +55,9 @@ export class CoqDocument implements vscode.Disposable {
   private infoOut: vscode.OutputChannel;
   private queryOut: vscode.OutputChannel;
   private noticeOut: vscode.OutputChannel;
+  /** Tracks which editors of this document have not had cursors positions changed since the last call to `rememberCursors()`. When stepping forward, the cursor is advanced for all editors whose cursors have not moved since the previous step. */
   private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
+  /** Coq STM focus  */
   private focus: vscode.Position;
   private project: CoqProject;
   private currentLtacProfView: HtmlLtacProf|null = null;
@@ -503,7 +505,7 @@ export class CoqDocument implements vscode.Disposable {
     try {
       if(!pos)
         pos = editor.selection.active;
-      const proofview = await this.langServer.getCachedGoal(pos);
+      const proofview = await this.langServer.getCachedGoal(pos, this.project.settings.revealProofStateAtCursorDirection);
       if(proofview.type === "proof-view")
         this.updateView(proofview, false);
     } catch(err) { }   

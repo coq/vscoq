@@ -1,4 +1,5 @@
 import {ProofView,Goal,UnfocusedGoalStack} from '../protocol';
+import * as vscode from 'vscode-languageserver';
 
 export type GoalId  = number;
 
@@ -14,6 +15,13 @@ export interface ProofViewReference {
   shelvedGoals: GoalId[],
   abandonedGoals: GoalId[],
 }
+
+type ProofViewNoFocus = {
+    goals: Goal[];
+    backgroundGoals?: UnfocusedGoalStack,
+    shelvedGoals: Goal[],
+    abandonedGoals: Goal[],
+  };
 
 /**
  * Caches goals, which can be shared between many STM states.
@@ -68,7 +76,7 @@ export class GoalsCache {
       }
   }
 
-  public getProofView(state: ProofViewReference) : ProofView {
+  public getProofView(state: ProofViewReference) : ProofViewNoFocus {
     return {
       goals: state.goals.map(id => this.goalsCache.get(id)),
       abandonedGoals: state.abandonedGoals.map(id => this.goalsCache.get(id)),

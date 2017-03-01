@@ -190,7 +190,7 @@ connection.onRequest(coqproto.GoalRequest.type, (params: coqproto.CoqTopParams, 
 });
 connection.onRequest(coqproto.CachedGoalRequest.type, (params: coqproto.CachedGoalParams, token: CancellationToken) => {
   return project.lookup(params.uri)
-    .getCachedGoal(params.position);
+    .getCachedGoal(params.position, params.direction);
 });
 connection.onRequest(coqproto.QueryRequest.type, async (params: coqproto.CoqTopQueryParams, token: CancellationToken) => {
   return { searchResults: await project.lookup(params.uri).query(params.queryFunction, params.query) || "" };

@@ -440,16 +440,27 @@ export class CoqStateMachine {
    * Return the cached goal for the given position
    * @throws FailValue
    */
-  public async getCachedGoal(pos: vscode.Position) : Promise<GoalResult> {
+  public async getCachedGoal(pos: vscode.Position, direction: "preceding"|"subsequent") : Promise<GoalResult> {
     try {
-      const state = this.getStateAt(pos);
-      if(state && state.getParent() && state.getParent().hasGoal())
-        return Object.assign({type: 'proof-view'} as {type: 'proof-view'}, state.getParent().getGoal(this.goalsCache));
+      const state = (direction==="subsequent" ? this.getStateAt(pos) : null) || this.getPrecedingStateAt(pos);
+      if(state && state.hasGoal())
+        return Object.assign({type: 'proof-view'} as {type: 'proof-view'}, state.getGoal(this.goalsCache));
       else
         return {type: "no-proof"}
     } catch(error) {
        return {type: "no-proof"}
     }
+  }
+
+  private getPrecedingStateAt(pos: vscode.Position) : State|null {
+    let preceding = this.root;
+    for(let s of this.sentences.values()) {
+      if(textUtil.positionIsBeforeOrEqual(s.getRange().end, pos) && textUtil.positionIsAfter(s.getRange().start, preceding.getRange().start))
+        preceding = s;
+      if(s.contains(pos))
+        return s.getParent();
+    }
+    return preceding;
   }
 
   private getStateAt(pos: vscode.Position) : State|null {
@@ -459,6 +470,7 @@ export class CoqStateMachine {
     }
     return null;
   }
+
 
   public async getStatus(force: boolean) : Promise<(proto.FailureResult & proto.FocusPosition)|proto.NotRunningResult|null> {
     if(!this.isCoqReady())
@@ -880,9 +892,10 @@ private routeId = 1;
           backgroundGoals: this.convertUnfocusedGoals(goals.backgroundGoals),
           shelvedGoals: (goals.shelvedGoals || []).map(this.parseConvertGoal),
           abandonedGoals: (goals.abandonedGoals || []).map(this.parseConvertGoal),
+          focus: this.getFocusedPosition(),
         });
         this.focusedSentence.setGoal(pv);
-        return Object.assign({type: 'proof-view'} as {type: 'proof-view'}, this.focusedSentence.getGoal(this.goalsCache));
+        return {type: 'proof-view', ...this.focusedSentence.getGoal(this.goalsCache)};
       default:
         this.console.warn("Goal returned an unexpected value: " + util.inspect(goals,false,undefined));
     }

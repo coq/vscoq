@@ -143,9 +143,9 @@ export class CoqLanguageServer implements vscode.Disposable {
     return await this.server.sendRequest(proto.GoalRequest.type, { uri: uri }, this.cancelRequest.token);
   }
 
-  public async getCachedGoal(uri: string, pos: vscode.Position): Promise<proto.CommandResult> {
+  public async getCachedGoal(uri: string, pos: vscode.Position, direction: "preceding"|"subsequent"): Promise<proto.CommandResult> {
     await this.server.onReady();
-    return await this.server.sendRequest(proto.CachedGoalRequest.type, { uri: uri, position: pos }, this.cancelRequest.token);
+    return await this.server.sendRequest(proto.CachedGoalRequest.type, { uri: uri, position: pos, direction: direction }, this.cancelRequest.token);
   }
 
   public async finishComputations(uri: string): Promise<void> {
@@ -275,8 +275,8 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
     return this.server.getGoal(this.uri);
   }
 
-  public getCachedGoal(pos: vscode.Position): Thenable<proto.CommandResult> {
-    return this.server.getCachedGoal(this.uri, pos);
+  public getCachedGoal(pos: vscode.Position, direction: "preceding"|"subsequent"): Thenable<proto.CommandResult> {
+    return this.server.getCachedGoal(this.uri, pos, direction);
   }
 
   public finishComputations(): Thenable<void> {
