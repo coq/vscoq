@@ -110,13 +110,11 @@ export class CoqDocument implements vscode.Disposable {
   private async refreshGoal(e?: vscode.TextEditor) {
     if(!e)
       e = vscode.window.activeTextEditor;
+    const value = await this.langServer.getGoal();
+    this.updateView(value, false);
+
     if(this.project.settings.autoRevealProofStateAtCursor && e.document === this.document && e.selections.length === 1)
       this.viewGoalAt(e,e.selections[0].active);
-    else {
-      const value = await this.langServer.getGoal();
-      this.updateView(value, false);
-    }
-    
   }
   
   public getUri() {
