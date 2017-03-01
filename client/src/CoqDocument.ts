@@ -59,6 +59,7 @@ export class CoqDocument implements vscode.Disposable {
   private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
   /** Coq STM focus  */
   private focus: vscode.Position;
+  private stateViewFocus?: vscode.Position;
   private project: CoqProject;
   private currentLtacProfView: HtmlLtacProf|null = null;
 
@@ -258,18 +259,7 @@ export class CoqDocument implements vscode.Disposable {
       }
 
       // update the focus decoration
-      const focusRange = new vscode.Range(this.focus.line,0,this.focus.line,1);
-      if(this.focus.line === 0 && focus.character === 0) {
-        for(let editor of this.allEditors()) {
-          editor.setDecorations(decorations.focusBefore, [focusRange]);
-          editor.setDecorations(decorations.focus, []);
-        }
-      } else {
-        for(let editor of this.allEditors()) {
-          editor.setDecorations(decorations.focusBefore, []);
-          editor.setDecorations(decorations.focus, [focusRange]);
-        }
-      }
+      this.showFocusDecorations();
     } else {
       for(let editor of this.allEditors())
         editor.setDecorations(decorations.focus, []);
@@ -346,8 +336,25 @@ export class CoqDocument implements vscode.Disposable {
     if(interactive && !this.view.isVisible() && this.project.settings.showProofViewOn === "first-interaction")
       this.view.show(true,adjacentPane(this.currentViewColumn()));
     this.view.update(state);
-    if(state.type === 'proof-view' && state.focus.line !== this.focus.line) {
-      const focusRange = new vscode.Range(state.focus.line,0,state.focus.line,1);
+    this.stateViewFocus = state.type==="proof-view" ? new vscode.Position(state.focus.line,state.focus.character) : undefined;
+    this.showFocusDecorations();
+  }
+
+  private showFocusDecorations() {
+    const focusRange = new vscode.Range(this.focus.line,0,this.focus.line,1);
+    if(this.focus.line === 0 && this.focus.character === 0) {
+      for(let editor of this.allEditors()) {
+        editor.setDecorations(decorations.focusBefore, [focusRange]);
+        editor.setDecorations(decorations.focus, []);
+      }
+    } else {
+      for(let editor of this.allEditors()) {
+        editor.setDecorations(decorations.focusBefore, []);
+        editor.setDecorations(decorations.focus, [focusRange]);
+      }
+    }
+    if(this.stateViewFocus && this.stateViewFocus.line !== this.focus.line) {
+      const focusRange = new vscode.Range(this.stateViewFocus.line,0,this.stateViewFocus.line,1);
       for(let editor of this.allEditors()) {
         editor.setDecorations(decorations.proofViewFocus, [focusRange]);
       }
@@ -355,8 +362,7 @@ export class CoqDocument implements vscode.Disposable {
       for(let editor of this.allEditors()) {
         editor.setDecorations(decorations.proofViewFocus, []);
       }
-    } 
-
+    }
   }
 
   public async stepForward(editor: TextEditor) {
@@ -485,12 +491,14 @@ export class CoqDocument implements vscode.Disposable {
   }  
 
   public async doOnFocus(editor: TextEditor) {
+    this.showFocusDecorations();
     this.highlights.refresh([editor]);
     this.statusBar.focus();
     // await this.view.show(true);
   }
 
   public async doOnSwitchActiveEditor(oldEditor: TextEditor, newEditor: TextEditor) {
+    this.showFocusDecorations();
     this.highlights.refresh([newEditor]);
   }
 
