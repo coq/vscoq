@@ -52,9 +52,6 @@ export class CoqDocument implements vscode.Disposable {
   private document: vscode.TextDocument;
   private langServer: CoqDocumentLanguageServer;
   private view : CoqView;
-  private infoOut: vscode.OutputChannel;
-  private queryOut: vscode.OutputChannel;
-  private noticeOut: vscode.OutputChannel;
   /** Tracks which editors of this document have not had cursors positions changed since the last call to `rememberCursors()`. When stepping forward, the cursor is advanced for all editors whose cursors have not moved since the previous step. */
   private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
   /** Coq STM focus  */
@@ -72,10 +69,6 @@ export class CoqDocument implements vscode.Disposable {
     this.documentUri = document.uri.toString();
     this.langServer = new CoqDocumentLanguageServer(document.uri.toString());
 
-    this.infoOut = vscode.window.createOutputChannel('Info');
-    this.queryOut = vscode.window.createOutputChannel('Query Results');
-    this.noticeOut = vscode.window.createOutputChannel('Notices');
-    
     this.view = new HtmlCoqView(document.uri, extensionContext);
     // this.view = new SimpleCoqView(uri.toString());
     // this.view = new MDCoqView(uri);
@@ -157,19 +150,19 @@ export class CoqDocument implements vscode.Disposable {
     switch(params.level) {
     case 'warning':
       // vscode.window.showWarningMessage(params.message); return;
-      this.infoOut.show(true);
-      this.infoOut.appendLine(psm.prettyTextToString(params.message));
+      this.project.infoOut.show(true);
+      this.project.infoOut.appendLine(psm.prettyTextToString(params.message));
       return;
     case 'info':
       // this.infoOut.appendLine(params.message); return;
       // this.view.message(params.message);
-      this.infoOut.show(true);
-      this.infoOut.appendLine(psm.prettyTextToString(params.message));
+      this.project.infoOut.show(true);
+      this.project.infoOut.appendLine(psm.prettyTextToString(params.message));
       return;
     case 'notice':
-      this.noticeOut.clear();
-      this.noticeOut.show(true);
-      this.noticeOut.append(psm.prettyTextToString(params.message));
+      this.project.noticeOut.clear();
+      this.project.noticeOut.show(true);
+      this.project.noticeOut.append(psm.prettyTextToString(params.message));
       return;
       // vscode.window.showInformationMessage(params.message); return;
     // case 'error':
@@ -443,9 +436,9 @@ export class CoqDocument implements vscode.Disposable {
   
   
   private displayQueryResults(results: proto.CoqTopQueryResult) {
-    this.queryOut.clear();
-    this.queryOut.show(true);
-    this.queryOut.append(psm.prettyTextToString(results.searchResults));
+    this.project.queryOut.clear();
+    this.project.queryOut.show(true);
+    this.project.queryOut.append(psm.prettyTextToString(results.searchResults));
     
   }
   
