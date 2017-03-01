@@ -17,12 +17,20 @@ interface Address {
 }
 
 const hostedFiles = new Map<string,HostedFile>()
-let server : http.Server = null;
-let serverReady : Promise<Address> = null;
+let server : http.Server|null = null;
+let serverReady : Promise<Address> = Promise.reject<Address>("Webserver not started.");;
 
 
 async function handleRequest(request: http.IncomingMessage, response: http.ServerResponse) {
+  if(!request.url) {
+    respondError(response, "Must specify a Url.");
+    return;
+  }
   const requestPath = url.parse(request.url).pathname;
+  if(!requestPath) {
+    respondError(response, "Cannot parse Url.");
+    return;
+  }
   const file = hostedFiles.get(requestPath);
   try {
     if(!file || !await nasync.fs.exists(file.fsPath)) {
@@ -31,6 +39,7 @@ async function handleRequest(request: http.IncomingMessage, response: http.Serve
     }
   } catch(err) {
     respondError(response, err);
+    return;
   }  
 
   try {
@@ -95,16 +104,17 @@ export async function serveFile(path: string, file: string, contentType?: string
 
 async function initServer() : Promise<Address> {
   if(!server) { 
-    server = http.createServer(handleRequest);
+    let srv = http.createServer(handleRequest);
+    server = srv;
     serverReady = new Promise<Address>((resolve,reject) => {
       try {
-        server.listen({port: 0, host: "localhost"}, () => {
-          const addr = server.address();
+        srv.listen({port: 0, host: "localhost"}, () => {
+          const addr = srv.address();
           resolve({host: "localhost", port: addr.port});
         })
-        server.on('close', () => {
+        srv.on('close', () => {
           server = null;
-          serverReady = null;
+          serverReady = Promise.reject<Address>("Webserver closed.");
         })
       } catch(err) {
         reject(err);

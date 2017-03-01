@@ -111,26 +111,26 @@ export class RangeSet {
    * case:  [A-X] [B]  --> A
    * @returns the index of the range at or before the position, or -1 if no such range exists
    */
-  private indexAt(position: vscode.Position, begin?: number, end?: number) : number {
-    // binary search!
-    if(!begin)
-      begin = 0;
-    if(!end)
-      end = this.ranges.length;
-    while (begin < end) {
-      const pivot = (begin + end) >> 1;
-      const pivotRange = this.ranges[pivot];
-      if(position.isBefore(pivotRange.start))
-        end = pivot;
-      else if(position.isBefore(pivotRange.end))
-        return pivot;
-      if (begin == pivot)
-        break;
-      else
-        begin = pivot;
-    }
-    return begin;
-  }
+  // private indexAt(position: vscode.Position, begin?: number, end?: number) : number {
+  //   // binary search!
+  //   if(!begin)
+  //     begin = 0;
+  //   if(!end)
+  //     end = this.ranges.length;
+  //   while (begin < end) {
+  //     const pivot = (begin + end) >> 1;
+  //     const pivotRange = this.ranges[pivot];
+  //     if(position.isBefore(pivotRange.start))
+  //       end = pivot;
+  //     else if(position.isBefore(pivotRange.end))
+  //       return pivot;
+  //     if (begin == pivot)
+  //       break;
+  //     else
+  //       begin = pivot;
+  //   }
+  //   return begin;
+  // }
 // 
 //   public insertShift(position: vscode.Position, linesDelta: number, charactersDelta: number) : boolean {
 //     if(linesDelta == 0 && charactersDelta == 0)

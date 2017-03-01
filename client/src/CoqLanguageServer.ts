@@ -2,28 +2,24 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import * as util from 'util';
 import * as proto from './protocol';
-import * as textUtil from './text-util';
-import { RangeSet } from './RangeSet';
-import { CoqDocument } from './CoqDocument';
 
-import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
-import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } from 'vscode-languageclient';
+import { workspace, ExtensionContext } from 'vscode';
+import { LanguageClient, LanguageClientOptions,ServerOptions } from 'vscode-languageclient';
 import * as vscodeClient from 'vscode-languageclient';
 
-function createServerProcess(serverModule: string, debugOptions: string[]): ServerOptions {
-  let nodejsPath = workspace.getConfiguration('nodejs')['path'] || '';
-  let nodejsCmd = path.join(nodejsPath, 'node');
+// function createServerProcess(serverModule: string, debugOptions: string[]): ServerOptions {
+//   let nodejsPath = workspace.getConfiguration('nodejs')['path'] || '';
+//   let nodejsCmd = path.join(nodejsPath, 'node');
 
-  // If the extension is launch in debug mode the debug server options are use
-  // Otherwise the run options are used
-  var args = debugOptions.concat([serverModule]);
-  return {
-    run: { command: nodejsCmd, args: [serverModule] },
-    debug: { command: nodejsCmd, args: debugOptions.concat([serverModule]) }
-  }
-}
+//   // If the extension is launch in debug mode the debug server options are use
+//   // Otherwise the run options are used
+//   var args = debugOptions.concat([serverModule]);
+//   return {
+//     run: { command: nodejsCmd, args: [serverModule] },
+//     debug: { command: nodejsCmd, args: debugOptions.concat([serverModule]) }
+//   }
+// }
 
 function createServerLocalExtension(serverModule: string, debugOptions: string[]): ServerOptions {
   const options: { run: vscodeClient.NodeModule; debug: vscodeClient.NodeModule } = {
@@ -35,9 +31,9 @@ function createServerLocalExtension(serverModule: string, debugOptions: string[]
 
 
 export class CoqLanguageServer implements vscode.Disposable {
-  private static instance: CoqLanguageServer | null = null;
+  private static instance: CoqLanguageServer;
   private subscriptions: vscode.Disposable[] = [];
-  private server: LanguageClient = null;
+  private server: LanguageClient;
   private cancelRequest = new vscode.CancellationTokenSource();
 
   private constructor(context: ExtensionContext) {
@@ -65,7 +61,7 @@ export class CoqLanguageServer implements vscode.Disposable {
     function startedInDebugMode(): boolean {
       let args = (process as any).execArgv;
       if (args) {
-        return args.some((arg) => /^--debug=?/.test(arg) || /^--debug-brk=?/.test(arg));
+        return args.some((arg:any) => /^--debug=?/.test(arg) || /^--debug-brk=?/.test(arg));
       };
       return false;
     }
@@ -92,7 +88,7 @@ export class CoqLanguageServer implements vscode.Disposable {
     return CoqLanguageServer.instance;
   }
 
-  public static getInstance(): CoqLanguageServer | null {
+  public static getInstance(): CoqLanguageServer {
     return this.instance;
   }
 
@@ -176,7 +172,7 @@ export class CoqLanguageServer implements vscode.Disposable {
     return this.server.sendRequest(proto.StepBackwardRequest.type, { uri: uri }, this.cancelRequest.token);
   }
 
-  public async interpretToPoint(uri: string, location: number|vscode.Position, synchronous?): Promise<proto.CommandResult> {
+  public async interpretToPoint(uri: string, location: number|vscode.Position, synchronous?: boolean): Promise<proto.CommandResult> {
     await this.server.onReady();
     const params : proto.CoqTopInterpretToPointParams = {
       uri: uri,

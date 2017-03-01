@@ -76,7 +76,7 @@ export function load() : vscode.Disposable {
   const subscriptions : vscode.Disposable[] = [];
   const psm = vscode.extensions.getExtension<PrettifySymbolsMode>('siegebell.prettify-symbols-mode');
   if(psm) {
-    const psmExports = psm.activate()
+    psm.activate()
       .then(() => {
         subscriptions.push(psm.exports.onDidEnabledChange(onPrettifySymbolsModeEnabledChange));
         onPrettifySymbolsModeEnabledChange(psm.exports.isEnabled());

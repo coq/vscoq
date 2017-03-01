@@ -6,7 +6,6 @@ import * as fs from 'fs'
 import * as view from './CoqView'
 export {CoqView} from './CoqView'
 import * as proto from './protocol'
-import * as textUtil from './text-util'
 
 function createFile(path: string) : Promise<number> {
   return new Promise<number>((resolve,reject) => {
@@ -30,24 +29,20 @@ function writeFile(filename: string, data: any) : Promise<void> {
   })
 }
 
-function edit(editor: vscode.TextEditor) : Promise<vscode.TextEditorEdit> {
-  return new Promise<vscode.TextEditorEdit>((resolve, reject) => editor.edit(resolve));
-}
-
 export class MDCoqView implements view.CoqView {
   private editor: vscode.TextEditor;
   private outDoc: vscode.TextDocument;
   private docUri: vscode.Uri;
-  private outFile: number; // file descriptor
-  private currentPos = new vscode.Position(0,0);
   private filename : string;
-  public onresize: (columns: number) => Thenable<void> = null;
   private visible = false;
+  private resizeEvent = new vscode.EventEmitter<number>();
 
   constructor(uri: vscode.Uri) {
     this.docUri = uri;
     this.createBuffer();
   }
+
+  public get resize() { return this.resizeEvent.event };
   
   private async createBuffer() {
     try {
@@ -66,7 +61,6 @@ export class MDCoqView implements view.CoqView {
       this.editor = await vscode.window.showTextDocument(this.outDoc, vscode.ViewColumn.Two);
       
       await vscode.commands.executeCommand('workbench.action.markdown.togglePreview');
-      var x = vscode.window.activeTextEditor;
       
       if(focusedDoc)
         vscode.window.showTextDocument(focusedDoc);
@@ -140,13 +134,6 @@ export class MDCoqView implements view.CoqView {
     this.setOutputText(out);
   }
 
-  private displayTop(state: proto.CommandResult) {
-    this.editor.edit((eb) => {
-      eb.replace(new vscode.Range(0,0,this.outDoc.lineCount,0), "Top");
-    })
-    // const eb = await edit(this.editor);
-    // eb.insert(new vscode.Position(0,0), "Hello World");
-  }
   
 
   private async refreshView() {

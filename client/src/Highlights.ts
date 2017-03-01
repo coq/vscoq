@@ -1,16 +1,12 @@
 'use strict';
 
 
-import * as path from 'path';
 import * as vscode from 'vscode';
-import * as util from 'util';
 import * as proto from './protocol';
-import * as textUtil from './text-util';
 import {decorations} from './Decorations';
 // import {RangeSet} from './RangeSet';
 
-import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
-import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } from 'vscode-languageclient';
+import { TextEditor } from 'vscode';
 
 function toRange(range: {start: {line: number, character: number}, end: {line: number, character: number}}) {
   return new vscode.Range(range.start.line,range.start.character,range.end.line,range.end.character);

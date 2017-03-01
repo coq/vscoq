@@ -20,7 +20,7 @@ function snippetSentence(item: Snippet) : vscode.CompletionItem {
   } else {
     const result = new vscode.CompletionItem(item.label,vscode.CompletionItemKind.Snippet);
     result.insertText = item.insertText;
-    result.documentation = item.documentation;
+    result.documentation = item.documentation as string; // vscode needs to provide stricter types in its API...
     return result;
   }
 }
@@ -230,6 +230,7 @@ const triggerSnippets : TriggerSnippet[] = [
   {label: "Test...", insertText: "Test ", completion: optionsSnippets},
   {label: "Print...", insertText: "Print ", completion: printSnippets},
   {label: "Show...", insertText: "Show ", completion: showSnippets},
+  {label: "Hint...", insertText: "Hint ", completion: hintSnippets},
   {label: "Arguments", insertText: "Arguments {{qualid}} {{possibly_bracketed_idents …}}."},
   {label: "Local Arguments", insertText: "Local Arguments {{qualid}} {{possibly_bracketed_idents …}}."},
   {label: "Global Arguments", insertText: "Global Arguments {{qualid}} {{possibly_bracketed_idents …}}."},
@@ -256,7 +257,7 @@ function getTriggerCompletions(prefix: string) {
     .map((trigger) => {
       const item = new vscode.CompletionItem(trigger.label);
       item.insertText = trigger.insertText;
-      item.detail = trigger.detail;
+      item.detail = trigger.detail as string; // vscode needs to update its API
       if(trigger.completion)
         item.command = {
           command: "editor.action.triggerSuggest",
@@ -320,16 +321,16 @@ export function setupSnippets(subscriptions: vscode.Disposable[]) {
 
 }
 
-function getIndentSize(doc: vscode.TextDocument) : number {
-  let editor = vscode.window.activeTextEditor;
-  if(editor && editor.document.uri === doc.uri)
-    return editor.options.insertSpaces ? +editor.options.tabSize : 1;
-  editor = vscode.window.visibleTextEditors.find((e) => e.document.uri === doc.uri);
-  if(editor && editor.document.uri === doc.uri)
-    return editor.options.insertSpaces ? +editor.options.tabSize : 1;
-  else
-    return 0;
-}
+// function getIndentSize(doc: vscode.TextDocument) : number {
+//   let editor = vscode.window.activeTextEditor;
+//   if(editor && editor.document.uri === doc.uri)
+//     return editor.options.insertSpaces ? +editor.options.tabSize : 1;
+//   editor = vscode.window.visibleTextEditors.find((e) => e.document.uri === doc.uri);
+//   if(editor && editor.document.uri === doc.uri)
+//     return editor.options.insertSpaces ? +editor.options.tabSize : 1;
+//   else
+//     return 0;
+// }
 
 /** see: http://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex */
 function escapeRegExp(str : string) {

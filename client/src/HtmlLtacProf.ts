@@ -1,44 +1,14 @@
 'use strict';
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 
-import * as view from './CoqView'
 export {CoqView} from './CoqView'
 import * as proto from './protocol'
-import * as textUtil from './text-util'
 import * as WebSocket from 'ws';
 import * as http from 'http';
-import * as path from 'path';
 import {extensionContext} from './extension'
 
 const opener = require('opener');
 
-
-function createFile(path: string) : Promise<number> {
-  return new Promise<number>((resolve,reject) => {
-    fs.open(path, 'w', (err: any, fd: number) => {
-      if(err)
-        reject(err)
-      else
-        resolve(fd);
-    } );
-  })
-}
-
-function writeFile(filename: string, data: any) : Promise<void> {
-  return new Promise<void>((resolve,reject) => {
-    fs.writeFile(filename, data, {encoding: 'utf8'}, (err: NodeJS.ErrnoException) => {
-      if(err)
-        reject(err)
-      else
-        resolve();
-    } );
-  })
-}
-
-function edit(editor: vscode.TextEditor) : Promise<vscode.TextEditorEdit> {
-  return new Promise<vscode.TextEditorEdit>((resolve) => editor.edit(resolve));
-}
 
 function coqViewToFileUri(uri: vscode.Uri) {
   return `file://${uri.path}?${uri.query}#${uri.fragment}`;
@@ -60,7 +30,7 @@ class IFrameDocumentProvider implements vscode.TextDocumentContentProvider {
   }
 }
 
-var coqViewProvider : IFrameDocumentProvider = null;
+var coqViewProvider : IFrameDocumentProvider|null = null;
 
 /**
  * Displays a Markdown-HTML file which contains javascript to connect to this view
@@ -83,7 +53,7 @@ export class HtmlLtacProf {
     
     const httpServer = this.httpServer = http.createServer();
     this.serverReady = new Promise<void>((resolve, reject) =>
-      httpServer.listen(0,'localhost',undefined,(e) => {
+      httpServer.listen(0,'localhost',undefined,(e:any) => {
         if(e)
           reject(e)
         else
@@ -124,7 +94,7 @@ export class HtmlLtacProf {
     });
   }
 
-  public async update(results) {
+  public async update(results : proto.LtacProfResults) {
     await this.bufferReady;
     this.results = results;
     await Promise.all<void>(
@@ -139,7 +109,7 @@ export class HtmlLtacProf {
   public async show(preserveFocus: boolean) {
     await this.bufferReady;
     // const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
-    const result = await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two, "LtacProf");
+    await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two, "LtacProf");
     // if(preserveFocus && focusedDoc)
     //   await vscode.window.showTextDocument(focusedDoc);
   }

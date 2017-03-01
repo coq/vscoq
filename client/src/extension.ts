@@ -1,9 +1,6 @@
 'use strict';
-import * as path from 'path';
 import * as vscode from 'vscode';
-import * as util from 'util';
-import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
-import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } from 'vscode-languageclient';
+import { TextEditor, TextEditorEdit, ExtensionContext } from 'vscode';
 import * as proto from './protocol';
 import {CoqProject, CoqDocument} from './CoqProject';
 import * as snippets from './Snippets';
@@ -12,8 +9,8 @@ import {HtmlCoqView} from './HtmlCoqView';
 import * as editorAssist from './EditorAssist';
 import * as psm from './prettify-symbols-mode';
 
-vscode.Range.prototype.toString = function rangeToString() {return `[${this.start.toString()},${this.end.toString()})`}
-vscode.Position.prototype.toString = function positionToString() {return `{${this.line}@${this.character}}`}
+vscode.Range.prototype.toString = function rangeToString(this:vscode.Range) {return `[${this.start.toString()},${this.end.toString()})`}
+vscode.Position.prototype.toString = function positionToString(this:vscode.Position) {return `{${this.line}@${this.character}}`}
 
 console.log(`Coq Extension: process.version: ${process.version}, process.arch: ${process.arch}}`);
 
@@ -30,13 +27,13 @@ export function activate(context: ExtensionContext) {
   project = CoqProject.create(context);
   context.subscriptions.push(project);
 
-  function regTCmd(command, callback) {
+  function regTCmd(command:string, callback: (textEditor: vscode.TextEditor, edit: vscode.TextEditorEdit, ...args: any[]) => void) {
     context.subscriptions.push(vscode.commands.registerTextEditorCommand('extension.coq.'+command, callback));
   }
-  function regCmd(command, callback, thisArg?: any) {
+  function regCmd(command:string, callback: (...args: any[]) => any, thisArg?: any) {
     context.subscriptions.push(vscode.commands.registerCommand('extension.coq.'+command, callback, thisArg));
   }
-  function regProjectCmd(command, callback) {
+  function regProjectCmd(command:string, callback: (...args: any[]) => any, thisArg?: any) {
     context.subscriptions.push(vscode.commands.registerCommand('extension.coq.'+command, callback, project));
   }
 
@@ -89,7 +86,7 @@ export function activate(context: ExtensionContext) {
 
 
 async function withDocAsync<T>(editor: TextEditor, callback: (doc: CoqDocument) => Promise<T>) : Promise<void> {
-  const doc = project.getOrCurrent(editor ? editor.document.uri.toString() : null);
+  const doc = editor ? project.getOrCurrent(editor.document.uri.toString()) || null : null;
   if(doc)
     await callback(doc);
 }

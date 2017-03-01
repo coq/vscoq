@@ -1,16 +1,13 @@
 'use strict';
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 
 import * as view from './CoqView'
 export {CoqView} from './CoqView'
 import {extensionContext} from './extension'
 import * as proto from './protocol'
-import * as textUtil from './text-util'
 import * as WebSocket from 'ws';
 import * as http from 'http';
 import * as path from 'path';
-import * as util from 'util';
 import * as docs from './CoqProject';
 import * as nasync from './nodejs-async';
 import * as webServer from './WebServer';
@@ -47,28 +44,6 @@ interface SettingsState {
 
 type ProofViewProtocol = GoalUpdate | SettingsUpdate;
 
-function createFile(path: string) : Promise<number> {
-  return new Promise<number>((resolve,reject) => {
-    fs.open(path, 'w', (err: any, fd: number) => {
-      if(err)
-        reject(err)
-      else
-        resolve(fd);
-    } );
-  })
-}
-
-function writeFile(filename: string, data: any) : Promise<void> {
-  return new Promise<void>((resolve,reject) => {
-    fs.writeFile(filename, data, {encoding: 'utf8'}, (err: NodeJS.ErrnoException) => {
-      if(err)
-        reject(err)
-      else
-        resolve();
-    } );
-  })
-}
-
 const VIEW_PATH = 'html_views';
 
 function proofViewCSSFile() {
@@ -86,10 +61,6 @@ function proofViewHtmlPath() {
   return proofViewFile('Coq.html');
 }
 
-
-function edit(editor: vscode.TextEditor) : Promise<vscode.TextEditorEdit> {
-  return new Promise<vscode.TextEditorEdit>((resolve,reject) => editor.edit(resolve));
-}
 
 function coqViewToFileUri(uri: vscode.Uri) {
   return `file://${uri.path}?${uri.query}#${uri.fragment}`;
@@ -109,7 +80,7 @@ class IFrameDocumentProvider implements vscode.TextDocumentContentProvider {
   }
 }
 
-var coqViewProvider : IFrameDocumentProvider = null;
+var coqViewProvider : IFrameDocumentProvider|null = null;
 
 /**
  * Displays a Markdown-HTML file which contains javascript to connect to this view
@@ -122,10 +93,13 @@ export class HtmlCoqView implements view.CoqView {
   // private connection : Promise<WebSocket>;
   private serverReady : Promise<void>;
   private currentState : proto.CommandResult = {type: 'not-running', reason: 'not-started'}; 
-  public onresize: (columns: number) => Thenable<void> = null;
   private coqViewUri : vscode.Uri;
   private currentSettings : SettingsState = {}; 
   private visible = false;
+
+  private resizeEvent = new vscode.EventEmitter<number>();
+
+  public get resize() : vscode.Event<number> { return this.resizeEvent.event; }
   
   constructor(uri: vscode.Uri, context: vscode.ExtensionContext) {
     if(coqViewProvider===null) {    
@@ -139,7 +113,7 @@ export class HtmlCoqView implements view.CoqView {
     
     const httpServer = this.httpServer = http.createServer();
     this.serverReady = new Promise<void>((resolve, reject) =>
-      httpServer.listen(0,'localhost',undefined,(e) => {
+      httpServer.listen(0,'localhost',undefined,(e:any) => {
         if(e)
           reject(e)
         else
@@ -160,8 +134,7 @@ export class HtmlCoqView implements view.CoqView {
   }
   
   private handleClientResize(event: ResizeEvent) {
-    if(this.onresize)
-      this.onresize(event.columns);
+    this.resizeEvent.fire(event.columns);
   }
   
   private handleClientMessage(event: {data: any; type: string; target: WebSocket}) {
@@ -217,6 +190,8 @@ export class HtmlCoqView implements view.CoqView {
     } else {
             // this.coqViewUri = vscode.Uri.parse(`coq-view://${proofViewHtmlPath().path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
       const uri = await webServer.serveDirectory("proof-view/", proofViewFile('..').fsPath, "**/*.{html,css,js}");
+      if(!uri)
+        return Promise.reject("Cannot find proof view script");
       url = decodeURIComponent(uri.with({path: uri.path + 'goals/Coq.html', query: this.coqViewUri.query, fragment: this.coqViewUri.fragment }).toString());
     }
     if(!command)
@@ -293,7 +268,7 @@ export class HtmlCoqView implements view.CoqView {
       await HtmlCoqView.prepareStyleSheet();
       const styleFile = proofViewCSSFile();
       const doc = await vscode.workspace.openTextDocument(styleFile.fsPath);
-      const ed = await vscode.window.showTextDocument(doc);
+      await vscode.window.showTextDocument(doc);
     } catch(err) {
       console.error(err.toString());
     }

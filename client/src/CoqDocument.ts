@@ -1,10 +1,8 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
-import { LanguageClient } from 'vscode-languageclient';
+import { TextEditor, Disposable } from 'vscode';
 import * as vscodeTypes from 'vscode-languageserver-types';
-import * as vc from 'vscode-languageclient';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -12,7 +10,7 @@ import * as os from 'os';
 import {decorations} from './Decorations';
 import {Highlights} from './Highlights';
 // import {CoqView, SimpleCoqView} from './SimpleCoqView';
-import {MDCoqView} from './MDCoqView';
+// import {MDCoqView} from './MDCoqView';
 import {HtmlCoqView} from './HtmlCoqView';
 import {HtmlLtacProf} from './HtmlLtacProf';
 import * as proto from './protocol';
@@ -51,16 +49,16 @@ export class CoqDocument implements vscode.Disposable {
   private statusBar: StatusBar;
   public documentUri: string;
   public highlights = new Highlights();
-  private document: vscode.TextDocument = null;
+  private document: vscode.TextDocument;
   private langServer: CoqDocumentLanguageServer;
-  private view : CoqView|null = null;
+  private view : CoqView;
   private infoOut: vscode.OutputChannel;
   private queryOut: vscode.OutputChannel;
   private noticeOut: vscode.OutputChannel;
   private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
   private focus: vscode.Position;
   private project: CoqProject;
-  private currentLtacProfView: HtmlLtacProf = null;
+  private currentLtacProfView: HtmlLtacProf|null = null;
 
   constructor(document: vscode.TextDocument, project: CoqProject) {
     this.statusBar = new StatusBar();
@@ -87,12 +85,12 @@ export class CoqDocument implements vscode.Disposable {
     this.langServer.onUpdateCoqStmFocus((p) => this.updateFocus(p.position));
     this.langServer.onLtacProfResults((p) => this.onLtacProfResults(p));
 
-    this.view.onresize = async (columns:number) => {
+    this.view.resize(async (columns:number) => {
       try {
         await this.langServer.resizeView(Math.floor(columns));
         await this.refreshGoal();
       } catch(err) {}
-    };
+    });
 
     this.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((e:vscode.TextEditorSelectionChangeEvent) => {
       if(this.project.settings.autoRevealProofStateAtCursor && e.textEditor.document === this.document && e.selections.length === 1)
@@ -129,7 +127,8 @@ export class CoqDocument implements vscode.Disposable {
   public dispose() {
     this.highlights.clearAll(this.allEditors());
     this.statusBar.dispose();
-    this.view.dispose();
+    if(this.view)
+      this.view.dispose();
     this.subscriptions.forEach((d) => d.dispose());
   }
 
@@ -159,6 +158,7 @@ export class CoqDocument implements vscode.Disposable {
       // vscode.window.showWarningMessage(params.message); return;
       this.infoOut.show(true);
       this.infoOut.appendLine(psm.prettyTextToString(params.message));
+      return;
     case 'info':
       // this.infoOut.appendLine(params.message); return;
       // this.view.message(params.message);
@@ -208,7 +208,7 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateReady();
   }
   
-  private findEditor() : vscode.TextEditor {
+  private findEditor() : vscode.TextEditor|undefined {
     return vscode.window.visibleTextEditors.find((editor,i,a) => 
       editor.document.uri.toString() === this.documentUri);
   }
@@ -276,7 +276,7 @@ export class CoqDocument implements vscode.Disposable {
 
   private async userSetCoqtopPath(global = false) {
     const current = vscode.workspace.getConfiguration("coqtop").get("binPath", "");
-    const newPath = await vscode.window.showInputBox({ignoreFocusOut: true, value: current, validateInput: v => {
+    const newPath = await vscode.window.showInputBox({ignoreFocusOut: true, value: current, validateInput: (v:string):string => {
       try {
         const statDir = fs.statSync(v);
         if(!statDir.isDirectory())
@@ -284,7 +284,7 @@ export class CoqDocument implements vscode.Disposable {
       } catch(err) {
         return "invalid path";
       }
-      let stat : fs.Stats = undefined;
+      let stat : fs.Stats|undefined = undefined;
       try {
         stat = fs.statSync(path.join(v, 'coqtop'));
       } catch(err) {}
@@ -298,7 +298,7 @@ export class CoqDocument implements vscode.Disposable {
       if(!stat.isFile())
         return "coqtop found here, but is not an executable file";
 
-      return null;
+      return "";
     } });
     async function checkCoqtopExists(newPath: string) {
       if(!newPath)
@@ -375,7 +375,7 @@ export class CoqDocument implements vscode.Disposable {
   public async finishComputations(editor: TextEditor) {
     this.statusBar.setStateWorking('Finishing computations');
     try {
-      const value = await this.langServer.finishComputations();
+      await this.langServer.finishComputations();
       this.statusBar.setStateReady();
     } catch (err) {
     }
@@ -400,7 +400,6 @@ export class CoqDocument implements vscode.Disposable {
   public async interpretToEnd(editor: TextEditor, synchronous = false) {
     this.statusBar.setStateWorking('Interpreting to end');
     try {
-      const params = { uri: this.documentUri };
       const value = await this.langServer.interpretToEnd(synchronous);
       this.updateView(value, true);
       this.handleResult(value);
@@ -488,12 +487,12 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public async setDisplayOption(item?: proto.DisplayOption, value?: proto.SetDisplayOption) {
-    if(!item && !value) {
-      item = await this.queryDisplayOptionChange();
+    if(!item) {
+      item = await this.queryDisplayOptionChange() || undefined;
       if(!item)
         return;
-      value = proto.SetDisplayOption.Toggle
     }
+    value = value || proto.SetDisplayOption.Toggle;
     try {
       await this.langServer.setDisplayOptions([{item: item, value: value}]);
       await this.refreshGoal();

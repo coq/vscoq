@@ -4,6 +4,13 @@
 		"module": "system",
 		"outDir": "../client/html_views",
 		"noLib": false,
+		"forceConsistentCasingInFileNames": true,
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noImplicitThis": true,
+		"strictNullChecks": true,
 		"sourceMap": true
 	},
   "exclude": [

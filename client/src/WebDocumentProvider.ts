@@ -1,6 +1,3 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as zlib from 'zlib';
 import * as http from 'http';
 import * as WebSocket from 'ws';
 
@@ -55,15 +52,15 @@ export abstract class WebDocumentProvider<MS,MR> implements vscode.TextDocumentC
   private readonly httpServer : http.Server;
   private readonly serverReady : Promise<void>;
   private readonly server : WebSocket.Server;
-  private onDataHandler : (data: MR) => void;
+  // private onDataHandler : (data: MR) => void;
   private evalResults = new Map<WebSocket,Map<number,{resolve: (x:any) => void, reject: (err:any) => void}>>();
   private nextEvalId = 0;
-  private currentAnchor : GotoOptions;
+  private currentAnchor : GotoOptions|undefined;
 
   public constructor() {
     this.httpServer = http.createServer();
     this.serverReady = new Promise<void>((resolve, reject) =>
-      this.httpServer.listen(0,'localhost',undefined,(e) => {
+      this.httpServer.listen(0,'localhost',undefined,(e:any) => {
         if(e)
           reject(e)
         else
@@ -73,7 +70,10 @@ export abstract class WebDocumentProvider<MS,MR> implements vscode.TextDocumentC
     this.server.on('connection', (ws: WebSocket) => {
       this.evalResults.set(ws, new Map())
       ws.onclose = (event) => {
-        this.cancelPromises(event.reason, this.evalResults.get(ws).values());
+        const promises = this.evalResults.get(ws);
+        if(!promises)
+          return;
+        this.cancelPromises(event.reason, promises.values());
         this.evalResults.delete(ws);
       }
       ws.onmessage = (event) => {
@@ -82,6 +82,8 @@ export abstract class WebDocumentProvider<MS,MR> implements vscode.TextDocumentC
           this.onData(ws, message.data);
         else if(message.type === "result") {
           const promises = this.evalResults.get(ws);
+          if(!promises)
+            return;
           const promise = promises.get(message.callId);
           if(promise) {
             promises.delete(message.callId);
@@ -100,17 +102,19 @@ export abstract class WebDocumentProvider<MS,MR> implements vscode.TextDocumentC
       promise.reject(reason);
   }
 
-  private sendMessageToClient(message: SendMessageProtocol<MS>, callId, client: WebSocket, token?: vscode.CancellationToken) {
+  private sendMessageToClient(message: SendMessageProtocol<MS> & {callId: number}, client: WebSocket, token?: vscode.CancellationToken) : Promise<any> {
     try {
       if(client.readyState !== client.OPEN)
         return Promise.resolve(undefined);
       client.send(JSON.stringify(message));
       const promises = this.evalResults.get(client);
+      if(!promises)
+        return Promise.resolve(undefined);
       return new Promise<any>((resolve,reject) => {
-        promises.set(callId,{resolve:resolve,reject:reject});
+        promises.set(message.callId,{resolve:resolve,reject:reject});
         if(token)
           token.onCancellationRequested((e) => {
-            promises.delete(callId);
+            promises.delete(message.callId);
             reject(e);
           });
       });
@@ -122,10 +126,10 @@ export abstract class WebDocumentProvider<MS,MR> implements vscode.TextDocumentC
   private async sendMessage(message: SendMessageProtocol<MS>, clients = this.server.clients, token?: vscode.CancellationToken) : Promise<MR[]> {
     await this.serverReady;
     const evalId = this.nextEvalId++;
-    message['callId'] = evalId;
     if(!clients)
       clients = this.server.clients;
-    return await Promise.all(clients.map((connection) => this.sendMessageToClient(message,evalId,connection,token)));
+    const msg = Object.assign(message, {callId: evalId});
+    return await Promise.all(clients.map((connection) => this.sendMessageToClient(msg,connection,token)));
   }
 
   protected async send(data: MS, clients = this.server.clients) {
@@ -134,15 +138,11 @@ export abstract class WebDocumentProvider<MS,MR> implements vscode.TextDocumentC
 
   protected async setSourceHTML(htmlSource: string, clients = this.server.clients, options: {goto?: GotoOptions} = {}) {
     this.currentAnchor = options.goto;
-    const anchor = options.goto ? options.goto.anchor : undefined;
-    const highlight = options.goto ? options.goto.highlight : undefined;
     await this.sendMessage({type: "set-srcdoc", sourceHtml: htmlSource, goto: options.goto}, clients);
   }
 
   protected async setSourceUri(uri: vscode.Uri, clients = this.server.clients, options: {goto?: {anchor: string, highlight?: string}}) {
     this.currentAnchor = options.goto;
-    const anchor = options.goto ? options.goto.anchor : undefined;
-    const highlight = options.goto ? options.goto.highlight : undefined;
     await this.sendMessage({type: "set-src", uri: uri.toString(), goto: options.goto}, clients);
   }
 
@@ -161,7 +161,7 @@ export abstract class WebDocumentProvider<MS,MR> implements vscode.TextDocumentC
 
   protected abstract onConnection(client: WebSocket) : void;
 
-  protected abstract onData(client: WebSocket, data: MR);
+  protected abstract onData(client: WebSocket, data: MR) : void;
 
   protected abstract provideSource(uri: vscode.Uri, token: vscode.CancellationToken) : Promise<string|vscode.Uri|undefined>;
 

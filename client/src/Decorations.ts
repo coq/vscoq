@@ -1,15 +1,5 @@
 'use strict';
-
-
-import * as path from 'path';
 import * as vscode from 'vscode';
-import * as util from 'util';
-import * as proto from './protocol';
-import * as textUtil from './text-util';
-// import {RangeSet} from './RangeSet';
-
-import { workspace, TextEditor, TextEditorEdit, Disposable, ExtensionContext } from 'vscode';
-import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions } from 'vscode-languageclient';
 
 const STM_FOCUS_IMAGE = "./images/stm-focus.svg";
 const STM_FOCUS_IMAGE_BEFORE = "./images/stm-focus-before.svg";

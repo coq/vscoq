@@ -17,11 +17,13 @@ export function getDisplayState(state: proto.CommandResult) {
     case 'interrupted':
       return DisplayState.Error;
     case 'no-proof':
+    case 'not-running':
+    case 'busy':
       return DisplayState.Top;
   }
 }
 
-function countUnfocusedGoalStack(u: proto.UnfocusedGoalStack) {
+function countUnfocusedGoalStack(u: proto.UnfocusedGoalStack|undefined) : number {
   if(u)
     return u.before.length + u.after.length + countUnfocusedGoalStack(u.next);
   else
@@ -52,7 +54,7 @@ export interface CoqView extends vscode.Disposable {
 
   update(state: proto.CommandResult) : void;
   // message(message: string) : void;
-  onresize: (columns: number) => Thenable<void>;
+  readonly resize : vscode.Event<number>;
 
   show(preserveFocus: boolean, pane: vscode.ViewColumn) : Promise<void>;
   showExternal(scheme: "file"|"http", command?: (url:string)=>{module: string, args: string[]}) : Promise<void>;

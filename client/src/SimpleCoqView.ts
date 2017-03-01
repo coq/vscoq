@@ -11,13 +11,15 @@ import * as psm from './prettify-symbols-mode';
 export class SimpleCoqView implements view.CoqView {
   private visible = false;
   private out: vscode.OutputChannel;
-  public onresize: (columns: number) => Thenable<void> = null;
+  private resizeEvent = new vscode.EventEmitter<number>();
 
   constructor(uri: string) {
     const name = uri + " - CoqTop";
     this.out = vscode.window.createOutputChannel(name);
     this.out.show(vscode.ViewColumn.Three);
   }
+
+  public get resize() { return this.resizeEvent.event; }
 
   dispose() {
     this.out.dispose();
@@ -43,10 +45,6 @@ export class SimpleCoqView implements view.CoqView {
         out = "There unfocused goals.";
     }
     this.out.append(out);
-  }
-
-  private displayTop(state: proto.CommandResult) {
-
   }
 
   public update(state: proto.CommandResult) {

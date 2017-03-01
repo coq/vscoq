@@ -1,4 +1,4 @@
-import {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAnnotation, ScopedText, Substitution} from './protocol';
+import {AnnotatedText, TextAnnotation, ScopedText} from './protocol';
 export {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAnnotation, ScopedText} from './protocol';
 
 

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 const regenerate = require('regenerate');
-import {Settings, CoqSettings, AutoFormattingSettings} from './protocol';
+import {CoqSettings} from './protocol';
 
 let subscriptions : vscode.Disposable[] = [];
 
@@ -11,6 +11,7 @@ export function unload() {
 
 export function reload() : vscode.Disposable {
   unload();
+  const matchNothing = /a^/;
 
   const settings = vscode.workspace.getConfiguration("coq") as any as CoqSettings;
 
@@ -21,40 +22,41 @@ export function reload() : vscode.Disposable {
     increaseIndentPatternParts.push(/Proof\b/.source);
   const increaseIndentRE = settings.format.enable && increaseIndentPatternParts.length > 0
     ? new RegExp(String.raw `^\s*${increaseIndentPatternParts.join('|')}`)
-    : undefined;
+    : matchNothing;
 
+  const wordPattern = new RegExp(
+    "(?:" +
+    regenerate()
+    .add(require('unicode-9.0.0/General_Category/Lowercase_Letter/code-points'))
+    .add(require('unicode-9.0.0/General_Category/Uppercase_Letter/code-points'))
+    .add(require('unicode-9.0.0/General_Category/Other_Letter/code-points'))
+    .add(require('unicode-9.0.0/General_Category/Titlecase_Letter/code-points'))
+    .addRange(0x1D00, 0x1D7F) // Phonetic Extensions.
+    .addRange(0x1D80, 0x1DBF) // Phonetic Extensions Suppl.
+    .addRange(0x1DC0, 0x1DFF) // Combining Diacritical Marks Suppl.
+    .add(0x005F)              // Underscore.
+    .add(0x00A0)              // Non-breaking space.
+    .toString()
+    + ")" + "(?:" +
+    regenerate()
+    .add(require('unicode-9.0.0/General_Category/Lowercase_Letter/code-points'))
+    .add(require('unicode-9.0.0/General_Category/Uppercase_Letter/code-points'))
+    .add(require('unicode-9.0.0/General_Category/Other_Letter/code-points'))
+    .add(require('unicode-9.0.0/General_Category/Titlecase_Letter/code-points'))
+    .add(require('unicode-9.0.0/General_Category/Decimal_Number/code-points'))
+    .add(require('unicode-9.0.0/General_Category/Letter_Number/code-points'))
+    .add(require('unicode-9.0.0/General_Category/Other_Number/code-points'))
+    .addRange(0x1D00, 0x1D7F) // Phonetic Extensions.
+    .addRange(0x1D80, 0x1DBF) // Phonetic Extensions Suppl.
+    .addRange(0x1DC0, 0x1DFF) // Combining Diacritical Marks Suppl.
+    .add(0x005F)              // Underscore.
+    .add(0x00A0)              // Non-breaking space.
+    .add(0x0027)              // Special space/
+    .toString()
+    + ")*");  
   subscriptions.push(vscode.languages.setLanguageConfiguration('coq', {
-    indentationRules: { increaseIndentPattern: increaseIndentRE, decreaseIndentPattern: undefined },
-    wordPattern: new RegExp(
-      "(?:" +
-      regenerate()
-      .add(require('unicode-9.0.0/General_Category/Lowercase_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Uppercase_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Other_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Titlecase_Letter/code-points'))
-      .addRange(0x1D00, 0x1D7F) // Phonetic Extensions.
-      .addRange(0x1D80, 0x1DBF) // Phonetic Extensions Suppl.
-      .addRange(0x1DC0, 0x1DFF) // Combining Diacritical Marks Suppl.
-      .add(0x005F)              // Underscore.
-      .add(0x00A0)              // Non-breaking space.
-      .toString()
-      + ")" + "(?:" +
-      regenerate()
-      .add(require('unicode-9.0.0/General_Category/Lowercase_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Uppercase_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Other_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Titlecase_Letter/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Decimal_Number/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Letter_Number/code-points'))
-      .add(require('unicode-9.0.0/General_Category/Other_Number/code-points'))
-      .addRange(0x1D00, 0x1D7F) // Phonetic Extensions.
-      .addRange(0x1D80, 0x1DBF) // Phonetic Extensions Suppl.
-      .addRange(0x1DC0, 0x1DFF) // Combining Diacritical Marks Suppl.
-      .add(0x005F)              // Underscore.
-      .add(0x00A0)              // Non-breaking space.
-      .add(0x0027)              // Special space/
-      .toString()
-      + ")*")
+    indentationRules: { increaseIndentPattern: increaseIndentRE, decreaseIndentPattern: matchNothing },
+    wordPattern: wordPattern,
   }))
 
   formatAlignAfterBulletEdits.clear();
@@ -86,8 +88,13 @@ export function reload() : vscode.Disposable {
 
     if (editProviders.length > 0)
       subscriptions.push(vscode.languages.registerOnTypeFormattingEditProvider("coq", {
-        provideOnTypeFormattingEdits: (...args) => {
-          return editProviders.reduce((result, f) => result ? result : f.fun.apply(this, args), undefined);
+        provideOnTypeFormattingEdits: (document,position,ch,options,token) : vscode.TextEdit[] | Thenable<vscode.TextEdit[]> => {
+          for(let ep of editProviders) {
+            const editors = ep.fun(document,position,ch,options,token);
+            if(editors)
+              return editors;
+          }
+          return [];
       }}, editProviders[0].trigger, ...editProviders.map(x => x.trigger)));
 
   }
@@ -112,12 +119,12 @@ function formatCloseProof(doc: vscode.TextDocument, pos: vscode.Position, ch: st
   if(ch === '.' && pos.line > 0) {
     const line = doc.lineAt(pos.line);
 
-    let closeMatch : RegExpExecArray;
+    let closeMatch : RegExpExecArray|null;
     if(!(closeMatch = /^(\s*)((?:Qed|Defined|Admitted)\.\s*)$/.exec(line.text)))
       return undefined;
 
     const prevLine = doc.lineAt(pos.line-1);
-    let alignMatch : RegExpExecArray;
+    let alignMatch : RegExpExecArray|null;
     if(!(alignMatch = (new RegExp(String.raw `^(\s*)(?:\s{${options.tabSize}}|\t)\S`)).exec(prevLine.text)))
       return undefined;
     const {indent: indent} = makeIndent(alignMatch[1], options);
@@ -133,7 +140,7 @@ function formatAlignAfterBullet(doc: vscode.TextDocument, pos: vscode.Position, 
     const prevLine = doc.lineAt(pos.line-1);
     const line = doc.lineAt(pos.line);
 
-    let prevMatch : RegExpExecArray;
+    let prevMatch : RegExpExecArray|null;
     if(!(prevMatch = /^(\s*(?:\*+|\++|\-+)\s*)\S/.exec(prevLine.text)))
       return undefined;
     const {indent: indent, columns: indentColumns} = makeIndent(prevMatch[1], options);

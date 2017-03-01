@@ -5,13 +5,14 @@ import * as proto from './protocol'
 import {CoqDocument} from './CoqDocument'
 export {CoqDocument} from './CoqDocument'
 import {CoqLanguageServer} from './CoqLanguageServer'
-import * as util from 'util'
 import * as editorAssist from './EditorAssist'
 
 export function getProject() : CoqProject {
-  if(!CoqProject.getInstance())
+  const coq = CoqProject.getInstance();
+  if(!coq)
     throw "CoqProject not yet loaded";
-  return CoqProject.getInstance();
+  else
+    return coq;
 }
 
 export class CoqProject implements vscode.Disposable {
@@ -62,16 +63,15 @@ export class CoqProject implements vscode.Disposable {
     this.documents.forEach((doc) => doc.dispose());
     this.subscriptions.forEach((s) => s.dispose());
     this.langServer.dispose();
-    this.langServer = null;
     this.subscriptions = [];
     this.documents.clear();
   }
 
-  public get(uri: string): CoqDocument {
-    return this.documents.get(uri);
+  public get(uri: string): CoqDocument|null {
+    return this.documents.get(uri) || null;
   }
 
-  public getOrCurrent(uri: string): CoqDocument {
+  public getOrCurrent(uri: string): CoqDocument|null {
     return this.documents.get(uri) || this.activeDoc;
   }
 
@@ -93,13 +93,11 @@ export class CoqProject implements vscode.Disposable {
 
     // refresh this in case the loaded document has focus and it was not in our registry
     if(this.documents.has(vscode.window.activeTextEditor.document.uri.toString()))
-      this.activeDoc = this.documents.get(vscode.window.activeTextEditor.document.uri.toString());
+      this.activeDoc = this.documents.get(vscode.window.activeTextEditor.document.uri.toString()) || null;
   }
 
   private onDidChangeTextDocument(params: vscode.TextDocumentChangeEvent) {
     const uri = params.document.uri.toString();
-    const editor = vscode.window.visibleTextEditors.find((editor, i, a) =>
-      editor.document.uri.toString() === uri)
     const doc = this.documents.get(uri);
     if(!doc)
       return;
@@ -126,11 +124,13 @@ export class CoqProject implements vscode.Disposable {
   }
 
   public setActiveDoc(doc: vscode.Uri|string) : void {
-    this.activeDoc = this.documents.get(doc.toString());
+    this.activeDoc = this.documents.get(doc.toString()) || null;
   }
 
   private onDidChangeActiveTextEditor(editor: vscode.TextEditor) {
-    let oldUri : string;
+    if(!this.activeEditor)
+      return;
+    let oldUri : string|null;
     try {
       oldUri = this.activeEditor.document.uri.toString();
     } catch(err) {
@@ -146,29 +146,35 @@ export class CoqProject implements vscode.Disposable {
 
     // newly active editor
     const uri = editor.document ? editor.document.uri.toString() : null;
-    const doc = this.documents.get(uri) || this.tryLoadDocument(editor.document);
-
-    if(doc)
-      this.activeDoc = doc;
-
-    if(doc && oldDoc && uri==oldUri)
-      doc.doOnSwitchActiveEditor(this.activeEditor, editor);
-    else {
-      if(doc)
-        doc.doOnFocus(editor);
+    if(!uri) {
       if(oldDoc)
         oldDoc.doOnLostFocus();
-    }
+    } else {
+      const doc = this.documents.get(uri) || this.tryLoadDocument(editor.document);
 
+      if(doc)
+        this.activeDoc = doc;
+
+      if(doc && oldDoc && uri==oldUri)
+        doc.doOnSwitchActiveEditor(this.activeEditor, editor);
+      else {
+        if(doc)
+          doc.doOnFocus(editor);
+        if(oldDoc)
+          oldDoc.doOnLostFocus();
+      }
+    }
     this.activeEditor = editor;
   }
 
-  private async tryDocumentCommand(command: (editor: vscode.TextEditor) => Promise<void>, useActive=true, makeVisible = true, ...args) {
-    let editor = vscode.window.activeTextEditor;
-    let doc : CoqDocument;
+  private async tryDocumentCommand(command: (editor: vscode.TextEditor) => Promise<void>, useActive=true, makeVisible = true, ...args: any[]) {
+    let editor : vscode.TextEditor|null = vscode.window.activeTextEditor || null;
+    let doc : CoqDocument | null;
     try {
-      doc = this.documents.get(editor ? editor.document.uri.toString() : null);
-    } catch(err) {}
+      doc = editor ? this.documents.get(editor.document.uri.toString()) || null : null;
+    } catch(err) {
+      return;
+    }
 
     if(!doc && useActive) {
       doc = this.activeDoc;
@@ -176,7 +182,8 @@ export class CoqProject implements vscode.Disposable {
     }
 
     if(doc) {
-      if(makeVisible && !vscode.window.visibleTextEditors.some((d) => d.document===doc.getDocument()))
+      let doc_ = doc; // TypeScript bug: does not realize the doc is not null in the next line, but this seems to work
+      if(makeVisible && !vscode.window.visibleTextEditors.some((d) => d.document===doc_.getDocument()))
         await vscode.window.showTextDocument(doc.getDocument(), undefined, true);
 
       await command.call(doc,editor, ...args);

@@ -48,19 +48,19 @@ export function positionIsAfterOrEqual(pos1: Position, pos2: Position) : boolean
   return (pos1.line > pos2.line || (pos1.line===pos2.line && pos1.character >= pos2.character));
 }
 
-export function rangeContains(range: Range, pos: Position) : boolean {
+export function rangeContains(this: any, range: Range, pos: Position) : boolean {
   return !this.positionIsBefore(pos,range.start) && this.positionIsBefore(pos,range.end);
 }
 
-export function rangeContainsOrTouches(range: Range, pos: Position) : boolean {
+export function rangeContainsOrTouches(this: any, range: Range, pos: Position) : boolean {
   return !this.positionIsBeforeOrEqual(pos,range.start) && this.positionIsBeforeOrEqual(pos,range.end);
 }
 
-export function rangeIntersects(range1: Range, range2: Range) : boolean {
+export function rangeIntersects(this: any, range1: Range, range2: Range) : boolean {
   return this.rangeContains(range1,range2.start) || this.rangeContains(range1,range2.end);
 }
 
-export function rangeTouches(range1: Range, range2: Range) : boolean {
+export function rangeTouches(this: any, range1: Range, range2: Range) : boolean {
   return this.rangeContainsOrTouches(range1,range2.start) || this.rangeContainsOrTouches(range1,range2.end);
 }
 
@@ -70,7 +70,7 @@ export function locationAt(text: string, pos: Position) : number {
   let lastIndex = 0;
   while (line > 0) {
     const match = lineEndingRE.exec(text.substring(lastIndex));
-    if(match[2] === '' || match[2] === undefined) // no line-ending found
+    if(!match || match[2] === '' || match[2] === undefined) // no line-ending found
       return -1; // the position is beyond the length of text
     else {
       lastIndex+= match[0].length;
@@ -90,7 +90,7 @@ export function positionAt(text: string, offset: number) : Position {
   let lastIndex = 0;
   while(true) {
     const match = lineEndingRE.exec(text.substring(lastIndex));
-    if(lastIndex + match[1].length >= offset)
+    if(!match || lastIndex + match[1].length >= offset)
       return new Position(line, offset - lastIndex)
     lastIndex+= match[0].length;
     ++line;

@@ -15,7 +15,7 @@ class CoqStatusBarManager implements vscode.Disposable {
   private statusBar: vscode.StatusBarItem;
   private computingStatusBar: vscode.StatusBarItem;
   private interruptButtonStatusBar: vscode.StatusBarItem;
-  private computingTimer: NodeJS.Timer = null;
+  private computingTimer: NodeJS.Timer|null = null;
   private showingComputingTimeStatus = false;
 
   constructor() {
@@ -114,9 +114,9 @@ class CoqStatusBarManager implements vscode.Disposable {
 
 
 export class StatusBar implements vscode.Disposable {
-  private static manager : CoqStatusBarManager = null;
+  private static manager : CoqStatusBarManager|null = null;
   private static managerReferenceCount = 0;
-  private static focusedContext : StatusBar = null;
+  private static focusedContext : StatusBar|null = null;
 
   private state: State = { status: "ready" };
   private hidden = false;
@@ -128,8 +128,10 @@ export class StatusBar implements vscode.Disposable {
   }
 
   public dispose() {
+    if(StatusBar.managerReferenceCount == 0)
+      throw "StatusBar manager already been deallocated."
     --StatusBar.managerReferenceCount;
-    if(StatusBar.managerReferenceCount == 0) {
+    if(StatusBar.managerReferenceCount == 0 && StatusBar.manager) {
       StatusBar.manager.hide();
       StatusBar.manager.dispose();
       StatusBar.manager = null;
@@ -146,16 +148,17 @@ export class StatusBar implements vscode.Disposable {
   public unfocus() {
     if(StatusBar.focusedContext == this) {
       StatusBar.focusedContext = null;
-      StatusBar.manager.hide();
+      if(StatusBar.manager)
+        StatusBar.manager.hide();
     }
   }
 
-  private currentMessage() : string {
-    if(this.state.status === "message" || this.state.status === "computing")
-      return (<MessageState|ComputingState>this.state).message;
-    else
-      return ""
-  }
+  // private currentMessage() : string {
+  //   if(this.state.status === "message" || this.state.status === "computing")
+  //     return (<MessageState|ComputingState>this.state).message;
+  //   else
+  //     return ""
+  // }
 
   public setStateComputing(computeStatus: proto.ComputingStatus, message?: string) {
     let startTime : [number,number];
@@ -175,7 +178,7 @@ export class StatusBar implements vscode.Disposable {
       , computeStatus: computeStatus
       , updateTime: () => {
         if(this.state.status != "computing" || this.state.computeStatus !== proto.ComputingStatus.Computing)
-          return;
+          return 0;
         const delta = process.hrtime(this.state.startTime);
         this.state.computeTimeMS = delta[0] * 1000.0 + (delta[1] / 1000000.0);
         return this.state.computeTimeMS;
@@ -197,7 +200,7 @@ export class StatusBar implements vscode.Disposable {
   }
 
   private refreshState() {
-    if(StatusBar.focusedContext == this && !this.hidden)
+    if(StatusBar.focusedContext == this && !this.hidden && StatusBar.manager)
       StatusBar.manager.showState(this.state);
   }
 
@@ -209,7 +212,7 @@ export class StatusBar implements vscode.Disposable {
   public hide() {
     if(!this.hidden) {
       this.hidden = true;
-      if(StatusBar.focusedContext == this)
+      if(StatusBar.focusedContext == this && StatusBar.manager)
         StatusBar.manager.hide();
     }
   }
