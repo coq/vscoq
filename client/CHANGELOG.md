@@ -6,7 +6,9 @@
     * `coq.format.enable` - set to `false` to disable all auto formatting
     * `coq.format.indentAfterOpenProof` - option to indent after `Proof`
 * prettify-symbols-mode 0.3.0: use exported API to detect when the mode is enabled/disabled and adjust proof-view and output accordingly
-* fixes: #107 #110 #111 #112
+* fix #114: inconsistent STM/document state while editing
+* fix #109: option to only show proof view upon first interaction of a script instead of on-open
+* fixes: #107 #110 #111 #112 #120 #122 #119 #125 #115 #121
 
 
 ## 0.2.7
