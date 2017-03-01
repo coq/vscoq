@@ -57,17 +57,8 @@ export class CoqLanguageServer implements vscode.Disposable {
       }
     }
 
-    /** TODO: remove this once vscode-languageclient 3.0.0alpha.3 comes out, fixing #106 */
-    function startedInDebugMode(): boolean {
-      let args = (process as any).execArgv;
-      if (args) {
-        return args.some((arg:any) => /^--debug=?/.test(arg) || /^--debug-brk=?/.test(arg));
-      };
-      return false;
-    }
-
     // Create the language client and start the client.
-    this.server = new LanguageClient('Coq Language Server', serverOptions, clientOptions, startedInDebugMode());
+    this.server = new LanguageClient('Coq Language Server', serverOptions, clientOptions);
     this.server.onReady()
       .then(() => {
         this.server.onNotification(proto.UpdateHighlightsNotification.type, (p) => this.onUpdateHighlightsHandlers.forEach((h) => h(p)));
