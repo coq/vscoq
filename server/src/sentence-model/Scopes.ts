@@ -290,7 +290,7 @@ export class ScopeDeclaration<S extends {prev: S, next: S, getScope() : ScopeDec
     /** The sentence which defined this scope */
     private source: S,
     private myId : QualId,
-    private node: {kind: "begin", name: string, exports: boolean}|{kind: "end", name: string}|null,
+    protected node: {kind: "begin", name: string, exports: boolean}|{kind: "end", name: string}|null,
   ) {
 
   }
