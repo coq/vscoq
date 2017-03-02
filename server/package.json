@@ -13,8 +13,8 @@
     "node": "*"
   },
   "dependencies": {
-    "vscode-jsonrpc": "^3.0.4",
-    "vscode-languageserver": "^3.0.5",
+    "vscode-jsonrpc": "3.1.0",
+    "vscode-languageserver": "3.0.5",
     "sax": "^1.2.2",
     "xml2js": "^0.4.17",
     "async": "^2.1.5",

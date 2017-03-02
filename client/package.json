@@ -11,7 +11,7 @@
   "publisher": "siegebell",
   "license": "MIT",
 	"engines": {
- 		"vscode": "^1.7.0"    
+ 		"vscode": "^1.7.0"
 	},
 	"categories": [
 		"Languages"
@@ -259,8 +259,8 @@
 		"@types/node": "^7.0.5"
 	},
 	"dependencies": {
-    "vscode-jsonrpc": "^3.0.4",
-    "vscode-languageclient": "^3.0.4",
+    "vscode-jsonrpc": "3.1.0",
+    "vscode-languageclient": "3.0.4",
     "xml2js": "^0.4.17",
     "ws": "^2.1.0",
     "opener": "^1.4.3",
