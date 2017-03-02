@@ -8,7 +8,7 @@
     {
       "taskName": "watch",
       "args": ["run", "watch"],
-	    "isWatching": true,
+	    "isBackground": true,
       "isBuildCommand": true,
       "isTestCommand": false,
       "problemMatcher": "$tsc-watch"

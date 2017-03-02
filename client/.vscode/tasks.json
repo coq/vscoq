@@ -17,7 +17,7 @@
     {
       "taskName": "build",
       "args": ["run", "watch"], // , "--loglevel", "silent"
-	    "isWatching": true,
+	    "isBackground": true,
       "isBuildCommand": true,
       "isTestCommand": false,
       "problemMatcher": "$tsc-watch"
