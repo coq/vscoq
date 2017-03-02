@@ -21,7 +21,7 @@ type Decorations = Readonly<DecorationsInternal>;
 
 
 export let decorations : Decorations;
-let decorationsInteral : DecorationsInternal;
+let decorationsInternal : DecorationsInternal;
 
 export function initializeDecorations(context: vscode.ExtensionContext) {
   function create(style : vscode.DecorationRenderOptions) {
@@ -29,7 +29,7 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
     context.subscriptions.push(result);
     return result;
   }
-  decorationsInteral = {
+  decorationsInternal = {
     parsing: create({
       outlineWidth: '1px',
       outlineStyle: 'solid', 
@@ -88,6 +88,6 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
     }),
   };
 
-  decorations = decorationsInteral;
+  decorations = decorationsInternal;
 }
 
