@@ -20,7 +20,7 @@ interface TblTreeSettings {
 
 interface JQuery { 
   tbltree() : JQuery;
-  tbltree(settings: TblTreeSettings);
+  tbltree(settings: TblTreeSettings) : JQuery;
   tbltree(methodName:'expand', id: JQuery|string, user?: number): JQuery;
   tbltree(methodName:'collapse', id: JQuery|string, user?: number): JQuery;
   tbltree(methodName:'toggle', id: JQuery|string): JQuery;

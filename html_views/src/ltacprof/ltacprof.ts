@@ -14,12 +14,12 @@ interface LtacProfResults {
   tactics: LtacProfTactic[],
 }
 
-function getQueryStringValue(key) {
+function getQueryStringValue(key:string) : string {
     return decodeURI(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURI(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
 }
 
-function importStyles(doc) {
-  var parentStyleSheets = <CSSStyleSheet[]>doc.styleSheets;
+function importStyles(doc: Document) {
+  var parentStyleSheets = doc.styleSheets as any as CSSStyleSheet[];
   var cssString = "";
   for (var i = 0, count = parentStyleSheets.length; i < count; ++i) {
     if (parentStyleSheets[i].cssRules) {
@@ -37,7 +37,7 @@ function importStyles(doc) {
   document.getElementsByTagName("head")[0].appendChild(style);
 }
 
-function inheritStyles(p) {
+function inheritStyles(p: Window) {
   if (p) {
     importStyles(p.document);
     const pp = p.parent;
@@ -48,7 +48,7 @@ function inheritStyles(p) {
 
 
 
-var connection : WebSocket = null;
+var connection : WebSocket|null = null;
 
 function load() {
   if(parent.parent === parent)
@@ -164,7 +164,7 @@ function load() {
 // }
 
 
-function sleepFor( sleepDuration ){
+function sleepFor(sleepDuration: number) : void{
     var now = new Date().getTime();
     while(new Date().getTime() < now + sleepDuration){ /* do nothing */ } 
 }
@@ -270,7 +270,7 @@ function getParentNode(node: JQuery) : JQuery {
   return $('#results').tbltree('getRow',$('#results').tbltree('getParentID', node));
 }
 
-let updateResultsAlternatingBackgroundTimer;
+let updateResultsAlternatingBackgroundTimer : number;
 function updateResultsAlternatingBackground(delay?: number) {
   if(updateResultsAlternatingBackgroundTimer)
     clearTimeout(updateResultsAlternatingBackgroundTimer);

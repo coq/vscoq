@@ -3,21 +3,20 @@
 /// <reference path="./StateModel.ts" />
 /// <reference path="./protocol.ts" />
 
-function getQueryStringValue(key) {
+function getQueryStringValue(key: string) : string {
     return decodeURI(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURI(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
 }
 
 const stateModel = new StateModel();
 
 
-var throttleTimeout = null;
+var throttleTimeout : number|null = null;
 var throttleTimeoutCount = 0;
-var throttleEventHandler = <X>(handler: (X) => void) => (event:X) => {
+var throttleEventHandler = <X>(handler: (x:X) => void) => (event:X) => {
   throttleTimeoutCount = (throttleTimeoutCount + 1)%10;
   if(throttleTimeoutCount == 1)
     handler(event);
   else if(!throttleTimeout) {
-    clearTimeout(throttleTimeout);
     throttleTimeout = setTimeout(() => {
       throttleTimeout = null;
       handler(event);
@@ -34,8 +33,8 @@ var throttleEventHandler = <X>(handler: (X) => void) => (event:X) => {
 function computePrintingWidth() {
   try {
     const stateView = $('#states')[0];
-    const ctx = ($('#textMeasurer')[0] as HTMLCanvasElement).getContext("2d");
-    ctx.font = getComputedStyle($('#textMeasurer')[0]).font;
+    const ctx = ($('#textMeasurer')[0] as HTMLCanvasElement).getContext("2d")!;
+    ctx.font = getComputedStyle($('#textMeasurer')[0]).font || "";
     let widthChars = Math.floor(stateView.clientWidth / ctx.measureText("O").width);
     if (widthChars === Number.POSITIVE_INFINITY)
       widthChars = 1;
@@ -85,7 +84,7 @@ function setPrettifySymbolsMode(enabled: boolean) {
     .toggleClass("prettifySymbolsMode", enabled);
 }
 
-var connection : WebSocket = null;
+var connection : WebSocket|null = null;
 function load() {
 
   if(parent.parent === parent) {

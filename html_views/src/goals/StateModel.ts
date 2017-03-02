@@ -22,7 +22,7 @@ function getDisplayState(state: CommandResult) {
   }
 }
 
-function countUnfocusedGoals(u: UnfocusedGoalStack) {
+function countUnfocusedGoals(u: UnfocusedGoalStack|undefined) : number {
   if(!u)
     return 0;
   return u.before.length + u.after.length + countUnfocusedGoals(u.next);
@@ -103,7 +103,7 @@ function createAnnotatedText(text: AnnotatedText) : Node[] {
 }
 
 function onDoubleClickBreakableText(event: JQueryMouseEventObject) {
-  var target = <Element>event.currentTarget;
+  // var target = <Element>event.currentTarget;
   if($(event.currentTarget).hasClass('hypothesis')) {
     $(event.currentTarget).toggleClass('breakText');
     $(event.currentTarget).toggleClass('noBreakText');
@@ -161,11 +161,11 @@ function createFocusedGoals(goals: Goal[]) : JQuery {
 
 class StateModel {
 
-  private static hypothesesNodeClass = '.hypotheses';
-  private static goalNodeClass = '.goal';
-  private static focusedStateClass = '.focusedState';
+  // private static hypothesesNodeClass = '.hypotheses';
+  // private static goalNodeClass = '.goal';
+  // private static focusedStateClass = '.focusedState';
   private focusedState = 0;
-  private coqState : ProofView;
+  // private coqState : ProofView;
 
 
   constructor() {

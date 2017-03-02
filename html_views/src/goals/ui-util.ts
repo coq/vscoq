@@ -1,6 +1,6 @@
 
-function importStyles(doc) {
-  var parentStyleSheets = <CSSStyleSheet[]>doc.styleSheets;
+function importStyles(doc:Document) {
+  var parentStyleSheets = doc.styleSheets as any as CSSStyleSheet[];
   var cssString = "";
   for (var i = 0, count = parentStyleSheets.length; i < count; ++i) {
     if (parentStyleSheets[i].cssRules) {
@@ -19,7 +19,7 @@ function importStyles(doc) {
 }
 
 
-function inheritStyles(p) {
+function inheritStyles(p:Window) {
  if (p) {
     importStyles(p.document);
     const pp = p.parent;
