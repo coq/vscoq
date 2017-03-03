@@ -73,6 +73,8 @@ export interface CoqSettings {
   diagnostics?: {
     /** After each document edit, check for inconsistencies between the STM, sentences, and document. */
     checkTextSynchronization?: boolean,
+    /** After each command, check sentence-states for inconsistencies */
+    checkSentenceStateConsistency?: boolean,
   }
 }
 

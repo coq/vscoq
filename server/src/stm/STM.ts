@@ -143,7 +143,7 @@ export class CoqStateMachine {
   /** The connected instance of coqtop */
   private coqtop : coqtop.CoqTop;
 
-  constructor(private console: RemoteConsole
+  constructor(private project: CoqProject
     , private spawnCoqtop : ()=>coqtop.CoqTop
     , private callbacks: StateMachineCallbacks
   ) {
@@ -182,6 +182,8 @@ export class CoqStateMachine {
     await this.acquireCoq(async () => await this.coqtop.coqQuit());
     this.dispose();
   }
+
+  private get console() { return this.project.console; }
 
   /**
    * 
@@ -271,6 +273,12 @@ export class CoqStateMachine {
    * @param invalidatedSentences -- assumed to be sorted in descending order (bottom first)
    */
   private async cancelInvalidatedSentences(invalidatedSentences: State[]) : Promise<void> {
+    // Unlink and delete the invalidated sentences before any async operations
+    for(let sent of invalidatedSentences) {
+      sent.unlink();
+      this.deleteSentence(sent);
+    }
+
     if(invalidatedSentences.length <= 0)
       return;
     // Cancel the invalidated sentences
@@ -312,9 +320,6 @@ export class CoqStateMachine {
         this.callbacks.updateStmFocus(this.getFocusedPosition())
         return true;
       } else {
-  //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        for(let sent of invalidatedSentences)
-          sent.unlink();
         // We do not bother to await this async function
         this.cancelInvalidatedSentences(invalidatedSentences);
         return false;
@@ -1090,15 +1095,19 @@ private routeId = 1;
   private async startCommand() : Promise<false | (()=>void)> {
     if(this.isBusy())
       return false
+    if(this.coqLock.isLocked())
+      this.console.warn("STM is 'not busy' but lock is still held");
     const release = await this.coqLock.lock();
     this.status = STMStatus.Busy;
     return () => {
       this.status = STMStatus.Ready
       release();
+      // if()
+      //   this.assertSentenceConsistency();
     };
   }
 
-  private isBusy() {
+  public isBusy() {
     return this.status === STMStatus.Busy || this.status === STMStatus.Interrupting || this.editLock.isLocked();
   }
 
@@ -1162,6 +1171,58 @@ private routeId = 1;
     options.printingAll = this.currentCoqOptions.printingAll;
     options.printingUniverses = this.currentCoqOptions.printingUniverses;
     await this.coqtop.coqSetOptions(options);
+  }
+
+  /** Check for sentences that
+   * - overlap
+   * - exist but are unreachable
+   * - exist but are invalidated
+   * - are out of order (position in text does not agree with linking order)
+   * @returns true if everything is seems okay
+  */
+  public assertSentenceConsistency() : boolean {
+    var success = true;
+    const error = (message: string) => {
+      this.console.warn(message);
+      success = false;
+    }
+    if(this.isBusy())
+      return;
+    let prev : State = this.root;
+    let prevRange = prev.getRange();
+    const stateIds : number[] = [prev.getStateId()];
+    while(prev.getNext()) {
+      const st = prev.getNext();
+      const range = st.getRange();
+      if(textUtil.positionIsBefore(range.start, prev.getRange().end))
+        error(`States are out of order: id=${prev.getStateId()} and id=${st.getStateId()}`)
+
+      if(range.start === range.end && st !== this.root)
+        error(`Empty state sentence: id=${st.getStateId()}`)        
+
+      if(st.isInvalidated())
+        error(`State is invalidated but not deleted: id=${st.getStateId()}`)        
+
+      if(!this.sentences.has(st.getStateId()))
+        error(`State is reachable but not mapped: id=${st.getStateId()}`)        
+      else if(this.sentences.get(st.getStateId()) !== st)
+        error(`State does not map to itself: id=${st.getStateId()}`)        
+
+      stateIds.push(st.getStateId());
+      prev = st;
+      prevRange = range;
+    }
+
+    const ids = new Set(stateIds);
+    if(ids.size !== stateIds.length)
+      error('Reachable states have duplicate IDs')
+    
+    for(let id of this.sentences.keys()) {
+      if(!ids.has(id))
+        error(`State is mapped but unreachable: id=${id}`)      
+    }
+
+    return success;
   }
 
 

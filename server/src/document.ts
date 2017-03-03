@@ -302,7 +302,7 @@ export class CoqDocument implements TextDocument {
     if(this.isStmRunning())
       this.stm.shutdown(); // Don't bother awaiting
     this.stm = new CoqStateMachine(
-      this.project.console,
+      this.project,
       () => this.project.createCoqTopInstance(this.uri),
       {
         sentenceStatusUpdate: (x1,x2) => this.onCoqStateStatusUpdate(x1,x2),

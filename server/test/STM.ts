@@ -54,7 +54,6 @@ class MockCoqTop extends coqtop.CoqTop {
   async coqSetOptions(options) {};
 }
 
-
 describe("CoqStateMachine", function() {
   const projectSettings : Settings = {
     coq: {
@@ -125,11 +124,11 @@ describe("CoqStateMachine", function() {
   })
 
   describe('applyChangesToDocumentText', function() {
-    it('1', async function() {
+    it('STM.applyChangesToDocumentText', async function() {
       const commands = [{text: "Goal True.", range: range(0,0,0,10)},{text: "\npose True.", range: range(0,10,1,10)}];
       const doc = newDoc("Goal True.\npose True.\n");
       // const project = new CoqProject("", ) 
-      let stm = new CoqStateMachine(console, () => new MockCoqTop(), stmCallbacks);
+      let stm = new CoqStateMachine(project, () => new MockCoqTop(), stmCallbacks);
       assert.equal(stm.getStatesText(), "");
       await stm.interpretToPoint(pos(2,0), function*(b,e) { yield *commands; }, false, false, cancellation.token);
       assert.equal(stm.getStatesText(), "Goal True.\npose True.");
@@ -137,8 +136,9 @@ describe("CoqStateMachine", function() {
       assert.equal(stm.getStatesText(), "Goal True.");
       stm.applyChanges([makeChange("Goal True.\n", 0, 0, 0, 0, "pose True.\n")], 2, "pose True.\nGoal True.\n")
       assert.equal(stm.getStatesText(), "");
-      // await stm.flushEdits();
-      // assert.equal(stm.getStatesText(), "pose True.\nGoal True.");
+      await stm.flushEdits();
+      assert.ok(!stm.isBusy(), "STM should not be busy")
+      assert.ok(stm.assertSentenceConsistency(), "Sentence states are inconsistent");
     })
   })
 
