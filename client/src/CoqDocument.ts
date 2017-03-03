@@ -55,7 +55,7 @@ export class CoqDocument implements vscode.Disposable {
   /** Tracks which editors of this document have not had cursors positions changed since the last call to `rememberCursors()`. When stepping forward, the cursor is advanced for all editors whose cursors have not moved since the previous step. */
   private cursorUnmovedSinceCommandInitiated = new Set<vscode.TextEditor>();
   /** Coq STM focus  */
-  private focus: vscode.Position;
+  private focus?: vscode.Position;
   private stateViewFocus?: vscode.Position;
   private project: CoqProject;
   private currentLtacProfView: HtmlLtacProf|null = null;
@@ -228,8 +228,8 @@ export class CoqDocument implements vscode.Disposable {
   /** Bring the focus into the editor's view, but only scroll rightward
    * if the focus is not at the end of a line
    * */
-  public setCursorToPosition(pos: vscode.Position, editor: vscode.TextEditor, scroll: boolean = true, scrollHorizontal = false) {
-    if(!editor)
+  public setCursorToPosition(pos: vscode.Position|undefined, editor: vscode.TextEditor, scroll: boolean = true, scrollHorizontal = false) {
+    if(!editor || !pos)
       return;
     editor.selections = [new vscode.Selection(pos, pos)]
     if(scroll) {
@@ -338,6 +338,8 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   private showFocusDecorations() {
+    if(!this.focus)
+      return;
     const focusRange = new vscode.Range(this.focus.line,0,this.focus.line,1);
     if(this.focus.line === 0 && this.focus.character === 0) {
       for(let editor of this.allEditors()) {
