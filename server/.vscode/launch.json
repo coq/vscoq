@@ -6,9 +6,9 @@
 			"name": "Attach",
 			"type": "node",
 			"request": "attach",
+			"protocol": "auto",
 			"port": 6005,
 			"sourceMaps": true,
-			"outDir": "${workspaceRoot}/../client/server",
 			"outFiles": [
 				"${workspaceRoot}/../client/server/**/*.js"
 			]
@@ -18,8 +18,8 @@
 			"type": "node",
 			"sourceMaps": true,
 			"request": "attach",
+			"protocol": "auto",
 			"port": 5858,
-			"outDir": "${workspaceRoot}/../client/server",
 			"outFiles": [
 				"${workspaceRoot}/../client/server/**/*.js"
 			],
