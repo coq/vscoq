@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import * as proto from './protocol';
 
 import { workspace, ExtensionContext } from 'vscode';
-import { LanguageClient, LanguageClientOptions,ServerOptions } from 'vscode-languageclient';
+import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient';
 import * as vscodeClient from 'vscode-languageclient';
 
 // function createServerProcess(serverModule: string, debugOptions: string[]): ServerOptions {
@@ -23,8 +23,8 @@ import * as vscodeClient from 'vscode-languageclient';
 
 function createServerLocalExtension(serverModule: string, debugOptions: string[]): ServerOptions {
   const options: { run: vscodeClient.NodeModule; debug: vscodeClient.NodeModule } = {
-    run: { module: serverModule },
-    debug: { module: serverModule, options: { execArgv: debugOptions } }
+    run: { module: serverModule, transport: TransportKind.ipc },
+    debug: { module: serverModule, transport: TransportKind.ipc, options: { execArgv: debugOptions } }
   }
   return options;
 }
@@ -67,8 +67,8 @@ export class CoqLanguageServer implements vscode.Disposable {
         this.server.onNotification(proto.CoqStmFocusNotification.type, (p) => this.onUpdateCoqStmFocusHandlers.forEach((h) => h(p)));
         this.server.onNotification(proto.CoqLtacProfResultsNotification.type, (p) => this.onLtacProfResultsHandlers.forEach((h) => h(p)));
         console.log("Coq language server ready")
-      })
-      .catch((reason) => console.log("Coq language server failed to load: " + reason.toString()))
+      }, (reason) =>
+        console.log("Coq language server failed to load: " + reason.toString()));
 
     this.subscriptions.push(this.server.start());
   }
