@@ -20,7 +20,7 @@ import {CoqProject} from './CoqProject';
 
 // Create a connection for the server. The connection uses 
 // stdin / stdout for message passing
-export let connection: IConnection = createConnection(process.stdin, process.stdout);
+export let connection: IConnection = createConnection();
 
 export let project : CoqProject = null;
 

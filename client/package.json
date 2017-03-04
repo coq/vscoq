@@ -260,7 +260,7 @@
 	},
 	"dependencies": {
     "vscode-jsonrpc": "3.1.0",
-    "vscode-languageclient": "3.0.4",
+    "vscode-languageclient": "3.1.0",
     "xml2js": "^0.4.17",
     "ws": "^2.1.0",
     "opener": "^1.4.3",
