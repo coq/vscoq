@@ -87,7 +87,7 @@ namespace parseAstSymbols {
     return [identToSymbol(ast.ident, vscode.SymbolKind.Function, pos)]
   }
   export function assumptions(ast: parser.SAssumptions, pos: vscode.Position) : vscode.SymbolInformation[] {
-    return ast.assumptions.map((id) => identToSymbol(id, vscode.SymbolKind.Variable, pos))
+    return ast.idents.map((id) => identToSymbol(id, vscode.SymbolKind.Variable, pos))
   }
   export function section(ast: parser.SSection, pos: vscode.Position) : vscode.SymbolInformation[] {
     return [identToSymbol(ast.ident, vscode.SymbolKind.Namespace, pos)]
@@ -134,7 +134,10 @@ export function parseAstForSymbols(ast: parser.Sentence, pos: vscode.Position) :
       return []
     }
   } catch(err) {
-    server.connection.console.warn("Error processing AST: " + err.toString());
+    if(err instanceof Error)
+      server.connection.console.warn(`Error processing AST of type ${ast.type}: ` + err.message + '\n' + err.stack);
+    else
+      server.connection.console.warn(`Error processing AST of type ${ast.type}: ` + err.toString());
     return [];
   }
 }

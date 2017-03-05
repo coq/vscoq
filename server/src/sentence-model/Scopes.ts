@@ -529,7 +529,7 @@ namespace parseAstSymbols {
   }
   export function assumptions<S extends {prev: S, next: S, getScope() : ScopeDeclaration<S>|null}>(ast: ast.SAssumptions, sent: S, pos: vscode.Position) : ScopeDeclaration<S> {
     const result = new ScopeDeclaration(sent, [], null);
-    ast.assumptions.forEach(a => {
+    ast.idents.forEach(a => {
       result.addLocalSymbol(identToSymbol(a, SymbolKind.Assumption, pos));
     });
     return result;

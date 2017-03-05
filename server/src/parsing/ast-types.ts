@@ -175,7 +175,7 @@ export interface InductiveBody {
 export interface SAssumptions extends SentenceBase {
   type: "assumptions",
   kind: "Axiom" | "Conjecture" | "Parameter" | "Parameters" | "Variable" | "Variables" | "Hypothesis" | "Hypotheses",
-  assumptions: Identifier[],
+  idents: Identifier[],
 }
 
 export type Sentence
