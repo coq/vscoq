@@ -5,11 +5,12 @@ import * as vscode from 'vscode';
 import * as proto from './protocol';
 import * as textUtil from './text-util';
 
+type StoppedState = { status: "stopped" };
 type ReadyState = { status: "ready" };
 type ComputingState = { status: "computing",  message: string, startTime: [number,number], computeTimeMS: number, computeStatus: proto.ComputingStatus, updateTime: () => number };
 type MessageState = { status: "message", message: string };
 
-type State = ReadyState | ComputingState | MessageState;
+type State = StoppedState | ReadyState | ComputingState | MessageState;
 
 class CoqStatusBarManager implements vscode.Disposable {
   private statusBar: vscode.StatusBarItem;
@@ -50,6 +51,12 @@ class CoqStatusBarManager implements vscode.Disposable {
     }
 
     switch(state.status) {
+      case "stopped": {
+        this.statusBar.text = 'coqtop is not running.';
+        this.interruptButtonStatusBar.hide();
+        this.computingStatusBar.hide();
+        break;
+      }
       case "ready": {
         this.statusBar.text = 'Ready';
         this.interruptButtonStatusBar.hide();
@@ -118,7 +125,7 @@ export class StatusBar implements vscode.Disposable {
   private static managerReferenceCount = 0;
   private static focusedContext : StatusBar|null = null;
 
-  private state: State = { status: "ready" };
+  private state: State = { status: "stopped" };
   private hidden = false;
 
   constructor() {
@@ -128,6 +135,7 @@ export class StatusBar implements vscode.Disposable {
   }
 
   public dispose() {
+    this.unfocus();
     if(StatusBar.managerReferenceCount == 0)
       throw "StatusBar manager already been deallocated."
     --StatusBar.managerReferenceCount;
@@ -186,16 +194,34 @@ export class StatusBar implements vscode.Disposable {
     this.refreshState();
   }
 
+  public setCoqtopStatus(running: boolean) {
+    if(running && this.state.status === "stopped")
+      this.state = { status: 'ready' };
+    else if(!running)
+      this.state = {status: 'stopped'};      
+    this.refreshState();
+  }
+
+  private isStopped() {
+    return this.state.status === "stopped";
+  }
+
   public setStateReady() {
+    if(this.isStopped())
+      return;
     this.state = { status: 'ready' };
     this.refreshState();
   }
 
   public setStateWorking(name: string) {
+    if(this.isStopped())
+      return;
     this.setStateComputing(proto.ComputingStatus.Computing, name);
   }
 
   public setStateMessage(name: string) {
+    if(this.isStopped())
+      return;
     this.state = {status: 'message', message: name};
   }
 

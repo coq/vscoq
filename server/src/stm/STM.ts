@@ -56,7 +56,7 @@ export interface StateMachineCallbacks {
   error(sentenceRange: Range, errorRange: Range, message: AnnotatedText) : void;
   message(level: coqProto.MessageLevel, message: AnnotatedText) : void;
   ltacProfResults(range: Range, results: coqProto.LtacProfResults) : void;
-  coqDied(error?: string) : void;
+  coqDied(reason: proto.CoqtopStopReason, error?: string) : void;
 }
 
 const dummyCallbacks : StateMachineCallbacks = {
@@ -66,7 +66,7 @@ const dummyCallbacks : StateMachineCallbacks = {
   error(sentenceRange: Range, errorRange: Range, message: AnnotatedText) : void {},
   message(level: coqProto.MessageLevel, message: AnnotatedText) : void {},
   ltacProfResults(range: Range, results: coqProto.LtacProfResults) : void {},
-  coqDied(error?: string) : void {},
+  coqDied(reason: proto.CoqtopStopReason.InternalError, error?: string) : void {},
 }
 
 export type CommandIterator = (begin: Position, end?: Position) => Iterable<{text: string, range: Range}>;
@@ -148,18 +148,13 @@ export class CoqStateMachine {
     , private callbacks: StateMachineCallbacks
   ) {
     this.startFreshCoqtop();
-    // this.coqtop = new coqtop.CoqTop(this.project.settings.coqtop, scriptFile, this.project.getWorkspaceRoot(), this.console, {
-    //   onFeedback: (x1) => this.onFeedback(x1),
-    //   onMessage: (x1) => this.onCoqMessage(x1),
-    //   onClosed: (error?: string) => this.onCoqClosed(error),
-    // });
   }
 
   private startFreshCoqtop() {
     this.coqtop = this.spawnCoqtop();
     this.coqtop.onFeedback((x1) => this.onFeedback(x1));
     this.coqtop.onMessage((x1) => this.onCoqMessage(x1));
-    this.coqtop.onClosed((error?: string) => this.onCoqClosed(error));
+    this.coqtop.onClosed((isError: boolean, message?: string) => this.onCoqClosed(isError, message));
   }
 
   public dispose() {
@@ -917,12 +912,12 @@ private routeId = 1;
   }
 
   private handleInconsistentState(error : any) {
-    this.callbacks.coqDied("Inconsistent state: " + error.toString());
+    this.callbacks.coqDied(proto.CoqtopStopReason.InternalError, "Inconsistent state: " + error.toString());
     this.dispose();
   }
 
   private throwInconsistentState(error : string) {
-    this.callbacks.coqDied("Inconsistent state: " + error.toString());
+    this.callbacks.coqDied(proto.CoqtopStopReason.InternalError, "Inconsistent state: " + error.toString());
     this.dispose();
     throw new InconsistentState(error);
   }
@@ -1084,12 +1079,12 @@ private routeId = 1;
   }
 
   /** recieved from coqtop controller */
-  private async onCoqClosed(error?: string) {
-    if(!error || !this.isRunning())
+  private async onCoqClosed(isError: boolean, message?: string) {
+    this.callbacks.coqDied(isError ? proto.CoqtopStopReason.Anomaly : proto.CoqtopStopReason.UserRequest, message);
+    this.console.log(`onCoqClosed(${message})`);
+    if(!this.isRunning())
       return;
-    this.console.log(`onCoqClosed(${error})`);
     this.dispose();
-    this.callbacks.coqDied(error);
   }
 
   private async startCommand() : Promise<false | (()=>void)> {

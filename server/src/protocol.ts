@@ -311,6 +311,19 @@ export namespace CoqMessageNotification {
 
 export namespace CoqResetNotification { 
   export const type = new NotificationType<NotificationParams,void>('coqtop/wasReset')
+}
+
+export namespace CoqtopStartNotification { 
+  export const type = new NotificationType<NotificationParams,void>('coqtop/coqtopStarted')
+} 
+
+export enum CoqtopStopReason { UserRequest, Anomaly, InternalError }
+export interface NotifyCoqtopStopParams extends NotificationParams {
+  reason: CoqtopStopReason;
+  message?: string;
+}
+export namespace CoqtopStopNotification { 
+  export const type = new NotificationType<NotifyCoqtopStopParams,void>('coqtop/coqtopStopped')
 } 
 
 export interface DocumentPositionParams extends NotificationParams {

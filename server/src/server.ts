@@ -298,6 +298,10 @@ connection.onDidOpenTextDocument((params: vscodeLangServer.DidOpenTextDocumentPa
       connection.sendNotification(coqproto.CoqStmFocusNotification.type, {uri: uri, position: focus}),
     sendLtacProfResults: (results: coqproto.LtacProfResults) =>
       connection.sendNotification(coqproto.CoqLtacProfResultsNotification.type, {uri: uri, results: results}),
+    sendCoqtopStart: () =>
+      connection.sendNotification(coqproto.CoqtopStartNotification.type, {uri: uri}),
+    sendCoqtopStop: (reason: coqproto.CoqtopStopReason, message?: string) =>
+      connection.sendNotification(coqproto.CoqtopStopNotification.type, {uri: uri, reason: reason, message: message}),
   });
 
 });

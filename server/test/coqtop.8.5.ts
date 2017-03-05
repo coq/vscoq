@@ -84,7 +84,7 @@ describe("Coqtop 8.5", function() {
       coq = new CoqTop8(settings, "test.v", "./", dummyConsole);
       coq.onFeedback((x1) => feedback.push(x1));
       coq.onMessage((x1) => messages.push(x1));
-      coq.onClosed((error?: string) => isClosed = true);
+      coq.onClosed((isError: boolean, message?: string) => isClosed = true);
     })
 
     it("Init & Quit", async function() {
@@ -107,7 +107,7 @@ describe("Coqtop 8.5", function() {
       coq = new CoqTop8(settings, "test.v", "./", dummyConsole);
       coq.onFeedback((x1) => feedback.push(x1));
       coq.onMessage((x1) => messages.push(x1));
-      coq.onClosed((error?: string) => isClosed = true);
+      coq.onClosed((isError: boolean, message?: string) => isClosed = true);
       rootState = (await coq.startCoq()).stateId;
     })
 

@@ -98,7 +98,7 @@ export type GoalResult = NoProofResult | ProofModeResult
 export interface EventCallbacks {
   onFeedback? : (feedback: coqProto.StateFeedback) => void;
   onMessage? : (msg: coqProto.Message) => void;
-  onClosed?: (error?: any) => void;
+  onClosed?: (isError: boolean, message?: string) => void;
 }
 
 export function detectVersion(coqtopModule: string, cwd: string, console?: {log: (string)=>void, warn: (string)=>void}) : Promise<string|null> {
@@ -143,7 +143,7 @@ export abstract class IdeSlave {
     return { dispose: () => { this.callbacks.onMessage = undefined; } }
   }
 
-  public onClosed(handler: (error?: any) => void)
+  public onClosed(handler: (isError: boolean, message?: string) => void)
   {
     this.callbacks.onClosed = handler;
     return { dispose: () => { this.callbacks.onClosed = undefined; } }

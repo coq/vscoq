@@ -167,26 +167,19 @@ export class CoqProject implements vscode.Disposable {
       return;
     }
 
+    if(oldDoc)
+      oldDoc.doOnLostFocus();
+
     // newly active editor
     const uri = editor.document ? editor.document.uri.toString() : null;
-    if(!uri) {
-      if(oldDoc)
-        oldDoc.doOnLostFocus();
-    } else {
+    if(uri) {
       const doc = this.documents.get(uri) || this.tryLoadDocument(editor.document);
-
-      if(doc)
+      if(doc) {
         this.activeDoc = doc;
-
-      if(doc && oldDoc && uri==oldUri)
-        doc.doOnSwitchActiveEditor(this.activeEditor, editor);
-      else {
-        if(doc)
-          doc.doOnFocus(editor);
-        if(oldDoc)
-          oldDoc.doOnLostFocus();
+        doc.doOnFocus(editor);
       }
     }
+
     this.activeEditor = editor;
   }
 

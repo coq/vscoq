@@ -87,7 +87,7 @@ describe("CoqStateMachine", function() {
     error(sentenceRange: vscode.Range, errorRange: vscode.Range, message: AnnotatedText) : void {},
     message(level: coqProto.MessageLevel, message: AnnotatedText) : void {},
     ltacProfResults(range: vscode.Range, results: coqProto.LtacProfResults) : void {},
-    coqDied(error?: string) : void {},
+    coqDied(reason: proto.CoqtopStopReason, error?: string) : void {},
   }
 
   function newDoc(text: string|string[]) : TextDocumentItem {

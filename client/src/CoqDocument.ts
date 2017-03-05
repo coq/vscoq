@@ -59,6 +59,7 @@ export class CoqDocument implements vscode.Disposable {
   private stateViewFocus?: vscode.Position;
   private project: CoqProject;
   private currentLtacProfView: HtmlLtacProf|null = null;
+  private coqtopRunning = false;
 
   constructor(document: vscode.TextDocument, project: CoqProject) {
     this.statusBar = new StatusBar();
@@ -67,7 +68,12 @@ export class CoqDocument implements vscode.Disposable {
     // this.document = vscode.workspace.textDocuments.find((doc) => doc.uri === uri);
 
     this.documentUri = document.uri.toString();
-    this.langServer = new CoqDocumentLanguageServer(document.uri.toString());
+    try {
+      this.langServer = new CoqDocumentLanguageServer(document.uri.toString());
+    }  catch(err) {
+    var x = this.langServer;
+    x = x;
+    }
 
     this.view = new HtmlCoqView(document.uri, extensionContext);
     // this.view = new SimpleCoqView(uri.toString());
@@ -80,6 +86,16 @@ export class CoqDocument implements vscode.Disposable {
     this.langServer.onReset((p) => this.onCoqReset());
     this.langServer.onUpdateCoqStmFocus((p) => this.updateFocus(p.position));
     this.langServer.onLtacProfResults((p) => this.onLtacProfResults(p));
+    this.langServer.onCoqtopStart(p => {
+      this.coqtopRunning = true;
+      this.statusBar.setCoqtopStatus(true);
+  })
+    this.langServer.onCoqtopStop(p => {
+      this.coqtopRunning = false;
+      if(p.reason === proto.CoqtopStopReason.Anomaly || p.reason === proto.CoqtopStopReason.InternalError)
+        vscode.window.showErrorMessage(p.message || "Coqtop quit for an unknown reason.")
+      this.statusBar.setCoqtopStatus(false);
+    })
 
     this.view.resize(async (columns:number) => {
       try {
@@ -496,10 +512,11 @@ export class CoqDocument implements vscode.Disposable {
     // await this.view.show(true);
   }
 
-  public async doOnSwitchActiveEditor(oldEditor: TextEditor, newEditor: TextEditor) {
-    this.showFocusDecorations();
-    this.highlights.refresh([newEditor]);
-  }
+  // public async doOnSwitchActiveEditor(oldEditor: TextEditor, newEditor: TextEditor) {
+  //   this.showFocusDecorations();
+  //   this.highlights.refresh([newEditor]);
+  //   this.statusBar.focus();
+  // }
 
   private async queryDisplayOptionChange() : Promise<proto.DisplayOption|null> {
       const result = await vscode.window.showQuickPick(DisplayOptionPicks.allPicks);

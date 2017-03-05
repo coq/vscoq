@@ -132,14 +132,15 @@ export class IdeSlave extends coqtop.IdeSlave {
     return this.state === IdeSlaveState.Connected;
   }
   
-  protected onCoqTopError(error: any, channelName: string) : void {
+  protected onCoqTopError(error: string|{message: string}, channelName: string) : void {
     try {
+      const message = typeof error === "string" ? error : error.message;
       if(this.state !== IdeSlaveState.Connected)
         return;
 
-      this.console.error(`Error on ${channelName}: ` + (error.message || error.toString()));
-      if(this.callbacks.onClosed)
-        this.callbacks.onClosed(error);
+      this.console.error(`Error on ${channelName}: ` + message);
+      // if(this.callbacks.onClosed)
+      //   this.callbacks.onClosed(true, message);
     } finally {
       this.dispose();      
       this.state = IdeSlaveState.Error;

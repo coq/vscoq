@@ -43,7 +43,15 @@ export interface LtacProfCallback {
   sendLtacProfResults(results: coqProto.LtacProfResults) : void;
 }
 
-export type DocumentCallbacks = MessageCallback & ResetCallback & LtacProfCallback & DocumentFeedbackCallbacks;
+export interface CoqtopStartCallback {
+  sendCoqtopStart() : void;
+}
+
+export interface CoqtopStopCallback {
+  sendCoqtopStop(reason: thmProto.CoqtopStopReason, message?: string);
+}
+
+export type DocumentCallbacks = MessageCallback & ResetCallback & LtacProfCallback & CoqtopStartCallback & CoqtopStopCallback & DocumentFeedbackCallbacks;
 
 
 enum InteractionLoopStatus {Idle, CoqCommand, TextEdit};
@@ -71,7 +79,7 @@ export class CoqDocument implements TextDocument {
 
   private stm: CoqStateMachine|null = null;
   private clientConsole: RemoteConsole;
-  private callbacks : MessageCallback & ResetCallback & LtacProfCallback;
+  private callbacks : MessageCallback & ResetCallback & LtacProfCallback & CoqtopStartCallback & CoqtopStopCallback;
   private document: SentenceCollection = null;
   // Feedback destined for the extension client/view
   private feedback : FeedbackSync;
@@ -291,11 +299,12 @@ export class CoqDocument implements TextDocument {
     this.callbacks.sendLtacProfResults(results);
   }
   
-  private async onCoqDied(error?: string) {
-    if(!error)
-      return;
-    this.resetCoq();
-    this.callbacks.sendReset();
+  private async onCoqDied(reason: thmProto.CoqtopStopReason, error?: string) {
+    this.callbacks.sendCoqtopStop(reason, error);
+    if(error) {
+      this.resetCoq();
+      this.callbacks.sendReset();
+    }
   }
 
   public async resetCoq() {
@@ -303,15 +312,17 @@ export class CoqDocument implements TextDocument {
       this.stm.shutdown(); // Don't bother awaiting
     this.stm = new CoqStateMachine(
       this.project,
-      () => this.project.createCoqTopInstance(this.uri),
-      {
+      () => {
+        this.callbacks.sendCoqtopStart();
+        return this.project.createCoqTopInstance(this.uri);
+      }, {
         sentenceStatusUpdate: (x1,x2) => this.onCoqStateStatusUpdate(x1,x2),
         clearSentence: (x1) => this.onClearSentence(x1),
         updateStmFocus: (x1) => this.onUpdateStmFocus(x1),
         error: (x1,x2,x3) => this.onCoqStateError(x1,x2,x3),
         message: (x1,x2) => this.onCoqMessage(x1,x2),
         ltacProfResults: (x1,x2) => this.onCoqStateLtacProf(x1,x2),
-        coqDied: (error?: string) => this.onCoqDied(error),
+        coqDied: (reason: thmProto.CoqtopStopReason, error?: string) => this.onCoqDied(reason, error),
       });
   }
 

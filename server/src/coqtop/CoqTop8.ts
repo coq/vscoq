@@ -76,6 +76,10 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   }
 
   public /* override */ dispose() {
+    if(this.isRunning() && this.callbacks.onClosed) {
+      this.callbacks.onClosed(false);
+    }
+
     super.dispose();
 
     this.sockets.forEach(s => s.destroy());
@@ -255,6 +259,8 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     this.coqtopProc.stdout.on('data', (data:string) => this.coqtopOut(data))
     this.coqtopProc.on('exit', (code:number) => {
       this.console.log('coqtop exited with code: ' + code);
+      if(this.isRunning() && this.callbacks.onClosed)
+        this.callbacks.onClosed(false, 'coqtop closed with code: ' + code);
       this.dispose();
     });
     this.coqtopProc.stderr.on('data', (data:string) => {
@@ -262,15 +268,15 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     });
     this.coqtopProc.on('close', (code:number) => {
       this.console.log('coqtop closed with code: ' + code);
+      if(this.isRunning() && this.callbacks.onClosed)
+        this.callbacks.onClosed(false, 'coqtop closed with code: ' + code);
       this.dispose();
-      if(this.isRunning())
-        this.callbacks.onClosed('coqtop closed with code: ' + code);
     });
     this.coqtopProc.on('error', (code:number) => {
       this.console.log('coqtop could not be started: ' + code);
+      if(this.isRunning() && this.callbacks.onClosed)
+        this.callbacks.onClosed(true, 'coqtop closed with code: ' + code);
       this.dispose();
-      if(this.isRunning())
-        this.callbacks.onClosed('coqtop closed with code: ' + code);
     });
     // this.coqtopProc.stdin.write('\n');
   }
