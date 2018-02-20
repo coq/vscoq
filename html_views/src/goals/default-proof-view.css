@@ -9,19 +9,25 @@ html, body {
   left:0px;
   right:0px;
   bottom:0px;
-  }
-body {      
-  background-color: var(--background-color, black);
-  color: var(--color, white);
-  font-family: var(--font-family,"'Segoe WPC','Segoe UI',SFUIText-Light,HelveticaNeue-Light,sans-serif,'Droid Sans Fallback'");
+}
+body {
+  background-color: var(--background-color);
+  color: var(--color, hsl(0, 0%, 80%));
+  font-family: var(--font-family, 'Segoe WPC','Segoe UI', SFUIText-Light, HelveticaNeue-Light, sans-serif, 'Droid Sans Fallback');
   font-weight: var(--font-weight);
-  font-size: var(--font-size);
+  font-size: var(--font-size, 12pt);
+}
+body.vscode-light {
+  color: var(--color, hsl(0, 0%, 20%));
 }
 #messages {
-  color: white
+  color: hsl(0, 0%, 80%);
+  padding: 0 10pt;
+  font-family: var(--code-font-family);
+  font-size: var(--code-font-size);
 }
 .vscode-light #messages {
-  color: black
+  color: hsl(0, 0%, 20%);
 }
 #stdout {
   padding-left: 4pt;
@@ -30,6 +36,8 @@ body {
   color: red;
   white-space: pre-wrap;
   font-family: var(--code-font-family);
+  font-size: var(--code-font-size);
+  padding: 0 10pt;
 }
 .vscode-dark #error {
   color: pink;
@@ -48,12 +56,12 @@ body {
 }
 
 .hypotheses {
-  border-bottom: 2pt solid white;
+  border-bottom: 2pt solid hsla(0, 0%, 100%, 0.4);
   padding: 0pt;
   padding-bottom: 1em;
 }
 .vscode-light .hypotheses {
-  border-bottom-color: black;
+  border-bottom-color: hsla(0, 0%, 0%, 0.2);
 }
 .hypotheses .hypothesis .rel {
   margin-right: 1ex;
@@ -75,27 +83,27 @@ body {
 .hypotheses > li {
   list-style-type: none;
   display: block;
-  padding-left: 0pt;
+  padding: 2pt 10pt;
   text-indent: 0pt
 }
 .hypotheses li:nth-child(odd) {
-  background-color: rgba(255,255,255,0.04)
+  background-color: hsla(0, 0%, 0%, 0.05);
 }
 .hypotheses .new {
   background-color: rgba(0,255,0,0.09) !important;
-} 
+}
 .hypotheses .changed {
   background-color: rgba(0,0,255,0.15) !important;
-} 
+}
 .vscode-light .hypotheses li:nth-child(odd) {
-  background-color: rgba(0,0,0,0.02)
+  background-color: hsla(0, 0%, 100%, 0.05);
 }
 .vscode-light .hypotheses .new {
   background-color: rgba(00,170,00,0.25) !important;
-} 
+}
 .vscode-light .hypotheses .changed {
   background-color: rgba(0,0,255,0.05) !important;
-} 
+}
 .hypothesis {
   white-space: nowrap;
 }
@@ -120,7 +128,7 @@ body {
 .goal .goalId {
   color: lightblue;
   /*display: block;*/
-  margin-right: 1ex; 
+  margin-right: 1ex;
 }
 .vscode-light .goal .goalId {
   color: darkblue;
@@ -140,10 +148,10 @@ body {
 }
 .hypotheses .new .ident {
   font-weight: bold;
-} 
+}
 .hypotheses .changed .ident {
   font-style: italic;
-} 
+}
 .charsAdded {
   background-color: rgba(0,250,0,0.1);
   font-style: italic;
@@ -151,7 +159,7 @@ body {
 span[class~=charsAdded][class~=substitution]::before {
   background-color: rgba(0,250,0,0.1);
   font-style: italic;
-} 
+}
 .charsRemoved {
   background-color: rgba(250,0,0,0.6);
   text-decoration: line-through;
@@ -159,14 +167,14 @@ span[class~=charsAdded][class~=substitution]::before {
 span[class~=charsRemoved][class~=substitution]::before {
   background-color: rgba(250,0,0,0.6);
   text-decoration: line-through;
-} 
+}
 
 .vscode-light .charsAdded {
   background-color: rgba(0,250,0,0.2);
 }
 .vscode-light span[class~=charsAdded][class~=substitution]::before {
   background-color: rgba(0,250,0,0.2);
-} 
+}
 .vscode-light .charsRemoved {
   background-color: rgba(250,0,0,0.2);
 }
@@ -198,19 +206,16 @@ span[class~=charsRemoved][class~=substitution]::before {
   border-top: 0pt;
 }
 .goalsList li {
-  border-top: 1pt solid gray;
-  padding-bottom: 1em;
-  background-color: rgba(80,80,80,0.25);
+  border-top: 1pt solid hsla(0, 0%, 100%, 0.2);
+  padding: 5pt 10pt;
+  background-color: hsla(0, 0%, 100%, 0.05);
 }
 .vscode-light .goalsList li:first-child {
   background-color: inherit;
 }
 .vscode-light .goalsList li {
-  border-top-color: gray;
-  background-color: rgba(200,200,200,0.5);
-}
-.goalsList li:last-child {
-  padding-bottom: 0em;
+  border-top-color: hsla(0, 0%, 0%, 0.2);
+  background-color: hsla(0, 0%, 0%, 0.05);
 }
 #measureTest {
   display: none;
@@ -218,17 +223,36 @@ span[class~=charsRemoved][class~=substitution]::before {
 
 #toolbar {
   display: block;
-  height: 1em;
+  height: 20pt;
+  line-height: 20pt;
+  padding: 5pt 5pt;
+  margin-bottom: 10pt;
 }
+
 #toolbar button {
-  background: none;
-  border-color: blue;
+  display: inline-block;
+  background: hsla(0, 0%, 100%, 0.05);
+  border-color: hsla(0, 0%, 100%, 0.2);
   border-width: 1px;
-  height: 1.5em;
-  min-width: 1.5em;
-  color: green;
-  padding: 0pt;
-  font-size: 0.7em;
+  height: 100%;
+  color: hsl(0, 0%, 80%);
+  padding: 2pt 8pt;
+  font-size: inherit;
+  font-family: inherit;
+  outline: none;
+}
+#toolbar button:hover, #toolbar button:active {
+  cursor: pointer;
+  background: hsla(0, 0%, 100%, 0.1);
+}
+
+.vscode-light #toolbar button {
+  background: hsla(0, 0%, 0%, 0.05);
+  border-color: hsla(0, 0%, 0%, 0.2);
+  color: hsl(0, 0%, 20%);
+}
+.vscode-light #toolbar button:hover, .vscode-light #toolbar button:active {
+  background: hsla(0, 0%, 0%, 0.1);
 }
 
 .vscode-dark .richpp .constr-notation {

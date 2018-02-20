@@ -194,7 +194,7 @@ export class HtmlCoqView implements view.CoqView {
 
   private async updateSettings() {
     this.currentSettings.fontFamily = vscode.workspace.getConfiguration("editor").get("fontFamily") as string;
-    this.currentSettings.fontSize = `${vscode.workspace.getConfiguration("editor").get("fontSize") as number}px`;
+    this.currentSettings.fontSize = `${vscode.workspace.getConfiguration("editor").get("fontSize") as number}pt`;
     this.currentSettings.fontWeight = vscode.workspace.getConfiguration("editor").get("fontWeight") as string;
     this.currentSettings.cssFile = decodeURIComponent(proofViewCSSFile().toString());
     this.currentSettings.prettifySymbolsMode = psm.isEnabled();
