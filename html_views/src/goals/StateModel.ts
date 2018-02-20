@@ -172,8 +172,10 @@ export class StateModel {
         this.setErrorMessage(state.message);
       else if(state.type === 'not-running')
         this.setMessage('Not running.');
-      else if(state.type === 'no-proof')
+      else if(state.type === 'no-proof') {
+        $('#states').empty();
         this.setMessage('Not in proof mode.');
+      }
       else if(state.type === 'interrupted')
         this.setMessage("Interrupted.");
       else if(state.type === 'proof-view') {
