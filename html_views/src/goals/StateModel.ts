@@ -168,31 +168,27 @@ export class StateModel {
       this.clearErrorMessage();
       $('#stdout').text('');
 
-      if(state.type === 'failure')
+      $('#states').empty();
+      if (state.type === 'failure')
         this.setErrorMessage(state.message);
-      else if(state.type === 'not-running')
+      else if (state.type === 'not-running')
         this.setMessage('Not running.');
-      else if(state.type === 'no-proof') {
-        $('#states').empty();
+      else if (state.type === 'no-proof')
         this.setMessage('Not in proof mode.');
-      }
-      else if(state.type === 'interrupted')
+      else if (state.type === 'interrupted')
         this.setMessage("Interrupted.");
-      else if(state.type === 'proof-view') {
+      else if (state.type === 'proof-view') {
         if (countAllGoals(state) == 0) {
-          $('#states').empty();
           this.setMessage("No more subgoals.");
         } else if (state.goals) {
           if(state.goals.length > 0) {
             this.setMessage("");
             $('#states')
-            .empty()
             .append(
               [ createHypotheses(state.goals[0].hypotheses)
               , createFocusedGoals(state.goals)
             ])
           } else {
-            $('#states').empty();
             this.setMessage("There are unfocused goals.");
           }
         }
