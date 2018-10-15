@@ -69,7 +69,7 @@ export function prettyTextToString(txt: text.AnnotatedText) : string {
   const str: string = enabled ? text.textToDisplayString(txt) : text.textToString(txt);
   // `coqtop` loves outputting non-breaking spaces instead of normal whitespace, so we replace
   // them here with spaces to allow the user to copy any output and use it directly as input.
-  return str.replace(/\u00a0/g, " ");
+  return str.replace(/\u00a0+/g, " ");
 }
 
 export function load() : vscode.Disposable {
