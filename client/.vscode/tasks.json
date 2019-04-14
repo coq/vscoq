@@ -8,18 +8,17 @@
 
 // A task runner that calls a custom npm script that compiles the extension.
 {
-	"version": "0.1.0",
-	"command": "npm",
-	"isShellCommand": true,
-  "suppressTaskName": true,
-	"showOutput": "silent",
+  "version": "2.0.0",
   "tasks": [
     {
-      "taskName": "build",
-      "args": ["run", "watch"], // , "--loglevel", "silent"
-	    "isBackground": true,
-      "isBuildCommand": true,
-      "isTestCommand": false,
+      "label": "build",
+      "type": "shell",
+      "command": "npm run watch",
+      "isBackground": true,
+      "group": "build",
+      "presentation": {
+        "reveal": "silent"
+      },
       "problemMatcher": "$tsc-watch"
     }
     //,
@@ -40,20 +39,20 @@
   ]
 
 
-	// // we run the custom script "compile" as defined in package.json
-	// "args": ["run", "watch"],
+  // // we run the custom script "compile" as defined in package.json
+  // "args": ["run", "watch"],
 
-	// // The tsc compiler is started in watching mode
-	// "isWatching": true,
+  // // The tsc compiler is started in watching mode
+  // "isWatching": true,
 
-	// // use the standard tsc in watch mode problem matcher to find compile problems in the output.
- 	// "problemMatcher": "$tsc-watch"
-
-
+  // // use the standard tsc in watch mode problem matcher to find compile problems in the output.
+   // "problemMatcher": "$tsc-watch"
 
 
-	// we want to run npm
-	// "command": "gulp",
+
+
+  // we want to run npm
+  // "command": "gulp",
 
 
   // "tasks": [
