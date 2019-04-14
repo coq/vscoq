@@ -31,15 +31,23 @@ export namespace fs {
   export function readFile(filename: string) : Promise<Buffer>;
   export function readFile(filename: string, options: {flag?:string}) : Promise<Buffer>;
   export function readFile(filename: string, options: {encoding: string, flag?:string}) : Promise<string>;
-  export function readFile(filename: string, options?: string|{encoding?:string, flag?:string}) : Promise<Buffer|string> {
+  export function readFile(filename: string, options?: string|{flag?:string}) : Promise<Buffer|string> {
     return new Promise<Buffer|string>((resolve,reject) => {
-      nfs.readFile(filename, options, (err,data) => {
-        if(err)
-          reject(err);
-        else
-          resolve(data);
-      });
-    });
+      if (typeof options === "string") {
+        nfs.readFile(filename, options, (err,data) => {
+          if(err)
+            reject(err);
+          else
+            resolve(data);
+        });
+      } else {
+        nfs.readFile(filename, options, (err,data) => {
+          if(err)
+            reject(err);
+          else
+            resolve(data);
+        });
+      } });
   }
 
   export function exists(path: string|Buffer) : Promise<boolean> {

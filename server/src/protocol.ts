@@ -179,7 +179,7 @@ export type ProofViewResult = ProofView & ProofViewTag
 export type InterruptedResult = CommandInterrupted & InterruptedTag
 export type CommandResult =
   NotRunningResult |
-  BusyResult |
+  (BusyResult & FocusPosition) |
   (FailureResult & FocusPosition) |
   (ProofViewResult & FocusPosition) |
   (InterruptedResult & FocusPosition) |

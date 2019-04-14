@@ -59,7 +59,7 @@ export class CoqDocument implements vscode.Disposable {
   private stateViewFocus?: vscode.Position;
   private project: CoqProject;
   private currentLtacProfView: HtmlLtacProf|null = null;
-  private coqtopRunning = false;
+  //private coqtopRunning = false;
 
   constructor(document: vscode.TextDocument, project: CoqProject) {
     this.statusBar = new StatusBar();
@@ -87,11 +87,11 @@ export class CoqDocument implements vscode.Disposable {
     this.langServer.onUpdateCoqStmFocus((p) => this.updateFocus(p.position));
     this.langServer.onLtacProfResults((p) => this.onLtacProfResults(p));
     this.langServer.onCoqtopStart(p => {
-      this.coqtopRunning = true;
+      //this.coqtopRunning = true;
       this.statusBar.setCoqtopStatus(true);
   })
     this.langServer.onCoqtopStop(p => {
-      this.coqtopRunning = false;
+      //this.coqtopRunning = false;
       if(p.reason === proto.CoqtopStopReason.Anomaly || p.reason === proto.CoqtopStopReason.InternalError)
         vscode.window.showErrorMessage(p.message || "Coqtop quit for an unknown reason.")
       this.statusBar.setCoqtopStatus(false);

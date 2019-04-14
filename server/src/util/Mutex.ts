@@ -50,7 +50,7 @@ export class Mutex {
   /**
    * @returns a function that unlocks this mutex
    */
-  public lock(cancellationToken?: number | Thenable<void>) : Promise<()=>Promise<void>> {
+  public lock(cancellationToken?: number | Thenable<void>) : Promise<()=>void> {
     logger.log('Mutex.lock(...)');
     this.locked = true;
     const self = this;
@@ -59,12 +59,12 @@ export class Mutex {
 
     let isCancelled = false;
 
-    let unlockNext : () => Promise<void>;
+    let unlockNext : () => void;
     let cancelNext : (reason:string) => void;
     // The next caller in line will lock against this promise.
     // When they do so, they effectively tell us who to call
     // when we are unlocked by registering themselves as unlockNext
-    const willLock = new Promise<()=>Promise<void>>((resolve:()=>Promise<void>, reject) => {
+    const willLock = new Promise<()=>Promise<void>>((resolve, reject) => {
       unlockNext = () => {
         // in case the mutex was cancelled before we unlock, resolve() will do nothing, so we cannot rely on it to unlock this mutex
         if(self.waitingCount === 0)

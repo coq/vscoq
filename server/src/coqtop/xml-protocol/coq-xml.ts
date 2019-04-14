@@ -68,8 +68,8 @@ export class XmlStream extends events.EventEmitter {
       strictEntities: false,
       noscript: true
     };
-    
-    let saxStream = sax.createStream(false,options);
+
+    let saxStream = sax.createStream(false,options as sax.SAXOptions);
     saxStream.on('error', (err:any) => this.onError(err));
     saxStream.on('opentag', (node:sax.Tag) => this.onOpenTag(node));
     saxStream.on('closetag', (tagName:string) => this.onCloseTag(tagName));

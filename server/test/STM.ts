@@ -43,7 +43,7 @@ class MockCoqTop extends coqtop.CoqTop {
   async coqInterrupt() { return true };
   async coqInit () { return {stateId: 0} };
   async coqQuit () {};
-  async coqGoal () { return {mode: 'no-proof'} };
+  async coqGoal () : Promise<{ mode: 'no-proof' }> { return {mode: 'no-proof'} };
   async getStatus(force: boolean) { return {path: [], allProofs: [], proofNumber: 0} };
   async coqAddCommand(command: string, editId: number, stateId: number, verbose?: boolean) { return {stateId: ++this.currentState, message: ""} };
   async coqEditAt(stateId: number) { return {} };
