@@ -14,9 +14,9 @@ client/node_modules:
 node_modules: html_views/node_modules server/node_modules client/node_modules
 
 compile: node_modules
-	cd server && npm compile
-	cd html_views && npm compile
-	cd client && npm compile
+	cd server && npm run compile
+	cd html_views && npm run compile
+	cd client && npm run compile
 
 vsix: clean node_modules
 	cd client && vsce package
