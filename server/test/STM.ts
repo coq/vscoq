@@ -37,7 +37,7 @@ class MockCoqTop extends coqtop.CoqTop {
   currentState = 0;
   dispose() {};
   isRunning() { return true; };
-  getVersion() { return "mock-version" };
+  getVersion() { return semver.coerce("mock-version") };
   async startCoq() { return {stateId: 0} };
   isConnected() { return true };
   async coqInterrupt() { return true };

@@ -21,9 +21,11 @@
     "diff": "^3.2.0",
     "pegjs": "0.10.0",
     "string-argv": "0.0.2",
+    "semver": "6.0.0",
     "@types/sax": "^1.0.0",
     "@types/xml2js": "^0.0.32",
-    "@types/diff": "^0.0.31"
+    "@types/diff": "^0.0.31",
+    "@types/semver": "6.0.0"
   },
   "devDependencies": {
     "typescript": "^2.1.6",

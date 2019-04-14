@@ -45,7 +45,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private scriptFile : string;
   private projectRoot: string;
   // private supportsInterruptCall = false;
-  private coqtopVersion : string;
+  private coqtopVersion : semver.SemVer;
   private sockets : net.Socket[] = [];
 
   constructor(settings : CoqTopSettings, scriptFile: string, projectRoot: string, console: vscode.RemoteConsole) {
@@ -106,11 +106,14 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
 
     this.console.log('starting coqtop');
 
-    this.coqtopVersion = await coqtop.detectVersion(this.coqtopBin, this.projectRoot, this.console);
-    if(this.coqtopVersion)
-      this.console.log(`Detected coqtop version ${this.coqtopVersion}`)
+    let coqtopVersion = await coqtop.detectVersion(this.coqtopBin, this.projectRoot, this.console);
+    if(coqtopVersion)
+      this.console.log(`Detected coqtop version ${coqtopVersion}`)
     else
       this.console.warn(`Could not detect coqtop version`)
+
+    this.coqtopVersion = semver.coerce(coqtopVersion);
+    this.console.log(`Coqtop version parsed into semver version ${this.coqtopVersion.format()}`);
 
     const wrapper = this.findWrapper();
     if (wrapper !== null)
@@ -220,7 +223,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
         this.acceptConnection(this.controlChannelServer, 'control channel'),
       ]);
 
-    this.connect(this.coqtopVersion, channels[0], channels[0], channels[1], channels[1])
+    this.connect(this.coqtopVersion.format(), channels[0], channels[0], channels[1], channels[1])
   }
 
   /** Start coqtop.
@@ -250,7 +253,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
         this.acceptConnection(this.controlChannelServer2, 'control channel W'),
       ]);
 
-    this.connect(this.coqtopVersion, channels[0], channels[1], channels[2], channels[3])
+    this.connect(this.coqtopVersion.format(), channels[0], channels[1], channels[2], channels[3])
   }
 
   private startCoqTop(process : ChildProcess) {
@@ -289,16 +292,31 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     return path.join(this.settings.binPath.trim(), 'coqtop');
   }
 
+  private get coqidetopBin() {
+    return path.join(this.settings.binPath.trim(), 'coqidetop');
+  }
+
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
-    var coqtopModule = this.coqtopBin;
-    // var coqtopModule = 'cmd';
-    var args = [
-      // '/D /C', this.coqPath + '/coqtop.exe',
-      '-main-channel', mainAddr,
-      '-control-channel', controlAddr,
-      '-ideslave',
-      '-async-proofs', 'on'
-      ].concat(this.settings.args);
+    if (semver.satisfies(this.coqtopVersion, ">= 8.9")) {
+      var coqtopModule = this.coqidetopBin;
+      // var coqtopModule = 'cmd';
+      var args = [
+        // '/D /C', this.coqPath + '/coqtop.exe',
+        '-main-channel', mainAddr,
+        '-control-channel', controlAddr,
+        '-async-proofs', 'on'
+        ].concat(this.settings.args);
+    } else {
+      var coqtopModule = this.coqtopBin;
+      // var coqtopModule = 'cmd';
+      var args = [
+        // '/D /C', this.coqPath + '/coqtop.exe',
+        '-main-channel', mainAddr,
+        '-control-channel', controlAddr,
+        '-ideslave',
+        '-async-proofs', 'on'
+        ].concat(this.settings.args);
+    }
     this.console.log('exec: ' + coqtopModule + ' ' + args.join(' '));
     return spawn(coqtopModule, args, {detached: false, cwd: this.projectRoot});
   }

@@ -172,7 +172,7 @@ export class CommunicationError extends Error {
 export abstract class CoqTop extends IdeSlave {
   public abstract dispose(): void;
   public abstract isRunning() : boolean;
-  public abstract getVersion() : string;
+  public abstract getVersion() : semver.SemVer;
   public abstract startCoq() : Promise<InitResult>;
   // setupCoqTop(wrapper: string|null) : Promise<void>;
 

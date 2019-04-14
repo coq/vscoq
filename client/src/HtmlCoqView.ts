@@ -63,7 +63,7 @@ function proofViewHtmlPath() {
 
 
 function coqViewToFileUri(uri: vscode.Uri) {
-  return `file://${uri.path}?${uri.query}#${uri.fragment}`;
+  return `vscode-resource://${uri.path}?${uri.query}#${uri.fragment}`;
 }
 
 class IFrameDocumentProvider implements vscode.TextDocumentContentProvider {
@@ -177,10 +177,14 @@ export class HtmlCoqView implements view.CoqView {
 
     this.visible = true;
 
-    // const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
-    await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, pane, "ProofView: " + path.basename(this.docUri.fsPath));
-    // if(preserveFocus && focusedDoc)
-    //   await vscode.window.showTextDocument(focusedDoc);
+    const panel = vscode.window.createWebviewPanel(
+      'html_coq',
+      "ProofView: " + path.basename(this.docUri.fsPath),
+      pane,
+      {enableScripts: true}
+    );
+    let doc = await vscode.workspace.openTextDocument(this.coqViewUri);
+    panel.webview.html = doc.getText()
   }
 
   public async showExternal(scheme: "file"|"http", command? : (url:string)=>{module: string, args: string[]}) : Promise<void> {
