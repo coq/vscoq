@@ -1,11 +1,11 @@
 'use strict';
 
-import * as net from 'net'; 
+import * as net from 'net';
 import * as util from 'util';
 import * as path from 'path';
-import * as events from 'events'; 
+import * as events from 'events';
 // var xml2js = require('xml2js');
-// import * as stream from 'stream'; 
+// import * as stream from 'stream';
 import * as coqXml from './xml-protocol/coq-xml';
 import * as vscode from 'vscode-languageserver';
 
@@ -84,7 +84,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
 
     this.sockets.forEach(s => s.destroy());
     this.sockets = [];
-    
+
     if(this.coqtopProc) {
       try {
         this.coqtopProc.kill();
@@ -117,17 +117,17 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
       await this.setupCoqTop(wrapper);
     else
       await this.setupCoqTopReadAndWritePorts();
-    
+
     return await this.coqInit();
   }
 
-  
+
   protected async /* override */ checkState() : Promise<void> {
     if(this.coqtopProc === null)
       this.startCoq();
     super.checkState();
   }
-  
+
   private startListening(server: net.Server) : Promise<void> {
     const port = 0;
     const host = 'localhost';
@@ -142,7 +142,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
       });
     });
   }
-  
+
   private acceptConnection(server: net.Server, name:string) : Promise<net.Socket> {
     return new Promise<net.Socket>((resolve) => {
       server.once('connection', (socket:net.Socket) => {
@@ -156,7 +156,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
       });
     });
   }
-  
+
   private findWrapper() : string|null {
     const autoWrapper = path.join(__dirname, '../../../', 'coqtopw.exe');
 
@@ -174,7 +174,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
 
   // public async resetCoq(settings?: CoqTopSettings) : Promise<InitResult> {
   //   if(settings)
-  //     this.settings = settings;    
+  //     this.settings = settings;
   //   this.console.log('reset');
   //   this.cleanup(undefined);
 
@@ -189,7 +189,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   //     await this.setupCoqTop(wrapper);
   //   else
   //     await this.setupCoqTopReadAndWritePorts();
-    
+
   //   return await this.coqInit();
   // }
 
@@ -202,7 +202,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     var controlAddressArg = controlAddr.address + ':' + controlAddr.port;
 
     try {
-      const scriptUri = decodeURIComponent(this.scriptFile); 
+      const scriptUri = decodeURIComponent(this.scriptFile);
       if(wrapper !== null) {
         const traceFile = (scriptUri.startsWith("file:///") && this.settings.traceXmlProtocol)
           ? scriptUri.substring("file:///".length) + ".coq-trace.xml"
@@ -222,11 +222,11 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
 
     this.connect(this.coqtopVersion, channels[0], channels[0], channels[1], channels[1])
   }
-  
+
   /** Start coqtop.
    * Use two ports: one for reading & one for writing; i.e. HOST:READPORT:WRITEPORT
    */
-  private async setupCoqTopReadAndWritePorts() : Promise<void> {    
+  private async setupCoqTopReadAndWritePorts() : Promise<void> {
     await Promise.all(this.readyToListen);
 
     var mainAddr = this.mainChannelServer.address();
