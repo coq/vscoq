@@ -1,30 +1,20 @@
 'use strict';
 
 import * as net from 'net';
-import * as util from 'util';
 import * as path from 'path';
-import * as events from 'events';
-// var xml2js = require('xml2js');
-// import * as stream from 'stream';
-import * as coqXml from './xml-protocol/coq-xml';
 import * as vscode from 'vscode-languageserver';
+import * as semver from 'semver';
 
-import * as coqProto from './coq-proto';
-import {ChildProcess, exec, spawn} from 'child_process';
-import {CoqTopSettings, LtacProfTactic, LtacProfResults} from '../protocol';
+import {ChildProcess, spawn} from 'child_process';
+import {CoqTopSettings} from '../protocol';
 import * as fs from 'fs';
 import * as os from 'os';
-import * as xmlTypes from './xml-protocol/CoqXmlProtocolTypes';
-import {AnnotatedText, normalizeText, textToDisplayString} from '../util/AnnotatedText';
-import {createDeserializer} from './xml-protocol/deserialize';
 
 import * as coqtop from './CoqTop';
 export {Interrupted, CoqtopSpawnError, CallFailure,
   InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView,
   NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
-import {Interrupted, CoqtopSpawnError, CallFailure,
-  InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView,
-  NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
+import {CoqtopSpawnError, InitResult} from './CoqTop';
 import {IdeSlave as IdeSlave8, IdeSlaveState} from './IdeSlave8';
 
 export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
@@ -349,8 +339,3 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     }
   }
 }
-
-
-
-
-

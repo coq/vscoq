@@ -1,23 +1,12 @@
 // The module 'assert' provides assertion methods from node
 import * as assert from 'assert';
-import * as diff from 'diff';
-import * as os from 'os';
-import * as process from 'process';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as util from 'util';
 import * as vscode from 'vscode-languageserver';
 import * as vscrpc from 'vscode-jsonrpc';
+import * as semver from 'semver';
 
-import * as textUtil from '../src/util/text-util';
-import {CoqStateMachine, StateMachineCallbacks, StateStatus} from '../src/stm/STM';
+import {CoqStateMachine, StateMachineCallbacks} from '../src/stm/STM';
 import {Settings, CoqSettings, CoqTopSettings} from '../src/protocol';
-import {AnnotatedText} from '../src/util/AnnotatedText';
-import * as proto from '../src/protocol';
-import * as coqProto from '../src/coqtop/coq-proto';
 import * as coqtop from '../src/coqtop/CoqTop';
-
-import {TextDocumentItem} from '../src/document'
 
 function getText(text: string, range?: vscode.Range) : string {
   const lines = text.split(/\r\n|\n\r|\n/);
@@ -81,25 +70,15 @@ describe("CoqStateMachine", function() {
   const project = {console: console, getWorkspaceRoot: ()=>".", settings: projectSettings};
 
   const stmCallbacks : StateMachineCallbacks = {
-    sentenceStatusUpdate(range: vscode.Range, status: StateStatus) : void {},
-    clearSentence(range: vscode.Range) : void {},
-    updateStmFocus(focus: vscode.Position): void {},
-    error(sentenceRange: vscode.Range, errorRange: vscode.Range, message: AnnotatedText) : void {},
-    message(level: coqProto.MessageLevel, message: AnnotatedText) : void {},
-    ltacProfResults(range: vscode.Range, results: coqProto.LtacProfResults) : void {},
-    coqDied(reason: proto.CoqtopStopReason, error?: string) : void {},
+    sentenceStatusUpdate() : void {},
+    clearSentence() : void {},
+    updateStmFocus(): void {},
+    error() : void {},
+    message() : void {},
+    ltacProfResults() : void {},
+    coqDied() : void {},
   }
 
-  function newDoc(text: string|string[]) : TextDocumentItem {
-    if(text instanceof Array)
-      text = text.join('\n');
-    return {
-      uri: "file:///doc",
-      languageId: "coq",
-      text: text,
-      version: 0
-    };
-  }
 
   function makeChange(docText: string, startLine: number, startCharacter: number, endLine: number, endCharacter: number, text: string) : vscode.TextDocumentContentChangeEvent {
     const range = vscode.Range.create(startLine, startCharacter, endLine, endCharacter);
@@ -126,11 +105,10 @@ describe("CoqStateMachine", function() {
   describe('applyChangesToDocumentText', function() {
     it('STM.applyChangesToDocumentText', async function() {
       const commands = [{text: "Goal True.", range: range(0,0,0,10)},{text: "\npose True.", range: range(0,10,1,10)}];
-      const doc = newDoc("Goal True.\npose True.\n");
       // const project = new CoqProject("", )
       let stm = new CoqStateMachine(project, () => new MockCoqTop(), stmCallbacks);
       assert.equal(stm.getStatesText(), "");
-      await stm.interpretToPoint(pos(2,0), function*(b,e) { yield *commands; }, false, false, cancellation.token);
+      await stm.interpretToPoint(pos(2,0), function*() { yield *commands; }, false, false, cancellation.token);
       assert.equal(stm.getStatesText(), "Goal True.\npose True.");
       stm.applyChanges([makeChange("Goal True.\npose True.\n", 0, 10, 1, 10, "")], 1, "Goal True.\n")
       assert.equal(stm.getStatesText(), "Goal True.");

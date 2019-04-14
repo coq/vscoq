@@ -1,21 +1,9 @@
 'use strict';
 
-import * as net from 'net';
-import * as util from 'util';
-import * as path from 'path';
-import * as events from 'events';
-import * as stream from 'stream';
-import * as coqXml from './xml-protocol/coq-xml';
-import * as vscode from 'vscode-languageserver';
-
 import * as coqProto from './coq-proto';
-import {ChildProcess, exec, spawn} from 'child_process';
-import {CoqTopSettings, LtacProfTactic, LtacProfResults} from '../protocol';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as xmlTypes from './xml-protocol/CoqXmlProtocolTypes';
+import {spawn} from 'child_process';
+import * as semver from 'semver';
 import {AnnotatedText, normalizeText, textToDisplayString} from '../util/AnnotatedText';
-import {createDeserializer} from './xml-protocol/deserialize';
 
 /** Coqtop was interrupted; call cancelled */
 export class Interrupted {
@@ -113,7 +101,7 @@ export function detectVersion(coqtopModule: string, cwd: string, console?: {log:
         result += data
       });
 
-      coqtop.on('close', (code:number) => {
+      coqtop.on('close', () => {
         const ver = /^\s*The Coq Proof Assistant, version (.+?)\s/.exec(result);
         // if(!ver)
         //   console.warn('Could not detect coqtop version');
