@@ -11,10 +11,10 @@
   "publisher": "siegebell",
   "license": "MIT",
   "engines": {
-    "vscode": "^1.7.0"
+    "vscode": "^1.23.0"
   },
   "categories": [
-    "Languages"
+    "Programming Languages"
   ],
   "keywords": [
     "coq",
