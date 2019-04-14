@@ -17,7 +17,7 @@ export function getProject() : CoqProject {
 
 export class CoqProject implements vscode.Disposable {
   private documents = new Map<string, CoqDocument>();
-  private activeEditor : vscode.TextEditor|null = null;
+  private activeEditor : vscode.TextEditor|undefined = undefined;
   /** the coq-doc that is either active, was the last to be active, or is associated with a helper view (proof-view) */
   private activeDoc : CoqDocument|null = null;
   private static instance : CoqProject|null = null;
@@ -115,8 +115,9 @@ export class CoqProject implements vscode.Disposable {
     }
 
     // refresh this in case the loaded document has focus and it was not in our registry
-    if(this.documents.has(vscode.window.activeTextEditor.document.uri.toString()))
-      this.activeDoc = this.documents.get(vscode.window.activeTextEditor.document.uri.toString()) || null;
+    if (vscode.window.activeTextEditor)
+      if(this.documents.has(vscode.window.activeTextEditor.document.uri.toString()))
+        this.activeDoc = this.documents.get(vscode.window.activeTextEditor.document.uri.toString()) || null;
   }
 
   private onDidChangeTextDocument(params: vscode.TextDocumentChangeEvent) {
@@ -150,7 +151,7 @@ export class CoqProject implements vscode.Disposable {
     this.activeDoc = this.documents.get(doc.toString()) || null;
   }
 
-  private onDidChangeActiveTextEditor(editor: vscode.TextEditor) {
+  private onDidChangeActiveTextEditor(editor: vscode.TextEditor | undefined) {
     if(!this.activeEditor)
       return;
     let oldUri : string|null;
@@ -184,7 +185,7 @@ export class CoqProject implements vscode.Disposable {
   }
 
   private async tryDocumentCommand(command: (editor: vscode.TextEditor) => Promise<void>, useActive=true, makeVisible = true, ...args: any[]) {
-    let editor : vscode.TextEditor|null = vscode.window.activeTextEditor || null;
+    let editor : vscode.TextEditor|undefined = vscode.window.activeTextEditor;
     let doc : CoqDocument | null;
     try {
       doc = editor ? this.documents.get(editor.document.uri.toString()) || null : null;

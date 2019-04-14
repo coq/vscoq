@@ -53,7 +53,7 @@ export function reload() : vscode.Disposable {
     .add(0x00A0)              // Non-breaking space.
     .add(0x0027)              // Special space/
     .toString()
-    + ")*");  
+    + ")*");
   subscriptions.push(vscode.languages.setLanguageConfiguration('coq', {
     indentationRules: { increaseIndentPattern: increaseIndentRE, decreaseIndentPattern: matchNothing },
     wordPattern: wordPattern,
@@ -71,18 +71,20 @@ export function reload() : vscode.Disposable {
         if(formatAlignAfterBulletEdits.size === 0)
           return;
         const editor = vscode.window.activeTextEditor;
-        if (editor.document !== event.document)
-          return;
-        const edit = formatAlignAfterBulletEdits.get(event.document);
-        if(!edit || event.contentChanges.length !== 1)
-          return;
-        const editRange = event.contentChanges[0].range;
-        if(!editRange.isEmpty || edit.edit.newText.substring(editRange.start.character) !== event.contentChanges[0].text)
-          return;
-        formatAlignAfterBulletEdits.delete(event.document);
-        const selectionIdx = editor.selections.findIndex(p => p.active.isEqual(edit.currentPosition));
-        if (selectionIdx >= 0 && editor.selections[selectionIdx].isEmpty)
-          editor.selections = [new vscode.Selection(edit.newPosition, edit.newPosition)];
+        if (editor) {
+          if (editor.document !== event.document)
+            return;
+          const edit = formatAlignAfterBulletEdits.get(event.document);
+          if(!edit || event.contentChanges.length !== 1)
+            return;
+          const editRange = event.contentChanges[0].range;
+          if(!editRange.isEmpty || edit.edit.newText.substring(editRange.start.character) !== event.contentChanges[0].text)
+            return;
+          formatAlignAfterBulletEdits.delete(event.document);
+          const selectionIdx = editor.selections.findIndex(p => p.active.isEqual(edit.currentPosition));
+          if (selectionIdx >= 0 && editor.selections[selectionIdx].isEmpty)
+            editor.selections = [new vscode.Selection(edit.newPosition, edit.newPosition)];
+        }
       }));
     }
 

@@ -78,8 +78,13 @@ export class CoqDocument implements vscode.Disposable {
     this.view = new HtmlCoqView(document.uri, extensionContext);
     // this.view = new SimpleCoqView(uri.toString());
     // this.view = new MDCoqView(uri);
-    if(this.project.settings.showProofViewOn === "open-script")
-      this.view.show(true,adjacentPane(this.currentViewColumn()));
+    if(this.project.settings.showProofViewOn === "open-script") {
+      let viewCol = this.currentViewColumn();
+      if (viewCol)
+        this.view.show(true, adjacentPane(viewCol))
+      else
+        this.view.show(true, vscode.ViewColumn.One)
+    };
 
     this.langServer.onUpdateHighlights((p) => this.onDidUpdateHighlights(p));
     this.langServer.onMessage((p) => this.onCoqMessage(p));
@@ -111,8 +116,9 @@ export class CoqDocument implements vscode.Disposable {
         this.cursorUnmovedSinceCommandInitiated.delete(e.textEditor);
     }));
 
-    if(vscode.window.activeTextEditor.document.uri.toString() == this.documentUri)
-      this.statusBar.focus();
+    if(vscode.window.activeTextEditor)
+      if(vscode.window.activeTextEditor.document.uri.toString() == this.documentUri)
+        this.statusBar.focus();
     this.statusBar.setStateReady();
   }
 
@@ -122,8 +128,9 @@ export class CoqDocument implements vscode.Disposable {
     const value = await this.langServer.getGoal();
     this.updateView(value, false);
 
-    if(this.project.settings.autoRevealProofStateAtCursor && e.document === this.document && e.selections.length === 1)
-      this.viewGoalAt(e,e.selections[0].active);
+    if (e)
+      if(this.project.settings.autoRevealProofStateAtCursor && e.document === this.document && e.selections.length === 1)
+        this.viewGoalAt(e,e.selections[0].active)
   }
 
   public getUri() {
@@ -233,7 +240,10 @@ export class CoqDocument implements vscode.Disposable {
     if(editor)
       return editor.viewColumn;
     else
-      return vscode.window.activeTextEditor.viewColumn;
+      if (vscode.window.activeTextEditor)
+        return vscode.window.activeTextEditor.viewColumn;
+      else
+        return undefined;
   }
 
   private onCoqReset() {
@@ -309,8 +319,9 @@ export class CoqDocument implements vscode.Disposable {
       }
     }
 
-    if(await checkCoqtopExists(newPath))
-      await vscode.workspace.getConfiguration("coqtop").update("binPath", newPath, global);
+    if (newPath)
+      if(await checkCoqtopExists(newPath))
+        await vscode.workspace.getConfiguration("coqtop").update("binPath", newPath, global);
   }
 
   private handleResult(value: proto.CommandResult) {
@@ -346,8 +357,13 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   private updateView(state: proto.CommandResult, interactive = false) {
-    if(interactive && !this.view.isVisible() && this.project.settings.showProofViewOn === "first-interaction")
-      this.view.show(true,adjacentPane(this.currentViewColumn()));
+    if(interactive && !this.view.isVisible() && this.project.settings.showProofViewOn === "first-interaction") {
+      let viewCol = this.currentViewColumn();
+      if (viewCol)
+        this.view.show(true, adjacentPane(viewCol))
+      else
+        this.view.show(true, vscode.ViewColumn.One)
+    }
     this.view.update(state);
     this.stateViewFocus = state.type==="proof-view" ? new vscode.Position(state.focus.line,state.focus.character) : undefined;
     this.showFocusDecorations();
@@ -441,11 +457,13 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateReady();
   }
 
-  public async query(query: proto.QueryFunction, term: string) {
+  public async query(query: proto.QueryFunction, term: string | undefined) {
     this.statusBar.setStateWorking('Running query');
     try {
-      const results = await this.langServer.query(query, term);
-      this.displayQueryResults(results);
+      if (term) {
+        const results = await this.langServer.query(query, term);
+        this.displayQueryResults(results);
+      }
     } catch (err) {
     } finally {
       this.statusBar.setStateReady();
@@ -468,8 +486,12 @@ export class CoqDocument implements vscode.Disposable {
           const parts = require('string-argv')(command) as string[];
           return {module: parts[0], args: parts.slice(1)};
         });
-      } else
-        await this.view.show(true,adjacentPane(editor.viewColumn));
+      } else {
+        if (editor.viewColumn)
+          await this.view.show(true,adjacentPane(editor.viewColumn))
+        else
+          await this.view.show(true,vscode.ViewColumn.One)
+      };
     } catch (err) {}
   }
 
@@ -520,7 +542,10 @@ export class CoqDocument implements vscode.Disposable {
 
   private async queryDisplayOptionChange() : Promise<proto.DisplayOption|null> {
       const result = await vscode.window.showQuickPick(DisplayOptionPicks.allPicks);
-      return result.displayItem;
+      if (result)
+        return result.displayItem
+      else
+        return null;
   }
 
   public async setDisplayOption(item?: proto.DisplayOption, value?: proto.SetDisplayOption) {
