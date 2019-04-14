@@ -5,11 +5,11 @@
     "name": "Christian J. Bell",
     "email": "siegebell@gmail.com"
   },
-	"version": "0.0.1",
-	"publisher": "siegebell",
+  "version": "0.0.1",
+  "publisher": "siegebell",
   "license": "MIT license (MIT)",
   "engines": {
- 		"vscode": "^1.5.3",
+    "vscode": "^1.5.3",
     "node": "*"
   },
   "dependencies": {
@@ -34,11 +34,11 @@
   "scripts": {
     "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./",
     "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ./",
-		"test": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./ && mocha -u tdd ../client/server/test",
-		"test-debug": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./ && mocha -u tdd --debug-brk=5858 ../client/server/test"
+    "test": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./ && mocha -u tdd ../client/server/test",
+    "test-debug": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./ && mocha -u tdd --debug-brk=5858 ../client/server/test"
   },
-  "repository" :
-  { "type" : "git"
-  , "url" : "https://github.com/siegebell/vscoq.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/siegebell/vscoq.git"
   }
 }

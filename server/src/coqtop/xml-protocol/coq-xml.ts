@@ -42,10 +42,10 @@ export function escapeXml(unsafe: string) : string {
 
 export class XmlStream extends events.EventEmitter {
   private stack : Node[] = [];
-  
+
   public constructor(private inputStream: NodeJS.ReadableStream, private readonly deserializer: Deserialize, callbacks?: EventCallbacks) {
     super();
-    
+
     if(callbacks) {
       if(callbacks.onValue)
         this.on('response: value', (x:ValueReturn) => callbacks.onValue(x));
@@ -58,7 +58,7 @@ export class XmlStream extends events.EventEmitter {
       if(callbacks.onError)
         this.on('error', (x:any) => callbacks.onError(x));
     }
-    
+
     let options : sax.SAXOptions | {strictEntities: boolean} = {
       lowercase: true,
       trim: false,
@@ -78,7 +78,7 @@ export class XmlStream extends events.EventEmitter {
     saxStream.write('<coqtoproot>'); // write a dummy root node to satisfy the xml parser
     this.inputStream.pipe(saxStream);
   }
-  
+
   private onError(err:any[]) {
     this.emit('error', err);
   }
@@ -128,7 +128,7 @@ export class XmlStream extends events.EventEmitter {
         newTop.$children.push(current);
         newTop['richpp'] = current;
         this.annotateTextMode = false;
-        return; 
+        return;
       }
     } else if (this.stack.length === 0)
       return;
@@ -136,7 +136,7 @@ export class XmlStream extends events.EventEmitter {
       let currentTop = this.stack.pop();
       let tagName = currentTop.$name;
       let value = this.deserializer.deserialize(currentTop);
-      
+
       if (this.stack.length > 0) {
         let newTop = this.stack[this.stack.length - 1];
         newTop.$children.push(value);
@@ -150,7 +150,7 @@ export class XmlStream extends events.EventEmitter {
       }
     }
   }
-  
+
   private onText(text : string) {
     if(this.annotateTextMode) {
       const top = this.textStack[this.textStack.length-1];
@@ -164,17 +164,17 @@ export class XmlStream extends events.EventEmitter {
       // this.stack[this.stack.length-1].$text += text;
     }
   }
-  
+
   private onEnd() {
     this.emit('end');
   }
-  
+
   public pause() {
     this.inputStream.pause();
   }
-  
+
   public resume() {
     this.inputStream.resume();
   }
-  
+
 }

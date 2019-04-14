@@ -196,13 +196,13 @@ class StateModel {
 
       if(state.type === 'failure')
         this.setErrorMessage(state.message);
-      else if(state.type === 'not-running') 
+      else if(state.type === 'not-running')
         this.setMessage('Not running.');
       else if(state.type === 'no-proof')
         this.setMessage('Not in proof mode.');
       else if(state.type === 'interrupted')
         this.setMessage("Interrupted.");
-      else if(state.type === 'proof-view') { 
+      else if(state.type === 'proof-view') {
         if (countAllGoals(state) == 0) {
           $('#states').empty();
           this.setMessage("No more subgoals.");

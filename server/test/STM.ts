@@ -24,7 +24,7 @@ function getText(text: string, range?: vscode.Range) : string {
   const newLines = text.split(/[^\r\n]+/);
   newLines.shift();
   const lineAt = (l: number) => lines[l] + newLines[l];
-  
+
   if(range.start.line === range.end.line)
     return lineAt(range.start.line).substring(range.start.character, range.end.character);
   else
@@ -48,7 +48,7 @@ class MockCoqTop extends coqtop.CoqTop {
   async coqAddCommand(command: string, editId: number, stateId: number, verbose?: boolean) { return {stateId: ++this.currentState, message: ""} };
   async coqEditAt(stateId: number) { return {} };
   async coqLtacProfilingResults(stateId?: number, routeId?: number) {};
-  async coqResizeWindow(columns: number) {};  
+  async coqResizeWindow(columns: number) {};
   async coqQuery(query: string, stateId?: number, routeId?: number) { return "" };
   async coqGetOptions(options) {};
   async coqSetOptions(options) {};
@@ -68,7 +68,7 @@ describe("CoqStateMachine", function() {
         indentAfterBullet: "none",
         indentAfterOpenProof: false,
         unindentOnCloseProof: false,
-      },      
+      },
     } as CoqSettings,
     coqtop: {
       args: [],
@@ -127,7 +127,7 @@ describe("CoqStateMachine", function() {
     it('STM.applyChangesToDocumentText', async function() {
       const commands = [{text: "Goal True.", range: range(0,0,0,10)},{text: "\npose True.", range: range(0,10,1,10)}];
       const doc = newDoc("Goal True.\npose True.\n");
-      // const project = new CoqProject("", ) 
+      // const project = new CoqProject("", )
       let stm = new CoqStateMachine(project, () => new MockCoqTop(), stmCallbacks);
       assert.equal(stm.getStatesText(), "");
       await stm.interpretToPoint(pos(2,0), function*(b,e) { yield *commands; }, false, false, cancellation.token);
@@ -146,12 +146,12 @@ describe("CoqStateMachine", function() {
   //   let doc : TextDocumentItem;
   //   let sc : SentenceCollection;
   //   beforeEach(function() {
-  //     doc = newDoc("Goal True.\npose True.\n"); 
+  //     doc = newDoc("Goal True.\npose True.\n");
   //     sc = new SentenceCollection(doc);
   //     assert.equal(sc.getText(), "Goal True.\npose True.\n");
   //     assert.deepStrictEqual(sc.getSentences().map(s => s.getText()), ["Goal True.","\npose True."]);
   //   })
-  
+
   //   it('down - two transactions', function() {
   //     sc.applyTextChanges(1+doc.version, [makeChange("Goal True.\npose True.\n", 0, 10, 1, 10, "")])
   //     assert.equal(sc.getText(), "Goal True.\n");

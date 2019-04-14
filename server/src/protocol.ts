@@ -148,7 +148,7 @@ export interface UnfocusedGoalStack {
   // subgoals that appear before the focus
   before: Goal[];
   // reference to the more-focused background goals
-  next?: UnfocusedGoalStack 
+  next?: UnfocusedGoalStack
   // subgoals that appear after the focus
   after: Goal[];
 }
@@ -207,41 +207,41 @@ export interface LtacProfResults {
 }
 
 
-export namespace InterruptCoqRequest { 
+export namespace InterruptCoqRequest {
   export const type = new RequestType<CoqTopParams, void, void, void>('coqtop/interrupt');
-} 
-export namespace QuitCoqRequest { 
+}
+export namespace QuitCoqRequest {
   export const type = new RequestType<CoqTopParams, void, void, void>('coqtop/quitCoq')
-} 
-export namespace ResetCoqRequest { 
+}
+export namespace ResetCoqRequest {
   export const type = new RequestType<CoqTopParams, void, void, void>('coqtop/resetCoq')
-} 
-export namespace StepForwardRequest { 
+}
+export namespace StepForwardRequest {
   export const type = new RequestType<CoqTopParams, CommandResult, void, void>('coqtop/stepForward')
-} 
-export namespace StepBackwardRequest { 
+}
+export namespace StepBackwardRequest {
   export const type = new RequestType<CoqTopParams, CommandResult, void, void>('coqtop/stepBackward')
-} 
-export namespace InterpretToPointRequest { 
+}
+export namespace InterpretToPointRequest {
   export const type = new RequestType<CoqTopInterpretToPointParams, CommandResult, void, void>('coqtop/interpretToPoint')
-} 
-export namespace InterpretToEndRequest { 
+}
+export namespace InterpretToEndRequest {
   export const type = new RequestType<InterpretToEndParams, CommandResult, void, void>('coqtop/interpretToEnd')
-} 
-export namespace GoalRequest { 
+}
+export namespace GoalRequest {
   export const type = new RequestType<CoqTopParams, CommandResult, void, void>('coqtop/goal')
 }
 export interface CachedGoalParams extends CoqTopParams {
   position: vscode.Position,
   direction: "preceding"|"subsequent",
 }
-export namespace CachedGoalRequest { 
+export namespace CachedGoalRequest {
   export const type = new RequestType<CachedGoalParams, CommandResult, void, void>('coqtop/cachedGoal')
 }
-export namespace FinishComputationsRequest { 
+export namespace FinishComputationsRequest {
   export const type = new RequestType<CoqTopParams, void, void, void>('coqtop/finishComputations')
 }
-export namespace QueryRequest { 
+export namespace QueryRequest {
   export const type = new RequestType<CoqTopQueryParams, CoqTopQueryResult, void, void>('coqtop/query')
 }
 export type QueryFunction = "locate"|"check"|"print"|"search"|"about"|"searchAbout";
@@ -256,30 +256,30 @@ export interface CoqTopQueryResult {
 export interface CoqTopResizeWindowParams extends CoqTopParams {
   columns: number;
 }
-export namespace ResizeWindowRequest { 
+export namespace ResizeWindowRequest {
   export const type = new RequestType<CoqTopResizeWindowParams, void, void, void>('coqtop/resizeWindow')
-} 
+}
 
 export interface CoqTopSetDisplayOptionsParams extends CoqTopParams {
   options: {item: DisplayOption, value: SetDisplayOption}[]
 }
-export namespace SetDisplayOptionsRequest { 
+export namespace SetDisplayOptionsRequest {
   export const type = new RequestType<CoqTopSetDisplayOptionsParams, void, void, void>('coqtop/setDisplayOptions')
-} 
+}
 
 export interface CoqTopLtacProfResultsParams extends CoqTopParams {
   offset?: number;
 }
-export namespace LtacProfResultsRequest { 
+export namespace LtacProfResultsRequest {
   export const type = new RequestType<CoqTopLtacProfResultsParams, void, void, void>('coqtop/ltacProfResults')
 }
 
-export namespace GetSentencePrefixTextRequest { 
+export namespace GetSentencePrefixTextRequest {
   export const type = new RequestType<DocumentPositionParams, string, void, void>('coqtop/getSentencePrefixText')
-} 
+}
 
 export enum HighlightType {
-  StateError=0, Parsing=1, Processing=2, Incomplete=3, Processed=4, Axiom=5 
+  StateError=0, Parsing=1, Processing=2, Incomplete=3, Processed=4, Axiom=5
 }
 
 // export interface Highlight {
@@ -297,42 +297,42 @@ export interface Highlights {
 
 export type NotifyHighlightParams = NotificationParams & Highlights;
 
-export namespace UpdateHighlightsNotification { 
+export namespace UpdateHighlightsNotification {
   export const type = new NotificationType<NotifyHighlightParams,void>('coqtop/updateHighlights')
-} 
+}
 
 export interface NotifyMessageParams extends NotificationParams {
   level: string;
   message: AnnotatedText;
 }
-export namespace CoqMessageNotification { 
+export namespace CoqMessageNotification {
   export const type = new NotificationType<NotifyMessageParams,void>('coqtop/message')
-} 
+}
 
-export namespace CoqResetNotification { 
+export namespace CoqResetNotification {
   export const type = new NotificationType<NotificationParams,void>('coqtop/wasReset')
 }
 
-export namespace CoqtopStartNotification { 
+export namespace CoqtopStartNotification {
   export const type = new NotificationType<NotificationParams,void>('coqtop/coqtopStarted')
-} 
+}
 
 export enum CoqtopStopReason { UserRequest, Anomaly, InternalError }
 export interface NotifyCoqtopStopParams extends NotificationParams {
   reason: CoqtopStopReason;
   message?: string;
 }
-export namespace CoqtopStopNotification { 
+export namespace CoqtopStopNotification {
   export const type = new NotificationType<NotifyCoqtopStopParams,void>('coqtop/coqtopStopped')
-} 
+}
 
 export interface DocumentPositionParams extends NotificationParams {
   position: vscode.Position;
 }
 
-export namespace CoqStmFocusNotification { 
+export namespace CoqStmFocusNotification {
   export const type = new NotificationType<DocumentPositionParams,void>('coqtop/stmFocus')
-} 
+}
 
 
 export enum ComputingStatus {Finished, Computing, Interrupted}
@@ -340,15 +340,15 @@ export enum ComputingStatus {Finished, Computing, Interrupted}
 //   status: ComputingStatus;
 //   computeTimeMS: number;
 // }
-// export namespace CoqComputingStatusNotification { 
+// export namespace CoqComputingStatusNotification {
 //   export const type: NotificationType<NotifyComputingStatusParams> =
 //   { get method() { return 'coqtop/computingStatus' }
-//   , _:undefined }; 
-// } 
+//   , _:undefined };
+// }
 
 export interface NotifyLtacProfResultsParams extends NotificationParams {
   results: LtacProfResults
 }
-export namespace CoqLtacProfResultsNotification { 
+export namespace CoqLtacProfResultsNotification {
   export const type = new NotificationType<NotifyLtacProfResultsParams,void>('coqtop/ltacProfResults')
-} 
+}

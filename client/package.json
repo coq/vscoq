@@ -1,7 +1,7 @@
 {
-	"name": "vscoq",
+  "name": "vscoq",
   "displayName": "VSCoq",
-	"description": "An IDE for the Coq Proof Assistant",
+  "description": "An IDE for the Coq Proof Assistant",
   "author": {
     "name": "Christian J. Bell",
     "email": "siegebell@gmail.com",
@@ -10,48 +10,61 @@
   "version": "0.2.7",
   "publisher": "siegebell",
   "license": "MIT",
-	"engines": {
- 		"vscode": "^1.7.0"
-	},
-	"categories": [
-		"Languages"
-	],
-  "keywords": [
-    "coq", "theorem prover", "proof assistant"
+  "engines": {
+    "vscode": "^1.7.0"
+  },
+  "categories": [
+    "Languages"
   ],
-	"activationEvents": [
-		"onLanguage:coq"
-	],
+  "keywords": [
+    "coq",
+    "theorem prover",
+    "proof assistant"
+  ],
+  "activationEvents": [
+    "onLanguage:coq"
+  ],
   "readme": "https://github.com/siegebell/vscoq/blob/master/README.md",
   "bugs": "https://github.com/siegebell/vscoq/issues",
   "homepage": "https://github.com/siegebell/vscoq/blob/master/README.md",
-	"main": "./out/src/extension",
-	"contributes": {
-		"languages": [
-    { "id": "coq",
-			"aliases": ["Coq", "coq", "Gallina", "gallina"],
-			"extensions": [".v"],
-			"configuration": "./coq.configuration.json"
-		}],
-		"grammars": [{
-			"language": "coq",
-			"scopeName": "source.coq",
-			"path": "./syntaxes/coq.tmLanguage"
-		}],
-		"configuration": {
-			"type": "object",
-			"title": "Coq configuration",
-			"properties": {
-				"coqtop.binPath": {
-					"type": "string",
-					"default": "",
-					"description": "Path to coqc and coqtop binaries."
-				},
-				"coqtop.args": {
-					"type": "array",
-					"default": [],
-					"description": "A list of arguments to send to coqtop."
-				},
+  "main": "./out/src/extension",
+  "contributes": {
+    "languages": [
+      {
+        "id": "coq",
+        "aliases": [
+          "Coq",
+          "coq",
+          "Gallina",
+          "gallina"
+        ],
+        "extensions": [
+          ".v"
+        ],
+        "configuration": "./coq.configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "coq",
+        "scopeName": "source.coq",
+        "path": "./syntaxes/coq.tmLanguage"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Coq configuration",
+      "properties": {
+        "coqtop.binPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to coqc and coqtop binaries."
+        },
+        "coqtop.args": {
+          "type": "array",
+          "default": [],
+          "description": "A list of arguments to send to coqtop."
+        },
         "coqtop.autoUseWrapper": {
           "type": "boolean",
           "default": true,
@@ -69,15 +82,18 @@
         },
         "coqtop.startOn": {
           "type": "string",
-          "enum": ["open-script", "interaction"],
+          "enum": [
+            "open-script",
+            "interaction"
+          ],
           "default": "interaction",
           "description": "When to start an instance of coqtop: when a Coq script is opened (`open-script`) or else when the user begins interaction (`interaction`; default)."
         },
-				"coq.loadCoqProject": {
-					"type": "boolean",
-					"default": true,
-					"description": "Load settings from _CoqProject (if found at the root of the Code project)"
-				},
+        "coq.loadCoqProject": {
+          "type": "boolean",
+          "default": true,
+          "description": "Load settings from _CoqProject (if found at the root of the Code project)"
+        },
         "coq.moveCursorToFocus": {
           "type": "boolean",
           "default": true,
@@ -95,24 +111,45 @@
         },
         "coq.revealProofStateAtCursorDirection": {
           "type": "string",
-          "enum": ["preceding", "subsequent"],
+          "enum": [
+            "preceding",
+            "subsequent"
+          ],
           "default": "preceding",
           "description": "Controls whether viewing the state of a sentence reveaks either the parent/source/preceding or child/subsequent state."
         },
         "coq.showProofViewOn": {
           "type": "string",
-          "enum": ["open-script", "first-interaction", "manual"],
+          "enum": [
+            "open-script",
+            "first-interaction",
+            "manual"
+          ],
           "default": "first-interaction",
           "description": "Create the proof view when a Coq script is opened, the user first interacts with coqtop, or else let the user do it manually."
         },
         "coq.externalViewUrlCommand": {
-          "anyOf": [{"enum": ["firefox ${url}","chrome ${url}","'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' ${url}"]}, {"type": "string"}],
+          "anyOf": [
+            {
+              "enum": [
+                "firefox ${url}",
+                "chrome ${url}",
+                "'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' ${url}"
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ],
           "default": "${url}",
           "description": "The command to execute to view a url."
         },
         "coq.externalViewScheme": {
           "type": "string",
-          "enum": ["file", "http"],
+          "enum": [
+            "file",
+            "http"
+          ],
           "default": "http",
           "description": "Choose to host external proof-views either via the file system or a web service. \"file\": let the filesystem host the webpage (file:///); \"http\": run a webserver to host the webpage. Some external viewers (like Window's 'start' and OSX's 'open') do not preserve query parameters when viewing \"file\" schemes, so you may try \"http\" instead."
         },
@@ -123,7 +160,11 @@
         },
         "coq.format.indentAfterBullet": {
           "type": "string",
-          "enum": ["none", "indent", "align"],
+          "enum": [
+            "none",
+            "indent",
+            "align"
+          ],
           "default": "none",
           "description": "Control how to indent the line after a bullet. \"none\" - no indent; \"indent\" - tab-indent; \"align\" - align to the previous line's tactic"
         },
@@ -142,123 +183,417 @@
           "default": null,
           "description": "Hack: vscode does not currently indicate to extensions where user-settings should be stored. Currently, we store such settings in this extension's own directory, but these will be overriden when this extension is updated. This setting allows you to override where user-settings are stored. WARNING: this setting will eventually go away."
         }
-			}
-		},
+      }
+    },
     "commands": [
-      {"command": "extension.coq.quit", "title": "Quit", "category": "Coq"},
-      {"command": "extension.coq.reset", "title": "Reset", "category": "Coq"},
-      {"command": "extension.coq.interrupt", "title": "Interrupt", "category": "Coq"},
-      {"command": "extension.coq.finishComputations", "title": "Finish Computations", "category": "Coq"},
-      {"command": "extension.coq.stepForward", "title": "Step Forward", "category": "Coq"},
-      {"command": "extension.coq.stepBackward", "title": "Step Backward", "category": "Coq"},
-      {"command": "extension.coq.interpretToPoint", "title": "Interpret To Point", "category": "Coq"},
-      {"command": "extension.coq.interpretToPointSynchronous", "title": "Interpret To Point (Synchronous)", "category": "Coq"},
-      {"command": "extension.coq.interpretToEnd", "title": "Interpret To End", "category": "Coq"},
-      {"command": "extension.coq.interpretToEndSynchronous", "title": "Interpret To End (Synchronous)", "category": "Coq"},
-      {"command": "extension.coq.moveCursorToFocus", "title": "Move cursor to the current focus location", "category": "Coq"},
-      {"command": "extension.coq.query.check", "title": "Check", "description": "Check the type of term at the cursor", "category": "Coq"},
-      {"command": "extension.coq.query.locate", "title": "Locate", "description": "Locate the term at the cursor", "category": "Coq"},
-      {"command": "extension.coq.query.search", "title": "Search", "description": "Search for the term pattern at the cursor", "category": "Coq"},
-      {"command": "extension.coq.query.print", "title": "Print", "description": "Print the definition of the term at the cursor", "category": "Coq"},
-      {"command": "extension.coq.query.about", "title": "About", "description": "About the term pattern at the cursor", "category": "Coq"}, 
-      {"command": "extension.coq.query.searchAbout", "title": "SearchAbout", "description": "SearchAbout the term pattern at the cursor", "category": "Coq"}, 
-      {"command": "extension.coq.query.prompt.check", "title": "Prompt Check", "description": "Check the type of a term", "category": "Coq"},
-      {"command": "extension.coq.query.prompt.locate", "title": "Prompt Locate", "description": "Locate a term", "category": "Coq"},
-      {"command": "extension.coq.query.prompt.about", "title": "Prompt About", "description": "About a term", "category": "Coq"}, 
-      {"command": "extension.coq.query.prompt.search", "title": "Prompt Search", "description": "Search for a term", "category": "Coq"},
-      {"command": "extension.coq.query.prompt.searchAbout", "title": "Prompt SearchAbout", "description": "SearchAbout a term", "category": "Coq"}, 
-      {"command": "extension.coq.query.prompt.print", "title": "Prompt Print", "description": "Print the definition of a term", "category": "Coq"},
-      {"command": "extension.coq.display.toggle", "title": "Display options", "category": "Coq"},
-      {"command": "extension.coq.display.toggle.implicitArguments", "title": "Display Implicit Arguments", "category": "Coq"},
-      {"command": "extension.coq.display.toggle.coercions", "title": "Display Coercions", "category": "Coq"},
-      {"command": "extension.coq.display.toggle.rawMatchingExpressions", "title": "Display Raw Matching Expressions", "category": "Coq"},
-      {"command": "extension.coq.display.toggle.notations", "title": "Display Notations", "category": "Coq"},
-      {"command": "extension.coq.display.toggle.allBasicLowLevelContents", "title": "Display All Basic Low Level Contents", "category": "Coq"},
-      {"command": "extension.coq.display.toggle.existentialVariableInstances", "title": "Display Existential Variable Instances", "category": "Coq"},
-      {"command": "extension.coq.display.toggle.universeLevels", "title": "Display Universe Levels", "category": "Coq"},
-      {"command": "extension.coq.display.toggle.allLowLevelContents", "title": "Display All LowLevel Contents", "category": "Coq"},
-      {"command": "extension.coq.proofView.open", "title": "Open proof view", "category": "Coq"},
-      {"command": "extension.coq.proofView.openExternal", "title": "Open proof view in external browser", "category": "Coq"},
-      {"command": "extension.coq.proofView.viewStateAt", "title": "View the proof-state at the cursor position", "category": "Coq"},
-      {"command": "extension.coq.ltacProf.getResults", "title": "View ltac profile", "category": "Coq"},
-      {"command": "extension.coq.proofView.customizeProofViewStyle", "title": "Customize proof-view styling", "category": "Coq"}
+      {
+        "command": "extension.coq.quit",
+        "title": "Quit",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.reset",
+        "title": "Reset",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.interrupt",
+        "title": "Interrupt",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.finishComputations",
+        "title": "Finish Computations",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.stepForward",
+        "title": "Step Forward",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.stepBackward",
+        "title": "Step Backward",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.interpretToPoint",
+        "title": "Interpret To Point",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.interpretToPointSynchronous",
+        "title": "Interpret To Point (Synchronous)",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.interpretToEnd",
+        "title": "Interpret To End",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.interpretToEndSynchronous",
+        "title": "Interpret To End (Synchronous)",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.moveCursorToFocus",
+        "title": "Move cursor to the current focus location",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.check",
+        "title": "Check",
+        "description": "Check the type of term at the cursor",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.locate",
+        "title": "Locate",
+        "description": "Locate the term at the cursor",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.search",
+        "title": "Search",
+        "description": "Search for the term pattern at the cursor",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.print",
+        "title": "Print",
+        "description": "Print the definition of the term at the cursor",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.about",
+        "title": "About",
+        "description": "About the term pattern at the cursor",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.searchAbout",
+        "title": "SearchAbout",
+        "description": "SearchAbout the term pattern at the cursor",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.prompt.check",
+        "title": "Prompt Check",
+        "description": "Check the type of a term",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.prompt.locate",
+        "title": "Prompt Locate",
+        "description": "Locate a term",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.prompt.about",
+        "title": "Prompt About",
+        "description": "About a term",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.prompt.search",
+        "title": "Prompt Search",
+        "description": "Search for a term",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.prompt.searchAbout",
+        "title": "Prompt SearchAbout",
+        "description": "SearchAbout a term",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.query.prompt.print",
+        "title": "Prompt Print",
+        "description": "Print the definition of a term",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.display.toggle",
+        "title": "Display options",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.display.toggle.implicitArguments",
+        "title": "Display Implicit Arguments",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.display.toggle.coercions",
+        "title": "Display Coercions",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.display.toggle.rawMatchingExpressions",
+        "title": "Display Raw Matching Expressions",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.display.toggle.notations",
+        "title": "Display Notations",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.display.toggle.allBasicLowLevelContents",
+        "title": "Display All Basic Low Level Contents",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.display.toggle.existentialVariableInstances",
+        "title": "Display Existential Variable Instances",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.display.toggle.universeLevels",
+        "title": "Display Universe Levels",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.display.toggle.allLowLevelContents",
+        "title": "Display All LowLevel Contents",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.proofView.open",
+        "title": "Open proof view",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.proofView.openExternal",
+        "title": "Open proof view in external browser",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.proofView.viewStateAt",
+        "title": "View the proof-state at the cursor position",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.ltacProf.getResults",
+        "title": "View ltac profile",
+        "category": "Coq"
+      },
+      {
+        "command": "extension.coq.proofView.customizeProofViewStyle",
+        "title": "Customize proof-view styling",
+        "category": "Coq"
+      }
     ],
     "keybindings": [
-      {"key": "ctrl+alt+.", "mac": "cmd+ctrl+.", "command": "extension.coq.moveCursorToFocus", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+a", "mac": "cmd+ctrl+a", "command": "extension.coq.query.about", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+k", "mac": "cmd+ctrl+k", "command": "extension.coq.query.searchAbout", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+l", "mac": "cmd+ctrl+l", "command": "extension.coq.query.locate", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+c", "mac": "cmd+ctrl+c", "command": "extension.coq.query.check", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+p", "mac": "cmd+ctrl+p", "command": "extension.coq.query.print", "when": "editorTextFocus && editorLangId == coq"},
-
-      {"key": "ctrl+alt+home",       "mac": "cmd+ctrl+home",       "command": "extension.coq.reset", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+home",       "mac": "cmd+ctrl+home",       "command": "extension.coq.reset", "when": "resourceScheme==coq-view"},
-      {"key": "ctrl+alt+`",          "mac": "cmd+ctrl+`",          "command": "extension.coq.interrupt", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+`",          "mac": "cmd+ctrl+`",          "command": "extension.coq.interrupt", "when": "resourceScheme==coq-view"},
-      {"key": "ctrl+alt+pausebreak", "mac": "cmd+ctrl+pausebreak", "command": "extension.coq.interrupt", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+pausebreak", "mac": "cmd+ctrl+pausebreak", "command": "extension.coq.interrupt", "when": "resourceScheme==coq-view"},
-      {"key": "ctrl+alt+down",       "mac": "cmd+ctrl+down",       "command": "extension.coq.stepForward", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+down",       "mac": "cmd+ctrl+down",       "command": "extension.coq.stepForward", "when": "resourceScheme==coq-view"},
-      {"key": "ctrl+alt+up",         "mac": "cmd+ctrl+up",         "command": "extension.coq.stepBackward", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+up",         "mac": "cmd+ctrl+up",         "command": "extension.coq.stepBackward", "when": "resourceScheme==coq-view"},
-      {"key": "ctrl+alt+right",      "mac": "cmd+ctrl+right",      "command": "extension.coq.interpretToPoint", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+right",      "mac": "cmd+ctrl+right",      "command": "extension.coq.interpretToPoint", "when": "resourceScheme==coq-view"},
-      {"key": "ctrl+alt+end",        "mac": "cmd+ctrl+end",        "command": "extension.coq.interpretToEnd", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "ctrl+alt+end",        "mac": "cmd+ctrl+end",        "command": "extension.coq.interpretToEnd", "when": "resourceScheme==coq-view"},
-      {"key": "shift+alt+i",         "mac": "shift+ctrl+i",        "command": "extension.coq.display.toggle.implicitArguments", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "shift+alt+i",         "mac": "shift+ctrl+i",        "command": "extension.coq.display.toggle.implicitArguments", "when": "resourceScheme==coq-view"},
-      {"key": "shift+alt+c",         "mac": "shift+ctrl+c",        "command": "extension.coq.display.toggle.coercions", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "shift+alt+c",         "mac": "shift+ctrl+c",        "command": "extension.coq.display.toggle.coercions", "when": "resourceScheme==coq-view"},
-      {"key": "shift+alt+n",         "mac": "shift+ctrl+n",        "command": "extension.coq.display.toggle.notations", "when": "editorTextFocus && editorLangId == coq"},
-      {"key": "shift+alt+n",         "mac": "shift+ctrl+n",        "command": "extension.coq.display.toggle.notations", "when": "resourceScheme==coq-view"}
+      {
+        "key": "ctrl+alt+.",
+        "mac": "cmd+ctrl+.",
+        "command": "extension.coq.moveCursorToFocus",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+a",
+        "mac": "cmd+ctrl+a",
+        "command": "extension.coq.query.about",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+k",
+        "mac": "cmd+ctrl+k",
+        "command": "extension.coq.query.searchAbout",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+l",
+        "mac": "cmd+ctrl+l",
+        "command": "extension.coq.query.locate",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+c",
+        "mac": "cmd+ctrl+c",
+        "command": "extension.coq.query.check",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+p",
+        "mac": "cmd+ctrl+p",
+        "command": "extension.coq.query.print",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+home",
+        "mac": "cmd+ctrl+home",
+        "command": "extension.coq.reset",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+home",
+        "mac": "cmd+ctrl+home",
+        "command": "extension.coq.reset",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "ctrl+alt+`",
+        "mac": "cmd+ctrl+`",
+        "command": "extension.coq.interrupt",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+`",
+        "mac": "cmd+ctrl+`",
+        "command": "extension.coq.interrupt",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "ctrl+alt+pausebreak",
+        "mac": "cmd+ctrl+pausebreak",
+        "command": "extension.coq.interrupt",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+pausebreak",
+        "mac": "cmd+ctrl+pausebreak",
+        "command": "extension.coq.interrupt",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "ctrl+alt+down",
+        "mac": "cmd+ctrl+down",
+        "command": "extension.coq.stepForward",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+down",
+        "mac": "cmd+ctrl+down",
+        "command": "extension.coq.stepForward",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "ctrl+alt+up",
+        "mac": "cmd+ctrl+up",
+        "command": "extension.coq.stepBackward",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+up",
+        "mac": "cmd+ctrl+up",
+        "command": "extension.coq.stepBackward",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "ctrl+alt+right",
+        "mac": "cmd+ctrl+right",
+        "command": "extension.coq.interpretToPoint",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+right",
+        "mac": "cmd+ctrl+right",
+        "command": "extension.coq.interpretToPoint",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "ctrl+alt+end",
+        "mac": "cmd+ctrl+end",
+        "command": "extension.coq.interpretToEnd",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+end",
+        "mac": "cmd+ctrl+end",
+        "command": "extension.coq.interpretToEnd",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "shift+alt+i",
+        "mac": "shift+ctrl+i",
+        "command": "extension.coq.display.toggle.implicitArguments",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "shift+alt+i",
+        "mac": "shift+ctrl+i",
+        "command": "extension.coq.display.toggle.implicitArguments",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "shift+alt+c",
+        "mac": "shift+ctrl+c",
+        "command": "extension.coq.display.toggle.coercions",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "shift+alt+c",
+        "mac": "shift+ctrl+c",
+        "command": "extension.coq.display.toggle.coercions",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "shift+alt+n",
+        "mac": "shift+ctrl+n",
+        "command": "extension.coq.display.toggle.notations",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "shift+alt+n",
+        "mac": "shift+ctrl+n",
+        "command": "extension.coq.display.toggle.notations",
+        "when": "resourceScheme==coq-view"
+      }
     ],
     "menus": {
       "editor/context": [
-        { "when": "resourceLangId == coq"
-        , "command": "extension.coq.interpretToPoint"
-        , "group": "navigation"
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.interpretToPoint",
+          "group": "navigation"
         },
-        { "when": "resourceLangId == coq"
-        , "command": "extension.coq.query.check"
-        , "group": "queries"
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.query.check",
+          "group": "queries"
         },
-        { "when": "resourceLangId == coq"
-        , "command": "extension.coq.query.print"
-        , "group": "queries"
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.query.print",
+          "group": "queries"
         },
-        { "when": "resourceLangId == coq"
-        , "command": "extension.coq.query.searchAbout"
-        , "group": "queries"
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.query.searchAbout",
+          "group": "queries"
         },
-        { "when": "resourceLangId == coq"
-        , "command": "extension.coq.query.locate"
-        , "group": "queries"
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.query.locate",
+          "group": "queries"
         }
       ]
     },
     "snippets": [
-        {
-            "language": "coq",
-            "path": "./snippets/coq.json"
-        }
-    ]    
-	},	
-	"scripts": {
-		"vscode:prepublish": "npm run cp-coqtopw && npm run compile-server && npm run compile-html-view && npm run compile",
+      {
+        "language": "coq",
+        "path": "./snippets/coq.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run cp-coqtopw && npm run compile-server && npm run compile-html-view && npm run compile",
     "cp-coqtopw": "copyfiles -f ../coqtopw/bin/Release/coqtopw.exe ./",
-		"compile-server": "cd ../server && npm run compile && cd ../client",
-		"compile-html-view": "cd ../html_views && npm run compile && cd ../client",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
+    "compile-server": "cd ../server && npm run compile && cd ../client",
+    "compile-html-view": "cd ../html_views && npm run compile && cd ../client",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
     "postinstall": "node ./node_modules/vscode/bin/install"
-	},
-	"devDependencies": {
+  },
+  "devDependencies": {
     "typescript": "^2.2.1",
     "vscode": "^1.0.3",
     "copyfiles": "1.2.0",
-		"@types/node": "^7.0.5"
-	},
-	"dependencies": {
+    "@types/node": "^7.0.5"
+  },
+  "dependencies": {
     "vscode-jsonrpc": "3.1.0",
     "vscode-languageclient": "3.1.0",
     "xml2js": "^0.4.17",
@@ -272,9 +607,9 @@
     "@types/xml2js": "^0.0.32",
     "@types/chalk": "0.4.31",
     "@types/ws": "^0.0.38"
-	},
-  "repository" :
-  { "type" : "git"
-  , "url" : "https://github.com/siegebell/vscoq.git"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/siegebell/vscoq.git"
   }
 }

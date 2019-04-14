@@ -1,10 +1,10 @@
 'use strict';
 
-import * as net from 'net'; 
+import * as net from 'net';
 import * as util from 'util';
 import * as path from 'path';
-import * as events from 'events'; 
-import * as stream from 'stream'; 
+import * as events from 'events';
+import * as stream from 'stream';
 import * as coqXml from './xml-protocol/coq-xml';
 import * as vscode from 'vscode-languageserver';
 
@@ -93,7 +93,7 @@ export type GoalResult = NoProofResult | ProofModeResult
 
 
 
-  
+
 
 export interface EventCallbacks {
   onFeedback? : (feedback: coqProto.StateFeedback) => void;
@@ -160,7 +160,7 @@ export abstract class IdeSlave {
   public abstract coqAddCommand(command: string, editId: number, stateId: number, verbose?: boolean) : Promise<AddResult>;
   public abstract coqEditAt(stateId: number) : Promise<EditAtResult>;
   public abstract coqLtacProfilingResults(stateId?: number, routeId?: number) : Promise<void>;
-  public abstract coqResizeWindow(columns: number) : Promise<void>;  
+  public abstract coqResizeWindow(columns: number) : Promise<void>;
   public abstract coqQuery(query: string, stateId?: number, routeId?: number) : Promise<AnnotatedText>;
   public abstract coqGetOptions(options: CoqOptions) : Promise<void>;
   public abstract coqSetOptions(options: CoqOptions) : Promise<void>;
@@ -189,7 +189,7 @@ export abstract class CoqTop extends IdeSlave {
   public abstract coqAddCommand(command: string, editId: number, stateId: number, verbose?: boolean) : Promise<AddResult>;
   public abstract coqEditAt(stateId: number) : Promise<EditAtResult>;
   public abstract coqLtacProfilingResults(stateId?: number, routeId?: number) : Promise<void>;
-  public abstract coqResizeWindow(columns: number) : Promise<void>;  
+  public abstract coqResizeWindow(columns: number) : Promise<void>;
   public abstract coqQuery(query: string, stateId?: number, routeId?: number) : Promise<AnnotatedText>;
   public abstract coqGetOptions(options: CoqOptions) : Promise<void>;
   public abstract coqSetOptions(options: CoqOptions) : Promise<void>;

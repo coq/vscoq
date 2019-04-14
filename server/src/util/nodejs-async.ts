@@ -50,7 +50,7 @@ export namespace fs {
 }
 
 
-export namespace zlib { 
+export namespace zlib {
   export function gunzip(data: Buffer, encoding = 'utf8') : Promise<string> {
     return new Promise<string>((resolve,reject) => {
       nzlib.gunzip(data, (err,data) => {

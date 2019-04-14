@@ -125,7 +125,7 @@ export class CoqDocument implements vscode.Disposable {
     if(this.project.settings.autoRevealProofStateAtCursor && e.document === this.document && e.selections.length === 1)
       this.viewGoalAt(e,e.selections[0].active);
   }
-  
+
   public getUri() {
     return this.documentUri;
   }
@@ -149,19 +149,19 @@ export class CoqDocument implements vscode.Disposable {
   private rememberCursors() {
     this.cursorUnmovedSinceCommandInitiated.clear();
     for(let editor of this.allEditors()) {
-      this.cursorUnmovedSinceCommandInitiated.add(editor);    
+      this.cursorUnmovedSinceCommandInitiated.add(editor);
     }
   }
 
   private onDidUpdateHighlights(params: proto.Highlights) {
     this.highlights.set(this.allEditors(),params);
   }
-  
-  
+
+
   // private onUpdateComputingStatus(params: proto.NotifyComputingStatusParams) {
   //   this.statusBar.setStateComputing(params.status);
   // }
-  
+
   private onCoqMessage(params: proto.NotifyMessageParams) {
     switch(params.level) {
     case 'warning':
@@ -217,14 +217,14 @@ export class CoqDocument implements vscode.Disposable {
     this.reset();
     this.statusBar.setStateReady();
   }
-  
+
   private findEditor() : vscode.TextEditor|undefined {
-    return vscode.window.visibleTextEditors.find((editor,i,a) => 
+    return vscode.window.visibleTextEditors.find((editor,i,a) =>
       editor.document.uri.toString() === this.documentUri);
   }
 
   public allEditors() : vscode.TextEditor[] {
-    return vscode.window.visibleTextEditors.filter((editor,i,a) => 
+    return vscode.window.visibleTextEditors.filter((editor,i,a) =>
       editor.document.uri.toString() === this.documentUri)
   }
 
@@ -235,7 +235,7 @@ export class CoqDocument implements vscode.Disposable {
     else
       return vscode.window.activeTextEditor.viewColumn;
   }
-  
+
   private onCoqReset() {
     this.reset();
     this.statusBar.setStateReady();
@@ -290,7 +290,7 @@ export class CoqDocument implements vscode.Disposable {
       if(!stat && os.platform()==='win32') {
         try {
           stat = fs.statSync(path.join(v, 'coqtop.exe'));
-        } catch(err) { }        
+        } catch(err) { }
       }
       if(!stat)
         return "coqtop not found here"
@@ -306,8 +306,8 @@ export class CoqDocument implements vscode.Disposable {
         return await fs.existsSync(path.join(newPath, 'coqtop')) || await fs.existsSync(path.join(newPath, 'coqtop.exe'))
       } catch(err) {
         return false;
-      } 
-    } 
+      }
+    }
 
     if(await checkCoqtopExists(newPath))
       await vscode.workspace.getConfiguration("coqtop").update("binPath", newPath, global);
@@ -451,15 +451,15 @@ export class CoqDocument implements vscode.Disposable {
       this.statusBar.setStateReady();
     }
   }
-  
-  
+
+
   private displayQueryResults(results: proto.CoqTopQueryResult) {
     this.project.queryOut.clear();
     this.project.queryOut.show(true);
     this.project.queryOut.append(psm.prettyTextToString(results.searchResults));
-    
+
   }
-  
+
   public async viewGoalState(editor: TextEditor, external: boolean) {
     try {
       if(external) {
@@ -482,7 +482,7 @@ export class CoqDocument implements vscode.Disposable {
       this.currentLtacProfView = new HtmlLtacProf({total_time: 0, tactics: []});
       this.currentLtacProfView.show(true);
       await this.langServer.ltacProfGetResults(offset);
-      // const view = new HtmlLtacProf(results); 
+      // const view = new HtmlLtacProf(results);
       // const out = vscode.window.createOutputChannel("LtacProfiler");
       // results.forEach((value,key) => {
       //     out.appendLine("-----------------------------------");
@@ -497,13 +497,13 @@ export class CoqDocument implements vscode.Disposable {
   private onLtacProfResults(results: proto.LtacProfResults) {
     if(!this.currentLtacProfView)
       this.currentLtacProfView = new HtmlLtacProf(results);
-    else 
+    else
       this.currentLtacProfView.update(results);
   }
 
   public async doOnLostFocus() {
     this.statusBar.unfocus();
-  }  
+  }
 
   public async doOnFocus(editor: TextEditor) {
     this.showFocusDecorations();
@@ -543,11 +543,11 @@ export class CoqDocument implements vscode.Disposable {
       const proofview = await this.langServer.getCachedGoal(pos, this.project.settings.revealProofStateAtCursorDirection);
       if(proofview.type === "proof-view")
         this.updateView(proofview, false);
-    } catch(err) { }   
+    } catch(err) { }
  }
 
  public getCurrentFocus() {
    return this.focus;
  }
-  
+
 }

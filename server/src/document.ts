@@ -160,7 +160,7 @@ export class CoqDocument implements TextDocument {
   public getSentencePrefixTextAt(pos: Position) {
     return this.document.getSentencePrefixTextAt(pos);
   }
-  
+
   public offsetAt(pos: Position) : number {
     return this.document.offsetAt(pos);
   }
@@ -172,7 +172,7 @@ export class CoqDocument implements TextDocument {
     return this.document.positionAt(offset);
   }
 
-  
+
   // private sentenceStatusToHighlightType(status: coqProto.SentenceStatus) : thmProto.HighlightType {
   //   switch(status) {
   //     case coqProto.SentenceStatus.Complete:
@@ -187,7 +187,7 @@ export class CoqDocument implements TextDocument {
   //       return thmProto.HighlightType.Processed;
   //     case coqProto.SentenceStatus.ProcessingInput:
   //       return thmProto.HighlightType.Processing;
-  //   }    
+  //   }
   // }
 
   // private highlightTypeToSentenceStatus(type: thmProto.HighlightType) : coqProto.SentenceStatus {
@@ -206,9 +206,9 @@ export class CoqDocument implements TextDocument {
   //       return coqProto.SentenceStatus.ProcessingInput;
   //     default:
   //       throw `Cannot convert ${thmProto.HighlightType[type]} to a SentenceStatus`
-  //   }    
+  //   }
   // }
-  
+
   // private highlightSentence(sentence: Range, type: thmProto.HighlightType) : thmProto.Highlight {
   //   // if(type===undefined)
   //   //     type = this.sentenceStatusToHighlightType(sentence.status);
@@ -223,7 +223,7 @@ export class CoqDocument implements TextDocument {
       case StateStatus.Processing:      return thmProto.HighlightType.Processing;
       case StateStatus.Incomplete:      return thmProto.HighlightType.Incomplete;
       case StateStatus.Processed:       return thmProto.HighlightType.Processed;
-    }    
+    }
   }
 
   /** creates the current highlights from scratch */
@@ -266,7 +266,7 @@ export class CoqDocument implements TextDocument {
   private onCoqStateStatusUpdate(range: Range, status: StateStatus) {
     this.updateHighlights();
   }
-  
+
   private onClearSentence(range: Range) {
     // this.updateHighlights();
   }
@@ -289,8 +289,8 @@ export class CoqDocument implements TextDocument {
     //   , severity: DiagnosticSeverity.Error
     //   });
   }
-  
-  
+
+
   private onCoqMessage(level: coqProto.MessageLevel, message: AnnotatedText) {
     this.callbacks.sendMessage(coqProto.MessageLevel[level], message);
   }
@@ -298,7 +298,7 @@ export class CoqDocument implements TextDocument {
   private onCoqStateLtacProf(range: Range, results: coqProto.LtacProfResults) {
     this.callbacks.sendLtacProfResults(results);
   }
-  
+
   private async onCoqDied(reason: thmProto.CoqtopStopReason, error?: string) {
     this.callbacks.sendCoqtopStop(reason, error);
     if(error) {
@@ -329,8 +329,8 @@ export class CoqDocument implements TextDocument {
   private onUpdateStmFocus(focus: Position) {
     this.feedback.updateFocus(focus, false);
   }
-  
-  
+
+
   // private async cancellableOperation<T>(operation: Thenable<T>) : Promise<T> {
   //   return await Promise.race<T>(
   //     [ operation
@@ -371,7 +371,7 @@ export class CoqDocument implements TextDocument {
         }
       } else
         return;
-      currentOffset = nextOffset; 
+      currentOffset = nextOffset;
     }
   }
 
@@ -395,7 +395,7 @@ export class CoqDocument implements TextDocument {
 
   //   if(maxOffset!==undefined && stopPos > maxOffset)
   //     return StepResult.ExceedsMaxOffset;
-    
+
   //   const range = Range.create(start,this.positionAt(stopPos));
   //   let command = docText.substring(startOffset, stopPos);
 
@@ -447,14 +447,14 @@ export class CoqDocument implements TextDocument {
   //   if(sendUpdate === undefined || sendUpdate===true)
   //     this.callbacks.sendDiagnostics(this.diagnostics);
   // }
-  
+
 
   // private shiftDiagnostics(delta: textUtil.RangeDelta) {
   //   for(let idx = 0; idx < this.diagnostics.length; ++idx) {
   //     this.diagnostics[idx].range = textUtil.rangeTranslate(this.diagnostics[idx].range, delta);
   //   }
   // }
-  
+
 
   // private clearSentenceHighlight(sentence: Sentence, endSentence?: Sentence) {
   //   this.callbacks.sendHighlightUpdates([{
@@ -472,7 +472,7 @@ export class CoqDocument implements TextDocument {
   //   }]);
   // }
 
- 
+
   // /** Interpret to point
   //  * Tell Coq to process the proof script up to the given point
   //  * This may not fully process everything, or it may rewind the state.
@@ -496,7 +496,7 @@ export class CoqDocument implements TextDocument {
 
   //         // At this point, either we have reached the location we're looking for,
   //         // or else the proof has become unfocused (the current state might be
-  //         // anywhere) and we will need to call coqEditAt to get closer to the location.      
+  //         // anywhere) and we will need to call coqEditAt to get closer to the location.
   //         const closestSentence = this.sentences.findPrecedingSentence(location);
   //         // Are we at the closest sentence?
   //         if(forwardSentence.stateId !== closestSentence.stateId) {
@@ -527,14 +527,14 @@ export class CoqDocument implements TextDocument {
   // }
 
   // /**
-  //  * 
-  //  *  */  
+  //  *
+  //  *  */
   // private async interpretToEnd(maxOffset?: number) : Promise<thmProto.CoqTopGoalResult> {
   //   let currentSentence = this.sentences.getTip();
-    
+
   //   try {
   //     await this.stepForwardUntil(maxOffset);
-      
+
   //     return await this.rawGetGoal();
   //   } catch(error) {
   //     return this.errorGoalResult(error);
@@ -552,8 +552,8 @@ export class CoqDocument implements TextDocument {
 // this.clientConsole.log("rolled back");
 //     }
 //   }
-  
-  
+
+
   // private async stepForward() : Promise<thmProto.CoqTopGoalResult> {
   //   const currentSentence = this.sentences.getTip();
   //   try {
@@ -567,10 +567,10 @@ export class CoqDocument implements TextDocument {
   //     return this.errorGoalResult(error);
   //   }
   // }
-  
+
   // /**
-  //  * 
-  //  *  */  
+  //  *
+  //  *  */
   // private async stepBackward() : Promise<thmProto.CoqTopGoalResult> {
   //   // grab the tip sentence
   //   const currentSentence = this.sentences.getTip();
@@ -600,7 +600,7 @@ export class CoqDocument implements TextDocument {
   //   }
 
   // }
-  
+
   public async dispose() {
     if(this.isStmRunning()) {
       await this.stm.shutdown();
@@ -610,7 +610,7 @@ export class CoqDocument implements TextDocument {
 
   // private async protectOperation(op: (wasReset:boolean)=>Promise<thmProto.CoqTopGoalResult>, lazyInitialize?: boolean) : Promise<thmProto.CoqTopGoalResult> {
   //   lazyInitialize = (lazyInitialize===undefined) ? true : false;
-  //   let unlock : () => Promise<void>; 
+  //   let unlock : () => Promise<void>;
   //   try {
   //     unlock = await this.processingLock.lock(this.cancelProcessing.event);
   //   } catch(reason) {
@@ -629,8 +629,8 @@ export class CoqDocument implements TextDocument {
   //   } finally {
   //     unlock();
   //   }
-  // }  
-  
+  // }
+
   // private interrupt() {
   //   this.coqTop.coqInterrupt();
   // }
@@ -639,8 +639,8 @@ export class CoqDocument implements TextDocument {
   // /**
   //  * This loop handles each coq command and text edit sequentially.
   //  * One of the requirements is that a command's document position is still valid when it returns so that we can report accurate error messages, so text edits that arrive while a command is being processed are delayed until the command finished so that we do not invalidate its document positions.
-  //  * 
-  //  * To cancel the current queue of commands, call cancelCoqOperations()  
+  //  *
+  //  * To cancel the current queue of commands, call cancelCoqOperations()
   //  */
   // private async interactionLoop() {
   //   while(true) {
@@ -652,11 +652,11 @@ export class CoqDocument implements TextDocument {
   //     }
   //   }
   // }
-  
+
   // /**
   //  * Ensures that the text edits are applied *after* the currently scheduled operations; this delay prevents their document positions from being invalidated too soon
   //  * However, if the edit will result in changing an already-interpreted sentence, then all current Coq processing will be cancelled.
-  //  * Text edits themselves cannot be cancelled, but the Coq operations they may perform to set the current editing positions *can* be cancelled. 
+  //  * Text edits themselves cannot be cancelled, but the Coq operations they may perform to set the current editing positions *can* be cancelled.
   //  */
   // public textEdit(changes: TextDocumentContentChangeEvent[]) {
   //   // If any of the edits affect an interpreted sentence, then interrupt and cancel all Coq operations
@@ -671,7 +671,7 @@ export class CoqDocument implements TextDocument {
   //       this.cancelCoqOperations();
   //       break;
   //     }
-  //   }    
+  //   }
   //   const cancelSignal = this.cancelProcessing;
   //   return this.interactionCommands.process<void>(async () => {
   //     this.interactionLoopStatus = InteractionLoopStatus.TextEdit;
@@ -699,7 +699,7 @@ export class CoqDocument implements TextDocument {
   //     } else
   //       return {};
   //   }
-    
+
   //   return await task();
   // }
 
@@ -710,7 +710,7 @@ export class CoqDocument implements TextDocument {
   //   return this.interactionCommands.process<X>(async () => {
   //     if(cancelSignal.isCancelled())
   //       return Promise.reject<X>(<coqProto.FailValue>{message: 'operation cancelled'})
-        
+
   //     this.interactionLoopStatus = InteractionLoopStatus.CoqCommand;
   //     const startTime = process.hrtime();
   //     const statusCheck = setInterval(() => this.updateComputingStatus(thmProto.ComputingStatus.Computing, startTime), 500);
@@ -732,7 +732,7 @@ export class CoqDocument implements TextDocument {
   //     }
   //   });
   // }
-  
+
   // /**
   //  * Cancels all coq commands that are associated with `cancelProcessing`, which should be every coq command in `interactionCommands`.
   //  * If a text edit invalidates a state, then this method should also be called.
@@ -745,7 +745,7 @@ export class CoqDocument implements TextDocument {
   //   if(this.interactionLoopStatus === InteractionLoopStatus.CoqCommand)
   //     return this.coqTop.coqInterrupt();
   // }
-  
+
   // private async interactionsCoqQuit() {
   //   const waitMS = 1000;
   //   const cancelling = this.cancelCoqOperations();
@@ -755,7 +755,7 @@ export class CoqDocument implements TextDocument {
   //     await this.coqTop.coqQuit();
   //   }
   // }
-  
+
   // private async interactionsCoqReset() {
   //   const waitMS = 1000;
   //   const cancelling = this.cancelCoqOperations();
@@ -840,7 +840,7 @@ export class CoqDocument implements TextDocument {
       return this.toGoal(await this.stm.getGoal());
     } finally {
       this.parsingRanges = [];
-      this.updateHighlights(true);      
+      this.updateHighlights(true);
       this.updateDiagnostics(true);
     }
   }
@@ -853,7 +853,7 @@ export class CoqDocument implements TextDocument {
       return error;
     return this.toGoal(await this.stm.getGoal());
     } finally {
-      this.updateHighlights(true);      
+      this.updateHighlights(true);
       this.updateDiagnostics(true);
     }
   }
@@ -871,7 +871,7 @@ export class CoqDocument implements TextDocument {
       return this.toGoal(await this.stm.getGoal());
     } finally {
       this.parsingRanges = [];
-      this.updateHighlights(true);      
+      this.updateHighlights(true);
       this.updateDiagnostics(true);
     }
 
@@ -925,7 +925,7 @@ export class CoqDocument implements TextDocument {
           return await this.stm.doQuery(`Locate ${term}.`);
         } catch(err) {
           return await this.stm.doQuery(`Locate "${term}".`);
-        }      
+        }
       case "check":       return await this.stm.doQuery(`Check ${term}.`)
       case "print":       return await this.stm.doQuery(`Print ${term}.`)
       case "search":      return await this.stm.doQuery(`Search ${term}.`)
@@ -937,7 +937,7 @@ export class CoqDocument implements TextDocument {
   public async setWrappingWidth(columns: number) {
     if(!this.isStmRunning())
       return;
-    
+
     await this.stm.setWrappingWidth(columns);
   }
 
@@ -1052,9 +1052,9 @@ export class CoqDocument implements TextDocument {
   //     searchAbout: (query: string) => this.protectOperation((wasReset) => this.coqTop.coqQuery("SearchAbout " + query + ".")),
   //     resizeWindow: (columns: number) => this.coqTop.coqResizeWindow(columns),
   //   };
-  
+
   // public get coq() {
-  //   return this.coqInterface; 
+  //   return this.coqInterface;
   // }
 }
 
