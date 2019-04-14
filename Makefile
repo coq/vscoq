@@ -1,3 +1,5 @@
+default: compile
+
 clean:
 	rm -rf html_views/node_modules server/node_modules client/node_modules
 	rm -rf client/server client/html_views
