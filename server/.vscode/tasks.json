@@ -1,31 +1,34 @@
 {
-	"version": "0.1.0",
+	"version": "2.0.0",
 	"command": "npm",
-	"isShellCommand": true,
-  "suppressTaskName": true,
-	"showOutput": "silent",
   "tasks": [
     {
-      "taskName": "watch",
-      "args": ["run", "watch"],
-	    "isBackground": true,
-      "isBuildCommand": true,
-      "isTestCommand": false,
-      "problemMatcher": "$tsc-watch"
+      "label": "watch",
+      "command": "npm run watch",
+      "type": "shell",
+      "isBackground": true,
+      "group": "build",
+      "problemMatcher": "$tsc-watch",
+      "presentation": {
+        "reveal": "silent"
+      }
     },
     {
-      "taskName": "test",
-      "args": ["test"],
-      "isBuildCommand": false,
-      "isTestCommand": true,
-      "showOutput": "always"
+      "label": "test",
+      "command": "npm test",
+      "type": "shell",
+      "group": "test",
+      "presentation": {
+        "reveal": "always"
+      }
     },
     {
-      "taskName": "test-debug",
-      "args": ["run", "test-debug"],
-      "isBuildCommand": false,
-      "isTestCommand": false,
-      "showOutput": "always"
+      "label": "test-debug",
+      "command": "npm run test-debug",
+      "type": "shell",
+      "presentation": {
+        "reveal": "always"
+      }
     }
   ]
 }
