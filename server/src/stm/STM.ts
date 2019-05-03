@@ -1,6 +1,6 @@
 'use strict'
 
-import {Position, Range, TextDocumentContentChangeEvent, TextDocument, RemoteConsole} from 'vscode-languageserver';
+import {Position, Range, TextDocumentContentChangeEvent} from 'vscode-languageserver';
 import {CancellationToken} from 'vscode-jsonrpc';
 import * as vscode from 'vscode-languageserver';
 import * as coqProto from './../coqtop/coq-proto';
@@ -11,12 +11,11 @@ import * as coqtop from './../coqtop/CoqTop';
 import * as coqParser from './../parsing/coq-parser';
 import * as errorParsing from '../parsing/error-parsing';
 import {State, StatusError, StateStatus} from './State';
-import {LoadModule, SentenceSemantics} from './../parsing/SentenceSemantics';
 import {Mutex} from './../util/Mutex';
 import * as server from '../server';
 import {AnnotatedText} from '../util/AnnotatedText'
 import * as text from '../util/AnnotatedText'
-import {GoalsCache, ProofViewReference, GoalId} from './GoalsCache';
+import {GoalsCache} from './GoalsCache';
 
 import {Settings} from '../protocol';
 export {StateStatus} from './State';
@@ -60,13 +59,13 @@ export interface StateMachineCallbacks {
 }
 
 const dummyCallbacks : StateMachineCallbacks = {
-  sentenceStatusUpdate(range: Range, status: StateStatus) : void {},
-  clearSentence(range: Range) : void {},
-  updateStmFocus(focus: Position): void {},
-  error(sentenceRange: Range, errorRange: Range, message: AnnotatedText) : void {},
-  message(level: coqProto.MessageLevel, message: AnnotatedText) : void {},
-  ltacProfResults(range: Range, results: coqProto.LtacProfResults) : void {},
-  coqDied(reason: proto.CoqtopStopReason.InternalError, error?: string) : void {},
+  sentenceStatusUpdate() : void {},
+  clearSentence() : void {},
+  updateStmFocus(): void {},
+  error() : void {},
+  message() : void {},
+  ltacProfResults() : void {},
+  coqDied() : void {},
 }
 
 export type CommandIterator = (begin: Position, end?: Position) => Iterable<{text: string, range: Range}>;
@@ -88,29 +87,27 @@ class AddCommandFailure implements proto.FailValue {
     public message: AnnotatedText,
     public range: vscode.Range,
     public sentence: vscode.Range)
-  {} 
+  {}
 }
 
-class CommandIsBusy {
-}
 
 enum STMStatus { Ready, Busy, Interrupting, Shutdown }
 
 /**
  * Manages the parts of the proof script that have been interpreted and processed by coqtop
- * 
+ *
  * Abstractions:
  * - addCommands(range: Range, commandText: string)
  *    ensures that the as much of commandText has been processed; cancels any previously overlapping sentences as needed
  *    returns the actual range that was accepted
  * - serialization: Coq commands may only run one at a time but are asynchronous. This STM ensures that each command is run one at a time, that edits are applied only when the prior commands are run
- * - interruption: queued may be interrupted; clears the queue of commands, interrupts coq, and applies the queued edits 
+ * - interruption: queued may be interrupted; clears the queue of commands, interrupts coq, and applies the queued edits
  */
 export class CoqStateMachine {
   private version = 0;
   // lazy init
   private root : State = null;
-  // map id to sentence; lazy init  
+  // map id to sentence; lazy init
   private sentences = new Map<StateId,State>();
   // The sentence that coqtop considers "focused"; lazy init
   private focusedSentence : State = null;
@@ -118,9 +115,6 @@ export class CoqStateMachine {
   private lastSentence : State = null;
   // feedback may arrive before a sentence is assigned a stateId; buffer feedback messages for later
   private bufferedFeedback: BufferedFeedback[] = [];
-  private documentVersion: number;
-  // When it is not prudent to interrupt Coq, e.g. cancelling a sentence:
-  private disableInterrupt = false;
   /** The error from the most recent Coq command (`null` if none) */
   private currentError : proto.FailValue = null;
   private status = STMStatus.Ready;
@@ -181,7 +175,7 @@ export class CoqStateMachine {
   private get console() { return this.project.console; }
 
   /**
-   * 
+   *
   */
   public async interrupt() : Promise<void> {
     if(!this.isBusy() || this.isShutdown())
@@ -264,7 +258,7 @@ export class CoqStateMachine {
   }
 
   /** Cancel a list of sentences that have (presumably) been invalidated.
-   * This will attempt to place the focus just before the topmost cancellation. 
+   * This will attempt to place the focus just before the topmost cancellation.
    * @param invalidatedSentences -- assumed to be sorted in descending order (bottom first)
    */
   private async cancelInvalidatedSentences(invalidatedSentences: State[]) : Promise<void> {
@@ -291,7 +285,7 @@ export class CoqStateMachine {
       for(let sent of invalidatedSentences) {
         await this.cancelSentence(sent);
       }
-      // The focus should be at the topmost cancelled sentences 
+      // The focus should be at the topmost cancelled sentences
       this.focusSentence(invalidatedSentences[invalidatedSentences.length-1].getParent());
     } catch(err) {
       this.handleInconsistentState(err);
@@ -344,7 +338,7 @@ export class CoqStateMachine {
       const currentFocus = this.getFocusedPosition();
       // Advance one statement: the one that starts at the current focus
       await this.iterateAdvanceFocus(
-        { iterateCondition: (command,contiguousFocus) => textUtil.positionIsEqual(command.range.start, currentFocus)
+        { iterateCondition: (command) => textUtil.positionIsEqual(command.range.start, currentFocus)
         , commandSequence: commandSequence
         , verbose: verbose
         });
@@ -479,7 +473,6 @@ export class CoqStateMachine {
     if(!endCommand)
       return null;
     try {
-      const result = await this.coqtop.getStatus(force);
     } finally {
       endCommand();
     }
@@ -504,7 +497,7 @@ export class CoqStateMachine {
       await this.validateState(true);
       // Advance the focus until we reach or exceed the location
       await this.iterateAdvanceFocus(
-        { iterateCondition: (command,contiguousFocus) => {
+        { iterateCondition: (command) => {
             return ((!interpretToEndOfSentence && textUtil.positionIsAfterOrEqual(position,command.range.end))
               || (interpretToEndOfSentence && textUtil.positionIsAfter(position,command.range.start))) &&
             (!token || !token.isCancellationRequested)
@@ -620,42 +613,30 @@ private routeId = 1;
         }
         case proto.DisplayOption.AllBasicLowLevelContents:
           this.currentCoqOptions.printingAll = set(this.currentCoqOptions.printingAll, option.value);
-          break; 
+          break;
         case proto.DisplayOption.Coercions:
           this.currentCoqOptions.printingCoercions = set(this.currentCoqOptions.printingCoercions, option.value);
-          break; 
+          break;
         case proto.DisplayOption.ExistentialVariableInstances:
           this.currentCoqOptions.printingExistentialInstances = set(this.currentCoqOptions.printingExistentialInstances, option.value);
-          break; 
+          break;
         case proto.DisplayOption.ImplicitArguments:
           this.currentCoqOptions.printingImplicit = set(this.currentCoqOptions.printingImplicit, option.value);
-          break; 
+          break;
         case proto.DisplayOption.Notations:
           this.currentCoqOptions.printingNotations = set(this.currentCoqOptions.printingNotations, option.value);
-          break; 
+          break;
         case proto.DisplayOption.RawMatchingExpressions:
           this.currentCoqOptions.printingMatching = set(this.currentCoqOptions.printingMatching, option.value);
-          break; 
+          break;
         case proto.DisplayOption.UniverseLevels:
           this.currentCoqOptions.printingUniverses = set(this.currentCoqOptions.printingUniverses, option.value);
-          break; 
+          break;
       }
     }
     //await this.setCoqOptions(this.currentCoqOptions);
   }
 
-  private async setCoqOptions(options: coqtop.CoqOptions) {
-    if(!this.isCoqReady())
-      return;
-    const endCommand = await this.startCommand();
-    if(!endCommand)
-      return;
-    try {
-      await this.coqtop.coqSetOptions(options);
-    } finally {
-      endCommand();
-    }
-  }
 
 
   public *getSentences() : IterableIterator<{range: Range, status: StateStatus}> {
@@ -740,19 +721,11 @@ private routeId = 1;
       return false;
   }
 
-  private async noInterrupt<T>(fun: () => Promise<T>) : Promise<T> {
-    try {
-      this.disableInterrupt = true;
-      return await fun()
-    } finally {
-      this.disableInterrupt = false;
-    }
-  }
 
   /** Continues to add next next command until the callback returns false.
    * Commands are always added from the current focus, which may advance seuqentially or jump around the Coq script document
-   * 
-   * @param params.end: optionally specify and end position to speed up command parsing (for params.commandSequence) 
+   *
+   * @param params.end: optionally specify and end position to speed up command parsing (for params.commandSequence)
    * */
   private async iterateAdvanceFocus(params: {iterateCondition: (command: {text:string,range:Range}, contiguousFocus: boolean)=>boolean, commandSequence: CommandIterator, verbose: boolean, end?: Position, synchronous?: boolean}) : Promise<void> {
     if(params.synchronous === undefined)
@@ -782,7 +755,7 @@ private routeId = 1;
 
       // If we have jumped to a new position, create a new iterator since the next command will not be adjacent
       if(result.unfocused)
-        commandIterator = params.commandSequence(this.getFocusedPosition(),params.end)[Symbol.iterator](); 
+        commandIterator = params.commandSequence(this.getFocusedPosition(),params.end)[Symbol.iterator]();
     } // for
   }
 
@@ -818,7 +791,7 @@ private routeId = 1;
       const result =
         { sentence: newSentence
         , unfocused: value.unfocusedStateId == undefined ? false : true
-        };        
+        };
       return result;
     } catch(error) {
       if(typeof error === 'string')
@@ -851,7 +824,7 @@ private routeId = 1;
     // Some errors tell us the new state to assume
     if(error.stateId !== undefined && error.stateId != 0)
       await this.gotoErrorFallbackState(error.stateId);
-    
+
     return this.currentError;
   }
 
@@ -881,7 +854,7 @@ private routeId = 1;
       return null;
   }
 
-  
+
   private convertGoals(goals: coqtop.GoalResult) : GoalResult {
     switch(goals.mode) {
       case 'no-proof':
@@ -976,11 +949,11 @@ private routeId = 1;
     this.setFocusedSentence(newLast);
   }
 
-  /** Apply buffered feedback to existing sentences, then clear the buffer */    
+  /** Apply buffered feedback to existing sentences, then clear the buffer */
   private applyBufferedFeedback() {
     // Process any feedback that we may have seen out of order
     this.bufferedFeedback
-      .forEach((feedback,i,a) => {
+      .forEach((feedback) => {
         const sent = this.sentences.get(feedback.stateId);
         if(!sent) {
           this.console.warn("Received buffered feedback for unknown stateId: " + feedback.stateId);
@@ -1110,9 +1083,6 @@ private routeId = 1;
     return this.status === STMStatus.Shutdown
   }
 
-  private isInterrupting() {
-    return this.status === STMStatus.Interrupting
-  }
 
   public async flushEdits() {
     // Wait until we can acquire the lock and there is no one else immediately waiting for the lock after us
@@ -1184,7 +1154,6 @@ private routeId = 1;
     if(this.isBusy())
       return;
     let prev : State = this.root;
-    let prevRange = prev.getRange();
     const stateIds : number[] = [prev.getStateId()];
     while(prev.getNext()) {
       const st = prev.getNext();
@@ -1193,38 +1162,37 @@ private routeId = 1;
         error(`States are out of order: id=${prev.getStateId()} and id=${st.getStateId()}`)
 
       if(range.start === range.end && st !== this.root)
-        error(`Empty state sentence: id=${st.getStateId()}`)        
+        error(`Empty state sentence: id=${st.getStateId()}`)
 
       if(st.isInvalidated())
-        error(`State is invalidated but not deleted: id=${st.getStateId()}`)        
+        error(`State is invalidated but not deleted: id=${st.getStateId()}`)
 
       if(!this.sentences.has(st.getStateId()))
-        error(`State is reachable but not mapped: id=${st.getStateId()}`)        
+        error(`State is reachable but not mapped: id=${st.getStateId()}`)
       else if(this.sentences.get(st.getStateId()) !== st)
-        error(`State does not map to itself: id=${st.getStateId()}`)        
+        error(`State does not map to itself: id=${st.getStateId()}`)
 
       stateIds.push(st.getStateId());
       prev = st;
-      prevRange = range;
     }
 
     const ids = new Set(stateIds);
     if(ids.size !== stateIds.length)
       error('Reachable states have duplicate IDs')
-    
+
     for(let id of this.sentences.keys()) {
       if(!ids.has(id))
-        error(`State is mapped but unreachable: id=${id}`)      
+        error(`State is mapped but unreachable: id=${id}`)
     }
 
     return success;
   }
 
 
-  public logDebuggingSentences(ds?: DSentence[], indent: string = '\t') {
+  public logDebuggingSentences(ds?: DSentence[]) {
     if(!ds)
       ds = this.debuggingGetSentences()
-    this.console.log(ds.map((s,idx) => '  ' + (1+idx) + ':\t' + s).join('\n'));  
+    this.console.log(ds.map((s,idx) => '  ' + (1+idx) + ':\t' + s).join('\n'));
   }
 
 }

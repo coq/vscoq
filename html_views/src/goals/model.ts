@@ -40,23 +40,23 @@ function computePrintingWidth() {
       widthChars = 1;
     widthChars = Math.max(widthChars,5);
     $('#measureTest').text("<" + "-".repeat(widthChars-2) + ">")
-    if(connection)
-      connection.send(JSON.stringify(<ControllerEvent>{
+    if(vscode)
+      vscode.postMessage(JSON.stringify(<ControllerEvent>{
         eventName: 'resize',
         params: <ResizeEvent>{columns: widthChars}
-      }));  
+      }));
   } catch(error) {
-    $('#stdout').text("!" + error);    
+    $('#stdout').text("!" + error);
   }
 }
 
 function onWindowGetFocus(event: FocusEvent) {
   try {
-    if(connection)
-      connection.send(JSON.stringify(<ControllerEvent>{
+    if(vscode)
+      vscode.postMessage(JSON.stringify(<ControllerEvent>{
         eventName: 'focus',
         params: {}
-      }));  
+      }));
   } catch(error) {
   }
 }
@@ -76,7 +76,7 @@ const observer = new MutationObserver(function(mutations) {
     $(document.body).attr('class',getVSCodeTheme());
     // mutations.forEach(function(mutationRecord) {
     //   console.log(`{name: ${mutationRecord.attributeName}, old: ${mutationRecord.oldValue}, new: ${$(mutationRecord.target).attr('class')} }`);
-    // });    
+    // });
 });
 
 function setPrettifySymbolsMode(enabled: boolean) {
@@ -84,43 +84,31 @@ function setPrettifySymbolsMode(enabled: boolean) {
     .toggleClass("prettifySymbolsMode", enabled);
 }
 
-var connection : WebSocket|null = null;
+declare var vscode : any;
+declare var acquireVsCodeApi : any;
 function load() {
 
-  if(parent.parent === parent) {
-    $(document.body).css({backgroundColor: 'black'});
-  } else {
-    try {
-      window.onresize = throttleEventHandler(event => computePrintingWidth);
-      window.addEventListener("focus", onWindowGetFocus, true);
-      observer.observe(parent.document.body, { attributes : true, attributeFilter: ['class'] });
-      inheritStyles(parent.parent);
-      $(document.body)
-        .removeClass("vscode-dark")
-        .removeClass("vscode-light")
-        .addClass(getVSCodeTheme());
-    } catch(error) {
-      $('#stdout').text(error.toString());    
-      $('#error').text(error.toString());
-      return;
-    }
+  try {
+    window.onresize = throttleEventHandler(event => computePrintingWidth);
+    window.addEventListener("focus", onWindowGetFocus, true);
+    //observer.observe(parent.document.body, { attributes : true, attributeFilter: ['class'] });
+    //inheritStyles(parent.parent);
+    $(document.body)
+      //.removeClass("vscode-dark")
+      .removeClass("vscode-light")
+      //.addClass(getVSCodeTheme());
+  } catch(error) {
+    $('#stdout').text(error.toString());
+    $('#error').text(error.toString());
+    return;
   }
 
-  const address = `ws://${getQueryStringValue('host')}:${getQueryStringValue('port')}`; 
-  connection = new WebSocket(address);
-  connection.onopen = function (event) {
-    $('#stdout').text("connected");
-  }
-  connection.onclose = function (event) {
-    $('#stdout').text("connection closed");
-  }
-  connection.onerror = function (event) {
-    $('#stdout').text("connection error");
-  }
-  connection.onmessage = function (event) {
-    const message = <ProofViewProtocol>JSON.parse(event.data);
+  vscode = acquireVsCodeApi();
+
+  window.addEventListener('message', event => {
+    const message = event.data;
     handleMessage(message);
-  }
+  });
 
   computePrintingWidth();
 }
@@ -165,6 +153,6 @@ function handleMessage(message: ProofViewProtocol) : void {
     case 'goal-update':
       return stateModel.updateState(message.goal);
     case 'settings-update':
-      updateSettings(message);  
-  }  
+      updateSettings(message);
+  }
 }

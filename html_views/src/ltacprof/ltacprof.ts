@@ -9,7 +9,7 @@ interface LtacProfTactic {
   tactics: LtacProfTactic[],
 }
 
-interface LtacProfResults { 
+interface LtacProfResults {
   total_time: number,
   tactics: LtacProfTactic[],
 }
@@ -48,28 +48,18 @@ function inheritStyles(p: Window) {
 
 
 
-var connection : WebSocket|null = null;
-
+declare var acquireVsCodeApi: any;
+var vscode : any = null;
 function load() {
   if(parent.parent === parent)
     document.body.style.backgroundColor = 'black';
 
-  var address = `ws://${getQueryStringValue('host')}:${getQueryStringValue('port')}`; 
-  connection = new WebSocket(address);
-  // connection.onopen = function (event) {
-  //   document.getElementById('stdout').innerHTML = "connected";
-  // }
-  // connection.onclose = function (event) {
-  //   document.getElementById('stdout').innerHTML = "connection closed";
-  // }
-  // connection.onerror = function (event) {
-  //   document.getElementById('stdout').innerHTML = "connection error";
-  // }
-  connection.onmessage = function (event) {
+  vscode = acquireVsCodeApi();
+
+  window.addEventListener('message', event => {
     const results = <LtacProfResults>JSON.parse(event.data);
     addResults(results);
-  }
-
+  })
 }
 
 // interface TreeGridSettings {
@@ -104,7 +94,7 @@ function load() {
 //   getSizingRow?:	()=>any,                // undefined
 //   copyTableClass?:	boolean,              // true
 //   enableAria?:	boolean,                  // false
-//   autoReflow?:	boolean,                  // false  
+//   autoReflow?:	boolean,                  // false
 // }
 
 // interface StickySettings {
@@ -125,7 +115,7 @@ function load() {
 //     return siblings.eq((siblings.index($(this))+1)%siblings.length);
 // } })(jQuery);
 
-// interface JQuery { 
+// interface JQuery {
 //   // treegrid() : JQuery;
 //   // treegrid(settings: TreeGridSettings): JQuery;
 //   // treegrid(methodName:'initTree',data: string): JQuery;
@@ -146,14 +136,14 @@ function load() {
 //   tbltree(methodName:'isCollapsed', row: JQuery): boolean;
 //   tbltree(methodName:string, param: JQuery|string): any;
 //   tbltree(methodName:'getRootNodes'): JQuery;
-  
+
 //   // floatThead() : JQuery;
 //   // floatThead(settings: FloatTHeadSettings) : JQuery;
 
 //   // tablesorter(): JQuery;
 //   // sticky() : JQuery;
 //   // sticky(settings: StickySettings) : JQuery;
-//   // sticky(methodName:'update') : JQuery;  
+//   // sticky(methodName:'update') : JQuery;
 
 //   // resizableColumns() : JQuery;
 
@@ -166,7 +156,7 @@ function load() {
 
 function sleepFor(sleepDuration: number) : void{
     var now = new Date().getTime();
-    while(new Date().getTime() < now + sleepDuration){ /* do nothing */ } 
+    while(new Date().getTime() < now + sleepDuration){ /* do nothing */ }
 }
 
 function loadResultsTable(results: LtacProfResults, tbody: JQuery) {
@@ -177,13 +167,13 @@ function loadResultsTable(results: LtacProfResults, tbody: JQuery) {
     if(time == 0)
       return $(document.createElement('td')).text("");
     else {
-      const seconds = time.toFixed(3); 
+      const seconds = time.toFixed(3);
       const minutes = (time/60).toFixed(1);
       const hh = Math.floor(time/3600);
       const mm = Math.floor((time - hh*3600)/60);
-      const ss = time - mm*60; 
-      const hhmmss = `${hh}:${mm}:${ss.toFixed(1)}`; 
-      const percent = (time/totalTime*100).toFixed(1) + "%"; 
+      const ss = time - mm*60;
+      const hhmmss = `${hh}:${mm}:${ss.toFixed(1)}`;
+      const percent = (time/totalTime*100).toFixed(1) + "%";
       return $(document.createElement('td'))
         .append($(document.createElement('span')).addClass(name).addClass('seconds').text(seconds).hide())
         .append($(document.createElement('span')).addClass(name).addClass('minutes').text(minutes).hide())
@@ -219,7 +209,7 @@ function loadResultsTable(results: LtacProfResults, tbody: JQuery) {
       yield* buildTacticResultRow(parentId, tactic);
     }
   }
-  
+
   console.time('load');
   for(let entry of buildTacticsResults(0,results.tactics))
     tbody.append(entry);
@@ -287,7 +277,7 @@ const currentResults : LtacProfResults = {total_time: 0, tactics: []};
 function clearResults() {
   currentResults.total_time = 0;
   currentResults.tactics = []
-  let tbody = $('#results tbody'); 
+  let tbody = $('#results tbody');
   if(tbody.length > 0)
     tbody.empty();
 }
@@ -332,11 +322,11 @@ function onKeyDown(e: JQueryKeyEventObject) {
       return;
   }
   e.preventDefault();
-} 
+}
 
 
 function updateResults() {
-  let tbody = $('#results tbody'); 
+  let tbody = $('#results tbody');
   if(tbody.length > 0)
     tbody.empty();
   else {// Set up the table
@@ -345,16 +335,16 @@ function updateResults() {
     $('#results').keydown(onKeyDown);
 
     $('#local-unit').change((ev: JQueryEventObject) => {
-      const tag = $('#local-unit option:selected').val(); 
+      const tag = $('#local-unit option:selected').val();
       $('#results span.local').not('.'+tag).hide();
       $('#results span.local').filter('.'+tag).show();
     });
     $('#total-unit').change((ev: JQueryEventObject) => {
-      const tag = $('#total-unit option:selected').val(); 
+      const tag = $('#total-unit option:selected').val();
       $('#results span.total').not('.'+tag).hide();
       $('#results span.total').filter('.'+tag).show();
     });
-    $('#local-column').click((ev:JQueryEventObject) => { 
+    $('#local-column').click((ev:JQueryEventObject) => {
       if(ev.target === $('#local-column').get(0))
         $('#local-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#local-unit').change()
     });
@@ -401,7 +391,7 @@ function updateResults() {
   //     // onResize: (e:JQueryEventObject) => {
   //     //   console.log('resize');
   //     //   // $('#sticky-results-header').remove('thead'); //.append($('results thead'));
-  //     // } 
+  //     // }
   //   })
   //   .css('table-layout','fixed');
 
@@ -412,7 +402,7 @@ function updateResults() {
   // time('floatThead', () => {
   //   $('#results').floatThead({})
   // });
-  
+
   // time('sticky', () => {
   //   $('#results thead').sticky({topSpacing: 0, getWidthFrom: '#results'});
   //   $('#results thead').sticky('update');

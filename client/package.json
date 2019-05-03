@@ -603,10 +603,12 @@
     "unicode-9.0.0": "0.7.0",
     "string-argv": "0.0.2",
     "glob": "7.1.1",
+    "mustache": "3.0.1",
     "@types/glob": "5.0.30",
     "@types/xml2js": "^0.0.32",
     "@types/chalk": "0.4.31",
-    "@types/ws": "^0.0.38"
+    "@types/ws": "^0.0.38",
+    "@types/mustache": "0.8.32"
   },
   "repository": {
     "type": "git",

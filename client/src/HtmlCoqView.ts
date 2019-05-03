@@ -6,7 +6,6 @@ export {CoqView} from './CoqView'
 import {extensionContext} from './extension'
 import * as proto from './protocol'
 import * as WebSocket from 'ws';
-import * as http from 'http';
 import * as path from 'path';
 import * as docs from './CoqProject';
 import * as nasync from './nodejs-async';
@@ -14,6 +13,7 @@ import * as webServer from './WebServer';
 import * as psm from './prettify-symbols-mode';
 
 const opener = require('opener');
+import mustache = require('mustache');
 
 interface ControllerEvent {
   eventName: string;
@@ -66,66 +66,26 @@ function coqViewToFileUri(uri: vscode.Uri) {
   return `vscode-resource://${uri.path}?${uri.query}#${uri.fragment}`;
 }
 
-class IFrameDocumentProvider implements vscode.TextDocumentContentProvider {
-  private onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
-
-  public provideTextDocumentContent(uri: vscode.Uri): string {
-    return `<!DOCTYPE HTML><body style="margin:0px;padding:0px;width:100%;height:100vh;border:none;position:absolute;top:0px;left:0px;right:0px;bottom:0px">
-<iframe src="${coqViewToFileUri(uri)}" seamless style="position:absolute;top:0px;left:0px;right:0px;bottom:0px;border:none;margin:0px;padding:0px;width:100%;height:100%" />
-</body>`;
-  }
-
-  public get onDidChange(): vscode.Event<vscode.Uri> {
-    return this.onDidChangeEmitter.event;
-  }
-}
-
-var coqViewProvider : IFrameDocumentProvider|null = null;
-
 /**
  * Displays a Markdown-HTML file which contains javascript to connect to this view
  * and update the goals and show other status info
  */
 export class HtmlCoqView implements view.CoqView {
   private docUri: vscode.Uri;
-  private server : WebSocket.Server;
-  private httpServer : http.Server;
-  // private connection : Promise<WebSocket>;
-  private serverReady : Promise<void>;
-  private currentState : proto.CommandResult = {type: 'not-running', reason: 'not-started'};
   private coqViewUri : vscode.Uri;
   private currentSettings : SettingsState = {};
   private visible = false;
+
+  private panel : vscode.WebviewPanel | null = null;
 
   private resizeEvent = new vscode.EventEmitter<number>();
 
   public get resize() : vscode.Event<number> { return this.resizeEvent.event; }
 
   constructor(uri: vscode.Uri, context: vscode.ExtensionContext) {
-    if(coqViewProvider===null) {
-      coqViewProvider = new IFrameDocumentProvider();
-      var registration = vscode.workspace.registerTextDocumentContentProvider('coq-view', coqViewProvider);
-      context.subscriptions.push(registration);
-      context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(() => this.updateSettings()))
-    }
+    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(() => this.updateSettings()))
 
     this.docUri = uri;
-
-    const httpServer = this.httpServer = http.createServer();
-    this.serverReady = new Promise<void>((resolve, reject) =>
-      httpServer.listen(0,'localhost',undefined,(e:any) => {
-        if(e)
-          reject(e)
-        else
-          resolve();
-      }));
-
-    this.server = new WebSocket.Server({server: httpServer});
-    this.server.on('connection', (ws: WebSocket) => {
-      ws.onmessage = (event) => this.handleClientMessage(event);
-      this.updateSettings([ws]);
-      this.sendMessage({command: 'goal-update', goal: this.currentState}, [ws]);
-    })
 
     psm.onEnabledChange((enabled) => {
       this.currentSettings.prettifySymbolsMode = enabled;
@@ -152,11 +112,8 @@ export class HtmlCoqView implements view.CoqView {
 
   private async createBuffer() : Promise<void> {
     try {
-      await this.serverReady;
-      const serverAddress = this.httpServer.address();
-
       await HtmlCoqView.prepareStyleSheet();
-      this.coqViewUri = vscode.Uri.parse(`coq-view://${proofViewHtmlPath().path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
+      this.coqViewUri = vscode.Uri.parse(`file://${proofViewHtmlPath().path.replace(/%3A/, ':')}`);
       console.log("Goals: " + decodeURIComponent(this.coqViewUri.with({scheme: 'file'}).toString()));
     } catch(err) {
       vscode.window.showErrorMessage(err.toString());
@@ -171,20 +128,30 @@ export class HtmlCoqView implements view.CoqView {
     return this.visible;
   }
 
+  public async initializePanel(pane: vscode.ViewColumn) {
+    if (this.panel === null) {
+      this.panel = vscode.window.createWebviewPanel(
+        'html_coq',
+        "ProofView: " + path.basename(this.docUri.fsPath),
+        pane,
+        {enableScripts: true}
+      );
+
+      let doc = await vscode.workspace.openTextDocument(this.coqViewUri);
+
+      this.panel.webview.html = mustache.render(doc.getText(), {extensionPath: extensionContext.asAbsolutePath(VIEW_PATH)});
+
+      this.panel.webview.onDidReceiveMessage(message => this.handleClientMessage(message));
+    }
+  }
+
   public async show(preserveFocus: boolean, pane: vscode.ViewColumn) {
     if(!this.coqViewUri)
       await this.createBuffer();
 
-    this.visible = true;
+    this.initializePanel(pane);
 
-    const panel = vscode.window.createWebviewPanel(
-      'html_coq',
-      "ProofView: " + path.basename(this.docUri.fsPath),
-      pane,
-      {enableScripts: true}
-    );
-    let doc = await vscode.workspace.openTextDocument(this.coqViewUri);
-    panel.webview.html = doc.getText()
+    this.visible = true;
   }
 
   public async showExternal(scheme: "file"|"http", command? : (url:string)=>{module: string, args: string[]}) : Promise<void> {
@@ -207,37 +174,31 @@ export class HtmlCoqView implements view.CoqView {
   }
 
   public dispose() {
-    // this.editor.hide();
+    if (this.panel !== null)
+      this.panel.dispose()
   }
 
-  private async sendMessage(message: ProofViewProtocol, clients = this.server.clients) {
-    await this.serverReady;
-    if(!clients)
-      clients = this.server.clients;
-    for(const connection of clients) {
-      try {
-        connection.send(JSON.stringify(message));
-      } catch(error) {}
-    }
+  private async sendMessage(message: ProofViewProtocol) {
+    if (this.panel !== null)
+      this.panel.webview.postMessage(message);
   }
 
-  private async updateClients(state: proto.CommandResult, clients = this.server.clients) {
-    this.currentState = state;
-    await this.sendMessage({command: 'goal-update', goal: state}, clients);
+  private async updateClient(state: proto.CommandResult) {
+    await this.sendMessage({command: 'goal-update', goal: state});
   }
 
   public update(state: proto.CommandResult) {
-    this.updateClients(state, this.server.clients);
+    this.updateClient(state);
   }
 
 
-  private async updateSettings(clients = this.server.clients) {
+  private async updateSettings() {
     this.currentSettings.fontFamily = vscode.workspace.getConfiguration("editor").get("fontFamily") as string;
     this.currentSettings.fontSize = `${vscode.workspace.getConfiguration("editor").get("fontSize") as number}px`;
     this.currentSettings.fontWeight = vscode.workspace.getConfiguration("editor").get("fontWeight") as string;
     this.currentSettings.cssFile = decodeURIComponent(proofViewCSSFile().toString());
     this.currentSettings.prettifySymbolsMode = psm.isEnabled();
-    await this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>(this.currentSettings,{command: 'settings-update'}), clients);
+    await this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>(this.currentSettings,{command: 'settings-update'}));
   }
 
   private static async shouldResetStyleSheet() : Promise<boolean> {
