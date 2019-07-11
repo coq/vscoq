@@ -145,7 +145,7 @@
     "body": ["Admit Obligations."]
   },
   "Admit Obligations of...": {
-    "prefix": "Admit Obligations of...",
+    "prefix": "Admit Obligations of",
     "body": ["Admit Obligations of ${ident}."]
   },
   "Preterm": {
