@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 class win32 {
   //import in the declaration for GenerateConsoleCtrlEvent
