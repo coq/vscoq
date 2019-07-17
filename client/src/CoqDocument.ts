@@ -45,6 +45,7 @@ namespace DisplayOptionPicks {
 
 export class CoqDocument implements vscode.Disposable {
   /** A list of things to dispose */
+  private readonly queryRouteId = 2;
   private subscriptions : Disposable[] = []
   private statusBar: StatusBar;
   public documentUri: string;
@@ -170,26 +171,25 @@ export class CoqDocument implements vscode.Disposable {
   // }
 
   private onCoqMessage(params: proto.NotifyMessageParams) {
-    switch(params.level) {
-    case 'warning':
-      // vscode.window.showWarningMessage(params.message); return;
-      this.project.infoOut.show(true);
-      this.project.infoOut.appendLine(psm.prettyTextToString(params.message));
-      return;
-    case 'info':
-      // this.infoOut.appendLine(params.message); return;
-      // this.view.message(params.message);
-      this.project.infoOut.show(true);
-      this.project.infoOut.appendLine(psm.prettyTextToString(params.message));
-      return;
-    case 'notice':
-      this.project.noticeOut.show(true);
-      this.project.noticeOut.append(psm.prettyTextToString(params.message));
-      this.project.noticeOut.append("\n");
-      return;
-      // vscode.window.showInformationMessage(params.message); return;
-    // case 'error':
-    //   vscode.window.showErrorMessage(psm.prettyTextToString(params.message)); return;
+    if (params.routeId == this.queryRouteId) {
+      this.project.queryOut.show(true);
+      this.project.queryOut.appendLine(psm.prettyTextToString(params.message));
+    } else {
+      switch (params.level) {
+        case 'warning':
+          this.project.infoOut.show(true);
+          this.project.infoOut.appendLine(psm.prettyTextToString(params.message));
+          return;
+        case 'info':
+          this.project.infoOut.show(true);
+          this.project.infoOut.appendLine(psm.prettyTextToString(params.message));
+          return;
+        case 'notice':
+          this.project.noticeOut.show(true);
+          this.project.noticeOut.append(psm.prettyTextToString(params.message));
+          this.project.noticeOut.append("\n");
+          return;
+      }
     }
   }
 
@@ -458,24 +458,16 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public async query(query: proto.QueryFunction, term: string | undefined) {
-    this.statusBar.setStateWorking('Running query');
     try {
       if (term) {
-        const results = await this.langServer.query(query, term);
-        this.displayQueryResults(results);
+        this.project.queryOut.clear();
+        this.project.queryOut.show(true);
+        this.langServer.query(query, term, this.queryRouteId);
       }
     } catch (err) {
     } finally {
       this.statusBar.setStateReady();
     }
-  }
-
-
-  private displayQueryResults(results: proto.CoqTopQueryResult) {
-    this.project.queryOut.clear();
-    this.project.queryOut.show(true);
-    this.project.queryOut.append(psm.prettyTextToString(results.searchResults));
-
   }
 
   public async viewGoalState(editor: TextEditor, external: boolean) {

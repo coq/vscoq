@@ -38,7 +38,7 @@ class MockCoqTop extends coqtop.CoqTop {
   async coqEditAt(stateId: number) { return {} };
   async coqLtacProfilingResults(stateId?: number, routeId?: number) {};
   async coqResizeWindow(columns: number) {};
-  async coqQuery(query: string, stateId?: number, routeId?: number) { return "" };
+  async coqQuery(query: string, stateId?: number, routeId?: number) { return; };
   async coqGetOptions(options) {};
   async coqSetOptions(options) {};
 }

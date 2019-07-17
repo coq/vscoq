@@ -17,6 +17,7 @@ import {CoqDocument} from './document';
 import * as coqproto from './protocol';
 import {CoqTopSettings, CoqSettings, Settings} from './protocol';
 import {CoqProject} from './CoqProject';
+import { RouteId } from './coqtop/coq-proto';
 
 // Create a connection for the server. The connection uses 
 // stdin / stdout for message passing
@@ -193,7 +194,7 @@ connection.onRequest(coqproto.CachedGoalRequest.type, (params: coqproto.CachedGo
     .getCachedGoal(params.position, params.direction);
 });
 connection.onRequest(coqproto.QueryRequest.type, async (params: coqproto.CoqTopQueryParams, token: CancellationToken) => {
-  return { searchResults: await project.lookup(params.uri).query(params.queryFunction, params.query) || "" };
+  return project.lookup(params.uri).query(params.queryFunction, params.query, params.routeId);
 });
 connection.onRequest(coqproto.ResizeWindowRequest.type, (params: coqproto.CoqTopResizeWindowParams, token: CancellationToken) => {
   return project.lookup(params.uri)
@@ -285,13 +286,16 @@ connection.onDidOpenTextDocument((params: vscodeLangServer.DidOpenTextDocumentPa
   project.open(params.textDocument, {
     sendHighlightUpdates: (h) => sendHighlightUpdates(uri, h),
     sendDiagnostics: (diagnostics) => sendDiagnostics(uri, diagnostics),
-    sendMessage: (level, message: string, rich_message?: any) =>
-      connection.sendNotification(coqproto.CoqMessageNotification.type, <coqproto.NotifyMessageParams>{
+    sendMessage: (level, message: string, routeId: RouteId, rich_message?: any) => {
+      const params : coqproto.NotifyMessageParams =
+      {
         level: level,
         message: message,
         uri: uri,
-        rich_message: rich_message,
-      }),
+        routeId
+        // rich_message: rich_message,
+      };
+      connection.sendNotification(coqproto.CoqMessageNotification.type, params)},
     sendReset: () =>
       connection.sendNotification(coqproto.CoqResetNotification.type, {uri: uri}),
     sendStmFocus: (focus: Position) =>

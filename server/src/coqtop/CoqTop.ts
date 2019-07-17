@@ -85,7 +85,7 @@ export type GoalResult = NoProofResult | ProofModeResult
 
 export interface EventCallbacks {
   onFeedback? : (feedback: coqProto.StateFeedback) => void;
-  onMessage? : (msg: coqProto.Message) => void;
+  onMessage? : (msg: coqProto.Message, routeId: coqProto.RouteId, stateId?: coqProto.StateId) => void;
   onClosed?: (isError: boolean, message?: string) => void;
 }
 
@@ -125,7 +125,7 @@ export abstract class IdeSlave {
     return { dispose: () => { this.callbacks.onFeedback = undefined; } }
   }
 
-  public onMessage(handler: (msg: coqProto.Message) => void)
+  public onMessage(handler: (msg: coqProto.Message, routeId: coqProto.RouteId, stateId: coqProto.StateId) => void)
   {
     this.callbacks.onMessage = handler;
     return { dispose: () => { this.callbacks.onMessage = undefined; } }
@@ -149,7 +149,7 @@ export abstract class IdeSlave {
   public abstract coqEditAt(stateId: number) : Promise<EditAtResult>;
   public abstract coqLtacProfilingResults(stateId?: number, routeId?: number) : Promise<void>;
   public abstract coqResizeWindow(columns: number) : Promise<void>;
-  public abstract coqQuery(query: string, stateId?: number, routeId?: number) : Promise<AnnotatedText>;
+  public abstract coqQuery(query: string, stateId?: number, routeId?: number) : Promise<void>;
   public abstract coqGetOptions(options: CoqOptions) : Promise<void>;
   public abstract coqSetOptions(options: CoqOptions) : Promise<void>;
 }
@@ -178,7 +178,7 @@ export abstract class CoqTop extends IdeSlave {
   public abstract coqEditAt(stateId: number) : Promise<EditAtResult>;
   public abstract coqLtacProfilingResults(stateId?: number, routeId?: number) : Promise<void>;
   public abstract coqResizeWindow(columns: number) : Promise<void>;
-  public abstract coqQuery(query: string, stateId?: number, routeId?: number) : Promise<AnnotatedText>;
+  public abstract coqQuery(query: string, stateId?: number, routeId?: number) : Promise<void>;
   public abstract coqGetOptions(options: CoqOptions) : Promise<void>;
   public abstract coqSetOptions(options: CoqOptions) : Promise<void>;
 }

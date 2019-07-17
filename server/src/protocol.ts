@@ -1,6 +1,7 @@
 'use strict';
 import { RequestType, NotificationType } from 'vscode-jsonrpc';
 import * as vscode from 'vscode-languageserver-types';
+import { RouteId } from './coqtop/coq-proto';
 
 export interface DocumentFilter {
   language?: string,
@@ -242,17 +243,14 @@ export namespace FinishComputationsRequest {
   export const type = new RequestType<CoqTopParams, void, void, void>('coqtop/finishComputations')
 }
 export namespace QueryRequest {
-  export const type = new RequestType<CoqTopQueryParams, CoqTopQueryResult, void, void>('coqtop/query')
+  export const type = new RequestType<CoqTopQueryParams, void, void, void>('coqtop/query')
 }
 export type QueryFunction = "locate"|"check"|"print"|"search"|"about"|"searchAbout";
 export interface CoqTopQueryParams extends CoqTopParams {
   queryFunction: QueryFunction;
   query: string;
+  routeId: RouteId;
 }
-export interface CoqTopQueryResult {
-  searchResults: AnnotatedText;
-}
-
 export interface CoqTopResizeWindowParams extends CoqTopParams {
   columns: number;
 }
@@ -304,6 +302,7 @@ export namespace UpdateHighlightsNotification {
 export interface NotifyMessageParams extends NotificationParams {
   level: string;
   message: AnnotatedText;
+  routeId: RouteId;
 }
 export namespace CoqMessageNotification {
   export const type = new NotificationType<NotifyMessageParams,void>('coqtop/message')

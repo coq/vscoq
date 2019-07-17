@@ -34,7 +34,7 @@ export interface TextDocumentItem {
 
 
 export interface MessageCallback {
-  sendMessage(level: string, message: AnnotatedText) : void;
+  sendMessage(level: string, message: AnnotatedText, routeId: coqProto.RouteId) : void;
 }
 export interface ResetCallback {
   sendReset() : void;
@@ -291,8 +291,8 @@ export class CoqDocument implements TextDocument {
   }
 
 
-  private onCoqMessage(level: coqProto.MessageLevel, message: AnnotatedText) {
-    this.callbacks.sendMessage(coqProto.MessageLevel[level], message);
+  private onCoqMessage(level: coqProto.MessageLevel, message: AnnotatedText, routeId: coqProto.RouteId) {
+    this.callbacks.sendMessage(coqProto.MessageLevel[level], message, routeId);
   }
 
   private onCoqStateLtacProf(range: Range, results: coqProto.LtacProfResults) {
@@ -320,7 +320,7 @@ export class CoqDocument implements TextDocument {
         clearSentence: (x1) => this.onClearSentence(x1),
         updateStmFocus: (x1) => this.onUpdateStmFocus(x1),
         error: (x1,x2,x3) => this.onCoqStateError(x1,x2,x3),
-        message: (x1,x2) => this.onCoqMessage(x1,x2),
+        message: (x1,x2,x3) => this.onCoqMessage(x1,x2,x3),
         ltacProfResults: (x1,x2) => this.onCoqStateLtacProf(x1,x2),
         coqDied: (reason: thmProto.CoqtopStopReason, error?: string) => this.onCoqDied(reason, error),
       });
@@ -916,21 +916,21 @@ export class CoqDocument implements TextDocument {
       this.stm.finishComputations();
   }
 
-  public async query(query: "locate"|"check"|"print"|"search"|"about"|"searchAbout", term: string) {
+  public async query(query: "locate"|"check"|"print"|"search"|"about"|"searchAbout", term: string, routeId: coqProto.RouteId) {
     if(!this.isStmRunning())
       return "Coq is not running";
     switch(query) {
       case "locate":
         try {
-          return await this.stm.doQuery(`Locate ${term}.`);
+          return await this.stm.doQuery(`Locate ${term}.`, routeId);
         } catch(err) {
-          return await this.stm.doQuery(`Locate "${term}".`);
+          return await this.stm.doQuery(`Locate "${term}".`, routeId);
         }
-      case "check":       return await this.stm.doQuery(`Check ${term}.`)
-      case "print":       return await this.stm.doQuery(`Print ${term}.`)
-      case "search":      return await this.stm.doQuery(`Search ${term}.`)
-      case "about":       return await this.stm.doQuery(`About ${term}.`)
-      case "searchAbout": return await this.stm.doQuery(`SearchAbout ${term}.`)
+      case "check":       return await this.stm.doQuery(`Check ${term}.`, routeId)
+      case "print":       return await this.stm.doQuery(`Print ${term}.`, routeId)
+      case "search":      return await this.stm.doQuery(`Search ${term}.`, routeId)
+      case "about":       return await this.stm.doQuery(`About ${term}.`, routeId)
+      case "searchAbout": return await this.stm.doQuery(`SearchAbout ${term}.`, routeId)
     }
   }
 
