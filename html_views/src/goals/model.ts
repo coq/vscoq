@@ -61,24 +61,6 @@ function onWindowGetFocus(event: FocusEvent) {
   }
 }
 
-function getVSCodeTheme() : 'vscode-dark'|'vscode-light'|'vscode-high-contrast'|'' {
-  switch($(parent.document.body).attr('class')) {
-    case 'vscode-dark': return 'vscode-dark'
-    case 'vscode-light': return 'vscode-light'
-    case 'vscode-high-contrast': return 'vscode-high-contrast'
-    default:
-      return '';
-  }
-}
-
-const observer = new MutationObserver(function(mutations) {
-    inheritStyles(parent.parent);
-    $(document.body).attr('class',getVSCodeTheme());
-    // mutations.forEach(function(mutationRecord) {
-    //   console.log(`{name: ${mutationRecord.attributeName}, old: ${mutationRecord.oldValue}, new: ${$(mutationRecord.target).attr('class')} }`);
-    // });
-});
-
 function setPrettifySymbolsMode(enabled: boolean) {
   $(document.body)
     .toggleClass("prettifySymbolsMode", enabled);
@@ -88,21 +70,8 @@ declare var vscode : any;
 declare var acquireVsCodeApi : any;
 function load() {
 
-  try {
-    window.onresize = throttleEventHandler(event => computePrintingWidth);
-    window.addEventListener("focus", onWindowGetFocus, true);
-    //observer.observe(parent.document.body, { attributes : true, attributeFilter: ['class'] });
-    //inheritStyles(parent.parent);
-    $(document.body)
-      //.removeClass("vscode-dark")
-      .removeClass("vscode-light")
-      //.addClass(getVSCodeTheme());
-  } catch(error) {
-    $('#stdout').text(error.toString());
-    $('#error').text(error.toString());
-    return;
-  }
-
+  window.onresize = throttleEventHandler(event => computePrintingWidth);
+  window.addEventListener("focus", onWindowGetFocus, true);
   vscode = acquireVsCodeApi();
 
   window.addEventListener('message', event => {
@@ -134,12 +103,6 @@ function unloadCSS() {
 }
 
 function updateSettings(settings: SettingsState) : void {
-  if(settings.fontFamily !== undefined)
-    document.documentElement.style.setProperty(`--code-font-family`, settings.fontFamily);
-  if(settings.fontSize !== undefined)
-    document.documentElement.style.setProperty(`--code-font-size`, settings.fontSize);
-  if(settings.fontWeight !== undefined)
-    document.documentElement.style.setProperty(`--code-font-weight`, settings.fontWeight);
   if(settings.cssFile !== undefined)
     loadCSS(settings.cssFile);
   if(settings.prettifySymbolsMode !== undefined)
