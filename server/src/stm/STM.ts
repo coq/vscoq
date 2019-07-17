@@ -20,7 +20,6 @@ import {GoalsCache} from './GoalsCache';
 import {Settings} from '../protocol';
 export {StateStatus} from './State';
 
-
 type StateId = number;
 
 interface BufferedFeedbackBase {
@@ -53,7 +52,7 @@ export interface StateMachineCallbacks {
   clearSentence(range: Range) : void;
   updateStmFocus(focus: Position): void;
   error(sentenceRange: Range, errorRange: Range, message: AnnotatedText) : void;
-  message(level: coqProto.MessageLevel, message: AnnotatedText) : void;
+  message(level: coqProto.MessageLevel, message: AnnotatedText, routeId: coqProto.RouteId) : void;
   ltacProfResults(range: Range, results: coqProto.LtacProfResults) : void;
   coqDied(reason: proto.CoqtopStopReason, error?: string) : void;
 }
@@ -137,6 +136,7 @@ export class CoqStateMachine {
   /** The connected instance of coqtop */
   private coqtop : coqtop.CoqTop;
 
+
   constructor(private project: CoqProject
     , private spawnCoqtop : ()=>coqtop.CoqTop
     , private callbacks: StateMachineCallbacks
@@ -147,7 +147,7 @@ export class CoqStateMachine {
   private startFreshCoqtop() {
     this.coqtop = this.spawnCoqtop();
     this.coqtop.onFeedback((x1) => this.onFeedback(x1));
-    this.coqtop.onMessage((x1) => this.onCoqMessage(x1));
+    this.coqtop.onMessage((x1, routeId, stateId) => this.onCoqMessage(x1, routeId, stateId));
     this.coqtop.onClosed((isError: boolean, message?: string) => this.onCoqClosed(isError, message));
   }
 
@@ -531,19 +531,18 @@ export class CoqStateMachine {
     }
   }
 
-  public async doQuery(query: string, position?: Position) : Promise<AnnotatedText> {
+  public async doQuery(query: string, routeId: coqProto.RouteId, position?: Position) : Promise<void> {
     if(!this.isCoqReady())
-      return "";
+      return;
     const endCommand = await this.startCommand();
     if(!endCommand)
-      return "";
+      return;
     try {
       let state: StateId = undefined;
-      if(position)
-        state = this.getParentSentence(position).getStateId();
+      state = position ? this.getParentSentence(position).getStateId() : this.focusedSentence.getStateId();
       await this.refreshOptions();
-      const results = await this.coqtop.coqQuery(query, state, this.routeId++);
-      return text.normalizeText(server.project.getPrettifySymbols().prettify(results));
+      const results = await this.coqtop.coqQuery(query, state, routeId);
+      return;
     } finally {
       endCommand();
     }
@@ -993,7 +992,7 @@ private routeId = 1;
   //   }
   // }
 
-  private onCoqMessage(msg: coqProto.Message, stateId?: StateId) {
+  private onCoqMessage(msg: coqProto.Message, routeId: coqProto.RouteId, stateId?: StateId) {
     const prettyMessage = text.normalizeText(server.project.getPrettifySymbols().prettify(errorParsing.parseError(msg.message)));
     if(msg.level === coqProto.MessageLevel.Error && stateId!==undefined) {
       const sent = this.sentences.get(stateId);
@@ -1004,7 +1003,7 @@ private routeId = 1;
         this.console.warn(`Error for unknown stateId: ${stateId}; message: ${msg.message}`);
       }
     } else
-      this.callbacks.message(msg.level, prettyMessage);
+      this.callbacks.message(msg.level, prettyMessage, routeId);
   }
 
   private onFeedback(feedback: coqProto.StateFeedback) {
@@ -1028,7 +1027,7 @@ private routeId = 1;
         sent.updateWorkerStatus(feedback.id, feedback.ident);
     } else if(feedback.feedbackKind === "message") {
       // this.console.log("Message feedback: " + util.inspect(feedback));
-      this.onCoqMessage(feedback, stateId /* can be undefined */);
+      this.onCoqMessage(feedback, feedback.route, stateId /* can be undefined */);
     } else if(feedback.feedbackKind === "sentence-status" && hasStateId) {
       const sent = this.sentences.get(stateId);
       if(sent) {

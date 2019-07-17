@@ -239,13 +239,16 @@ export class CoqLanguageServer implements vscode.Disposable {
     return this.server.sendRequest(proto.GetSentencePrefixTextRequest.type, { uri: uri, position: pos }, token || this.cancelRequest.token);
   }
 
-  public async query(uri: string, query: "locate"|"check"|"print"|"search"|"about"|"searchAbout", term: string): Promise<proto.CoqTopQueryResult> {
+  public async query(uri: string, query: "locate"|"check"|"print"|"search"|"about"|"searchAbout", term: string, routeId:Number): Promise<void> {
     await this.server.onReady();
-    return this.server.sendRequest(proto.QueryRequest.type, <proto.CoqTopQueryParams>{
+    const params : proto.CoqTopQueryParams =
+      {
       uri: uri,
       queryFunction: query,
-      query: term
-    }, this.cancelRequest.token);
+      query: term,
+      routeId
+      };
+    return this.server.sendRequest(proto.QueryRequest.type, params , this.cancelRequest.token);
   }
 
   public async setDisplayOptions(uri: string, options: { item: proto.DisplayOption, value: proto.SetDisplayOption }[]): Promise<void> {
@@ -387,8 +390,8 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
     return this.server.ltacProfGetResults(this.uri, offset);
   }
 
-  public query(query: proto.QueryFunction, term: string): Thenable<proto.CoqTopQueryResult> {
-    return this.server.query(this.uri, query, term);
+  public query(query: proto.QueryFunction, term: string, routeId: Number): Thenable<void> {
+    return this.server.query(this.uri, query, term, routeId);
   }
 
   public setDisplayOptions(options: { item: proto.DisplayOption, value: proto.SetDisplayOption }[]): Thenable<void> {

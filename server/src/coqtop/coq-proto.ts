@@ -248,7 +248,7 @@ export type CoqValue =
 export type Add_rty = Pair<StateId,Pair<Union<{},StateId>,AnnotatedText>>;
 export type Goal_rty = Goals
 export type EditAt_rty = Union<{},Pair<StateId,Pair<StateId,StateId>>>;
-export type Query_rty = AnnotatedText;
+export type Query_rty = {};
 export type Evars_rty = string[]|undefined;
 export type Hints_rty = Pair<(Pair<string,string>[])[],Pair<string,string>[]>|undefined;
 export type Status_rty = CoqStatus;
@@ -297,7 +297,7 @@ export type ReturnValue = AddReturn|Goals|EditAtJumpFocusReturn|HintsReturn|Inte
 export function GetValue(x: 'Add', value: ValueReturn) : AddReturn;
 export function GetValue(x: 'Edit_at', value: ValueReturn) : EditAtJumpFocusReturn|null;
 export function GetValue(x: 'Goal', value: ValueReturn) : Goals|null;
-export function GetValue(x: 'Query', value: ValueReturn) : AnnotatedText;
+export function GetValue(x: 'Query', value: ValueReturn) : void;
 export function GetValue(x: 'Evars', value: ValueReturn) : string[];
 export function GetValue(x: 'Hints', value: ValueReturn) : HintsReturn;
 export function GetValue(x: 'Status', value: ValueReturn) : CoqStatus;

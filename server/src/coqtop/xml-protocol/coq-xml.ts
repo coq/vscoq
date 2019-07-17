@@ -5,7 +5,8 @@ import * as coqProto from '../coq-proto';
 import {StateId, EditId, Pair, StateFeedback, LtacProfTactic, LtacProfResults,
   UnionL, UnionR, Union, OptionState, Subgoal, Goals, Location, MessageLevel,
   Message, FailValue, UnfocusedGoalStack, SentenceStatus, FeedbackContent,
-  ValueReturn} from '../coq-proto';
+  ValueReturn,
+  RouteId} from '../coq-proto';
 import * as text from '../../util/AnnotatedText';
 import * as util from 'util';
 import {Deserialize} from './deserialize.base';
@@ -13,7 +14,7 @@ import {Deserialize} from './deserialize.base';
 export interface EventCallbacks {
   onValue?: (x: ValueReturn) => void;
   onFeedback? : (feedback: StateFeedback) => void;
-  onMessage? : (msg: Message) => void;
+  onMessage? : (msg: Message, routeId: RouteId, stateId?: StateId) => void;
   onOther? : (tag:string, x: any) => void;
   onError? : (x: any) => void;
 }
@@ -52,7 +53,7 @@ export class XmlStream extends events.EventEmitter {
       if(callbacks.onFeedback)
         this.on('response: feedback', (x:coqProto.StateFeedback) => callbacks.onFeedback(x));
       if(callbacks.onMessage)
-        this.on('response: message', (x:coqProto.Message) => callbacks.onMessage(x));
+        this.on('response: message', (x:coqProto.Message,routeId:coqProto.RouteId,stateId?:coqProto.StateId) => callbacks.onMessage(x,routeId,stateId));
       if(callbacks.onOther)
         this.on('response', (tag:string, x:any) => callbacks.onOther(tag,x));
       if(callbacks.onError)

@@ -63,7 +63,7 @@ export class IdeSlave extends coqtop.IdeSlave {
     const deserializer = createDeserializer(version);
     this.parser = new coqXml.XmlStream(this.mainChannelR, deserializer, {
       onFeedback: (feedback: coqProto.StateFeedback) => this.doOnFeedback(feedback),
-      onMessage: (msg: coqProto.Message) => this.doOnMessage(msg),
+      onMessage: (msg: coqProto.Message, routeId: coqProto.RouteId, stateId?: coqProto.StateId) => this.doOnMessage(msg, routeId, stateId),
       onOther: (tag: string, x: any) => this.doOnOther(tag, x),
       onError: (x: any) => this.doOnSerializationError(x)
     });
@@ -166,9 +166,9 @@ export class IdeSlave extends coqtop.IdeSlave {
       this.callbacks.onFeedback(feedback);
   }
 
-  private doOnMessage(msg: coqProto.Message) {
+  private doOnMessage(msg: coqProto.Message, routeId: coqProto.RouteId, stateId: coqProto.StateId) {
     if(this.callbacks.onMessage)
-      this.callbacks.onMessage(msg);
+      this.callbacks.onMessage(msg, routeId, stateId);
   }
 
   private doOnOther(tag: string, x: any) {
@@ -411,12 +411,12 @@ export class IdeSlave extends coqtop.IdeSlave {
   public async coqLtacProfilingResults(stateId?: number, routeId?: number) : Promise<void> {
     await this.checkState();
     stateId = stateId || 0;
-    const routeAttr = typeof routeId === 'number' ? ` route="${routeId}"` : ""; 
+    routeId = routeId || 0;
 
     const coqResult = this.coqGetResultOnce('Query');
     this.console.log('--------------------------------');
     this.console.log(`Call Query(query: "Show Ltac Profile.", stateId: ${stateId}, routeId: ${routeId})`);
-    this.writeMain(`<call val="Query"${routeAttr}><pair><string>Show Ltac Profile.</string><state_id val="${stateId}"/></pair></call>`);
+    this.writeMain(`<call val="Query"><pair><route_id val="${routeId}"/><pair><string>Show Ltac Profile.</string><state_id val="${stateId}"/></pair></pair></call>`);    
 
     const value = coqProto.GetValue('Query',await coqResult);
     // return {total_time: 0, tactics:[]};;
@@ -447,22 +447,21 @@ export class IdeSlave extends coqtop.IdeSlave {
     this.console.log(`ResizeWindow: ${columns} --> ()`);
   }
   
-  public async coqQuery(query: string, stateId?: number, routeId?: number) : Promise<AnnotatedText> {
+  public async coqQuery(query: string, stateId: number, routeId?: number) : Promise<void> {
     this.checkState();
-    if(stateId === undefined)
-      stateId = 0;
-    const routeAttr = typeof routeId === 'number' ? ` route="${routeId}"` : ""; 
+    routeId = routeId || 1;
 
     const coqResult = this.coqGetResultOnce('Query');
-    const coqMessageResult = this.coqGetMessageOnce();
+    // TODO test Coq version const coqMessageResult = this.coqGetMessageOnce();
     this.console.log('--------------------------------');
     this.console.log(`Call Query(stateId: ${stateId}, ${routeId!==undefined? "routeId: "+routeId+", ":""}query: ${query})`);
-    this.writeMain(`<call val="Query"${routeAttr}><pair><string>${coqXml.escapeXml(query)}</string><state_id val="${stateId}"/></pair></call>`);    
+    this.writeMain(`<call val="Query"><pair><route_id val="${routeId}"/><pair><string>${coqXml.escapeXml(query)}</string><state_id val="${stateId}"/></pair></pair></call>`);    
     // this.writeMain(`<call val="Query"><pair><string>${entities.encodeXML(query)}</string><state_id val="${stateId}"/></pair></call>`);    
 
-    const values = await Promise.all([coqMessageResult, coqResult.then(() => null)]);
+    // TODO test Coq version const values = await Promise.all([coqMessageResult, coqResult.then(() => null)]);
+    const result = coqProto.GetValue('Query',await coqResult);
     this.console.log(`Query: ${stateId} --> ...`);
-    return values[0].message;
+    // TODO test Coq version return values[0].message;
 
     // return entities.decodeXML(values[0].message);
 
