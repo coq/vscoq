@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		"target": "es6",
-		"module": "system",
+		"module": "amd",
 		"outDir": "../client/html_views",
 		"noLib": false,
 		"forceConsistentCasingInFileNames": true,

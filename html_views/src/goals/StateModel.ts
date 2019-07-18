@@ -1,26 +1,6 @@
-/// <reference path="../../typings/index.d.ts" />
-/// <reference path="./ui-util.ts" />
-/// <reference path="./protocol.ts" />
-
-
-enum DisplayState {
-  Proof, Top, Error, NotRunning, NoProof, Interrupted
-}
-
-function getDisplayState(state: CommandResult) {
-  switch(state.type) {
-    case 'failure':
-      return DisplayState.Error;
-    case 'proof-view':
-      return DisplayState.Proof;
-    case 'not-running':
-      return DisplayState.NotRunning;
-    case 'no-proof':
-      return DisplayState.NoProof;
-    case 'interrupted':
-      return DisplayState.Interrupted;
-  }
-}
+import * as $ from 'jquery';
+import { ProofView, UnfocusedGoalStack, HypothesisDifference, TextDifference, AnnotatedText, ScopedText, Hypothesis, Goal, CommandResult } from './protocol';
+import { makeBreakingText } from './ui-util';
 
 function countUnfocusedGoals(u: UnfocusedGoalStack|undefined) : number {
   if(!u)
@@ -68,8 +48,8 @@ function isScopedText(text: AnnotatedText): text is ScopedText {
 
 let hasSubstitutions = false;
 
-function createAnnotatedText(text: AnnotatedText) : Node[] {
-  function helper(text: AnnotatedText) : Node[] {
+function createAnnotatedText(text: AnnotatedText) : HTMLElement[] {
+  function helper(text: AnnotatedText) : (Text | HTMLElement)[] {
     if(typeof text === 'string')
       return makeBreakingText(text)
     else if(text instanceof Array)
@@ -145,12 +125,6 @@ function createGoal(goal: Goal, idx:number, count:number) {
       ]);
 }
 
-function createGoals(goals: Goal[]) {
-  return $('<ul>')
-    .addClass('goalsLists')
-    .append(goals.map((g,i) => createGoal(g,i,goals.length)));
-}
-
 function createFocusedGoals(goals: Goal[]) : JQuery {
   return $('<ul>')
     .addClass('goalsList')
@@ -159,7 +133,7 @@ function createFocusedGoals(goals: Goal[]) : JQuery {
   //   createGoal(g, idx, goals.length)));
 }
 
-class StateModel {
+export class StateModel {
 
   // private static hypothesesNodeClass = '.hypotheses';
   // private static goalNodeClass = '.goal';

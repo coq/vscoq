@@ -1,8 +1,8 @@
-interface ControllerEvent {
+export interface ControllerEvent {
   eventName: string;
   params: ResizeEvent // | | | | | ;
 }
-interface ResizeEvent {
+export interface ResizeEvent {
   columns: number;
 }
 
@@ -15,7 +15,7 @@ interface SettingsUpdate extends SettingsState {
   command: 'settings-update'
 }
 
-interface SettingsState {
+export interface SettingsState {
   fontFamily?: string,
   fontSize?: string,
   fontWeight?: string,
@@ -23,9 +23,9 @@ interface SettingsState {
   prettifySymbolsMode?: boolean,
 }
 
-type ProofViewProtocol = GoalUpdate | SettingsUpdate;
+export type ProofViewProtocol = GoalUpdate | SettingsUpdate;
 
-type TextDifference = "added"|"removed";
+export type TextDifference = "added"|"removed";
 
 interface TextAnnotation {
   /** the relationship this text has to the text of another state */
@@ -36,30 +36,30 @@ interface TextAnnotation {
   text: string
 }
 
-interface ScopedText {
+export interface ScopedText {
   /** A scope identifier */
   scope: string,
   /** the underlying text, possibly with more annotations */
   text: AnnotatedText
 }
 
-type AnnotatedText = string | TextAnnotation | ScopedText | (string | TextAnnotation | ScopedText)[];
+export type AnnotatedText = string | TextAnnotation | ScopedText | (string | TextAnnotation | ScopedText)[];
 
 
-enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
+export enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
 
-interface Hypothesis {
+export interface Hypothesis {
   identifier: string;
   relation: string;
   expression: AnnotatedText;
   diff: HypothesisDifference;
 }
-interface Goal {
+export interface Goal {
   id: number;
   hypotheses: Hypothesis[];
   goal: AnnotatedText;
 }
-interface UnfocusedGoalStack {
+export interface UnfocusedGoalStack {
   // subgoals that appear before the focus
   before: Goal[];
   // reference to the more-focused background goals
@@ -73,7 +73,7 @@ interface FailValue {
   location?: Location;
 }
 
-interface ProofView {
+export interface ProofView {
   goals: Goal[];
   backgroundGoals: UnfocusedGoalStack,
   shelvedGoals: Goal[],
@@ -90,12 +90,11 @@ type NoProofTag = {type: 'no-proof'}
 type FailureTag = {type: 'failure'}
 type ProofViewTag = {type: 'proof-view'}
 type InterruptedTag = {type: 'interrupted'}
-type NotRunningResult = NotRunningTag
 type NoProofResult = NoProofTag
 type FailureResult = FailValue & FailureTag
 type ProofViewResult = ProofView & ProofViewTag
 type InterruptedResult = CommandInterrupted & InterruptedTag
-type CommandResult =
+export type CommandResult =
   NotRunningTag |
   (FailureResult & FocusPosition) |
   (ProofViewResult & FocusPosition) |

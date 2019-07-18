@@ -12,13 +12,16 @@
     "Programming Languages"
   ],
   "scripts": {
-    "compile": "tsc -p src/goals && tsc -p src/ltacprof && shx mkdir -p ../client/html_views/{goals,ltacprof,jquery} && shx cp src/goals/*.{css,html} ../client/html_views/goals && shx cp src/ltacprof/*.html ../client/html_views/ltacprof  && shx cp jquery/**/*.js ../client/html_views/jquery",
-    "postinstall": "typings install"
+    "compile": "webpack --env.development && shx cp src/goals/*.{css,html} ../client/html_views/goals && shx cp src/ltacprof/*.html ../client/html_views/ltacprof"
   },
   "devDependencies": {
+    "@types/jquery": "^3.3.30",
     "jquery": "^3.4.1",
     "shx": "^0.3.2",
-    "typescript": "^2.0.3"
+    "ts-loader": "^6.0.4",
+    "typescript": "^2.0.3",
+    "webpack": "^4.36.1",
+    "webpack-cli": "^3.3.6"
   },
   "dependencies": {},
   "repository": {
