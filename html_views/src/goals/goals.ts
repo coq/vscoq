@@ -3,10 +3,6 @@
 /// <reference path="./StateModel.ts" />
 /// <reference path="./protocol.ts" />
 
-function getQueryStringValue(key: string) : string {
-    return decodeURI(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURI(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
-}
-
 const stateModel = new StateModel();
 
 
@@ -68,7 +64,7 @@ function setPrettifySymbolsMode(enabled: boolean) {
 
 declare var vscode : any;
 declare var acquireVsCodeApi : any;
-function load() {
+function goalsLoad() {
 
   window.onresize = throttleEventHandler(event => computePrintingWidth);
   window.addEventListener("focus", onWindowGetFocus, true);

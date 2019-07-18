@@ -12,18 +12,14 @@
     "Programming Languages"
   ],
   "scripts": {
-    "compile": "gulp build",
+    "compile": "tsc -p src/goals && tsc -p src/ltacprof && shx mkdir -p ../client/html_views/{goals,ltacprof,jquery} && shx cp src/goals/*.{css,html} ../client/html_views/goals && shx cp src/ltacprof/*.html ../client/html_views/ltacprof  && shx cp jquery/**/*.js ../client/html_views/jquery",
     "postinstall": "typings install"
   },
   "devDependencies": {
+    "jquery": "^3.4.1",
+    "shx": "^0.3.2",
     "typescript": "^2.0.3",
-    "typings": "^1.4.0",
-    "gulp": "^3.9.1",
-    "gulp-typescript": "^3.0.2",
-    "gulp-shell": "^0.5.2",
-    "gulp-watch": "^4.3.10",
-    "gulp-sourcemaps": "^1.6.0",
-    "jquery": "^3.1.1"
+    "typings": "^2.1.1"
   },
   "dependencies": {},
   "repository": {

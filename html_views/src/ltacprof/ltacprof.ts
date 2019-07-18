@@ -14,43 +14,9 @@ interface LtacProfResults {
   tactics: LtacProfTactic[],
 }
 
-function getQueryStringValue(key:string) : string {
-    return decodeURI(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURI(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
-}
-
-function importStyles(doc: Document) {
-  var parentStyleSheets = doc.styleSheets as any as CSSStyleSheet[];
-  var cssString = "";
-  for (var i = 0, count = parentStyleSheets.length; i < count; ++i) {
-    if (parentStyleSheets[i].cssRules) {
-      var cssRules = parentStyleSheets[i].cssRules;
-      for (var j = 0, countJ = cssRules.length; j < countJ; ++j)
-        cssString += cssRules[j].cssText;
-    }
-    else
-      cssString += parentStyleSheets[i].cssText;  // IE8 and earlier
-  }
-  var style = document.createElement("style");
-  style.type = "text/css";
-  style.innerHTML = cssString;
-  // message(cssString);
-  document.getElementsByTagName("head")[0].appendChild(style);
-}
-
-function inheritStyles(p: Window) {
-  if (p) {
-    importStyles(p.document);
-    const pp = p.parent;
-    if(pp !== p)
-      inheritStyles(pp);
-  }
-}
-
-
-
 declare var acquireVsCodeApi: any;
 var vscode : any = null;
-function load() {
+function ltacProfLoad() {
   if(parent.parent === parent)
     document.body.style.backgroundColor = 'black';
 
