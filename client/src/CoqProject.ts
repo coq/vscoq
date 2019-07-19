@@ -29,6 +29,7 @@ export class CoqProject implements vscode.Disposable {
   private infoOutput: vscode.OutputChannel = vscode.window.createOutputChannel('Info');
   private queryOutput: vscode.OutputChannel = vscode.window.createOutputChannel('Queries');
   private noticeOutput: vscode.OutputChannel = vscode.window.createOutputChannel('Notices');
+  private debugOutput: vscode.OutputChannel = vscode.window.createOutputChannel('Debug');
 
   private constructor(context: vscode.ExtensionContext) {
     this.langServer = CoqLanguageServer.create(context);
@@ -77,6 +78,9 @@ export class CoqProject implements vscode.Disposable {
   }
   public get noticeOut(): vscode.OutputChannel {
     return this.noticeOutput;
+  }
+  public get debugOut(): vscode.OutputChannel {
+    return this.debugOutput;
   }
 
   dispose() {
