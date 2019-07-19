@@ -373,9 +373,7 @@ export class CoqStateMachine {
       return null;
     try {
       await this.validateState(false);
-      if(this.focusedSentence === this.root)
-        this.resetCoqtop();
-      else
+      if (this.focusedSentence !== this.root)
         await this.cancelSentence(this.focusedSentence);
       return null;
     } catch (error) {
