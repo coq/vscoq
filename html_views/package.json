@@ -12,18 +12,16 @@
     "Programming Languages"
   ],
   "scripts": {
-    "compile": "gulp build",
-    "postinstall": "typings install"
+    "compile": "webpack --env.development && shx cp src/goals/*.{css,html} ../client/html_views/goals && shx cp src/ltacprof/*.html ../client/html_views/ltacprof"
   },
   "devDependencies": {
+    "@types/jquery": "^3.3.30",
+    "jquery": "^3.4.1",
+    "shx": "^0.3.2",
+    "ts-loader": "^6.0.4",
     "typescript": "^2.0.3",
-    "typings": "^1.4.0",
-    "gulp": "^3.9.1",
-    "gulp-typescript": "^3.0.2",
-    "gulp-shell": "^0.5.2",
-    "gulp-watch": "^4.3.10",
-    "gulp-sourcemaps": "^1.6.0",
-    "jquery": "^3.1.1"
+    "webpack": "^4.36.1",
+    "webpack-cli": "^3.3.6"
   },
   "dependencies": {},
   "repository": {

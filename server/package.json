@@ -28,10 +28,10 @@
     "@types/semver": "6.0.0"
   },
   "devDependencies": {
-    "typescript": "^2.1.6",
-    "mocha": "^3.2.0",
+    "@types/mocha": "^2.2.39",
     "@types/node": "^7.0.5",
-    "@types/mocha": "^2.2.39"
+    "mocha": "^6.1.4",
+    "typescript": "^2.1.6"
   },
   "scripts": {
     "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./",

@@ -1,13 +1,7 @@
-/// <reference path="../../typings/index.d.ts" />
-/// <reference path="./ui-util.ts" />
-/// <reference path="./StateModel.ts" />
-/// <reference path="./protocol.ts" />
+import * as stm from './StateModel'
+import { ControllerEvent, ResizeEvent, SettingsState, ProofViewProtocol } from './protocol'
 
-function getQueryStringValue(key: string) : string {
-    return decodeURI(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURI(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
-}
-
-const stateModel = new StateModel();
+const stateModel = new stm.StateModel();
 
 
 var throttleTimeout : number|null = null;
@@ -66,13 +60,13 @@ function setPrettifySymbolsMode(enabled: boolean) {
     .toggleClass("prettifySymbolsMode", enabled);
 }
 
-declare var vscode : any;
 declare var acquireVsCodeApi : any;
-function load() {
+const vscode = acquireVsCodeApi();
+
+export function goalsLoad() {
 
   window.onresize = throttleEventHandler(event => computePrintingWidth);
   window.addEventListener("focus", onWindowGetFocus, true);
-  vscode = acquireVsCodeApi();
 
   window.addEventListener('message', event => {
     const message = event.data;
@@ -119,3 +113,5 @@ function handleMessage(message: ProofViewProtocol) : void {
       updateSettings(message);
   }
 }
+
+addEventListener('load', goalsLoad);

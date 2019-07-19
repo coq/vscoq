@@ -1,7 +1,6 @@
-/// <reference path="../../typings/index.d.ts" />
-// asdasd/// <reference path="jquery.d.ts" />
-// asdasd/// <reference path="jqueryui.d.ts" />
-// 'use strict';
+/// <reference path="../../typings/colResizable.jquery.d.ts" />
+/// <reference path="../../typings/tbltree.jquery.d.ts" />
+import * as $ from 'jquery';
 
 interface LtacProfTactic {
   name: string,
@@ -14,43 +13,11 @@ interface LtacProfResults {
   tactics: LtacProfTactic[],
 }
 
-function getQueryStringValue(key:string) : string {
-    return decodeURI(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + encodeURI(key).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
-}
-
-function importStyles(doc: Document) {
-  var parentStyleSheets = doc.styleSheets as any as CSSStyleSheet[];
-  var cssString = "";
-  for (var i = 0, count = parentStyleSheets.length; i < count; ++i) {
-    if (parentStyleSheets[i].cssRules) {
-      var cssRules = parentStyleSheets[i].cssRules;
-      for (var j = 0, countJ = cssRules.length; j < countJ; ++j)
-        cssString += cssRules[j].cssText;
-    }
-    else
-      cssString += parentStyleSheets[i].cssText;  // IE8 and earlier
-  }
-  var style = document.createElement("style");
-  style.type = "text/css";
-  style.innerHTML = cssString;
-  // message(cssString);
-  document.getElementsByTagName("head")[0].appendChild(style);
-}
-
-function inheritStyles(p: Window) {
-  if (p) {
-    importStyles(p.document);
-    const pp = p.parent;
-    if(pp !== p)
-      inheritStyles(pp);
-  }
-}
-
-
-
 declare var acquireVsCodeApi: any;
-var vscode : any = null;
-function load() {
+
+export var vscode : any = null;
+
+export function ltacProfLoad() {
   if(parent.parent === parent)
     document.body.style.backgroundColor = 'black';
 
@@ -152,12 +119,6 @@ function load() {
 
 //   cycleNext(): JQuery;
 // }
-
-
-function sleepFor(sleepDuration: number) : void{
-    var now = new Date().getTime();
-    while(new Date().getTime() < now + sleepDuration){ /* do nothing */ }
-}
 
 function loadResultsTable(results: LtacProfResults, tbody: JQuery) {
   let currentId = 0;
@@ -274,7 +235,7 @@ function updateResultsAlternatingBackground(delay?: number) {
 
 
 const currentResults : LtacProfResults = {total_time: 0, tactics: []};
-function clearResults() {
+export function clearResults() {
   currentResults.total_time = 0;
   currentResults.tactics = []
   let tbody = $('#results tbody');
@@ -332,23 +293,23 @@ function updateResults() {
   else {// Set up the table
     tbody = $('<tbody>');
     $('#results').append(tbody);
-    $('#results').keydown(onKeyDown);
+    $('#results').on("keydown", onKeyDown);
 
-    $('#local-unit').change((ev: JQueryEventObject) => {
+    $('#local-unit').on("change",(ev: JQueryEventObject) => {
       const tag = $('#local-unit option:selected').val();
       $('#results span.local').not('.'+tag).hide();
       $('#results span.local').filter('.'+tag).show();
     });
-    $('#total-unit').change((ev: JQueryEventObject) => {
+    $('#total-unit').on("change",(ev: JQueryEventObject) => {
       const tag = $('#total-unit option:selected').val();
       $('#results span.total').not('.'+tag).hide();
       $('#results span.total').filter('.'+tag).show();
     });
-    $('#local-column').click((ev:JQueryEventObject) => {
+    $('#local-column').on("click",(ev:JQueryEventObject) => {
       if(ev.target === $('#local-column').get(0))
         $('#local-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#local-unit').change()
     });
-    $('#total-column').click((ev:JQueryEventObject) => {
+    $('#total-column').on("click",(ev:JQueryEventObject) => {
       if(ev.target === $('#total-column').get(0))
         $('#total-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#total-unit').change()
     });
