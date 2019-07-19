@@ -31,7 +31,14 @@ function getWebviewConfig(env) {
 		output: {
 			filename: '[name]/[name].js',
 			path: path.resolve(__dirname, '../client/html_views')
-		}
+		},
+		plugins: [
+			new webpack.ProvidePlugin({
+			  jQuery: 'jquery',
+			  $: 'jquery',
+			  jquery: 'jquery'
+			})
+		  ]
 	};
 
 	return webview;

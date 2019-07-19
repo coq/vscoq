@@ -82,9 +82,9 @@ export class CoqDocument implements vscode.Disposable {
     if(this.project.settings.showProofViewOn === "open-script") {
       let viewCol = this.currentViewColumn();
       if (viewCol)
-        this.view.show(true, adjacentPane(viewCol))
+        this.view.show(adjacentPane(viewCol))
       else
-        this.view.show(true, vscode.ViewColumn.One)
+        this.view.show(vscode.ViewColumn.One)
     };
 
     this.langServer.onUpdateHighlights((p) => this.onDidUpdateHighlights(p));
@@ -364,11 +364,12 @@ export class CoqDocument implements vscode.Disposable {
     if(interactive && !this.view.isVisible() && this.project.settings.showProofViewOn === "first-interaction") {
       let viewCol = this.currentViewColumn();
       if (viewCol)
-        this.view.show(true, adjacentPane(viewCol))
+        this.view.show(adjacentPane(viewCol), state)
       else
-        this.view.show(true, vscode.ViewColumn.One)
+        this.view.show(vscode.ViewColumn.One, state)
+    } else {
+      this.view.update(state);
     }
-    this.view.update(state);
     this.stateViewFocus = state.type==="proof-view" ? new vscode.Position(state.focus.line,state.focus.character) : undefined;
     this.showFocusDecorations();
   }
@@ -484,9 +485,9 @@ export class CoqDocument implements vscode.Disposable {
         });
       } else {
         if (editor.viewColumn)
-          await this.view.show(true,adjacentPane(editor.viewColumn))
+          await this.view.show(adjacentPane(editor.viewColumn))
         else
-          await this.view.show(true,vscode.ViewColumn.One)
+          await this.view.show(vscode.ViewColumn.One)
       };
     } catch (err) {}
   }
