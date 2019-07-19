@@ -57,10 +57,7 @@ describe("Coqtop 8.6", function() {
 
   const settings : proto.CoqTopSettings = {
     binPath: COQBIN_8_6,
-    autoUseWrapper: false,
-    wrapper: "",
     args: [],
-    traceXmlProtocol: false,
     startOn: "open-script",
   }
 

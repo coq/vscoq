@@ -162,7 +162,6 @@ export abstract class CoqTop extends IdeSlave {
   public abstract isRunning() : boolean;
   public abstract getVersion() : semver.SemVer;
   public abstract startCoq() : Promise<InitResult>;
-  // setupCoqTop(wrapper: string|null) : Promise<void>;
 
   /** Start coqtop.
    * Use two ports: one for reading & one for writing; i.e. HOST:READPORT:WRITEPORT

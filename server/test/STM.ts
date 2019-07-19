@@ -61,10 +61,7 @@ describe("CoqStateMachine", function() {
     } as CoqSettings,
     coqtop: {
       args: [],
-      autoUseWrapper: false,
       binPath: "",
-      traceXmlProtocol: false,
-      wrapper: undefined,
     } as CoqTopSettings,
   };
   const project = {console: console, getWorkspaceRoot: ()=>".", settings: projectSettings};

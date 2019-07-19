@@ -105,11 +105,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     this.coqtopVersion = semver.coerce(coqtopVersion);
     this.console.log(`Coqtop version parsed into semver version ${this.coqtopVersion.format()}`);
 
-    const wrapper = this.findWrapper();
-    if (wrapper !== null)
-      await this.setupCoqTop(wrapper);
-    else
-      await this.setupCoqTopReadAndWritePorts();
+    await this.setupCoqTopReadAndWritePorts();
 
     return await this.coqInit();
   }
@@ -150,43 +146,11 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     });
   }
 
-  private findWrapper() : string|null {
-    const autoWrapper = path.join(__dirname, '../../../', 'coqtopw.exe');
-
-    if(this.settings.wrapper && this.settings.wrapper !== "" && fs.existsSync(this.settings.wrapper))
-      return this.settings.wrapper;
-    else if(this.settings.autoUseWrapper && os.platform() === 'win32' && fs.existsSync(autoWrapper))
-      return autoWrapper;
-    else
-      return null;
-  }
-
   public getVersion() {
     return this.coqtopVersion;
   }
 
-  // public async resetCoq(settings?: CoqTopSettings) : Promise<InitResult> {
-  //   if(settings)
-  //     this.settings = settings;
-  //   this.console.log('reset');
-  //   this.cleanup(undefined);
-
-  //   this.coqtopVersion = await coqtop.detectVersion(this.coqtopBin, this.projectRoot, this.console);
-  //   if(this.coqtopVersion)
-  //     this.console.log(`Detected coqtop version ${this.coqtopVersion}`)
-  //   else
-  //     this.console.warn(`Could not detect coqtop version`)
-
-  //   const wrapper = this.findWrapper();
-  //   if (wrapper !== null)
-  //     await this.setupCoqTop(wrapper);
-  //   else
-  //     await this.setupCoqTopReadAndWritePorts();
-
-  //   return await this.coqInit();
-  // }
-
-  private async setupCoqTop(wrapper: string|null) : Promise<void> {
+  private async setupCoqTop() : Promise<void> {
     await Promise.all(this.readyToListen);
 
     var mainAddr = this.mainChannelServer.address();
@@ -196,13 +160,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
 
     try {
       const scriptUri = decodeURIComponent(this.scriptFile);
-      if(wrapper !== null) {
-        const traceFile = (scriptUri.startsWith("file:///") && this.settings.traceXmlProtocol)
-          ? scriptUri.substring("file:///".length) + ".coq-trace.xml"
-          : undefined;
-        this.startCoqTop(this.spawnCoqTopWrapper(wrapper, mainAddressArg, controlAddressArg, traceFile));
-      } else
-        this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
+      this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
     } catch(error) {
       this.console.error('Could not spawn coqtop: ' + error);
       throw new CoqtopSpawnError(this.coqtopBin, error);
@@ -307,23 +265,6 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
         '-async-proofs', 'on'
         ].concat(this.settings.args);
     }
-    this.console.log('exec: ' + coqtopModule + ' ' + args.join(' '));
-    return spawn(coqtopModule, args, {detached: false, cwd: this.projectRoot});
-  }
-
-  private spawnCoqTopWrapper(wrapper: string, mainAddr : string, controlAddr: string, traceFile?: string) : ChildProcess {
-    this.useInterruptMessage = true;
-    var coqtopModule = wrapper;
-    var args = [
-      // '/D /C', this.coqPath + '/coqtop.exe',
-      '-coqtopbin', this.coqtopBin,
-      '-main-channel', mainAddr,
-      '-control-channel', controlAddr,
-      '-ideslave',
-      '-async-proofs', 'on'
-      ]
-      .concat(traceFile ? ['-tracefile', traceFile] : [])
-      .concat(this.settings.args);
     this.console.log('exec: ' + coqtopModule + ' ' + args.join(' '));
     return spawn(coqtopModule, args, {detached: false, cwd: this.projectRoot});
   }

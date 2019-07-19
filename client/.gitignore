@@ -2,7 +2,6 @@ out
 server
 node_modules
 html_views
-coqtopw.exe
 .testUser
 *.vsix
 *.zip
