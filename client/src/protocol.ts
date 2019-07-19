@@ -32,14 +32,8 @@ export interface Settings {
 export interface CoqTopSettings {
   /** Path to coqc and coqtop binaries. @default `""` */
   binPath: string;
-  /** On Windows: if `coqtop.wrapper` is not specified or the file does not exist, attempt to automatically find and use a wrapper for coqtop. @default `true` */
-  autoUseWrapper: boolean;
-  /** The filename of an executable to act as an intermediary between coqtop and this extension. It should support an additional `<call val="Interrupt"><unit/></call>` command to send SIGNIT to coqtop and support HOST:PORT addresses (one port number -- not two). */
-  wrapper: string;
   /** A list of arguments to send to coqtop. @default `[]` */
   args: string[];
-  /** If using the coqtop-wrapper, instruct it to generate a trace file of its xml-protocol interactions. The trace file will be located adjacent to the Coq script with extension `.coq-trace.xml`. @default `false` */
-  traceXmlProtocol: boolean;
   /** When should an instance of coqtop be started for a Coq script */
   startOn: "open-script" | "interaction",
 }
