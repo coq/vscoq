@@ -5,7 +5,6 @@ import * as view from './CoqView'
 export {CoqView} from './CoqView'
 import {extensionContext} from './extension'
 import * as proto from './protocol'
-import * as WebSocket from 'ws';
 import * as path from 'path';
 import * as docs from './CoqProject';
 import * as nasync from './nodejs-async';
@@ -75,6 +74,7 @@ export class HtmlCoqView implements view.CoqView {
   private coqViewUri : vscode.Uri;
   private currentSettings : SettingsState = {};
   private visible = false;
+  private initialState : undefined | proto.CommandResult;
 
   private panel : vscode.WebviewPanel | null = null;
 
@@ -97,14 +97,18 @@ export class HtmlCoqView implements view.CoqView {
     this.resizeEvent.fire(event.columns);
   }
 
-  private handleClientMessage(event: {data: any; type: string; target: WebSocket}) {
-    const message = <ControllerEvent>JSON.parse(event.data);
+  private handleClientMessage(event: string) {
+    const message = <ControllerEvent>JSON.parse(event);
     switch(message.eventName) {
       case 'resize':
         this.handleClientResize(message.params);
         return;
       case 'focus':
         docs.getProject().setActiveDoc(this.docUri);
+        return;
+      case 'getInitialGoal':
+        if (this.initialState)
+          this.update(this.initialState);
         return;
     }
   }
@@ -133,7 +137,9 @@ export class HtmlCoqView implements view.CoqView {
       this.panel = vscode.window.createWebviewPanel(
         'html_coq',
         "ProofView: " + path.basename(this.docUri.fsPath),
-        pane,
+        { preserveFocus: true,
+          viewColumn: pane,
+        },
         {enableScripts: true}
       );
 
@@ -145,10 +151,11 @@ export class HtmlCoqView implements view.CoqView {
     }
   }
 
-  public async show(preserveFocus: boolean, pane: vscode.ViewColumn) {
+  public async show(pane: vscode.ViewColumn, state?: proto.CommandResult) {
     if(!this.coqViewUri)
       await this.createBuffer();
 
+    this.initialState = state;
     this.initializePanel(pane);
 
     this.visible = true;

@@ -16,14 +16,15 @@
   },
   "devDependencies": {
     "@types/jquery": "^3.3.30",
-    "jquery": "^3.4.1",
     "shx": "^0.3.2",
     "ts-loader": "^6.0.4",
     "typescript": "^2.0.3",
     "webpack": "^4.36.1",
     "webpack-cli": "^3.3.6"
   },
-  "dependencies": {},
+  "dependencies": {
+    "jquery": "^3.4.1"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/siegebell/vscoq.git"

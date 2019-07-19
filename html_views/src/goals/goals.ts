@@ -1,3 +1,4 @@
+import * as $ from 'jquery';
 import * as stm from './StateModel'
 import { ControllerEvent, ResizeEvent, SettingsState, ProofViewProtocol } from './protocol'
 
@@ -74,6 +75,11 @@ export function goalsLoad() {
   });
 
   computePrintingWidth();
+
+  vscode.postMessage(JSON.stringify(<ControllerEvent>{
+    eventName: 'getGoal',
+    params: {}
+  }));
 }
 
 
