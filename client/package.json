@@ -584,14 +584,13 @@
 		"compile-server": "cd ../server && npm run compile && cd ../client",
 		"compile-html-view": "cd ../html_views && npm run compile && cd ../client",
 		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"postinstall": "node ./node_modules/vscode/bin/install"
+		"watch": "tsc -watch -p ./"
 	},
 	"devDependencies": {
-		"typescript": "^2.2.1",
-		"vscode": "^1.0.3",
+		"@types/node": "^7.0.5",
+		"@types/vscode": "^1.36.0",
 		"copyfiles": "1.2.0",
-		"@types/node": "^7.0.5"
+		"typescript": "^2.2.1"
 	},
 	"dependencies": {
 		"vscode-jsonrpc": "3.1.0",

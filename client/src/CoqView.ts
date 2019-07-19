@@ -46,8 +46,7 @@ export function adjacentPane(pane: vscode.ViewColumn) : vscode.ViewColumn {
   switch (pane) {
   case vscode.ViewColumn.One: return vscode.ViewColumn.Two
   case vscode.ViewColumn.Two: return vscode.ViewColumn.Three;
-  case vscode.ViewColumn.Three: return vscode.ViewColumn.Two;
-  case vscode.ViewColumn.Active: return vscode.ViewColumn.One;
+  default: return vscode.ViewColumn.One;
   }
 }
 
