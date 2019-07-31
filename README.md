@@ -1,4 +1,4 @@
-A plugin for the [Coq Proof Assistant 8.5 and 8.6](https://coq.inria.fr/) in [Visual Studio Code](https://code.visualstudio.com/).
+A plugin for the [Coq Proof Assistant 8.9](https://coq.inria.fr/) in [Visual Studio Code](https://code.visualstudio.com/).
 
 * [Setup instructions](https://github.com/siegebell/vscoq/wiki/Setup)
 * [Tips](https://github.com/siegebell/vscoq/wiki/Tips)
