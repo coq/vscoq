@@ -54,7 +54,7 @@ VernacControl
 
 SAny
   = (VernacControl _)? Bullet
-  / ([^".] _ / String _ / "." !IsEndOfSentence)+ EndOfSentence
+  / ([^".] _ / String _ / ".." _ / "." !IsEndOfSentence)+ EndOfSentence
   {return {type: "any"}}
 
 Identifier
