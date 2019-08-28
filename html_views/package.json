@@ -27,6 +27,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/siegebell/vscoq.git"
+    "url": "https://github.com/coq-community/vscoq.git"
   }
 }
