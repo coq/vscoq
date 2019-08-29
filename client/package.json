@@ -24,9 +24,9 @@
 	"activationEvents": [
 		"onLanguage:coq"
 	],
-	"readme": "https://github.com/siegebell/vscoq/blob/master/README.md",
-	"bugs": "https://github.com/siegebell/vscoq/issues",
-	"homepage": "https://github.com/siegebell/vscoq/blob/master/README.md",
+	"readme": "https://github.com/coq-community/vscoq/blob/master/README.md",
+	"bugs": "https://github.com/coq-community/vscoq/issues",
+	"homepage": "https://github.com/coq-community/vscoq/blob/master/README.md",
 	"main": "./out/src/extension",
 	"contributes": {
 		"languages": [
@@ -595,7 +595,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/siegebell/vscoq.git"
+		"url": "https://github.com/coq-community/vscoq.git"
 	},
 	"__metadata": {
 		"id": "ddfd0191-e75d-4ac2-870d-81db351b747f",

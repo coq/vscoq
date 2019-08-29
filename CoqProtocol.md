@@ -1,4 +1,4 @@
-#*This documentation is moving to the [project wiki](https://github.com/siegebell/vscoq/wiki)*.
+#*This documentation is moving to the [project wiki](https://github.com/coq-community/vscoq/wiki)*.
 
 
 #CoqTop XML Protocol#
