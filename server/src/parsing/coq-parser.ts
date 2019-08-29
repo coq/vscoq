@@ -54,12 +54,18 @@ VernacControl
 
 SAny
   = (VernacControl _)? Bullet
-  / ([^".] _ / String _ / ".." _ / "." !IsEndOfSentence)+ EndOfSentence
+  / ("lp:" QuotationCurly _ / [^".] _ / String _ / ".." _ / "." !IsEndOfSentence)+ EndOfSentence
   {return {type: "any"}}
 
 Identifier
   = (([a-zA-Z_] / UnicodeLetter) ([a-zA-Z0-9_'] / UnicodeLetter / UnicodeIdPart)*)
   { return { text: text() , loc: location() }}
+
+QuotationCurly
+  = "{{" QuotationContents+ "}}"
+
+QuotationContents
+  = QuotationCurly / !"}}" .
 
 EndOfSentence
   = "." IsEndOfSentence
