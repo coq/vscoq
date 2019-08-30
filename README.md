@@ -29,6 +29,4 @@ However, this fork of VsCoq has not been released yet, so we suggest to wait
 for a release.
 
 ## Screenshots
-<img alt="Simple example" src="https://cloud.githubusercontent.com/assets/16118166/19991384/3a8ed38c-a20b-11e6-88f6-cf9a9b04fe83.png" width="65%"/>
-
-<img alt="Screenshot of Proof Goal" src="https://cloud.githubusercontent.com/assets/16118166/15950935/9c8537dc-2e81-11e6-9954-5eefeac23a7a.png" width="100%"/>
+![vscoq](https://user-images.githubusercontent.com/647105/64025392-dbf12100-cb3c-11e9-8e7f-5c63296500f9.png)
