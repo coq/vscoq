@@ -1,7 +1,12 @@
-A plugin for the [Coq Proof Assistant 8.5 and 8.6](https://coq.inria.fr/) in [Visual Studio Code](https://code.visualstudio.com/).
+[![Build Status](https://travis-ci.com/coq-community/vscoq.svg?branch=master)](https://travis-ci.com/coq-community/vscoq)
 
-* [Setup instructions](https://github.com/coq-community/vscoq/wiki/Setup)
-* [Tips](https://github.com/coq-community/vscoq/wiki/Tips)
+VsCoq is an extension for [Visual Studio
+Code](https://code.visualstudio.com/) with support for the [Coq Proof
+Assistant](https://coq.inria.fr/).
+
+This extension is currently developped by @maximedenes and contributors, as
+part of [Coq Community](https://github.com/coq-community/manifesto). The
+original author of this extension is @siegebell.
 
 ## Features
 * Asynchronous proofs
@@ -14,10 +19,16 @@ A plugin for the [Coq Proof Assistant 8.5 and 8.6](https://coq.inria.fr/) in [Vi
 * The proof-view can be opened in an external web browser
 * LtacProf results treeview
 
+## Requirements
+* VsCode 1.23.0 or more recent
+* Coq 8.7.0 or more recent
+
+## Installation
+The recommended way to install VsCoq is via the Visual Studio Marketplace.
+However, this fork of VsCoq has not been released yet, so we suggest to wait
+for a release.
+
 ## Screenshots
 <img alt="Simple example" src="https://cloud.githubusercontent.com/assets/16118166/19991384/3a8ed38c-a20b-11e6-88f6-cf9a9b04fe83.png" width="65%"/>
 
 <img alt="Screenshot of Proof Goal" src="https://cloud.githubusercontent.com/assets/16118166/15950935/9c8537dc-2e81-11e6-9954-5eefeac23a7a.png" width="100%"/>
-
-LtacProfiling view:  
-<img alt="Simple example" src="https://cloud.githubusercontent.com/assets/16118166/15950939/a00a8e02-2e81-11e6-98c4-9425bf6ab9c9.png" width="100%"/>
