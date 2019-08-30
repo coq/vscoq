@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/coq-community/vscoq.svg?branch=master)](https://travis-ci.com/coq-community/vscoq)
+[![Build Status](https://travis-ci.com/coq-community/vscoq.svg?branch=master)](https://travis-ci.com/coq-community/vscoq) [![Join the chat at https://gitter.im/coq-community/vscoq](https://badges.gitter.im/coq-community/vscoq.svg)](https://gitter.im/coq-community/vscoq?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 VsCoq is an extension for [Visual Studio
 Code](https://code.visualstudio.com/) with support for the [Coq Proof
