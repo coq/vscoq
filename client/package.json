@@ -407,13 +407,13 @@
 				"when": "editorTextFocus && editorLangId == coq"
 			},
 			{
-				"key": "ctrl+alt+home",
+				"key": "alt+home",
 				"mac": "cmd+ctrl+home",
 				"command": "extension.coq.reset",
 				"when": "editorTextFocus && editorLangId == coq"
 			},
 			{
-				"key": "ctrl+alt+home",
+				"key": "alt+home",
 				"mac": "cmd+ctrl+home",
 				"command": "extension.coq.reset",
 				"when": "resourceScheme==coq-view"
@@ -443,49 +443,49 @@
 				"when": "resourceScheme==coq-view"
 			},
 			{
-				"key": "ctrl+alt+down",
+				"key": "alt+down",
 				"mac": "cmd+ctrl+down",
 				"command": "extension.coq.stepForward",
 				"when": "editorTextFocus && editorLangId == coq"
 			},
 			{
-				"key": "ctrl+alt+down",
+				"key": "alt+down",
 				"mac": "cmd+ctrl+down",
 				"command": "extension.coq.stepForward",
 				"when": "resourceScheme==coq-view"
 			},
 			{
-				"key": "ctrl+alt+up",
+				"key": "alt+up",
 				"mac": "cmd+ctrl+up",
 				"command": "extension.coq.stepBackward",
 				"when": "editorTextFocus && editorLangId == coq"
 			},
 			{
-				"key": "ctrl+alt+up",
+				"key": "alt+up",
 				"mac": "cmd+ctrl+up",
 				"command": "extension.coq.stepBackward",
 				"when": "resourceScheme==coq-view"
 			},
 			{
-				"key": "ctrl+alt+right",
+				"key": "alt+right",
 				"mac": "cmd+ctrl+right",
 				"command": "extension.coq.interpretToPoint",
 				"when": "editorTextFocus && editorLangId == coq"
 			},
 			{
-				"key": "ctrl+alt+right",
+				"key": "alt+right",
 				"mac": "cmd+ctrl+right",
 				"command": "extension.coq.interpretToPoint",
 				"when": "resourceScheme==coq-view"
 			},
 			{
-				"key": "ctrl+alt+end",
+				"key": "alt+end",
 				"mac": "cmd+ctrl+end",
 				"command": "extension.coq.interpretToEnd",
 				"when": "editorTextFocus && editorLangId == coq"
 			},
 			{
-				"key": "ctrl+alt+end",
+				"key": "alt+end",
 				"mac": "cmd+ctrl+end",
 				"command": "extension.coq.interpretToEnd",
 				"when": "resourceScheme==coq-view"
