@@ -20,7 +20,6 @@ export class CoqProject {
   private currentSettings : Settings;
   private workspaceRoot: string;
   private coqProjectWatcher: fs.FSWatcher = null;
-  private coqProjectModifiedDate : Date = null;
   private loadingCoqProjectInProcess = false;
   private ready = {event: Promise.resolve<{}>({}), signal: ()=>{} };
   private psm = new PrettifySymbolsMode([]);
@@ -128,26 +127,16 @@ export class CoqProject {
     this.coqInstances.forEach((x) => x.dispose());
     this.coqInstances.clear();
   }
-  
-  private async isCoqProjectOutOfDate() {
-    try {
-      const currentStat = await this.getFileStats(this.coqProjectFile());
-      return currentStat.mtime > this.coqProjectModifiedDate;
-    } catch(err) {
-      return false;
-    }
-  }
-  
+
   private watchCoqProject() {
     if(this.coqProjectWatcher != null)
       this.coqProjectWatcher.close();
     if(!this.workspaceRoot)
       return;
     this.coqProjectWatcher = fs.watch(this.workspaceRoot, async (event, filename) => {
-      var d = (await this.getFileStats(this.coqProjectFile())).mtime;
       switch(event) {
         case 'change':
-          if((filename && filename==coqProjectFileName) || await this.isCoqProjectOutOfDate()) {
+          if((filename && filename==coqProjectFileName)) {
             this.console.log(coqProjectFileName + ' changed');
             await this.loadCoqProject();
           }
@@ -196,15 +185,12 @@ export class CoqProject {
     if(this.loadingCoqProjectInProcess)
       return;
     this.loadingCoqProjectInProcess = true;
-      
+
     try {
-      const stats = await this.getFileStats(this.coqProjectFile());
-      this.coqProjectModifiedDate = stats.mtime;
       const projectFile = await nodeAsync.fs.readFile(this.coqProjectFile(), 'utf8');
       this.coqProjectArgs = CoqProject.parseCoqProject(projectFile);
       this.currentSettings.coqtop.args = [...this.coqProjectArgs, ...this.settingsCoqTopArgs];
     } catch(err) {
-      this.coqProjectModifiedDate = null;
     } finally {
       this.loadingCoqProjectInProcess = false;      
     }
