@@ -113,31 +113,6 @@
 					"default": "first-interaction",
 					"description": "Create the proof view when a Coq script is opened, the user first interacts with coqtop, or else let the user do it manually."
 				},
-				"coq.externalViewUrlCommand": {
-					"anyOf": [
-						{
-							"enum": [
-								"firefox ${url}",
-								"chrome ${url}",
-								"'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' ${url}"
-							]
-						},
-						{
-							"type": "string"
-						}
-					],
-					"default": "${url}",
-					"description": "The command to execute to view a url."
-				},
-				"coq.externalViewScheme": {
-					"type": "string",
-					"enum": [
-						"file",
-						"http"
-					],
-					"default": "http",
-					"description": "Choose to host external proof-views either via the file system or a web service. \"file\": let the filesystem host the webpage (file:///); \"http\": run a webserver to host the webpage. Some external viewers (like Window's 'start' and OSX's 'open') do not preserve query parameters when viewing \"file\" schemes, so you may try \"http\" instead."
-				},
 				"coq.format.enable": {
 					"type": "boolean",
 					"default": true,
@@ -346,11 +321,6 @@
 			{
 				"command": "extension.coq.proofView.open",
 				"title": "Open proof view",
-				"category": "Coq"
-			},
-			{
-				"command": "extension.coq.proofView.openExternal",
-				"title": "Open proof view in external browser",
 				"category": "Coq"
 			},
 			{

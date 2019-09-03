@@ -64,7 +64,6 @@ export function activate(context: ExtensionContext) {
   regTCmd('query.prompt.print', queryPrint);
   regTCmd('proofView.viewStateAt', viewProofStateAt); 
   regTCmd('proofView.open', viewCurrentProofState); 
-  regTCmd('proofView.openExternal', viewProofStateExternal);
   regCmd('proofView.customizeProofViewStyle', customizeProofViewStyle);
   regProjectCmd('ltacProf.getResults', project.ltacProfGetResults);
   regCmd('display.toggle.implicitArguments', () => project.setDisplayOption(proto.DisplayOption.ImplicitArguments, proto.SetDisplayOption.Toggle)); 
@@ -192,13 +191,7 @@ function viewProofStateAt(editor: TextEditor, edit: TextEditorEdit) {
 
 function viewCurrentProofState(editor: TextEditor, edit: TextEditorEdit) {
   return withDocAsync(editor, async (doc) =>
-    doc.viewGoalState(editor,false)
-  )
-}
-
-function viewProofStateExternal(editor: TextEditor, edit: TextEditorEdit) {
-  return withDocAsync(editor, async (doc) =>
-    doc.viewGoalState(editor,true)
+    doc.viewGoalState(editor)
   )
 }
 
