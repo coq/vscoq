@@ -1,6 +1,6 @@
 'use strict'
 
-import {Position, Range, TextDocumentContentChangeEvent} from 'vscode-languageserver';
+import {Position, Range, TextDocumentContentChangeEvent, DiagnosticSeverity} from 'vscode-languageserver';
 import {CancellationToken} from 'vscode-jsonrpc';
 import * as vscode from 'vscode-languageserver';
 import * as coqProto from './../coqtop/coq-proto';
@@ -10,7 +10,7 @@ import * as textUtil from './../util/text-util';
 import * as coqtop from './../coqtop/CoqTop';
 import * as coqParser from './../parsing/coq-parser';
 import * as errorParsing from '../parsing/error-parsing';
-import {State, StatusError, StateStatus} from './State';
+import {State, CoqDiagnostic, StateStatus} from './State';
 import {Mutex} from './../util/Mutex';
 import * as server from '../server';
 import {AnnotatedText} from '../util/AnnotatedText'
@@ -643,21 +643,20 @@ private routeId = 1;
       yield { range: sent.getRange(), status: sent.getStatus()}
   }
 
-  public *getSentenceErrors() : IterableIterator<StatusError> {
+  public *getSentenceDiagnostics() : IterableIterator<CoqDiagnostic> {
     if(!this.isRunning())
       return;
     for(let sent of this.root.descendants()) {
-      if(sent.getError())
-        yield sent.getError();
+      yield* sent.getDiagnostics();
     }
   }
 
-  public *getErrors() : IterableIterator<StatusError> {
+  public *getDiagnostics() : IterableIterator<CoqDiagnostic> {
     if(!this.isRunning())
       return;
-    yield *this.getSentenceErrors();
+    yield* this.getSentenceDiagnostics();
     if(this.currentError !== null)
-      yield this.currentError;
+      yield Object.assign(this.currentError, <CoqDiagnostic>{severity: DiagnosticSeverity.Error});
   }
 
   private getParentSentence(position: Position) : State {
@@ -974,31 +973,22 @@ private routeId = 1;
     this.callbacks.updateStmFocus(this.getFocusedPosition());
   }
 
-  // /** A sentence has reached an error state
-  //  * @param location: optional offset range within the sentence where the error occurred
-  //  */
-  // private onCoqStateError(stateId: number, route: number, message: AnnotatedText, location?: coqProto.Location) {
-  //   const sent = this.sentences.get(stateId);
-  //   if(sent) {
-  //     // if(location)
-  //     //   this.console.log(`CoqStateError: ${location.start}-${location.stop}`);
-  //     sent.setError(message, location);
-  //     const prettyMessage = server.project.getPrettifySymbols().prettify(message);
-  //     this.callbacks.error(sent.getRange(), sent.getError().range, prettyMessage);
-  //   } else {
-  //     this.console.warn(`Error for unknown stateId: ${stateId}; message: ${message}`);
-  //   }
-  // }
-
   private onCoqMessage(msg: coqProto.Message, routeId: coqProto.RouteId, stateId?: StateId) {
     const prettyMessage = text.normalizeText(server.project.getPrettifySymbols().prettify(errorParsing.parseError(msg.message)));
     if(msg.level === coqProto.MessageLevel.Error && stateId!==undefined) {
       const sent = this.sentences.get(stateId);
       if(sent) {
-        sent.setError(prettyMessage, msg.location);
-        this.callbacks.error(sent.getRange(), sent.getError().range, prettyMessage);
+        var range : Range = sent.pushDiagnostic(prettyMessage, DiagnosticSeverity.Error, msg.location);
+        this.callbacks.error(sent.getRange(), range, prettyMessage);
       } else {
         this.console.warn(`Error for unknown stateId: ${stateId}; message: ${msg.message}`);
+      }
+    } else if(msg.level === coqProto.MessageLevel.Warning && stateId!==undefined) {
+      const sent = this.sentences.get(stateId);
+      if(sent) {
+        var range : Range = sent.pushDiagnostic(prettyMessage, DiagnosticSeverity.Warning, msg.location);
+      } else {
+        this.console.warn(`Warning for unknown stateId: ${stateId}; message: ${msg.message}`);
       }
     } else
       this.callbacks.message(msg.level, prettyMessage, routeId);
@@ -1037,15 +1027,6 @@ private routeId = 1;
         this.bufferedFeedback.push({stateId: stateId, type: "status", status: feedback.status, worker: feedback.worker});
       }
     }
-    // We could track this info, but why?
-    //   const sent = this.sentences.get(stateId);
-    //   if(sent) {
-    //     if(sent.getText().includes(feedback.status.module))
-    //       sent.addSemantics(new LoadModule(status.filename, status.module));
-    //   } else {
-    //     this.bufferedFeedback.push({stateId: stateId, type: "fileLoaded", filename: status.filename, module: status.module});
-    //   }
-    // }
   }
 
   /** recieved from coqtop controller */
