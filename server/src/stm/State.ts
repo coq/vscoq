@@ -1,4 +1,4 @@
-import {Position, Range} from 'vscode-languageserver';
+import {Position, Range, DiagnosticSeverity, TextDocumentSyncOptions} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
 import * as coqProto from './../coqtop/coq-proto';
 import * as parser from './../parsing/coq-parser';
@@ -10,20 +10,22 @@ import * as diff from './DiffProofView';
 import {GoalId, ProofViewReference, GoalsCache} from './GoalsCache'
 export type StateId = number;
 
-export interface StatusErrorInternal {
+export interface CoqDiagnosticInternal {
   /** Error message */
   message: AnnotatedText,
   /** Range of error within this sentence w.r.t. document positions. Is `undefined` if the error applies to the whole sentence */
   range?: Range,
+  severity: DiagnosticSeverity,
 }
 
-export interface StatusError extends StatusErrorInternal {
+export interface CoqDiagnostic extends CoqDiagnosticInternal {
   /** Error message */
   message: AnnotatedText,
   /** Range of error within this sentence w.r.t. document positions. Is `undefined` if the error applies to the whole sentence */
   range?: Range,
   /** Range of the sentence containing the error */
   sentence: Range,
+  severity: DiagnosticSeverity,
 }
 
 export enum StateStatus {
@@ -44,7 +46,7 @@ export class State {
   private status: StateStatusFlags;
   // private proofView: CoqTopGoalResult;
   private computeTimeMS: number;
-  private error?: StatusErrorInternal = undefined;
+  private diagnostics: CoqDiagnosticInternal[] = [];
   // set to true when a document change has invalidated the meaning of the associated sentence; this state needs to be cancelled
   private markedInvalidated = false;
   private goal : ProofViewReference | null = null; 
@@ -211,13 +213,10 @@ export class State {
     return newGoals;
   }  
 
-  /** Adjust's this sentence by the change
-   * @returns true if the delta intersects this sentence
-  */
-  private shift(delta: textUtil.RangeDelta) : boolean {
-    this.textRange = textUtil.rangeDeltaTranslate(this.textRange, delta);
-    // invalidate if there is an intersection
-    return textUtil.rangeIntersects(this.textRange, Range.create(delta.start,delta.end));
+  private translateDiagnostic(d : CoqDiagnosticInternal, delta: textUtil.RangeDelta) : void {
+    if (d.range) {
+      d.range = textUtil.rangeDeltaTranslate(d.range, delta);
+    }
   }
 
   /**
@@ -230,9 +229,6 @@ export class State {
 
     let newText = this.commandText;
     let newRange = this.textRange;
-    let newErrorRange = undefined;
-    if(this.error && this.error.range)
-      newErrorRange = this.error.range;
     let touchesEnd = false; // indicates whether a change has touched the end of this sentence
     change: for(let idx = 0; idx < changes.length; ++ idx) {
       const change = changes[idx];
@@ -240,8 +236,8 @@ export class State {
       switch(parser.sentenceRangeContainment(newRange,change.range)) {
         case parser.SentenceRangeContainment.Before:
           newRange = textUtil.rangeDeltaTranslate(newRange,delta);
-          if(newErrorRange)
-            newErrorRange = textUtil.rangeDeltaTranslate(newErrorRange,delta);
+          var translate = this.translateDiagnostic;
+          this.diagnostics.forEach(function(d) { translate(d,delta); });
           continue change;
         case parser.SentenceRangeContainment.After:
           if(textUtil.positionIsEqual(this.textRange.end, change.range.start))
@@ -262,8 +258,8 @@ export class State {
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
           newRange.end = textUtil.positionRangeDeltaTranslateEnd(newRange.end,delta);
 
-          if(newErrorRange)
-            newErrorRange = textUtil.rangeDeltaTranslate(newErrorRange,delta);
+          var translate = this.translateDiagnostic;
+          this.diagnostics.forEach(function(d) { translate(d,delta); });
       } // switch
     } // change: for
 
@@ -274,14 +270,12 @@ export class State {
       // The problem is if a non-blank [ \r\n] is now contacting the end-period of this sentence; we need only check one more character
       const newEnd = parser.parseSentenceLength(newText + updatedDocumentText.substr(endOffset, 1));
       if(newEnd === -1 || newEnd !== newText.length)
-        return false; // invalidate: bad or changed syntax   
+        return false; // invalidate: bad or changed syntax
     }
-    
+
     if(parser.isPassiveDifference(this.commandText, newText)) {
       this.commandText = newText;
       this.textRange = newRange;
-      if(newErrorRange)
-        this.error.range = newErrorRange;
       return true;
     } else
       return false;
@@ -353,31 +347,27 @@ export class State {
   /** This sentence has reached an error state
    * @param location: optional offset range within the sentence where the error occurred
    */
-  public setError(message: AnnotatedText, location?: coqProto.Location) : void {
-    this.error = {message: message};
+  public pushDiagnostic(message: AnnotatedText, severity: DiagnosticSeverity, location?: coqProto.Location) : Range|null {
+    var d : CoqDiagnosticInternal = {message, severity};
     if(location && location.start !== location.stop) {
-      this.status |= StateStatusFlags.Error;
+      if (severity == DiagnosticSeverity.Error) {
+        this.status |= StateStatusFlags.Error;
+      }
       this.status &= ~StateStatusFlags.Processing;
       const sentRange = this.getRange();
       const sentText = this.getText();
-      this.error.range =
+      d.range =
         Range.create(
           textUtil.positionAtRelativeCNL(sentRange.start, sentText, location.start),
           textUtil.positionAtRelativeCNL(sentRange.start, sentText, location.stop))
     }
+    this.diagnostics.push(d);
+    return d.range;
   }
 
-  public getError() : StatusError|null {
-    if(this.error) {
-      const range = this.getRange();
-      return Object.assign(this.error, {sentence: range});
-    } else
-      return null;
+  public getDiagnostics() : CoqDiagnostic[] {
+    const range = this.getRange();
+    return this.diagnostics.map(function(d) { return Object.assign(d, {sentence: range})});
   }
 
 }
-
-
-
-
-

@@ -247,22 +247,6 @@ export class CoqDocument implements TextDocument {
     return highlights;
   }
 
-  /** creates the current diagnostics from scratch */
-  private createDiagnostics() {
-    if(!this.isStmRunning())
-      return;
-    let diagnostics : Diagnostic[] = [];
-    for(let error of this.stm.getErrors()) {
-      diagnostics.push(
-        { message: textToDisplayString(error.message)
-        , range: error.range
-        , severity: DiagnosticSeverity.Error
-        , source: 'coq'
-        })
-    }
-    return diagnostics;
-  }
-
   private onCoqStateStatusUpdate(range: Range, status: StateStatus) {
     this.updateHighlights();
   }
@@ -816,12 +800,12 @@ export class CoqDocument implements TextDocument {
 
     this.feedback.updateDiagnostics(() => {
       const diagnostics : Diagnostic[] = [];
-      for(let error of this.stm.getErrors()) {
-        if(error.range) {
-          diagnostics.push(Diagnostic.create(error.range,textToDisplayString(error.message),DiagnosticSeverity.Error,undefined,'coqtop'))
-        } else {
-          diagnostics.push(Diagnostic.create(error.sentence,textToDisplayString(error.message),DiagnosticSeverity.Error,undefined,'coqtop'))
+      for(let d of this.stm.getDiagnostics()) {
+        var range : Range = d.sentence;
+        if(d.range) {
+          range = d.range;
         }
+        diagnostics.push(Diagnostic.create(range,textToDisplayString(d.message),d.severity,undefined,'coqtop'))
       }
 
       diagnostics.push(...Array.from(this.document.getErrors()));
