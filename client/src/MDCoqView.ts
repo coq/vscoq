@@ -162,10 +162,6 @@ export class MDCoqView implements view.CoqView {
     await vscode.window.showTextDocument(this.editor.document,vscode.ViewColumn.Two);
   }
 
-  public showExternal() : Promise<void> {
-    return Promise.reject('external view is unsupported');
-  }
-
   public isVisible() : boolean {
     return this.visible;
   }

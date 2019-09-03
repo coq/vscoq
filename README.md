@@ -16,7 +16,6 @@ original author of this extension is @siegebell.
 * Smarter editing: does not roll back the state when editing whitespace or comments
 * Works with [prettify-symbols-mode](https://marketplace.visualstudio.com/items?itemName=siegebell.prettify-symbols-mode)
 * Supports \_CoqProject
-* The proof-view can be opened in an external web browser
 * LtacProf results treeview
 
 ## Requirements

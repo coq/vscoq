@@ -7,7 +7,6 @@ import * as WebSocket from 'ws';
 import * as http from 'http';
 import {extensionContext} from './extension'
 
-const opener = require('opener');
 
 
 function coqViewToFileUri(uri: vscode.Uri) {
@@ -112,10 +111,6 @@ export class HtmlLtacProf {
     await vscode.commands.executeCommand('vscode.previewHtml', this.coqViewUri, vscode.ViewColumn.Two, "LtacProf");
     // if(preserveFocus && focusedDoc)
     //   await vscode.window.showTextDocument(focusedDoc);
-  }
-
-  public showExternal() : Promise<void> {
-    return Promise.resolve(opener(decodeURIComponent(coqViewToFileUri(this.coqViewUri).toString()), {command:"firefox"}));
   }
 
   dispose() {

@@ -8,10 +8,8 @@ import * as proto from './protocol'
 import * as path from 'path';
 import * as docs from './CoqProject';
 import * as nasync from './nodejs-async';
-import * as webServer from './WebServer';
 import * as psm from './prettify-symbols-mode';
 
-const opener = require('opener');
 import mustache = require('mustache');
 
 interface ControllerEvent {
@@ -60,10 +58,6 @@ function proofViewHtmlPath() {
   return proofViewFile('Coq.html');
 }
 
-
-function coqViewToFileUri(uri: vscode.Uri) {
-  return `vscode-resource://${uri.path}?${uri.query}#${uri.fragment}`;
-}
 
 /**
  * Displays a Markdown-HTML file which contains javascript to connect to this view
@@ -159,25 +153,6 @@ export class HtmlCoqView implements view.CoqView {
     this.initializePanel(pane);
 
     this.visible = true;
-  }
-
-  public async showExternal(scheme: "file"|"http", command? : (url:string)=>{module: string, args: string[]}) : Promise<void> {
-    let url : string;
-    if(scheme === "file") {
-      url = decodeURIComponent(coqViewToFileUri(this.coqViewUri).toString());
-    } else {
-            // this.coqViewUri = vscode.Uri.parse(`coq-view://${proofViewHtmlPath().path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
-      const uri = await webServer.serveDirectory("proof-view/", proofViewFile('..').fsPath, "**/*.{html,css,js}");
-      if(!uri)
-        return Promise.reject("Cannot find proof view script");
-      url = decodeURIComponent(uri.with({path: uri.path + 'goals/Coq.html', query: this.coqViewUri.query, fragment: this.coqViewUri.fragment }).toString());
-    }
-    if(!command)
-      return Promise.resolve(opener(url));
-    else {
-      const c = command(url);
-      return Promise.resolve(opener(c.args.join(' '), {command: c.module}));
-    }
   }
 
   public dispose() {
