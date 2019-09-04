@@ -22,19 +22,11 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private mainChannelServer2: net.Server;
   private controlChannelServer: net.Server;
   private controlChannelServer2: net.Server;
-  // private mainChannelR : net.Socket;
-  // private mainChannelW : net.Socket;
-  // private controlChannelW : net.Socket;
-  // private controlChannelR : net.Socket;
-  // private console: vscode.RemoteConsole;
   private coqtopProc : ChildProcess = null;
-  // private parser : coqXml.XmlStream;
-  // private callbacks: EventCallbacks;
   private readyToListen: Thenable<void>[];
   private settings : CoqTopSettings;
   private scriptFile : string;
   private projectRoot: string;
-  // private supportsInterruptCall = false;
   private coqtopVersion : semver.SemVer;
   private sockets : net.Socket[] = [];
 
@@ -43,8 +35,6 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     this.settings = settings;
     this.scriptFile = scriptFile;
     this.projectRoot = projectRoot;
-    // this.console = console;
-    // this.callbacks = callbacks;
     this.mainChannelServer = net.createServer();
     this.mainChannelServer2 = net.createServer();
     this.controlChannelServer = net.createServer();
@@ -61,8 +51,6 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
       this.startListening(this.controlChannelServer2)
     ];
 
-
-    // this.resetCoq(coqPath);
   }
 
   public /* override */ dispose() {
@@ -245,6 +233,10 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   }
 
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
+    var topfile : string[] = [];
+    if (semver.satisfies(this.coqtopVersion, ">= 8.10")) {
+      topfile = ['-topfile', this.scriptFile];
+    }
     if (semver.satisfies(this.coqtopVersion, ">= 8.9")) {
       var coqtopModule = this.coqidetopBin;
       // var coqtopModule = 'cmd';
@@ -253,7 +245,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
         '-main-channel', mainAddr,
         '-control-channel', controlAddr,
         '-async-proofs', 'on'
-        ].concat(this.settings.args);
+        ].concat(this.settings.args).concat(topfile);
     } else {
       var coqtopModule = this.coqtopBin;
       // var coqtopModule = 'cmd';
