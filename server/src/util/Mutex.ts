@@ -1,5 +1,4 @@
 'use strict';
-import * as util from 'util';
 
 // const logger = console;
 const logger = {
@@ -13,9 +12,6 @@ export class Mutex {
   // a fresh promise for the next caller to await
   private locking = Promise.resolve(() => Promise.resolve());
 
-  // private canceller: (reason:string) => void = (reason) => {};
-  // private cancellingInProgress = false;
-  private unlockingNext: Promise<void> = Promise.resolve();
   private waitingCount = 0;
 
   public static reasonCancelled = 'cancelled';
@@ -60,7 +56,6 @@ export class Mutex {
     let isCancelled = false;
 
     let unlockNext : () => void;
-    let cancelNext : (reason:string) => void;
     // The next caller in line will lock against this promise.
     // When they do so, they effectively tell us who to call
     // when we are unlocked by registering themselves as unlockNext
@@ -72,7 +67,6 @@ export class Mutex {
         logger.log(`unlocking ${self.toString()}`);
         return resolve();
       };
-      cancelNext = reject;
     });
 
     willLock

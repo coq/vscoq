@@ -17,7 +17,7 @@ declare var acquireVsCodeApi: any;
 
 export var vscode : any = null;
 
-export function ltacProfLoad() {
+function ltacProfLoad() {
   if(parent.parent === parent)
     document.body.style.backgroundColor = 'black';
 
@@ -28,97 +28,6 @@ export function ltacProfLoad() {
     addResults(results);
   })
 }
-
-// interface TreeGridSettings {
-//   treeColumn?: number,              // 0 	Number of column using for tree
-//   initialState?: string,            // expanded 	Initial state of tree
-//                                     // 'expanded' - all nodes will be expanded
-//                                     // 'collapsed' - all nodes will be collapsed
-//   saveState?: boolean,              // false 	If true you can reload page and tree state was saved
-//   saveStateMethod?: string,         // cookie 	'cookie' - save state to cookie
-//                                     // 'hash' - save state to hash
-//   saveStateName?: string,           // tree-grid-state 	Name of cookie or hash to save state.
-//   expanderTemplate?: string,        // <span class="treegrid-expander"></span> 	HTML Element when you click on that will be collapse/expand branches
-//   expanderExpandedClass?: string,   // treegrid-expander-expanded 	Class using for expander element when it expanded
-//   expanderCollapsedClass?: string,  // treegrid-expander-collapsed 	Class using for expander element when it collapsed
-//   indentTemplate?: string,          // <span class="treegrid-indent"></span> 	HTML Element that will be placed as padding, depending on the depth of nesting node
-//   onCollapse?: ()=>void,            // null 	Function, which will be executed when one of node will be collapsed
-//   onExpand?: ()=>void,              // null 	Function, which will be executed when one of node will be expanded
-//   onChange?: ()=>void,              // null 	Function, which will be executed when one of node will be expanded or collapsed
-// }
-
-// interface FloatTHeadSettings {
-//   position?:	string,                     // 'auto'
-//   scrollContainer?: (()=>any) | boolean, // null
-//   responsiveContainer?: ()=>any,         // null
-//   headerCellSelector?:	string,           // 'tr:first>th:visible'
-//   floatTableClass?: string,              // 'floatThead-table'
-//   floatContainerClass?: string,          // 'floatThead-container'
-//   top?: (()=>any) | number,              // 0
-//   bottom?:	(()=>any) | number,           // 0
-//   zIndex?:	number,                       // 1001
-//   debug?:	boolean,                      // false
-//   getSizingRow?:	()=>any,                // undefined
-//   copyTableClass?:	boolean,              // true
-//   enableAria?:	boolean,                  // false
-//   autoReflow?:	boolean,                  // false
-// }
-
-// interface StickySettings {
-//   topSpacing?: number,              // 0 -- Pixels between the page top and the element's top.
-//   bottomSpacing?: number,           // 0 -- Pixels between the page bottom and the element's bottom.
-//   className?: string,               // 'is-sticky' -- CSS class added to the element's wrapper when "sticked".
-//   wrapperClassName?: string,        // 'sticky-wrapper' -- CSS class added to the wrapper.
-//   center?: boolean,                 // false -- Boolean determining whether the sticky element should be horizontally centered in the page.
-//   getWidthFrom?: string,            // '' -- Selector of element referenced to set fixed width of "sticky" element.
-//   widthFromWrapper?: boolean,       // true -- Boolean determining whether width of the "sticky" element should be updated to match the wrapper's width. Wrapper is a placeholder for "sticky" element while it is fixed (out of static elements flow), and its width depends on the context and CSS rules. Works only as long getWidthForm isn't set.
-//   responsiveWidth?: boolean,        // false -- Boolean determining whether widths will be recalculated on window resize (using getWidthfrom).
-//   zIndex?: number | string,         // auto -- controls z-index of the sticked element.
-// }
-
-// implement cycleNext
-// (function($) { $.fn.cycleNext = function() {
-//     const siblings = $(this).parent().children();
-//     return siblings.eq((siblings.index($(this))+1)%siblings.length);
-// } })(jQuery);
-
-// interface JQuery {
-//   // treegrid() : JQuery;
-//   // treegrid(settings: TreeGridSettings): JQuery;
-//   // treegrid(methodName:'initTree',data: string): JQuery;
-//   // treegrid(methodName: string, data: string): JQuery;
-
-//   tbltree() : JQuery;
-//   tbltree(settings: TblTreeSettings);
-//   tbltree(methodName:'expand', id: JQuery|string, user?: number): JQuery;
-//   tbltree(methodName:'collapse', id: JQuery|string, user?: number): JQuery;
-//   tbltree(methodName:'toggle', id: JQuery|string): JQuery;
-//   tbltree(methodName:'getRow', id: string): JQuery;
-//   tbltree(methodName:'getId', row: JQuery): string;
-//   tbltree(methodName:'getParentID', row: JQuery): string;
-//   tbltree(methodName:'getTreeCell', row: JQuery): JQuery;
-//   tbltree(methodName:'_getChildren', row: JQuery): JQuery;
-//   tbltree(methodName:'isLeaf', row: JQuery): boolean;
-//   tbltree(methodName:'isExpanded', row: JQuery): boolean;
-//   tbltree(methodName:'isCollapsed', row: JQuery): boolean;
-//   tbltree(methodName:string, param: JQuery|string): any;
-//   tbltree(methodName:'getRootNodes'): JQuery;
-
-//   // floatThead() : JQuery;
-//   // floatThead(settings: FloatTHeadSettings) : JQuery;
-
-//   // tablesorter(): JQuery;
-//   // sticky() : JQuery;
-//   // sticky(settings: StickySettings) : JQuery;
-//   // sticky(methodName:'update') : JQuery;
-
-//   // resizableColumns() : JQuery;
-
-//   colResizable() : JQuery;
-//   colResizable(settings: {resizeMode?: string, disable?: boolean, disabledColumns?: number[], liveDrag?: boolean, postbackSafe?: boolean, partialRefresh?: boolean, headerOnly?: boolean, innerGripHtml?: string, draggingClass?: string, minWidth?: number, hoverCursor?: string, dragCursor?: string, flush?: boolean, marginLeft?: string, marginRight?: string, onResize?: (e:JQueryEventObject)=>void, onDrag?: ()=>void}) : JQuery;
-
-//   cycleNext(): JQuery;
-// }
 
 function loadResultsTable(results: LtacProfResults, tbody: JQuery) {
   let currentId = 0;
@@ -235,17 +144,6 @@ function updateResultsAlternatingBackground(delay?: number) {
 
 
 const currentResults : LtacProfResults = {total_time: 0, tactics: []};
-export function clearResults() {
-  currentResults.total_time = 0;
-  currentResults.tactics = []
-  let tbody = $('#results tbody');
-  if(tbody.length > 0)
-    tbody.empty();
-}
-
-// function calculateTotalTime(tactic: LtacProfTactic) {
-//   tactic.statistics.total
-// }
 
 function addResults(results: LtacProfResults) {
   if(results.total_time === 0) {
@@ -374,3 +272,5 @@ function updateResults() {
   // $('#results tr:visible:odd').addClass('result-odd');
   updateResultsAlternatingBackground(0);
 }
+
+addEventListener('load', ltacProfLoad);

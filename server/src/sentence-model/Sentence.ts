@@ -1,7 +1,6 @@
 import * as textUtil from '../util/text-util'
 import {Position, Range} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
-import {SentenceSemantics} from '../parsing/SentenceSemantics';
 import {State} from '../stm/State'
 import * as parser from '../parsing/coq-parser';
 import * as ast from '../parsing/SentenceSemantics';

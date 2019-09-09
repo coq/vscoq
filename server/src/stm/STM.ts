@@ -69,7 +69,7 @@ const dummyCallbacks : StateMachineCallbacks = {
 
 export type CommandIterator = (begin: Position, end?: Position) => Iterable<{text: string, range: Range}>;
 
-export type GoalErrorResult = proto.NotRunningResult | proto.FailureResult | proto.InterruptedResult
+type GoalErrorResult = proto.NotRunningResult | proto.FailureResult | proto.InterruptedResult
 export type GoalResult = proto.NoProofResult | proto.NotRunningResult | proto.BusyResult |
   proto.FailureResult |
   proto.ProofViewResult |
@@ -355,13 +355,6 @@ export class CoqStateMachine {
     }
   }
 
-  private resetCoqtop() {
-    if(this.coqtop)
-      this.coqtop.dispose();
-    this.coqtop = null;
-    this.startFreshCoqtop()
-  }
-
   /**
    * Steps back from the currently focused sentence
    * @param verbose - generate feedback messages with more info
@@ -539,7 +532,7 @@ export class CoqStateMachine {
       let state: StateId = undefined;
       state = position ? this.getParentSentence(position).getStateId() : this.focusedSentence.getStateId();
       await this.refreshOptions();
-      const results = await this.coqtop.coqQuery(query, state, routeId);
+      await this.coqtop.coqQuery(query, state, routeId);
       return;
     } finally {
       endCommand();
@@ -1194,7 +1187,7 @@ function abbrString(s:string) {
   else return s2;
 }
 
-export type DSentence = string;
+type DSentence = string;
 function createDebuggingSentence(sent: State) : DSentence {
   return `${sent.getRange().start.line}:${sent.getRange().start.character}-${sent.getRange().end.line}:${sent.getRange().end.character} -- ${abbrString(sent.getText().trim())}`;
 }

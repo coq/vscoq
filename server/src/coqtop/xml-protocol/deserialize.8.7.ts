@@ -1,10 +1,9 @@
 'use strict';
 import * as coqProto  from '../coq-proto';
-import * as text from '../../util/AnnotatedText';
 import {AnnotatedText} from '../../util/AnnotatedText';
 import {Deserialize, Node, Nodes} from './deserialize.base';
 
-namespace Nodes_8_6 {
+namespace Nodes_8_7 {
   export interface MessageNode {
     $name: 'message',
     $: {},
@@ -53,9 +52,9 @@ namespace Nodes_8_6 {
   
 }
 
-export class Deserialize_8_6 extends Deserialize {
+export class Deserialize_8_7 extends Deserialize {
   public deserialize(v: Node) : coqProto.CoqValue {
-    const value = v as Nodes_8_6.TypedNode;
+    const value = v as Nodes_8_7.TypedNode;
     try {
     switch(value.$name) {
       case 'message':
@@ -88,7 +87,7 @@ export class Deserialize_8_6 extends Deserialize {
   }
 
   // public deserializeFeedbackContent(v: Node) : any {
-  //   const value = v as Nodes_8_6.FeedbackContentNode;
+  //   const value = v as Nodes_8_7.FeedbackContentNode;
   //   switch (value.$kind) {
   //   default:
   //     return super.deserializeFeedbackContent(value);

@@ -1,28 +1,17 @@
 'use strict';
 
-import * as util from 'util';
-import {TextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic, DiagnosticSeverity} from 'vscode-languageserver';
+import {TextDocument, TextDocumentContentChangeEvent, RemoteConsole, Position, Range, Diagnostic} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
 import {CancellationToken} from 'vscode-jsonrpc';
-import {Interrupted, CoqtopSpawnError, CallFailure, AddResult, EditAtResult} from './coqtop/CoqTop';
 import * as thmProto from './protocol';
 import * as coqProto from './coqtop/coq-proto';
 import * as coqParser from './parsing/coq-parser';
-import {CoqTop} from './coqtop/CoqTop8';
-// import {Sentence, Sentences} from './sentences';
 import * as textUtil from './util/text-util';
-import {Mutex} from './util/Mutex';
-import {AsyncWorkQueue} from './util/AsyncQueue';
 import {AnnotatedText, textToDisplayString} from './util/AnnotatedText';
-import {CommandIterator, CoqStateMachine, GoalResult, StateStatus} from './stm/STM';
+import {CoqStateMachine, GoalResult, StateStatus} from './stm/STM';
 import {FeedbackSync, DocumentFeedbackCallbacks} from './FeedbackSync';
-import * as sentSem from './parsing/SentenceSemantics';
 import {SentenceCollection} from './sentence-model/SentenceCollection';
 import {CoqProject} from './CoqProject';
-
-function rangeToString(r:Range) {return `[${positionToString(r.start)},${positionToString(r.end)})`}
-function positionToString(p:Position) {return `{${p.line}@${p.character}}`}
-
 
 /** vscode needs to export this class */
 export interface TextDocumentItem {
@@ -53,17 +42,6 @@ export interface CoqtopStopCallback {
 
 export type DocumentCallbacks = MessageCallback & ResetCallback & LtacProfCallback & CoqtopStartCallback & CoqtopStopCallback & DocumentFeedbackCallbacks;
 
-
-enum InteractionLoopStatus {Idle, CoqCommand, TextEdit};
-
-enum StepResult {
-  Focused, Unfocused, ExceedsMaxOffset, NoMoreCommands
-}
-
-
-// 'sticky' flag is not yet supported :()
-const lineEndingRE = /[^\r\n]*(\r\n|\r|\n)?/;
-
 export class CoqDocument implements TextDocument {
   // TextDocument
   public get uri() { return this.document.uri };
@@ -83,8 +61,6 @@ export class CoqDocument implements TextDocument {
   private document: SentenceCollection = null;
   // Feedback destined for the extension client/view
   private feedback : FeedbackSync;
-  /** */
-  private projectRoot : string;
 
   private parsingRanges : Range[] = [];
   // private interactionCommands = new AsyncWorkQueue();
@@ -102,14 +78,6 @@ export class CoqDocument implements TextDocument {
       this.resetCoq();
   }
 
-
-  private getTextOfRange(range: Range) {
-    const start = this.offsetAt(range.start);
-    const end = this.offsetAt(range.end);
-    return this.document.getText().substring(start,end);
-  }
-
-
   public async applyTextEdits(changes: TextDocumentContentChangeEvent[], newVersion: number) {
     // sort the edits such that later edits are processed first
     let sortedChanges =
@@ -120,9 +88,7 @@ export class CoqDocument implements TextDocument {
 
     if(this.isStmRunning()) {
       try {
-        const passive = this.stm.applyChanges(sortedChanges, newVersion, this.document.getText());
-        // if(!passive)
-        //   this.updateHighlights();
+        this.stm.applyChanges(sortedChanges, newVersion, this.document.getText());
       } catch (err) {
         this.clientConsole.error("STM crashed while applying text edit: " + err.toString())
       }
@@ -232,17 +198,13 @@ export class CoqDocument implements TextDocument {
       { ranges: [ [], [], [], [], [], [] ] };
     if(!this.isStmRunning())
       return highlights;
-    let count1 = 0;
-    let count2 = 0;
     for(let sent of this.stm.getSentences()) {
       const ranges = highlights.ranges[this.sentenceToHighlightType(sent.status)];
       if(ranges.length > 0 && textUtil.positionIsEqual(ranges[ranges.length-1].end, sent.range.start))
         ranges[ranges.length-1].end = sent.range.end;
       else {
         ranges.push(Range.create(sent.range.start,sent.range.end));
-        ++count2;
       }
-      ++count1;
     }
     return highlights;
   }

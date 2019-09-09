@@ -1,21 +1,16 @@
 'use strict';
-import {rangeToString} from './util/text-util';
-
-import {RequestType, CancellationToken} from 'vscode-jsonrpc';
+import {CancellationToken} from 'vscode-jsonrpc';
 import {
 	createConnection, IConnection, TextDocumentSyncKind,
-	TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
-	InitializeParams, InitializeResult, TextDocumentIdentifier, Position, TextDocumentPositionParams,
-  DidChangeTextDocumentParams,
-  CodeLensParams, RequestHandler,
-	CompletionItem, CompletionItemKind, PublishDiagnosticsParams, ServerCapabilities, CodeActionParams, Command, CodeLens, Hover
+	Diagnostic,
+	InitializeResult, TextDocumentIdentifier, Position, TextDocumentPositionParams,
+  CodeLensParams,
+	CompletionItem, ServerCapabilities, CodeActionParams, Command, CodeLens
 } from 'vscode-languageserver';
 import * as vscodeLangServer from 'vscode-languageserver';
-import * as util from 'util';
  
-import {CoqDocument} from './document';
 import * as coqproto from './protocol';
-import {CoqTopSettings, CoqSettings, Settings} from './protocol';
+import {Settings} from './protocol';
 import {CoqProject} from './CoqProject';
 import { RouteId } from './coqtop/coq-proto';
 
@@ -34,7 +29,6 @@ export let project : CoqProject = null;
 
 // After the server has started the client sends an initilize request. The server receives
 // in the passed params the rootPath of the workspace plus the client capabilites. 
-let workspaceRoot: string;
 connection.onInitialize((params): InitializeResult => {
   console.log = (e) => {connection.console.log(">>> " + e)};
   console.info = (e) => {connection.console.info(">>> " + e)};
@@ -45,7 +39,6 @@ connection.onInitialize((params): InitializeResult => {
   // connection.console.log(`execArgv: ${process.execArgv.join(' ')}`);
   // connection.console.log(`argv: ${process.argv.join(' ')}`);
   // connection.console.log('coq path: ' + currentSettings.coqPath);
-	workspaceRoot = params.rootPath;
 
   // let x: vscodeLangServer.RemoteConsole = {
   //   log: (x) => {},

@@ -1,11 +1,5 @@
 'use strict';
-// import * as peg from 'pegjs'
-import * as util from 'util'
-import * as textUtil from './../util/text-util'
-import {Range, Position} from 'vscode-languageserver'
-import * as server from './../server'
 import * as peg from 'pegjs'
-import {ExpectedItem} from 'pegjs';
 export {ExpectedItem, LocationRange} from 'pegjs';
 
 export interface SentenceBase {

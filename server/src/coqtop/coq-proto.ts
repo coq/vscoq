@@ -1,5 +1,4 @@
 'use strict';
-import {Position, Range} from 'vscode-languageserver';
 import {AnnotatedText} from '../protocol';
 
 // export type CoqValue = any;

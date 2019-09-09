@@ -1,7 +1,6 @@
 import * as textUtil from '../util/text-util'
 import {Position, Range} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
-import * as sem from '../parsing/SentenceSemantics';
 import {Sentence} from './Sentence';
 import * as parser from '../parsing/coq-parser';
 import {TextDocumentItem} from '../document'
@@ -9,13 +8,13 @@ import * as server from '../server'
 import * as util from 'util'
 import {QualId, ScopeFlags, SymbolInformation} from './Scopes'
 
-export type SentencesInvalidatedCallback = (invalidatedSentences: Sentence[]) => void; 
+type SentencesInvalidatedCallback = (invalidatedSentences: Sentence[]) => void;
 
 
 export class SentenceCollection implements vscode.TextDocument {
   private sentences: Sentence[] = [];
   private sentencesInvalidatedCallbacks = new Set<SentencesInvalidatedCallback>();
-  
+
   public languageId: string = 'coq';
   public lineCount : number = 0;
   public uri: string;
@@ -148,18 +147,6 @@ export class SentenceCollection implements vscode.TextDocument {
       return sentIdx-1;
   }
 
-  /** 
-   * @returns the index of the closest sentence containing or appearing after `pos`, or `this.sentences.length` if no sentence is after or contains `pos`. 
-   */
-  private getSentenceIndexAfterOrAt(pos: Position) : number {
-    if(this.sentences.length === 0)
-      return 0;
-    let sentIdx = this.sentences.length - 1;
-    while(sentIdx >= 0 && this.sentences[sentIdx].isAfterOrAt(pos))
-      --sentIdx;
-    return sentIdx+1;
-  }
-
   /**
    * Applies text changes to the sentences; adjusting ranges and possibly invalidating sentences.
    * Invalidated sentences will be automatically reparsed.
@@ -243,14 +230,6 @@ export class SentenceCollection implements vscode.TextDocument {
       return Position.create(0,0);
     } else {
       return this.sentences[this.sentences.length-1].getRange().end;
-    }
-  }
-
-  private getLastOffset() : number {
-    if(this.sentences.length === 0) {
-      return 0;
-    } else {
-      return this.sentences[this.sentences.length-1].getDocumentEndOffset()
     }
   }
 

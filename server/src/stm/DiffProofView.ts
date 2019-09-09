@@ -1,10 +1,8 @@
 // 'use strict';
 
-import * as coqProto from '../coqtop/coq-proto';
-import {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAnnotation, ScopedText, UnfocusedGoalStack} from '../protocol';
+import {ProofView, Goal, Hypothesis, HypothesisDifference, UnfocusedGoalStack} from '../protocol';
 import * as text from '../util/AnnotatedText';
 import * as server from '../server';
-import * as vscode from 'vscode-languageserver';
 
 
 

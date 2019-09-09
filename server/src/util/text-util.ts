@@ -197,7 +197,6 @@ export function positionAtRelative(start: Position, text: string, offset: number
   let line = start.line;
   let currentOffset = 0;  // offset into text we are current at; <= `offset`
   let lineOffset = start.character;
-  let lastIndex = start.character;
   while(true) {
     const match = lineEndingRE.exec(text.substring(currentOffset));
     // match[0] -- characters plus newline
@@ -223,7 +222,6 @@ export function positionAtRelativeCNL(start: Position, text: string, offset: num
   let line = start.line;
   let currentOffset = 0;  // offset into text we are current at; <= `offset`
   let lineOffset = start.character;
-  let lastIndex = start.character;
   while(true) {
     const match = lineEndingRE.exec(text.substring(currentOffset));
     // match[0] -- characters plus newline

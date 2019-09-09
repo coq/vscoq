@@ -2,13 +2,11 @@
 import * as events from 'events';
 import * as sax from 'sax';
 import * as coqProto from '../coq-proto';
-import {StateId, EditId, Pair, StateFeedback, LtacProfTactic, LtacProfResults,
-  UnionL, UnionR, Union, OptionState, Subgoal, Goals, Location, MessageLevel,
-  Message, FailValue, UnfocusedGoalStack, SentenceStatus, FeedbackContent,
+import {StateId, StateFeedback,
+  Message,
   ValueReturn,
   RouteId} from '../coq-proto';
 import * as text from '../../util/AnnotatedText';
-import * as util from 'util';
 import {Deserialize} from './deserialize.base';
 
 export interface EventCallbacks {

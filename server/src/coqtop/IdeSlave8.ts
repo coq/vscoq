@@ -6,13 +6,12 @@ import * as vscode from 'vscode-languageserver';
 
 import * as coqProto from './coq-proto';
 import * as xmlTypes from './xml-protocol/CoqXmlProtocolTypes';
-import {AnnotatedText, normalizeText, textToDisplayString} from '../util/AnnotatedText';
 import {createDeserializer} from './xml-protocol/deserialize';
 
 import * as coqtop from './CoqTop';
-import {Interrupted, CoqtopSpawnError, CallFailure, CommunicationError} from './CoqTop';
-import {InitResult, AddResult, EditAtFocusResult, EditAtResult, ProofView} from './CoqTop';
-import {NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
+import {Interrupted, CallFailure, CommunicationError} from './CoqTop';
+import {InitResult, AddResult, EditAtResult, ProofView} from './CoqTop';
+import {ProofModeResult, GoalResult} from './CoqTop';
 
 import {timeout} from '../util/Timer';
 
@@ -28,7 +27,7 @@ export enum IdeSlaveState {
 export class InternalError extends Error {
 }
 
-export class IdeSlaveNotConnectedError extends Error {
+class IdeSlaveNotConnectedError extends Error {
   constructor() {
     super("IdeSlave is not connected to coqtop")
   }
@@ -37,7 +36,6 @@ export class IdeSlaveNotConnectedError extends Error {
 export class IdeSlave extends coqtop.IdeSlave {
   private mainChannelR : NodeJS.ReadableStream;
   private mainChannelW : NodeJS.WritableStream;
-  private controlChannelR : NodeJS.ReadableStream;
   private controlChannelW : NodeJS.WritableStream;
   private parser : coqXml.XmlStream|null = null;
   private coqResultValueListener : {onValue: (value:coqProto.ValueReturn|coqProto.FailValue) => void, onError: (reason: any)=>void} | null = null;
@@ -56,7 +54,6 @@ export class IdeSlave extends coqtop.IdeSlave {
   protected connect(version: string, mainR: NodeJS.ReadableStream, mainW: NodeJS.WritableStream, controlR: NodeJS.ReadableStream, controlW: NodeJS.WritableStream) {
     this.mainChannelR = mainR;
     this.mainChannelW = mainW;
-    this.controlChannelR = controlR;
     this.controlChannelW = controlW;
     this.state = IdeSlaveState.Connected;
   
@@ -106,9 +103,6 @@ export class IdeSlave extends coqtop.IdeSlave {
     this.mainChannelW.write(message, 'utf8');
   }
 
-  private writeControl(message: string) {
-    this.controlChannelW.write(message, 'utf8');
-  }
 
   public dispose() {
     this.callbacks = {};
@@ -121,10 +115,9 @@ export class IdeSlave extends coqtop.IdeSlave {
     //   this.controlChannelR.end();
     if (this.controlChannelW)
       this.controlChannelW.end();
-    
+
     this.mainChannelR = undefined;
     this.mainChannelW = undefined;
-    this.controlChannelR = undefined;
     this.controlChannelW = undefined;
   }
 
@@ -150,16 +143,9 @@ export class IdeSlave extends coqtop.IdeSlave {
   private onMainChannelR(data: string) {
   }
 
-  private onMainChannelW(data: string) {
-    this.console.log('main-channelW: ' + data);
-  }
   private onControlChannelR(data: string) {
     this.console.log('control-channelR: ' + data);
   }
-  private onControlChannelW(data: string) {
-    this.console.log('control-channelW: ' + data);
-  }
-  
 
   private doOnFeedback(feedback: coqProto.StateFeedback) {
     if(this.callbacks.onFeedback)
@@ -172,7 +158,7 @@ export class IdeSlave extends coqtop.IdeSlave {
   }
 
   private doOnOther(tag: string, x: any) {
-      // this.console.log("reponse: " + tag + ": " + util.inspect(x));    
+      // this.console.log("reponse: " + tag + ": " + util.inspect(x));
   }
   private doOnSerializationError(x: any) {}
 
@@ -217,22 +203,6 @@ export class IdeSlave extends coqtop.IdeSlave {
     });
   }
 
-  /**
-   * Note: this needs to be called before this.mainChannelW.write to ensure that the handler for 'response: value'
-   * is installed on time
-   */
-  private coqGetMessageOnce() : Promise<coqProto.Message> {
-    return new Promise<coqProto.Message>((resolve,reject) => {
-      this.parser.once('response: message', (value:coqProto.Message) => {
-        try {
-          resolve(value);
-        } catch(error) {
-          reject(error);
-        }
-      });
-    });
-  }
-  
   /** @returns true if an interrupt message was sent via the xml protocol */
   public async coqInterrupt() : Promise<boolean> {
     if(!this.isConnected())
@@ -299,15 +269,6 @@ export class IdeSlave extends coqtop.IdeSlave {
     }
   }
 
-  private countBackgroundGoals(g: coqProto.UnfocusedGoalStack) : number {
-    let count = 0;
-    while(g) {
-      count += g.before.length + g.after.length;
-      g = g.next; 
-    }
-    return count;
-  }
-  
   public async coqGoal() : Promise<GoalResult> {
     await this.checkState();
 
@@ -315,7 +276,7 @@ export class IdeSlave extends coqtop.IdeSlave {
     this.console.log('--------------------------------');
     this.console.log('Call Goal()');
     this.writeMain('<call val="Goal"><unit/></call>');
-    
+
     const value = coqProto.GetValue('Goal', await coqResult);
     if(value !== null) {
       const result : ProofView = {
@@ -418,22 +379,8 @@ export class IdeSlave extends coqtop.IdeSlave {
     this.console.log(`Call Query(query: "Show Ltac Profile.", stateId: ${stateId}, routeId: ${routeId})`);
     this.writeMain(`<call val="Query"><pair><route_id val="${routeId}"/><pair><string>Show Ltac Profile.</string><state_id val="${stateId}"/></pair></pair></call>`);    
 
-    const value = coqProto.GetValue('Query',await coqResult);
-    // return {total_time: 0, tactics:[]};;
-    // let result : LtacProfResults = value['ltacprof'];
-    // this.console.log(`LtacProfResults: () --> ...`);
-    // return result;
+    coqProto.GetValue('Query',await coqResult);
   }
-
-  // public async setOptions() {
-  //   if(this.coqtopProc === null)
-  //     return;
-
-  //   const coqResult = this.coqGetResultOnce('SetOptions');
-  //   this.console.log('--------------------------------');
-  //   this.console.log(`Call ResizeWindow(columns: ${columns})`);
-  //   this.writeMain(`<call val="SetOptions"><list><pair><list><string>Printing</string><string>Width</string></list><option_value val="intvalue"><option val="some"><int>${columns}</int></option></option_value></pair></list></call>`);
-  // }
 
   public async coqResizeWindow(columns: number) : Promise<void> {
     if(!this.isConnected())
@@ -443,47 +390,21 @@ export class IdeSlave extends coqtop.IdeSlave {
     this.console.log('--------------------------------');
     this.console.log(`Call ResizeWindow(columns: ${columns})`);
     this.writeMain(`<call val="SetOptions"><list><pair><list><string>Printing</string><string>Width</string></list><option_value val="intvalue"><option val="some"><int>${columns}</int></option></option_value></pair></list></call>`);
-    const result = coqProto.GetValue('SetOptions',await coqResult);
+    coqProto.GetValue('SetOptions',await coqResult);
     this.console.log(`ResizeWindow: ${columns} --> ()`);
   }
-  
+
   public async coqQuery(query: string, stateId: number, routeId?: number) : Promise<void> {
     this.checkState();
     routeId = routeId || 1;
 
     const coqResult = this.coqGetResultOnce('Query');
-    // TODO test Coq version const coqMessageResult = this.coqGetMessageOnce();
     this.console.log('--------------------------------');
     this.console.log(`Call Query(stateId: ${stateId}, ${routeId!==undefined? "routeId: "+routeId+", ":""}query: ${query})`);
     this.writeMain(`<call val="Query"><pair><route_id val="${routeId}"/><pair><string>${coqXml.escapeXml(query)}</string><state_id val="${stateId}"/></pair></pair></call>`);    
-    // this.writeMain(`<call val="Query"><pair><string>${entities.encodeXML(query)}</string><state_id val="${stateId}"/></pair></call>`);    
 
-    // TODO test Coq version const values = await Promise.all([coqMessageResult, coqResult.then(() => null)]);
-    const result = coqProto.GetValue('Query',await coqResult);
+    coqProto.GetValue('Query',await coqResult);
     this.console.log(`Query: ${stateId} --> ...`);
-    // TODO test Coq version return values[0].message;
-
-    // return entities.decodeXML(values[0].message);
-
-
-//     this.checkState();
-// 
-//     const coqResult = this.coqGetResultOnce('Locate');
-//     // const verboseStr = verbose===true ? "true" : "false";
-//     const verboseStr = verbose === false ? "false" : "true";
-//     this.console.log('--------------------------------');
-//     this.console.log(`Call Add("${command.trim().substr(0, 20) + (command.trim().length > 20 ? "..." : "")}", editId: ${editId}, stateId: ${stateId}, verbose: ${verboseStr})`);
-//     this.writeMain(`<call val="Add"><pair><pair><string>${command}</string><int>${editId}</int></pair><pair><state_id val="${stateId}"/><bool val="${verboseStr}"/></pair></pair></call>`);
-// 
-//     const value = await coqResult;
-//     let result = <AddResult>{
-//       stateId: value.stateId,
-//       message: value.message,
-//     };
-//     if (value.unfocusedStateId)
-//       result.unfocusedStateId = value.unfocusedStateId;
-//     this.console.log(`Add:  ${stateId} --> ${result.stateId} ${result.unfocusedStateId ? "(unfocus ${result.unfocusedStateId})" : ""} "${result.message || ""}"`);
-//     return result;
   }
 
 
@@ -494,9 +415,9 @@ export class IdeSlave extends coqtop.IdeSlave {
     // const coqMessageResult = this.coqGetMessageOnce();
     this.console.log('--------------------------------');
     this.console.log(`Call GetOptions()`);
-    this.writeMain(`<call val="GetOptions"><unit/></call>`);    
+    this.writeMain(`<call val="GetOptions"><unit/></call>`);
 
-    const values = coqProto.GetValue('GetOptions', await coqResult);
+    coqProto.GetValue('GetOptions', await coqResult);
     this.console.log(`GetOptions: () --> ...`);
   }
 
@@ -518,34 +439,9 @@ export class IdeSlave extends coqtop.IdeSlave {
     // this.console.log(`Call SetOptions(${xmlTypes.encode(xmlOptions)})`);
     this.writeMain(`<call val="SetOptions">${xmlTypes.encode(xmlOptions)}</call>`);    
 
-    const values = coqProto.GetValue('SetOptions', await coqResult);
+    coqProto.GetValue('SetOptions', await coqResult);
     this.console.log(`SetOptions: (...) --> ...`);
   }
-
-
-//   public async coqStatus(stateId: number) : Promise<EditAtResult> {
-//     const coqResult = this.coqGetResultOnce('EditAt');
-//     this.console.log('--------------------------------');
-//     this.console.log(`Call EditAt(stateId: ${stateId})`);
-//     this.writeMain(`<call val="Edit_at"><state_id val="${stateId}"/></call>`);    
-// 
-//     const value = await coqResult;
-//     let result : EditAtResult;
-//     if(value.value.inr) {
-//       // Jumping inside another proof; create a new tip
-//       result = {newFocus: {
-//         stateId: value.value.inr[0].fst,
-//         qedStateId: value.value.inr[0].snd.fst,
-//         oldStateIdTip: value.value.inr[0].snd.snd,
-//       }};
-//     } else {
-//       result = {};
-//     }
-//     this.console.log(`EditAt: ${stateId} --> ${result.newFocus ? `{newTipId: ${result.newFocus.stateId}, qedId: ${result.newFocus.qedStateId}, oldId: ${result.newFocus.oldStateIdTip}}` : "{}"}`);
-//     return result;
-//   }
-
-
 }
 
 

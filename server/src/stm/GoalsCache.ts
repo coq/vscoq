@@ -1,5 +1,4 @@
 import {ProofView,Goal,UnfocusedGoalStack} from '../protocol';
-import * as vscode from 'vscode-languageserver';
 
 export type GoalId  = number;
 

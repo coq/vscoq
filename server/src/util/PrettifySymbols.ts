@@ -1,4 +1,4 @@
-import {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAnnotation, ScopedText, Substitution} from '../protocol';
+import {AnnotatedText, TextAnnotation, Substitution} from '../protocol';
 import {combineAnnotationText, Annotation, mapAnnotation} from './AnnotatedText';
 import * as server from '../server';
 
@@ -28,7 +28,6 @@ export class PrettifySymbolsMode {
     for(let prettySubst of substitutions) {
       const uglyStr = regexpOptionalGroup(prettySubst.pre) + "(" + prettySubst.ugly + ")" + regexpOptionalGroup(prettySubst.post);
       try {
-        const uglyRegEx = new RegExp(uglyStr); // test the regex
         uglyAllStrings.push(`(?:${uglyStr})`);
       } catch(e) {
         server.connection.console.warn(`Could not add rule "${uglyStr}" --> "${prettySubst.pretty}"; invalid regular expression`)

@@ -1,7 +1,6 @@
 'use strict';
 import * as vscode from 'vscode'
 
-export {CoqView} from './CoqView'
 import * as proto from './protocol'
 import * as WebSocket from 'ws';
 import * as http from 'http';

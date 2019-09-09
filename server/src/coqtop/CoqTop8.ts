@@ -7,8 +7,6 @@ import * as semver from 'semver';
 
 import {ChildProcess, spawn} from 'child_process';
 import {CoqTopSettings} from '../protocol';
-import * as fs from 'fs';
-import * as os from 'os';
 
 import * as coqtop from './CoqTop';
 export {Interrupted, CoqtopSpawnError, CallFailure,
@@ -138,29 +136,6 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     return this.coqtopVersion;
   }
 
-  private async setupCoqTop() : Promise<void> {
-    await Promise.all(this.readyToListen);
-
-    var mainAddr = this.mainChannelServer.address();
-    var controlAddr = this.controlChannelServer.address();
-    var mainAddressArg = mainAddr.address + ':' + mainAddr.port;
-    var controlAddressArg = controlAddr.address + ':' + controlAddr.port;
-
-    try {
-      const scriptUri = decodeURIComponent(this.scriptFile);
-      this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
-    } catch(error) {
-      this.console.error('Could not spawn coqtop: ' + error);
-      throw new CoqtopSpawnError(this.coqtopBin, error);
-    }
-
-    let channels = await Promise.all([
-        this.acceptConnection(this.mainChannelServer, 'main channel'), //, 'main channel R', (data) => this.onMainChannelR(data)),
-        this.acceptConnection(this.controlChannelServer, 'control channel'),
-      ]);
-
-    this.connect(this.coqtopVersion.format(), channels[0], channels[0], channels[1], channels[1])
-  }
 
   /** Start coqtop.
    * Use two ports: one for reading & one for writing; i.e. HOST:READPORT:WRITEPORT

@@ -2,7 +2,6 @@
 import * as vscode from 'vscode'
 
 import * as view from './CoqView'
-export {CoqView} from './CoqView'
 import {extensionContext} from './extension'
 import * as proto from './protocol'
 import * as path from 'path';
