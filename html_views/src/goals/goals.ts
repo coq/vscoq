@@ -17,12 +17,6 @@ var throttleEventHandler = <X>(handler: (x:X) => void) => (event:X) => {
       handler(event);
     }, 500);
   }
-
-    // handler(event);
-  // throttleTimeout = setTimeout(() => {
-  //   throttleTimeout = null;
-  //   // handler(event);
-  // }, 10);
 }
 
 function computePrintingWidth() {
@@ -64,7 +58,7 @@ function setPrettifySymbolsMode(enabled: boolean) {
 declare var acquireVsCodeApi : any;
 const vscode = acquireVsCodeApi();
 
-export function goalsLoad() {
+function goalsLoad() {
 
   window.onresize = throttleEventHandler(event => computePrintingWidth);
   window.addEventListener("focus", onWindowGetFocus, true);

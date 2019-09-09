@@ -1,16 +1,15 @@
-import {Position, Range, DiagnosticSeverity, TextDocumentSyncOptions} from 'vscode-languageserver';
+import {Position, Range, DiagnosticSeverity} from 'vscode-languageserver';
 import * as vscode from 'vscode-languageserver';
 import * as coqProto from './../coqtop/coq-proto';
 import * as parser from './../parsing/coq-parser';
 import * as textUtil from './../util/text-util';
-import {Sentence} from './../sentence-model/Sentence';
-import {ProofView,Goal,UnfocusedGoalStack} from '../protocol';
+import {ProofView,} from '../protocol';
 import {AnnotatedText} from '../util/AnnotatedText';
 import * as diff from './DiffProofView';
-import {GoalId, ProofViewReference, GoalsCache} from './GoalsCache'
-export type StateId = number;
+import {ProofViewReference, GoalsCache} from './GoalsCache'
+type StateId = number;
 
-export interface CoqDiagnosticInternal {
+interface CoqDiagnosticInternal {
   /** Error message */
   message: AnnotatedText,
   /** Range of error within this sentence w.r.t. document positions. Is `undefined` if the error applies to the whole sentence */
@@ -44,8 +43,6 @@ enum StateStatusFlags {
 
 export class State {
   private status: StateStatusFlags;
-  // private proofView: CoqTopGoalResult;
-  private computeTimeMS: number;
   private diagnostics: CoqDiagnosticInternal[] = [];
   // set to true when a document change has invalidated the meaning of the associated sentence; this state needs to be cancelled
   private markedInvalidated = false;
@@ -57,15 +54,12 @@ export class State {
     , private textRange: Range
     , private prev: State | null
     , private next: State | null
-    , private computeStart: [number,number] = [0,0]
   ) {
     this.status = StateStatusFlags.Parsing;
-    // this.proofView = {};
-    this.computeTimeMS = 0;
   }
 
   public static newRoot(stateId: StateId) : State {
-    return new State("",stateId,Range.create(0,0,0,0),null,null,[0,0]);
+    return new State("",stateId,Range.create(0,0,0,0),null,null);
   }
 
   public static add(parent: State, command: string, stateId: number, range: Range, computeStart : [number,number]) : State {
@@ -74,7 +68,7 @@ export class State {
     // this could be loosened to if(textUtil.isBefore(range.start,parent.textRange.end)).
     if(!textUtil.positionIsEqual(range.start, parent.textRange.end))
       throw "New sentence is expected to be adjacent to its parent";
-    const result = new State(command,stateId,range,parent,parent.next,computeStart);
+    const result = new State(command,stateId,range,parent,parent.next);
     parent.next = result;
     return result;
   }
@@ -159,8 +153,6 @@ export class State {
     switch(status) {
       case coqProto.SentenceStatus.Parsing:
         this.status = StateStatusFlags.Parsing;
-        this.computeStart = process.hrtime();
-        this.computeTimeMS = 0;
         break;
       case coqProto.SentenceStatus.AddedAxiom:
         this.status &= ~(StateStatusFlags.Processing | StateStatusFlags.Error);
@@ -168,14 +160,11 @@ export class State {
         break;
       case coqProto.SentenceStatus.Processed:
         if(this.status & StateStatusFlags.Processing) {
-          const duration = process.hrtime(this.computeStart);
-          this.computeTimeMS = duration[0] * 1000.0 + (duration[1] / 1000000.0);
           this.status &= ~StateStatusFlags.Processing;
         }
         break;
       case coqProto.SentenceStatus.ProcessingInWorker:
         if(!(this.status & StateStatusFlags.Processing)) {
-          this.computeStart = process.hrtime();
           this.status |= StateStatusFlags.Processing;
         }
         break;

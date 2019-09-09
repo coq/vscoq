@@ -1,23 +1,13 @@
 'use strict';
 import * as coqProto from '../coq-proto';
-import * as text from '../../util/AnnotatedText';
 import * as util from 'util';
 import {Node} from './coq-xml';
 export {Node} from './coq-xml';
 import {StateId, EditId, Pair, StateFeedback, LtacProfTactic, LtacProfResults,
-  UnionL, UnionR, Union, OptionState, Subgoal, Goals, Location, MessageLevel,
+  UnionL, Union, OptionState, Subgoal, Goals, Location, MessageLevel,
   Message, FailValue, UnfocusedGoalStack, SentenceStatus, FeedbackContent,
   ValueReturn, CoqValue, CoqValueList, UnionCoqValue, CoqStatus} from '../coq-proto';
 import {AnnotatedText} from '../../util/AnnotatedText';
-
-// export interface TypedNode {
-//   $name: string;
-//   $text: string;
-//   /* attributes */
-//   $: { [key:string]:coqProto.CoqValue };
-//   /* children */
-//   $children : coqProto.CoqValue[];
-// }
 
 export namespace Nodes {
   export interface StateIdNode {

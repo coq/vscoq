@@ -1,4 +1,4 @@
-import {Range, Position, Diagnostic} from 'vscode-languageserver';
+import {Position, Diagnostic} from 'vscode-languageserver';
 import {Highlights} from './protocol';
 
 export interface DocumentFeedbackCallbacks {
@@ -12,15 +12,13 @@ export class FeedbackSync {
   private diagnostics: (() => Diagnostic[])|null = null;
   private highlights: (() => Highlights)|null = null;
   private feedbackTimeout: NodeJS.Timer|null = null;
-  private busy = false;
-  
+
   public constructor(
     private callbacks: DocumentFeedbackCallbacks,
     private delayMS: number = 500
     ) { }
 
   private sendFeedbackNow() {
-    this.busy = true;
     if(this.focus!==null)
       this.callbacks.sendStmFocus(this.focus);
     if(this.diagnostics)
@@ -30,7 +28,6 @@ export class FeedbackSync {
     this.focus = null;
     this.diagnostics = null;
     this.highlights = null;
-    this.busy = false;
   }
 
   private sendFeedbackLazily() {

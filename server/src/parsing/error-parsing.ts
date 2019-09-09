@@ -177,7 +177,6 @@ function* indicesOf(str: string, substr: string|RegExp, start?: number, end?: nu
     } else {
       substr.lastIndex = pos;
       const m = substr.exec(str);
-      let x: RegExpExecArray;
       if(!m || m.index < pos)
         return [-1,0];
       else

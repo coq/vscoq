@@ -9,6 +9,7 @@
 		"allowUnreachableCode": false,
 		"allowUnusedLabels": false,
 		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
 		"pretty": true,
 		"types": ["diff", "mocha", "node", "sax", "xml2js"]
 	},

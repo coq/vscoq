@@ -1,10 +1,9 @@
 
 import {CoqDocument, DocumentCallbacks, TextDocumentItem} from './document';
-import {CoqTopSettings, Settings, DocumentSelector} from './protocol';
+import {Settings, DocumentSelector} from './protocol';
 import * as vscode from 'vscode-languageserver';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as readline from 'readline';
 import {PrettifySymbolsMode} from './util/PrettifySymbols';
 import * as nodeAsync from './util/nodejs-async';
 import {CoqTop} from './coqtop/CoqTop';
@@ -142,23 +141,6 @@ export class CoqProject {
           }
       }
     });
-  }
-
-  private stopWatchingCoqProject() {
-    if(this.coqProjectWatcher != null)
-      this.coqProjectWatcher.close();
-    this.coqProjectWatcher = null;
-  }
-  
-  private async getFileStats(path: string) {
-    return new Promise<fs.Stats>((resolve,reject) => {
-      fs.stat(path, (err, stats) => {
-        if(err)
-          reject(err);
-        else
-          resolve(stats);
-      });      
-    })
   }
 
   private static parseCoqProject(text: string) : string[] {

@@ -1,11 +1,5 @@
 // The module 'assert' provides assertion methods from node
 import * as assert from 'assert';
-import * as diff from 'diff';
-import * as os from 'os';
-import * as process from 'process';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as util from 'util';
 import * as vscode from 'vscode-languageserver';
 
 import * as scopes from '../src/sentence-model/Scopes';
@@ -245,7 +239,6 @@ describe("Scopes", function() {
 
   describe('multi-scope', function() {
     let s : MockSentence[];
-    let symb;
 
     function addScope(create: (s: MockSentence, ...args: any[]) => ScopeDeclaration, ...args: any[]) {
       const i = s.push(new MockSentence(null,null,null)) - 1;
@@ -258,13 +251,6 @@ describe("Scopes", function() {
     }
 
     beforeEach(function () {
-      symb = {
-        foo: {identifier: 'foo', range: nextRange(), kind: SymbolKind.Definition},
-        bar: {identifier: 'bar', range: nextRange(), kind: SymbolKind.Definition},
-        aaa: {identifier: 'aaa', range: nextRange(), kind: SymbolKind.Definition},
-        bbb: {identifier: 'bbb', range: nextRange(), kind: SymbolKind.Definition},
-        ccc: {identifier: 'ccc', range: nextRange(), kind: SymbolKind.Definition},
-      }
       s = [];
       addScope(ScopeDeclaration.createDefinition,'foo',nextRange()) as any;
       addScope(ScopeDeclaration.createSection,'A',nextRange()) as any;
@@ -276,14 +262,6 @@ describe("Scopes", function() {
       addScope(ScopeDeclaration.createEnd,'M') as any;
       addScope(ScopeDeclaration.createDefinition,'bar',nextRange()) as any;
     })
-
-    function assertSymbolLookup(idx:number, si: SymbolInformation|null, sy: Symbol, p: QualId) {
-      assert.notEqual(si, null);
-      assert.equal(si.symbol,sy);
-      assert.deepStrictEqual(si.source,s[idx]);
-      assert.deepStrictEqual(si.id,[...p,sy.identifier]);
-      assert.deepStrictEqual(si.assumedPrefix,[]);
-    }
 
     it("getPreviousSentence", function() {
       const sc0 = s[0].scope as any as IScopeDeclaration;

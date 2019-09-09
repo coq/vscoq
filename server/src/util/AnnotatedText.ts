@@ -1,6 +1,6 @@
 import * as diff from 'diff';
 
-import {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAnnotation, ScopedText, Substitution} from '../protocol';
+import {AnnotatedText, TextAnnotation, ScopedText} from '../protocol';
 export {ProofView, Goal, Hypothesis, AnnotatedText, HypothesisDifference, TextAnnotation, ScopedText} from '../protocol';
 
 
@@ -121,14 +121,6 @@ export function textSplit(text: AnnotatedText, separator: string|RegExp, limit?:
       rest: limit===undefined ? [] :
         result.slice(limit).map((s) =>
           normalizeTextAnnotationOrString({diff:text.diff, substitution:text.substitution, text: s}))}
-
-
-    // const {splits: splits, rest: rest} = textSplit(text.text, separator, limit);
-    // var xxx:TextAnnotation = {diff: text.diff, substitution: text.substitution, text: rest}
-    // const result = {
-    //   splits: splits, //splits.map((s: AnnotatedText) => ({diff: text.diff, substitution: text.substitution, text: s})),
-    //   rest: {diff: text.diff, substitution: text.substitution, text: rest} as TextAnnotation};
-    // return result;
   }
 }
 
@@ -139,7 +131,6 @@ function subtextHelper<T extends AnnotatedText>(text: T, pos: number, start: num
     return {result: s as T, length: s.length, next: pos + t.length};
   } else if(text instanceof Array) {
     const strs : (string | TextAnnotation | ScopedText)[] = [];
-    let rest : AnnotatedText = [];
     let len = 0;
     for(let idx = 0 ; idx < text.length && (end===undefined || pos < end); ++idx) {
       const s = subtextHelper<string | TextAnnotation | ScopedText>(text[idx], pos, start, end);

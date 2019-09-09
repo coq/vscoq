@@ -376,13 +376,6 @@ export class ScopeDeclaration<S extends {prev: S, next: S, getScope() : ScopeDec
       return null;
   }
 
-  private getNextSentence() : ScopeDeclaration<S>|null {
-    if(this.source.next)
-      return this.source.next.getScope()
-    else
-      return null;
-  }
-
   public isBegin(name?: string) : this is ScopeDeclaration<S>&{node: {kind:"begin",name:string,exports:boolean}} {
     return (this.node && this.node.kind==="begin" && (!name || name===this.node.name)) ? true : false
   }
