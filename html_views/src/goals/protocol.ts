@@ -19,7 +19,6 @@ export interface SettingsState {
   fontFamily?: string,
   fontSize?: string,
   fontWeight?: string,
-  cssFile?: string,
   prettifySymbolsMode?: boolean,
 }
 
