@@ -342,7 +342,7 @@
 		"keybindings": [
 			{
 				"key": "ctrl+alt+.",
-				"mac": "cmd+ctrl+.",
+				"mac": "ctrl+alt+.",
 				"command": "extension.coq.moveCursorToFocus",
 				"when": "editorTextFocus && editorLangId == coq"
 			},
@@ -414,49 +414,49 @@
 			},
 			{
 				"key": "alt+down",
-				"mac": "cmd+ctrl+down",
+				"mac": "ctrl+alt+down",
 				"command": "extension.coq.stepForward",
 				"when": "editorTextFocus && editorLangId == coq"
 			},
 			{
 				"key": "alt+down",
-				"mac": "cmd+ctrl+down",
+				"mac": "ctrl+alt+down",
 				"command": "extension.coq.stepForward",
 				"when": "resourceScheme==coq-view"
 			},
 			{
 				"key": "alt+up",
-				"mac": "cmd+ctrl+up",
+				"mac": "ctrl+alt+up",
 				"command": "extension.coq.stepBackward",
 				"when": "editorTextFocus && editorLangId == coq"
 			},
 			{
 				"key": "alt+up",
-				"mac": "cmd+ctrl+up",
+				"mac": "ctrl+alt+up",
 				"command": "extension.coq.stepBackward",
 				"when": "resourceScheme==coq-view"
 			},
 			{
 				"key": "alt+right",
-				"mac": "cmd+ctrl+right",
+				"mac": "ctrl+alt+right",
 				"command": "extension.coq.interpretToPoint",
 				"when": "editorTextFocus && editorLangId == coq"
 			},
 			{
 				"key": "alt+right",
-				"mac": "cmd+ctrl+right",
+				"mac": "ctrl+alt+right",
 				"command": "extension.coq.interpretToPoint",
 				"when": "resourceScheme==coq-view"
 			},
 			{
 				"key": "alt+end",
-				"mac": "cmd+ctrl+end",
+				"mac": "ctrl+alt+end",
 				"command": "extension.coq.interpretToEnd",
 				"when": "editorTextFocus && editorLangId == coq"
 			},
 			{
 				"key": "alt+end",
-				"mac": "cmd+ctrl+end",
+				"mac": "ctrl+alt+end",
 				"command": "extension.coq.interpretToEnd",
 				"when": "resourceScheme==coq-view"
 			},
