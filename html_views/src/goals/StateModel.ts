@@ -169,15 +169,15 @@ export class StateModel {
       $('#stdout').text('');
 
       $('#states').empty();
-      if (state.type === 'failure')
+      if(state.type === 'failure')
         this.setErrorMessage(state.message);
-      else if (state.type === 'not-running')
+      else if(state.type === 'not-running')
         this.setMessage('Not running.');
-      else if (state.type === 'no-proof')
+      else if(state.type === 'no-proof')
         this.setMessage('Not in proof mode.');
-      else if (state.type === 'interrupted')
+      else if(state.type === 'interrupted')
         this.setMessage("Interrupted.");
-      else if (state.type === 'proof-view') {
+      else if(state.type === 'proof-view') {
         if (countAllGoals(state) == 0) {
           this.setMessage("No more subgoals.");
         } else if (state.goals) {
