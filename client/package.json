@@ -778,9 +778,6 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile-server && npm run compile-html-view && npm run compile",
-		"compile-server": "cd ../server && npm run compile && cd ../client",
-		"compile-html-view": "cd ../html_views && npm run compile && cd ../client",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./"
 	},
@@ -788,8 +785,6 @@
 		"@types/node": "^7.0.5",
 		"@types/vscode": "^1.23.0",
 		"copyfiles": "1.2.0",
-		"ts-prune": "^0.2.3",
-		"typescript": "^2.2.1",
 		"vsce": "^1.66.0"
 	},
 	"dependencies": {

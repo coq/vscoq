@@ -122,12 +122,23 @@ export class HtmlCoqView implements view.CoqView {
         { preserveFocus: true,
           viewColumn: pane,
         },
-        {enableScripts: true}
+        {enableScripts: true,
+          localResourceRoots: [vscode.Uri.file(path.join(extensionContext.extensionPath, VIEW_PATH))]
+        }
       );
 
       let doc = await vscode.workspace.openTextDocument(this.coqViewUri);
 
-      this.panel.webview.html = mustache.render(doc.getText(), {extensionPath: extensionContext.asAbsolutePath(VIEW_PATH)});
+      let csspath = path.join(extensionContext.extensionPath, VIEW_PATH, 'goals', 'proof-view.css');
+      let csspathAsWebviewURI = this.panel.webview.asWebviewUri(vscode.Uri.file(csspath));
+
+      let jspath = path.join(extensionContext.extensionPath, VIEW_PATH, 'goals', 'goals.js');
+      let jspathAsWebviewURI = this.panel.webview.asWebviewUri(vscode.Uri.file(jspath));      
+
+      this.panel.webview.html = mustache.render(doc.getText(), {
+        jsPath: jspathAsWebviewURI,
+        cssPath: csspathAsWebviewURI
+      });
 
       this.panel.webview.onDidReceiveMessage(message => this.handleClientMessage(message));
     }

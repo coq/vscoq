@@ -1,0 +1,45 @@
+{
+	"name": "vscoq",
+	"displayName": "VSCoq",
+	"description": "An IDE for the Coq Proof Assistant",
+	"author": {
+		"name": "Christian J. Bell",
+		"email": "siegebell@gmail.com",
+		"url": "http://people.csail.mit.edu/cj/"
+	},
+	"version": "0.2.8",
+	"publisher": "siegebell",
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.23.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"keywords": [
+		"coq",
+		"theorem prover",
+		"proof assistant"
+	],
+	"readme": "https://github.com/coq-community/vscoq/blob/master/README.md",
+	"bugs": "https://github.com/coq-community/vscoq/issues",
+	"homepage": "https://github.com/coq-community/vscoq/blob/master/README.md",
+	"scripts": {
+		"vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+		"compile": "cd client && npm run compile && cd ../server && npm run compile && cd ../html_views && npm run compile",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd ../html_views && npm install && cd .."
+	},
+	"devDependencies": {
+		"typescript": "^2.2.1",
+		"ts-prune": "^0.2.3"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/coq-community/vscoq.git"
+	},
+	"__metadata": {
+		"id": "ddfd0191-e75d-4ac2-870d-81db351b747f",
+		"publisherDisplayName": "siegebell",
+		"publisherId": "53fa0d93-9c7e-4c3a-a574-71964f5bcb0e"
+	}
+}
