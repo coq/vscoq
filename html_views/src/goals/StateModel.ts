@@ -168,6 +168,7 @@ export class StateModel {
       this.clearErrorMessage();
       $('#stdout').text('');
 
+      $('#states').empty();
       if(state.type === 'failure')
         this.setErrorMessage(state.message);
       else if(state.type === 'not-running')
@@ -178,19 +179,16 @@ export class StateModel {
         this.setMessage("Interrupted.");
       else if(state.type === 'proof-view') {
         if (countAllGoals(state) == 0) {
-          $('#states').empty();
           this.setMessage("No more subgoals.");
         } else if (state.goals) {
           if(state.goals.length > 0) {
             this.setMessage("");
             $('#states')
-            .empty()
             .append(
               [ createHypotheses(state.goals[0].hypotheses)
               , createFocusedGoals(state.goals)
             ])
           } else {
-            $('#states').empty();
             this.setMessage("There are unfocused goals.");
           }
         }
