@@ -1,3 +1,33 @@
+## 0.3.0
+* development moved to Coq Community
+* support for Coq >= 8.7.0
+* drop support for Coq < 8.7.0
+* update to VSCode >= 1.23.0
+* simplify build system
+* update dependencies to avoid vulnerabilities
+* do not reset Coq when going back past the beginning of document (#29)
+* remove coqtop wrapper (#31)
+* do not focus info panel when info feedback is received (#35)
+* make parser understand lp:{{...}} (elpi) quotations (#40)
+* change default navigation keybindings (#45)
+* show warnings in diagnostics (#47)
+* remove company-coq submodule (#48)
+* remove external opening of proof view (#49)
+* replace proofview customization logic with themable colors (#54)
+* change keybindings for macOS to avoid beeps (#56)
+* fix #14 (VsCoq's parser not coping with some notations)
+* fix #18 (Debug messages are not displayed)
+* fix #26 (Focus lost on first go to point)
+* fix #33 (Top module name should be set properly)
+* fix #39 (UnhandledPromiseRejectionWarning)
+
+Note: PR and issue numbers below refer to the previous VsCoq repository
+(https://github.com/siegebell/vscoq).
+
+* fix #130 (AST parsing assumptions fails)
+* fix #138 (Query Results and Notices overwrite rather than append)
+* fix #157 (Search doesn't appear to prove all results)
+
 ## 0.2.7
 * feature: diff in error messages (#106)
 * fix #105 (bad parsing of bullets, introduced by 0.2.6)
