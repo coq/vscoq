@@ -20,6 +20,7 @@
 * fix #26 (Focus lost on first go to point)
 * fix #33 (Top module name should be set properly)
 * fix #39 (UnhandledPromiseRejectionWarning)
+* fix #59 (Output spaces instead of non-breaking spaces)
 * fix #60 (Clear the goals when not in proof mode)
 
 Note: PR and issue numbers below refer to the previous VsCoq repository
