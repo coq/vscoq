@@ -2,7 +2,6 @@ node_modules/
 client/out
 server/out
 html_views/out
-package-lock.json
 
 backup.sh
 start-env.ps1
