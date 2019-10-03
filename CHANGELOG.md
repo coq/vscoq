@@ -15,6 +15,7 @@
 * remove external opening of proof view (#49)
 * replace proofview customization logic with themable colors (#54)
 * change keybindings for macOS to avoid beeps (#56)
+* by default, do not indent after opening a proof (#67)
 * fix #14 (VsCoq's parser not coping with some notations)
 * fix #18 (Debug messages are not displayed)
 * fix #26 (Focus lost on first go to point)

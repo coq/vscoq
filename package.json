@@ -129,7 +129,7 @@
 				},
 				"coq.format.indentAfterOpenProof": {
 					"type": "boolean",
-					"default": true,
+					"default": false,
 					"description": "Indent after opening a proof with 'Proof'"
 				},
 				"coq.format.unindentOnCloseProof": {
