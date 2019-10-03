@@ -8,7 +8,7 @@
 		"url": "http://people.csail.mit.edu/cj/"
 	},
 	"version": "0.3.0",
-	"publisher": "siegebell",
+	"publisher": "maximedenes",
 	"license": "MIT",
 	"engines": {
 		"vscode": "^1.23.0"
