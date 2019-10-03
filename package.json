@@ -8,7 +8,7 @@
 		"url": "http://people.csail.mit.edu/cj/"
 	},
 	"version": "0.3.0",
-	"publisher": "siegebell",
+	"publisher": "maximedenes",
 	"license": "MIT",
 	"engines": {
 		"vscode": "^1.23.0"
@@ -790,10 +790,5 @@
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/coq-community/vscoq.git"
-	},
-	"__metadata": {
-		"id": "ddfd0191-e75d-4ac2-870d-81db351b747f",
-		"publisherDisplayName": "siegebell",
-		"publisherId": "53fa0d93-9c7e-4c3a-a574-71964f5bcb0e"
 	}
 }
