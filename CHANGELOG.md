@@ -22,6 +22,7 @@
 * fix #39 (UnhandledPromiseRejectionWarning)
 * fix #59 (Output spaces instead of non-breaking spaces)
 * fix #60 (Clear the goals when not in proof mode)
+* fix #65 (VsCoq does not work with Coq built using Dune)
 
 Note: PR and issue numbers below refer to the previous VsCoq repository
 (https://github.com/siegebell/vscoq).
