@@ -41,7 +41,7 @@ type ProofViewProtocol = GoalUpdate | SettingsUpdate;
 const VIEW_PATH = 'html_views';
 
 function proofViewFile(file: string = "") {
-  return vscode.Uri.file(extensionContext.asAbsolutePath(path.join(VIEW_PATH,'goals',file)));
+  return vscode.Uri.file(extensionContext.asAbsolutePath(path.join('client', VIEW_PATH,'goals',file)));
 }
 
 function proofViewHtmlPath() {
@@ -122,12 +122,23 @@ export class HtmlCoqView implements view.CoqView {
         { preserveFocus: true,
           viewColumn: pane,
         },
-        {enableScripts: true}
+        {enableScripts: true,
+          localResourceRoots: [vscode.Uri.file(path.join(extensionContext.extensionPath, 'client', VIEW_PATH))]
+        }
       );
 
       let doc = await vscode.workspace.openTextDocument(this.coqViewUri);
 
-      this.panel.webview.html = mustache.render(doc.getText(), {extensionPath: extensionContext.asAbsolutePath(VIEW_PATH)});
+      let csspath = path.join(extensionContext.extensionPath,  'client', VIEW_PATH,'goals', 'proof-view.css');
+      let csspasthAsVscodeResource = vscode.Uri.file(csspath).with({ scheme: 'vscode-resource' });
+
+      let jspath = path.join(extensionContext.extensionPath, 'client', VIEW_PATH, 'goals', 'goals.js');
+      let jspathAsVscodeResource = vscode.Uri.file(jspath).with({ scheme: 'vscode-resource' });
+
+      this.panel.webview.html = mustache.render(doc.getText(), {
+        jsPath: jspathAsVscodeResource,
+        cssPath: csspasthAsVscodeResource
+      });
 
       this.panel.webview.onDidReceiveMessage(message => this.handleClientMessage(message));
     }

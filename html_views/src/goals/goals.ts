@@ -12,7 +12,7 @@ var throttleEventHandler = <X>(handler: (x:X) => void) => (event:X) => {
   if(throttleTimeoutCount == 1)
     handler(event);
   else if(!throttleTimeout) {
-    throttleTimeout = setTimeout(() => {
+    throttleTimeout = window.setTimeout(() => {
       throttleTimeout = null;
       handler(event);
     }, 500);

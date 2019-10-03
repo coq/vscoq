@@ -1,0 +1,12 @@
+node_modules/**
+.vscode/**
+client/out/test/**
+client/test/**
+client/src/**
+client/server/installServerIntoExtension.cmd
+client/server/installServerIntoExtension
+client/**/*.map
+.gitignore
+client/tsconfig.json
+server/**
+html_views/**

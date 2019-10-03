@@ -18,8 +18,6 @@
     "@types/jquery": "^3.3.30",
     "shx": "^0.3.2",
     "ts-loader": "^6.0.4",
-    "ts-prune": "^0.2.3",
-    "typescript": "^2.0.3",
     "webpack": "^4.36.1",
     "webpack-cli": "^3.3.6"
   },
