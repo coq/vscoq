@@ -23,9 +23,7 @@ original author of this extension is @siegebell.
 * Coq 8.7.0 or more recent
 
 ## Installation
-The recommended way to install VsCoq is via the Visual Studio Marketplace.
-However, this fork of VsCoq has not been released yet, so we suggest to wait
-for a release.
+The recommended way to install VsCoq is via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq).
 
 ## Screenshots
 ![vscoq](https://user-images.githubusercontent.com/647105/64025392-dbf12100-cb3c-11e9-8e7f-5c63296500f9.png)
