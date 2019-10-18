@@ -156,7 +156,7 @@ export class SentenceCollection implements vscode.TextDocument {
 
     // sort the edits such that later edits are processed first
     let sortedChanges =
-      changes.sort((change1,change2) =>
+      changes.slice().sort((change1,change2) =>
         textUtil.positionIsAfter(change1.range.start, change2.range.start) ? -1 : 1)
 
     this.applyChangesToDocumentText(changes);
@@ -174,7 +174,7 @@ export class SentenceCollection implements vscode.TextDocument {
     for(let sentIdx = this.sentences.length-1; sentIdx >= 0; --sentIdx) {
       const sent = this.sentences[sentIdx];
 
-      const preserved = sent.applyTextChanges(sortedChanges,deltas,this.documentText);
+      const preserved = sent.applyTextChanges(changes,deltas,this.documentText);
       if(!preserved) {
         invalidatedSentences.push(sentIdx);
       }
