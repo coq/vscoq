@@ -1,3 +1,6 @@
+## 0.3.1
+* fix #74 (document desynchronized after undo)
+
 ## 0.3.0
 * development moved to Coq Community
 * support for Coq >= 8.7.0

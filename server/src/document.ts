@@ -81,7 +81,7 @@ export class CoqDocument implements TextDocument {
   public async applyTextEdits(changes: TextDocumentContentChangeEvent[], newVersion: number) {
     // sort the edits such that later edits are processed first
     let sortedChanges =
-      changes.sort((change1,change2) =>
+      changes.slice().sort((change1,change2) =>
         textUtil.positionIsAfter(change1.range.start, change2.range.start) ? -1 : 1)
 
     this.document.applyTextChanges(newVersion, changes);
