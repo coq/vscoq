@@ -23,6 +23,41 @@ export function activate(context: ExtensionContext) {
   console.log(`argv: ${process.argv.join(' ')}`);
   extensionContext = context;
 
+  // Indentation rules
+  vscode.languages.setLanguageConfiguration("coq", {
+    // @Note Literal whitespace in below regexps is removed
+    onEnterRules: [
+      {
+        beforeText: new RegExp(
+          String.raw`
+          ^\s*
+          (
+            (\|) .+
+          )
+          \s*$
+          `.replace(/\s+?/g, "")
+        ),
+        action: {
+          indentAction: vscode.IndentAction.None
+        }
+      },
+      {
+        beforeText: new RegExp(
+          String.raw`
+          ^\s*
+          (
+            (Definition|Fixpoint|Record|Ltac|Let|Notation|Program Definition) .+:=
+          )
+          \s*$
+          `.replace(/\s+?/g, "")
+        ),
+        action: {
+          indentAction: vscode.IndentAction.Indent
+        }
+      }
+    ]
+  });
+
   project = CoqProject.create(context);
   context.subscriptions.push(project);
 
