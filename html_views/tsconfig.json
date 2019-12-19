@@ -1,19 +1,11 @@
 {
-	"compilerOptions": {
-		"target": "es6",
-		"module": "amd",
-		"outDir": "../client/html_views",
-		"noLib": false,
-		"forceConsistentCasingInFileNames": true,
-		"noImplicitAny": true,
-		"noImplicitReturns": true,
-		"noFallthroughCasesInSwitch": true,
-		"noUnusedLocals": true,
-		"noImplicitThis": true,
-		"strictNullChecks": true,
-		"sourceMap": true
-	},
-  "exclude": [
-		"node_modules"
-	]
+  "extends": "../tsconfig",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "../out/html_views",
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true
+  },
+  "include": ["src"]
 }

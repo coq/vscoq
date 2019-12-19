@@ -39,7 +39,7 @@ export class CoqLanguageServer implements vscode.Disposable {
 
   private constructor(context: ExtensionContext) {
     // The server is implemented in node
-    let serverModule = context.asAbsolutePath(path.join('client', 'server', 'src', 'server.js'));
+    let serverModule = context.asAbsolutePath(path.join('out', 'server', 'src', 'server.js'));
     // The debug options for the server
     let debugOptions = ["--nolazy", "--inspect=6007"];
 
@@ -137,31 +137,31 @@ export class CoqLanguageServer implements vscode.Disposable {
     this.documentCallbacks.delete(uri);
   }
 
-  // private onUpdateHighlightsHandlers = new Set<(params: proto.NotifyHighlightParams) => void>(); 
+  // private onUpdateHighlightsHandlers = new Set<(params: proto.NotifyHighlightParams) => void>();
   // public onUpdateHighlights(listener: (params: proto.NotifyHighlightParams) => void) : vscode.Disposable {
   //   this.onUpdateHighlightsHandlers.add(listener);
   //   return { dispose: () => this.onUpdateHighlightsHandlers.delete(listener) }
   // }
 
-  // private onMessageHandlers = new Set<(params: proto.NotifyMessageParams) => void>(); 
+  // private onMessageHandlers = new Set<(params: proto.NotifyMessageParams) => void>();
   // public onMessage(listener: (params: proto.NotifyMessageParams) => void) {
   //   this.onMessageHandlers.add(listener);
   //   return { dispose: () => this.onMessageHandlers.delete(listener) }
   // }
 
-  // private onResetHandlers = new Set<(params: proto.NotificationParams) => void>(); 
+  // private onResetHandlers = new Set<(params: proto.NotificationParams) => void>();
   // public onReset(listener: (params: proto.NotificationParams) => void) {
   //   this.onResetHandlers.add(listener);
   //   return { dispose: () => this.onResetHandlers.delete(listener) }
   // }
 
-  // private onUpdateCoqStmFocusHandlers = new Set<(params: proto.DocumentPositionParams) => void>(); 
+  // private onUpdateCoqStmFocusHandlers = new Set<(params: proto.DocumentPositionParams) => void>();
   // public onUpdateCoqStmFocus(listener: (params: proto.DocumentPositionParams) => void) {
   //   this.onUpdateCoqStmFocusHandlers.add(listener);
   //   return { dispose: () => this.onUpdateCoqStmFocusHandlers.delete(listener) }
   // }
 
-  // private onLtacProfResultsHandlers = new Set<(params: proto.NotifyLtacProfResultsParams) => void>(); 
+  // private onLtacProfResultsHandlers = new Set<(params: proto.NotifyLtacProfResultsParams) => void>();
   // public onLtacProfResults(listener: (params: proto.NotifyLtacProfResultsParams) => void) {
   //   this.onLtacProfResultsHandlers.add(listener);
   //   return { dispose: () => this.onLtacProfResultsHandlers.delete(listener) }
@@ -323,23 +323,23 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
   }
 
   public onReset(listener: (params: proto.NotificationParams) => void) {
-    return registerCallback(this.callbacks.onReset, listener);    
+    return registerCallback(this.callbacks.onReset, listener);
   }
 
   public onUpdateCoqStmFocus(listener: (params: proto.DocumentPositionParams) => void) {
-    return registerCallback(this.callbacks.onUpdateCoqStmFocus, listener);    
+    return registerCallback(this.callbacks.onUpdateCoqStmFocus, listener);
   }
 
   public onLtacProfResults(listener: (params: proto.LtacProfResults) => void) {
-    return registerCallback(this.callbacks.onLtacProfResults, listener);    
+    return registerCallback(this.callbacks.onLtacProfResults, listener);
   }
 
   public onCoqtopStart(listener: (params: proto.NotificationParams) => void) {
-    return registerCallback(this.callbacks.onCoqtopStart, listener);    
+    return registerCallback(this.callbacks.onCoqtopStart, listener);
   }
 
   public onCoqtopStop(listener: (params: proto.NotifyCoqtopStopParams) => void) {
-    return registerCallback(this.callbacks.onCoqtopStop, listener);    
+    return registerCallback(this.callbacks.onCoqtopStop, listener);
   }
 
   public async interruptCoq() {
