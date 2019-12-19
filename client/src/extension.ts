@@ -75,9 +75,7 @@ export function activate(context: ExtensionContext) {
   regCmd('display.toggle', () => project.setDisplayOption());
 
   context.subscriptions.push(editorAssist.reload());
-
   snippets.setupSnippets(context.subscriptions);
-
   context.subscriptions.push(psm.load());
 }
 
