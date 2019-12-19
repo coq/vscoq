@@ -55,12 +55,14 @@ export class HtmlLtacProf {
     }
 
     const httpServer = (this.httpServer = http.createServer());
-    this.serverReady = new Promise<void>((resolve, reject) =>
-      httpServer.listen(0, "localhost", undefined, (e: any) => {
-        if (e) reject(e);
-        else resolve();
-      })
-    );
+    this.serverReady = new Promise<void>((resolve, reject) => {
+      httpServer.listen(0);
+      httpServer.on("error", (e: Error) => {
+        console.log(e);
+        reject(e);
+      });
+      resolve();
+    });
     this.server = new WebSocket.Server({ server: httpServer });
     this.server.on("connection", (ws: WebSocket) => {
       ws.onmessage = event => this.handleClientMessage(event);
@@ -74,19 +76,13 @@ export class HtmlLtacProf {
     data: any;
     type: string;
     target: WebSocket;
-  }) {
-    // const message = <ControllerEvent>JSON.parse(event.data);
-    // switch(message.eventName) {
-    //   case 'resize':
-    // }
-  }
+  }) {}
 
   private createBuffer() {
     this.bufferReady = new Promise<void>(async (resolve, reject) => {
       try {
         await this.serverReady;
-        const serverAddress = this.httpServer.address();
-
+        const serverAddress = this.httpServer.address() as AddressInfo;
         const templateFileName = vscode.Uri.file(
           extensionContext.asAbsolutePath(path.join(VIEW_PATH, "LtacProf.html"))
         );
@@ -102,7 +98,6 @@ export class HtmlLtacProf {
             )
         );
         resolve();
-        // this.show(true);
       } catch (err) {
         vscode.window.showErrorMessage(err.toString());
         reject();
@@ -113,41 +108,23 @@ export class HtmlLtacProf {
   public async update(results: proto.LtacProfResults) {
     await this.bufferReady;
     this.results = results;
-    await Promise.all<void>(
-      this.server.clients.map(c => {
-        if (c.readyState === c.OPEN)
-          return new Promise<void>((resolve, reject) =>
-            c.send(JSON.stringify(this.results), err => resolve())
-          );
-        else return Promise.resolve();
-      })
-    );
+    this.server.clients.forEach(c => {
+      if (c.readyState === c.OPEN)
+        c.send(JSON.stringify(this.results), () => {});
+    });
   }
 
   public async show(preserveFocus: boolean) {
     await this.bufferReady;
-    // const focusedDoc = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.document : null;
     await vscode.commands.executeCommand(
       "vscode.previewHtml",
       this.coqViewUri,
       vscode.ViewColumn.Two,
       "LtacProf"
     );
-    // if(preserveFocus && focusedDoc)
-    //   await vscode.window.showTextDocument(focusedDoc);
   }
 
   dispose() {
     this.docRegistration.dispose();
   }
-
-  // public async update(state: proto.CoqTopGoalResult) {
-  //   this.currentState = state;
-  //   for(const connection of this.server.clients) {
-  //     try {
-  //     connection.send(JSON.stringify(state));
-  //     } catch(error) {}
-  //   }
-
-  // }
 }

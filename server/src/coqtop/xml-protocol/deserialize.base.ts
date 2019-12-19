@@ -483,7 +483,7 @@ export abstract class Deserialize {
           return check(value.$name, true);
         return check(value.$name, false);
       case "union":
-        var ret;
+        var ret: coqProto.CoqValue;
         switch (value.$.val) {
           case "in_l":
             ret = check(value.$name, {

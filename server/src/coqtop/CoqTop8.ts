@@ -125,15 +125,14 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     const port = 0;
     const host = "localhost";
     return new Promise<void>((resolve, reject) => {
-      server.listen({ port: port, host: host }, (err: any) => {
-        if (err) reject(err);
-        else {
-          this.console.log(
-            `Listening at ${server.address().address}:${server.address().port}`
-          );
-          resolve();
-        }
+      server.listen({ port: port, host: host });
+      server.on("error", e => {
+        this.console.log(
+          `Failed to listen: ${server.address}:${server.address}`
+        );
+        reject(e);
       });
+      resolve();
     });
   }
 
@@ -166,14 +165,15 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private async setupCoqTopReadAndWritePorts(): Promise<void> {
     await Promise.all(this.readyToListen);
 
-    var mainAddr = this.mainChannelServer.address();
-    var mainPortW = this.mainChannelServer2.address().port;
-    var controlAddr = this.controlChannelServer.address();
-    var controlPortW = this.controlChannelServer2.address().port;
-    var mainAddressArg =
-      mainAddr.address + ":" + mainAddr.port + ":" + mainPortW;
-    var controlAddressArg =
-      controlAddr.address + ":" + controlAddr.port + ":" + controlPortW;
+    var mainPort = (this.mainChannelServer.address() as net.AddressInfo).port;
+    var mainPort2 = (this.mainChannelServer2.address() as net.AddressInfo).port;
+    var controlPort = (this.controlChannelServer.address() as net.AddressInfo)
+      .port;
+    var controlPort2 = (this.controlChannelServer2.address() as net.AddressInfo)
+      .port;
+    // .address is the ipv6 address ::, which can't be used with coqtop
+    var mainAddressArg = "127.0.0.1:" + mainPort + ":" + mainPort2;
+    var controlAddressArg = "127.0.0.1:" + controlPort + ":" + controlPort2;
 
     try {
       this.startCoqTop(this.spawnCoqTop(mainAddressArg, controlAddressArg));
