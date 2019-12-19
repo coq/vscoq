@@ -5,6 +5,10 @@ import * as proto from "./protocol";
 import * as WebSocket from "ws";
 import * as http from "http";
 import { extensionContext } from "./extension";
+import { AddressInfo } from "net";
+import * as path from "path";
+
+const VIEW_PATH = path.join("out", "html_views");
 
 function coqViewToFileUri(uri: vscode.Uri) {
   return `file://${uri.path}?${uri.query}#${uri.fragment}`;
@@ -84,7 +88,7 @@ export class HtmlLtacProf {
         const serverAddress = this.httpServer.address();
 
         const templateFileName = vscode.Uri.file(
-          extensionContext.asAbsolutePath("html_views/ltacprof/LtacProf.html")
+          extensionContext.asAbsolutePath(path.join(VIEW_PATH, "LtacProf.html"))
         );
         this.coqViewUri = vscode.Uri.parse(
           `coq-view://${templateFileName.path.replace(/%3A/, ":")}?host=${

@@ -37,18 +37,12 @@ interface SettingsState {
 
 type ProofViewProtocol = GoalUpdate | SettingsUpdate;
 
-const VIEW_PATH = "html_views";
-
-function proofViewFile(file: string = "") {
-  return vscode.Uri.file(
-    extensionContext.asAbsolutePath(
-      path.join("client", VIEW_PATH, "goals", file)
-    )
-  );
-}
+const VIEW_PATH = path.join("out", "html_views");
 
 function proofViewHtmlPath() {
-  return proofViewFile("Coq.html");
+  return vscode.Uri.file(
+    extensionContext.asAbsolutePath(path.join(VIEW_PATH, "Coq.html"))
+  );
 }
 
 /**
@@ -141,7 +135,7 @@ export class HtmlCoqView implements view.CoqView {
           enableScripts: true,
           localResourceRoots: [
             vscode.Uri.file(
-              path.join(extensionContext.extensionPath, "client", VIEW_PATH)
+              path.join(extensionContext.extensionPath, VIEW_PATH)
             )
           ]
         }
@@ -151,9 +145,7 @@ export class HtmlCoqView implements view.CoqView {
 
       let csspath = path.join(
         extensionContext.extensionPath,
-        "client",
         VIEW_PATH,
-        "goals",
         "proof-view.css"
       );
       let csspasthAsVscodeResource = vscode.Uri.file(csspath).with({
@@ -162,9 +154,7 @@ export class HtmlCoqView implements view.CoqView {
 
       let jspath = path.join(
         extensionContext.extensionPath,
-        "client",
         VIEW_PATH,
-        "goals",
         "goals.js"
       );
       let jspathAsVscodeResource = vscode.Uri.file(jspath).with({

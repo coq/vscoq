@@ -13,19 +13,6 @@ import {
 } from "vscode-languageclient";
 import * as vscodeClient from "vscode-languageclient";
 
-// function createServerProcess(serverModule: string, debugOptions: string[]): ServerOptions {
-//   let nodejsPath = workspace.getConfiguration('nodejs')['path'] || '';
-//   let nodejsCmd = path.join(nodejsPath, 'node');
-
-//   // If the extension is launch in debug mode the debug server options are use
-//   // Otherwise the run options are used
-//   var args = debugOptions.concat([serverModule]);
-//   return {
-//     run: { command: nodejsCmd, args: [serverModule] },
-//     debug: { command: nodejsCmd, args: debugOptions.concat([serverModule]) }
-//   }
-// }
-
 function createServerLocalExtension(
   serverModule: string,
   debugOptions: string[]
@@ -54,7 +41,7 @@ export class CoqLanguageServer implements vscode.Disposable {
   private constructor(context: ExtensionContext) {
     // The server is implemented in node
     let serverModule = context.asAbsolutePath(
-      path.join("client", "server", "src", "server.js")
+      path.join("out", "server", "src", "server.js")
     );
     // The debug options for the server
     let debugOptions = ["--nolazy", "--debug=6005"];
@@ -157,36 +144,6 @@ export class CoqLanguageServer implements vscode.Disposable {
   public unregisterDocument(uri: string) {
     this.documentCallbacks.delete(uri);
   }
-
-  // private onUpdateHighlightsHandlers = new Set<(params: proto.NotifyHighlightParams) => void>();
-  // public onUpdateHighlights(listener: (params: proto.NotifyHighlightParams) => void) : vscode.Disposable {
-  //   this.onUpdateHighlightsHandlers.add(listener);
-  //   return { dispose: () => this.onUpdateHighlightsHandlers.delete(listener) }
-  // }
-
-  // private onMessageHandlers = new Set<(params: proto.NotifyMessageParams) => void>();
-  // public onMessage(listener: (params: proto.NotifyMessageParams) => void) {
-  //   this.onMessageHandlers.add(listener);
-  //   return { dispose: () => this.onMessageHandlers.delete(listener) }
-  // }
-
-  // private onResetHandlers = new Set<(params: proto.NotificationParams) => void>();
-  // public onReset(listener: (params: proto.NotificationParams) => void) {
-  //   this.onResetHandlers.add(listener);
-  //   return { dispose: () => this.onResetHandlers.delete(listener) }
-  // }
-
-  // private onUpdateCoqStmFocusHandlers = new Set<(params: proto.DocumentPositionParams) => void>();
-  // public onUpdateCoqStmFocus(listener: (params: proto.DocumentPositionParams) => void) {
-  //   this.onUpdateCoqStmFocusHandlers.add(listener);
-  //   return { dispose: () => this.onUpdateCoqStmFocusHandlers.delete(listener) }
-  // }
-
-  // private onLtacProfResultsHandlers = new Set<(params: proto.NotifyLtacProfResultsParams) => void>();
-  // public onLtacProfResults(listener: (params: proto.NotifyLtacProfResultsParams) => void) {
-  //   this.onLtacProfResultsHandlers.add(listener);
-  //   return { dispose: () => this.onLtacProfResultsHandlers.delete(listener) }
-  // }
 
   public async interruptCoq(uri: string) {
     await this.server.onReady();
