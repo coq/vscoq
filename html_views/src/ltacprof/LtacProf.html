@@ -1,27 +1,29 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <head>
   <title>Coq</title>
   <style>
     /*html {background-color: black;}*/
-    html, body {
-      width:100%;
-      height:100%;
-      margin:0px;
-      padding:0px;
-      border:none;
-      position:absolute;
-      top:0px;
-      left:0px;
-      right:0px;
-      bottom:0px;
-      }
-    body {      
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0px;
+      padding: 0px;
+      border: none;
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      right: 0px;
+      bottom: 0px;
+    }
+    body {
       color: white;
-      font-family: 'Segoe WPC','Segoe UI',SFUIText-Light,HelveticaNeue-Light,sans-serif,'Droid Sans Fallback';
+      font-family: "Segoe WPC", "Segoe UI", SFUIText-Light, HelveticaNeue-Light,
+        sans-serif, "Droid Sans Fallback";
     }
     #messages {
-      color: white
-      }
+      color: white;
+    }
     #stdout {
       padding-left: 4pt;
     }
@@ -36,34 +38,65 @@
     .treegrid-expander {width:16px; height: 16px; display: inline-block; position: relative; cursor: pointer; flex-wrap: nowrap}
     .treegrid-expander-expanded{background-image: url('jquery/img/collapse.png'); }
     .treegrid-expander-collapsed{background-image: url('jquery/img/expand.png');}*/
-    .tbltree-indent {width:16px; height: 16px; display: inline-block; position: relative;}
-    .tbltree-expander {width:16px; height: 16px; display: inline-block; position: relative; cursor: pointer;}
-    .tbltree-expander-expanded{background-image: url(../jquery/img/collapse.png); }
-    .tbltree-expander-collapsed{background-image: url(../jquery/img/expand.png);}
-    .tbltree-level-pickers {float: left;}
-    .tbltree-level-pickers .tbltree-level-item {cursor: pointer;}
+    .tbltree-indent {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      position: relative;
+    }
+    .tbltree-expander {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      position: relative;
+      cursor: pointer;
+    }
+    .tbltree-expander-expanded {
+      background-image: url(../jquery/img/collapse.png);
+    }
+    .tbltree-expander-collapsed {
+      background-image: url(../jquery/img/expand.png);
+    }
+    .tbltree-level-pickers {
+      float: left;
+    }
+    .tbltree-level-pickers .tbltree-level-item {
+      cursor: pointer;
+    }
     .tbltree-count-wrap {
       font-style: italic;
       font-size: 10px;
       float: right;
     }
 
-    .result-odd { background-color: rgba(150,150,150,0.1)}
+    .result-odd {
+      background-color: rgba(150, 150, 150, 0.1);
+    }
 
-    table.results {width:100%; border-collapse: collapse }
+    table.results {
+      width: 100%;
+      border-collapse: collapse;
+    }
     /*#results tbody td { border-bottom-width: 1px; border-bottom-color: rgb(50,50,50); border-bottom-style: dotted}*/
-    table.results td, th {
+    table.results td,
+    th {
       border-width: 0px 1px 0px 1px;
       border-color: gray;
       border-style: solid;
       height: 1em;
-      padding-left: 0.5ex!important;
-      text-overflow: ellipsis!important;
+      padding-left: 0.5ex !important;
+      text-overflow: ellipsis !important;
       white-space: nowrap;
     }
     /*table.results thead tr { background-color: black; }*/
-    table.results thead th { border-bottom-width: 3px; border-color: gray; border-style: solid}
-    #results thead { font-weight: bold}
+    table.results thead th {
+      border-bottom-width: 3px;
+      border-color: gray;
+      border-style: solid;
+    }
+    #results thead {
+      font-weight: bold;
+    }
     #results td:first-child {
       border-width: 0px;
     }
@@ -71,43 +104,11 @@
       border-width: 0px;
     }
     #results tr:focus {
-      background-color: rgba(0,0,150,0.4);
-      
+      background-color: rgba(0, 0, 150, 0.4);
     }
-    /*#results thead, tbody {
-      display: block;
-      width: 100%
-    }
-    #results table tbody {
-      overflow-y: auto;
-      overflow-x: hidden;
-      height: 100%
-    }*/
-    /*#results tbody tr:not([style="display: none"]):nth-child(odd) {
-      background-color: rgba(100,100,100,1);
-    }*/
 
-/*
-.rc-handle-container {
-  position: relative;
-}
-.rc-handle {
-  position: absolute;
-  width: 7px;
-  cursor: ew-resize;
-  margin-left: -3px;
-  z-index: 2;
-}
-table.rc-table-resizing {
-  cursor: ew-resize;
-}
-table.rc-table-resizing thead,
-table.rc-table-resizing thead > th,
-table.rc-table-resizing thead > th > a {
-  cursor: ew-resize;
-}*/
-
-    #local-unit, #total-unit {
+    #local-unit,
+    #total-unit {
       -moz-appearance: none;
       -webkit-appearance: none;
       display: inline;
@@ -121,7 +122,8 @@ table.rc-table-resizing thead > th > a {
       font-size: inherit;
       font-style: italic;
     }
-    #local-unit option, #total-unit option {
+    #local-unit option,
+    #total-unit option {
       background-color: inherit;
       color: black;
     }
@@ -142,12 +144,12 @@ table.rc-table-resizing thead > th > a {
     }
 
     .hide {
-        display:none;
+      display: none;
     }
     div.stickyHeader {
-        top:0;
-        position:fixed;
-        _position:absolute;
+      top: 0;
+      position: fixed;
+      _position: absolute;
     }
     #sticky-results-header {
       position: fixed;
@@ -155,16 +157,20 @@ table.rc-table-resizing thead > th > a {
       left: 0px;
       width: 100%;
       height: 1em;
-      border-bottom-width: 3px; border-color: gray; border-style: solid;
+      border-bottom-width: 3px;
+      border-color: gray;
+      border-style: solid;
       border-collapse: collapse;
       border-width: 0px 1px 0px 1px;
       border-color: gray;
       border-style: solid;
-      padding-left: 0.5ex!important;
-      text-overflow: ellipsis!important;
+      padding-left: 0.5ex !important;
+      text-overflow: ellipsis !important;
       white-space: nowrap;
       background-color: black;
-      border-bottom-width: 3px; border-color: gray; border-style: solid;
+      border-bottom-width: 3px;
+      border-color: gray;
+      border-style: solid;
       font-weight: bold;
     }
   </style>
@@ -178,7 +184,10 @@ table.rc-table-resizing thead > th > a {
   <script type="text/javascript" src="../jquery/jquery.sticky.js"></script>
   <script type="text/javascript" src="../jquery/jquery.tbltree.js"></script>
   <!--<script type="text/javascript" src="jquery/jquery.resizableColumns.min.js"></script>-->
-  <script type="text/javascript" src="../jquery/colResizable-1.6.min.js"></script>
+  <script
+    type="text/javascript"
+    src="../jquery/colResizable-1.6.min.js"
+  ></script>
   <!--<link rel="stylesheet" href="jquery/jquery.treegrid.css">-->
   <script src="ltacprof.js"></script>
 </head>
@@ -190,12 +199,29 @@ table.rc-table-resizing thead > th > a {
   </table>-->
   <table id="results" class="results">
     <thead>
-    <tr>
-      <th>tactic</th>
-      <th id="local-column">local <select id="local-unit"><option value="percent" selected="selected">(%)</option><option value="seconds">(sec)</option><option value="minutes">(min)</option><option value="hhmmss">(h:mm:ss.s)</option></select></th>
-      <th id="total-column">total <select id="total-unit"><option value="percent" selected="selected">(%)</option><option value="seconds">(sec)</option><option value="minutes">(min)</option><option value="hhmmss">(h:mm:ss.s)</option></select></th>
-      <th>#calls</th><th>max total (s)</th>
-    </tr>
+      <tr>
+        <th>tactic</th>
+        <th id="local-column">
+          local
+          <select id="local-unit"
+            ><option value="percent" selected="selected">(%)</option
+            ><option value="seconds">(sec)</option
+            ><option value="minutes">(min)</option
+            ><option value="hhmmss">(h:mm:ss.s)</option></select
+          >
+        </th>
+        <th id="total-column">
+          total
+          <select id="total-unit"
+            ><option value="percent" selected="selected">(%)</option
+            ><option value="seconds">(sec)</option
+            ><option value="minutes">(min)</option
+            ><option value="hhmmss">(h:mm:ss.s)</option></select
+          >
+        </th>
+        <th>#calls</th>
+        <th>max total (s)</th>
+      </tr>
     </thead>
   </table>
 </body>
