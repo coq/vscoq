@@ -226,8 +226,8 @@ function* indicesOf(
   }
 }
 
-function costOfDifference(d: diff.IDiffResult[]): number {
-  return d.reduce((v, x) => v + (x.added || x.removed ? x.value.length : 0), 0);
+function costOfDifference(d: diff.Change[]): number {
+  return d.length;
 }
 
 export function parseError(txt: AnnotatedText): AnnotatedText {
@@ -242,13 +242,13 @@ export function parseError(txt: AnnotatedText): AnnotatedText {
         x: string;
         y: string;
         mid: [number, number];
-        diff: diff.IDiffResult[];
+        diff: diff.Change[];
         cost: number;
       }[] = [];
       for (let mid of indicesOf(str, df.mid, preLen, str.length - postLen)) {
         const x = str.substring(preLen, mid[0]);
         const y = str.substring(mid[1], str.length - postLen);
-        const xy = diff.diffWords(x, y);
+        const xy = diff.diffLines(x, y);
         diffMatches.push({
           x: x,
           y: y,

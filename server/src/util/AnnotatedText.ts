@@ -157,27 +157,23 @@ export function textSplit(
     // TextAnnotation
     const result = text.text.split(separator as any).filter(v => v !== "");
     return {
-      splits: result
-        .slice(0, limit)
-        .map(s =>
-          normalizeTextAnnotationOrString({
-            diff: text.diff,
-            substitution: text.substitution,
-            text: s
-          })
-        ),
+      splits: result.slice(0, limit).map(s =>
+        normalizeTextAnnotationOrString({
+          diff: text.diff,
+          substitution: text.substitution,
+          text: s
+        })
+      ),
       rest:
         limit === undefined
           ? []
-          : result
-              .slice(limit)
-              .map(s =>
-                normalizeTextAnnotationOrString({
-                  diff: text.diff,
-                  substitution: text.substitution,
-                  text: s
-                })
-              )
+          : result.slice(limit).map(s =>
+              normalizeTextAnnotationOrString({
+                diff: text.diff,
+                substitution: text.substitution,
+                text: s
+              })
+            )
     };
   }
 }
@@ -356,7 +352,8 @@ export function compatibleAnnotations<T extends Annotation>(
   return (
     ann1.diff === ann2.diff &&
     ((ann1.substitution === undefined && ann2.substitution === undefined) ||
-      ann1.substitution === "" || ann2.substitution === "")
+      ann1.substitution === "" ||
+      ann2.substitution === "")
   );
 }
 
@@ -492,7 +489,7 @@ export function combineAnnotationText(
 }
 
 function toDiff(
-  d: diff.IDiffResult,
+  d: diff.Change,
   mode: "old" | "new"
 ): "added" | "removed" | undefined {
   if (mode === "new" && d.added) return "added";
@@ -505,7 +502,7 @@ function toDiff(
  */
 export function annotateDiffAdded(
   text: AnnotatedText,
-  differences: diff.IDiffResult[],
+  differences: diff.Change[],
   options: { diffSubstitutions: boolean; mode: "old" | "new" }
 ): AnnotatedText {
   let idx = 0; // the current diff
@@ -513,8 +510,8 @@ export function annotateDiffAdded(
   let diffOffset = 0; // the offset into the current diff; used when a diff spans multiple text parts
 
   // we're only interested in unchanged parts and either added(mode="new") or removed(mode="old") parts
-  if (options.mode === "new") differences = differences.filter(d => !d.removed);
-  else differences = differences.filter(d => !d.added);
+  if (options.mode === "new") differences = differences.filter(d => d.added);
+  else differences = differences.filter(d => d.removed);
 
   const result = mapAnnotation(
     text,
