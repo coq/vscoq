@@ -44,15 +44,14 @@ export class CoqLanguageServer implements vscode.Disposable {
       path.join("out", "server", "src", "server.js")
     );
     // The debug options for the server
-    let debugOptions = ["--nolazy", "--debug=6005"];
+    let debugOptions = ["--nolazy", "--inspect=6009"];
 
-    // let serverOptions = createServerProcess(serverModule, debugOptions);
     let serverOptions = createServerLocalExtension(serverModule, debugOptions);
 
     // Options to control the language client
     let clientOptions: LanguageClientOptions = {
       // Register the server for Coq scripts
-      documentSelector: ["coq"],
+      documentSelector: [{ scheme: "file", language: "coq" }],
       synchronize: {
         // Synchronize the setting section 'languageServerExample' to the server
         configurationSection: ["coqtop", "coq", "prettifySymbolsMode"],
@@ -63,6 +62,7 @@ export class CoqLanguageServer implements vscode.Disposable {
 
     // Create the language client and start the client.
     this.server = new LanguageClient(
+      "coqLangServer",
       "Coq Language Server",
       serverOptions,
       clientOptions
@@ -74,30 +74,25 @@ export class CoqLanguageServer implements vscode.Disposable {
           p => {
             const doc = this.documentCallbacks.get(p.uri);
             if (doc) doc.onUpdateHighlights.forEach(l => l(p));
-            // this.onUpdateHighlightsHandlers.forEach((h) => h(p))
           }
         );
         this.server.onNotification(proto.CoqMessageNotification.type, p => {
           const doc = this.documentCallbacks.get(p.uri);
           if (doc) doc.onMessage.forEach(l => l(p));
-          // this.onMessageHandlers.forEach((h) => h(p))
         });
         this.server.onNotification(proto.CoqResetNotification.type, p => {
           const doc = this.documentCallbacks.get(p.uri);
           if (doc) doc.onReset.forEach(l => l(p));
-          // this.onResetHandlers.forEach((h) => h(p))
         });
         this.server.onNotification(proto.CoqStmFocusNotification.type, p => {
           const doc = this.documentCallbacks.get(p.uri);
           if (doc) doc.onUpdateCoqStmFocus.forEach(l => l(p));
-          // this.onUpdateCoqStmFocusHandlers.forEach((h) => h(p))
         });
         this.server.onNotification(
           proto.CoqLtacProfResultsNotification.type,
           p => {
             const doc = this.documentCallbacks.get(p.uri);
             if (doc) doc.onLtacProfResults.forEach(l => l(p.results));
-            // this.onLtacProfResultsHandlers.forEach((h) => h(p))
           }
         );
         this.server.onNotification(proto.CoqtopStartNotification.type, p => {

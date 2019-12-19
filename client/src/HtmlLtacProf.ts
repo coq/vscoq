@@ -56,7 +56,7 @@ export class HtmlLtacProf {
 
     const httpServer = (this.httpServer = http.createServer());
     this.serverReady = new Promise<void>((resolve, reject) => {
-      httpServer.listen(0);
+      httpServer.listen();
       httpServer.on("error", (e: Error) => {
         console.log(e);
         reject(e);

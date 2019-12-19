@@ -122,14 +122,10 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   }
 
   private startListening(server: net.Server): Promise<void> {
-    const port = 0;
-    const host = "localhost";
     return new Promise<void>((resolve, reject) => {
-      server.listen({ port: port, host: host });
+      server.listen();
       server.on("error", e => {
-        this.console.log(
-          `Failed to listen: ${server.address}:${server.address}`
-        );
+        this.console.log(`Failed to listen: ${server.address.toString()}`);
         reject(e);
       });
       resolve();
