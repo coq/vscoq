@@ -12,6 +12,7 @@ import * as coqProto from "../src/coqtop/coq-proto";
 import { CoqTop as CoqTop8 } from "../src/coqtop/CoqTop8";
 import * as coqtop from "../src/coqtop/CoqTop";
 import * as proto from "../src/protocol";
+import { RemoteConsole } from "vscode-languageserver";
 
 const COQBIN_8_6 = process.env.COQBIN_8_6 || "C:/Coq_trunk_build/bin";
 
@@ -55,11 +56,15 @@ describe("Coqtop 8.6", function() {
     startOn: "open-script"
   };
 
-  let dummyConsole = {
-    log: s => {},
-    info: s => {},
-    warn: s => {},
-    error: s => {}
+  let dummyConsole: RemoteConsole = {
+    log: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+    attach: () => {},
+    initialize: () => {},
+    fillServerCapabilities: () => {},
+    connection: undefined
   };
   let coq: coqtop.CoqTop;
   let feedback: coqProto.StateFeedback[];

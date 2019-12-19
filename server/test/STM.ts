@@ -100,7 +100,13 @@ describe("CoqStateMachine", function() {
     } as CoqTopSettings
   };
   const project = {
-    console: console,
+    console: {
+      ...console,
+      attach: undefined,
+      connection: undefined,
+      fillServerCapabilities: undefined,
+      initialize() {}
+    },
     getWorkspaceRoot: () => ".",
     settings: projectSettings
   };
@@ -192,43 +198,4 @@ describe("CoqStateMachine", function() {
       );
     });
   });
-
-  // describe('swap lines', function() {
-  //   let doc : TextDocumentItem;
-  //   let sc : SentenceCollection;
-  //   beforeEach(function() {
-  //     doc = newDoc("Goal True.\npose True.\n");
-  //     sc = new SentenceCollection(doc);
-  //     assert.equal(sc.getText(), "Goal True.\npose True.\n");
-  //     assert.deepStrictEqual(sc.getSentences().map(s => s.getText()), ["Goal True.","\npose True."]);
-  //   })
-
-  //   it('down - two transactions', function() {
-  //     sc.applyTextChanges(1+doc.version, [makeChange("Goal True.\npose True.\n", 0, 10, 1, 10, "")])
-  //     assert.equal(sc.getText(), "Goal True.\n");
-  //     assert.deepStrictEqual(sc.getSentences().map(s => s.getText()), ["Goal True."]);
-  //     sc.applyTextChanges(2+doc.version, [makeChange("Goal True.\n", 0, 0, 0, 0, "pose True.\n")])
-  //     assert.equal(sc.getText(), "pose True.\nGoal True.\n");
-  //     assert.deepStrictEqual(sc.getSentences().map(s => s.getText()), ["pose True.", "\nGoal True."]);
-  //   })
-
-  //   it('down - one transaction', function() {
-  //     const changes = [
-  //       makeChange("Goal True.\npose True.\n", 0, 10, 1, 10, ""),
-  //       makeChange("Goal True.\n", 0, 0, 0, 0, "pose True.\n"),
-  //     ];5
-  //     sc.applyTextChanges(1+doc.version, changes)
-  //     assert.equal(sc.getText(), "pose True.\nGoal True.\n");
-  //     assert.deepStrictEqual(sc.getSentences().map(s => s.getText()), ["pose True.", "\nGoal True."]);
-  //   })
-
-  //   it('up - two transactions', function() {
-  //     sc.applyTextChanges(1+doc.version, [makeChange("Goal True.\npose True.\n", 1, 10, 1, 10, "\nGoal True.")])
-  //     assert.equal(sc.getText(), "Goal True.\npose True.\nGoal True.\n");
-  //     assert.deepStrictEqual(sc.getSentences().map(s => s.getText()), ["Goal True.","\npose True.","\nGoal True."]);
-  //     sc.applyTextChanges(2+doc.version, [makeChange("Goal True.\n", 0, 0, 1, 0, "")])
-  //     assert.equal(sc.getText(), "pose True.\nGoal True.\n");
-  //     assert.deepStrictEqual(sc.getSentences().map(s => s.getText()), ["pose True.", "\nGoal True."]);
-  //   })
-  // })
 });
