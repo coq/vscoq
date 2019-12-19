@@ -1,19 +1,9 @@
 {
-	"compilerOptions": {
-		"target": "es6",
-		"lib": [ "es6" ],
-		"module": "commonjs",
-    "moduleResolution": "node",
-		"outDir": "../client/server",
-		"sourceMap": true,
-		"allowUnreachableCode": false,
-		"allowUnusedLabels": false,
-		"noFallthroughCasesInSwitch": true,
-		"noUnusedLocals": true,
-		"pretty": true,
-		"types": ["diff", "mocha", "node", "sax", "xml2js"]
-	},
-	"exclude": [
-		"node_modules"
-	]
+  "extends": "../tsconfig",
+  "compilerOptions": {
+    "rootDir": "src",
+    "composite": true
+  },
+  "include": ["src"],
+  "exclude": ["test"]
 }
