@@ -481,21 +481,23 @@ export abstract class Deserialize {
           return check(value.$name, value.$.val);
         else if (value.$.val.toLocaleLowerCase() === "true")
           return check(value.$name, true);
-        else return check(value.$name, false);
+        return check(value.$name, false);
       case "union":
+        var ret;
         switch (value.$.val) {
           case "in_l":
-            return check(value.$name, {
+            ret = check(value.$name, {
               tag: "inl",
               value: value.$children[0]
             });
+            break;
           case "in_r":
-            return check(value.$name, {
+            ret = check(value.$name, {
               tag: "inr",
               value: value.$children[0]
             });
         }
-        break;
+        return ret;
       case "option":
         return check(
           value.$name,
