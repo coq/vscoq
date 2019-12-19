@@ -1,7 +1,8 @@
 {
   "extends": "../tsconfig",
   "compilerOptions": {
-    "composite": true
+    "composite": true,
+    "outDir": "../out/html_views"
   },
   "include": ["src"]
 }

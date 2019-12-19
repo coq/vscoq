@@ -14,5 +14,5 @@
     // "strictNullChecks": true,
     "downlevelIteration": true
   },
-  "include": ["client", "server", "html_views"]
+  "include": ["client", "server"]
 }
