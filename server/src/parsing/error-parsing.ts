@@ -154,78 +154,134 @@ Diff:
 
 */
 
-import * as diff from 'diff'
+import * as diff from "diff";
 
-import {AnnotatedText} from '../util/AnnotatedText'
-import * as text from '../util/AnnotatedText'
+import { AnnotatedText } from "../util/AnnotatedText";
+import * as text from "../util/AnnotatedText";
 
 /** Error messages that compare two terms that should be equal */
 const diffMessages = [
-  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Found\s+target\s+class\s+"/, mid: /"\s+instead\s+of\s+"/g, post: /"[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Impossible\s+to\s+unify\s+"/, mid: /"\s+with\s+"/g, post: /"[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Unable\s+to\s+unify\s+"/, mid: /"\s+with\s+"/g, post: /"[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*Refiner\s+was\s+given\s+an\s+argument\s+".*?"\s+of\s+type\s+"/, mid: /"\s+instead\s+of\s+"/g, post: /"[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*The\s+file\s+.*?\.vo\s+contains\s+library\s+/, mid: /\s+and\s+not\s+library\s+/, post: /[.]?$/},
-  {pre: /^\s*(?:Error:\s+)?(?:.*\n)*The\s+term\s+.*?\s+has\s+type\s+"/, mid: /"\s+while\s+it\s+is\s+expected\s+to\s+have\s+type\s+"/, post: /"[.]?$/},
+  {
+    pre: /^\s*(?:Error:\s+)?(?:.*\n)*Found\s+target\s+class\s+"/,
+    mid: /"\s+instead\s+of\s+"/g,
+    post: /"[.]?$/
+  },
+  {
+    pre: /^\s*(?:Error:\s+)?(?:.*\n)*Impossible\s+to\s+unify\s+"/,
+    mid: /"\s+with\s+"/g,
+    post: /"[.]?$/
+  },
+  {
+    pre: /^\s*(?:Error:\s+)?(?:.*\n)*Unable\s+to\s+unify\s+"/,
+    mid: /"\s+with\s+"/g,
+    post: /"[.]?$/
+  },
+  {
+    pre: /^\s*(?:Error:\s+)?(?:.*\n)*Refiner\s+was\s+given\s+an\s+argument\s+".*?"\s+of\s+type\s+"/,
+    mid: /"\s+instead\s+of\s+"/g,
+    post: /"[.]?$/
+  },
+  {
+    pre: /^\s*(?:Error:\s+)?(?:.*\n)*The\s+file\s+.*?\.vo\s+contains\s+library\s+/,
+    mid: /\s+and\s+not\s+library\s+/,
+    post: /[.]?$/
+  },
+  {
+    pre: /^\s*(?:Error:\s+)?(?:.*\n)*The\s+term\s+.*?\s+has\s+type\s+"/,
+    mid: /"\s+while\s+it\s+is\s+expected\s+to\s+have\s+type\s+"/,
+    post: /"[.]?$/
+  }
 ];
 
-function* indicesOf(str: string, substr: string|RegExp, start?: number, end?: number) : Iterable<[number,number]> {
-  function indexOf(str: string,substr: string|RegExp, pos: number) : [number,number] {
-    if(typeof substr==='string') {
-      const i = str.indexOf(substr,pos);
-      return [i, i >=0 ? i+substr.length : 0]
+function* indicesOf(
+  str: string,
+  substr: string | RegExp,
+  start?: number,
+  end?: number
+): Iterable<[number, number]> {
+  function indexOf(
+    str: string,
+    substr: string | RegExp,
+    pos: number
+  ): [number, number] {
+    if (typeof substr === "string") {
+      const i = str.indexOf(substr, pos);
+      return [i, i >= 0 ? i + substr.length : 0];
     } else {
       substr.lastIndex = pos;
       const m = substr.exec(str);
-      if(!m || m.index < pos)
-        return [-1,0];
-      else
-        return [m.index, m.index+m[0].length];
+      if (!m || m.index < pos) return [-1, 0];
+      else return [m.index, m.index + m[0].length];
     }
   }
   start = start || 0;
   end = end || start;
   let pos = start;
 
-  let idx = indexOf(str,substr,pos);
-  while(idx[0] >= 0 && pos < end) {
+  let idx = indexOf(str, substr, pos);
+  while (idx[0] >= 0 && pos < end) {
     yield idx;
-    pos = idx[0]+1;
-    idx = indexOf(str,substr,pos);
+    pos = idx[0] + 1;
+    idx = indexOf(str, substr, pos);
   }
 }
 
-function costOfDifference(d: diff.IDiffResult[]) : number {
-  return d.reduce((v,x) => v + (x.added||x.removed ? x.value.length : 0), 0);
+function costOfDifference(d: diff.IDiffResult[]): number {
+  return d.reduce((v, x) => v + (x.added || x.removed ? x.value.length : 0), 0);
 }
 
-export function parseError(txt: AnnotatedText) : AnnotatedText {
+export function parseError(txt: AnnotatedText): AnnotatedText {
   const str = text.textToDisplayString(txt);
-  df: for(let df of diffMessages) {
+  df: for (let df of diffMessages) {
     const preMatch = df.pre.exec(str);
     const postMatch = preMatch ? df.post.exec(str) : undefined;
-    if(preMatch && postMatch) {
+    if (preMatch && postMatch) {
       const preLen = preMatch[0].length;
       const postLen = postMatch[0].length;
-      const diffMatches : {x: string, y: string, mid: [number,number], diff: diff.IDiffResult[], cost: number}[] = [];
-      for(let mid of indicesOf(str,df.mid, preLen, str.length-postLen)) {
+      const diffMatches: {
+        x: string;
+        y: string;
+        mid: [number, number];
+        diff: diff.IDiffResult[];
+        cost: number;
+      }[] = [];
+      for (let mid of indicesOf(str, df.mid, preLen, str.length - postLen)) {
         const x = str.substring(preLen, mid[0]);
-        const y = str.substring(mid[1], str.length-postLen);
-        const xy = diff.diffWords(x,y);
-        diffMatches.push({x:x, y:y, mid: mid, diff: xy, cost: costOfDifference(xy)})
+        const y = str.substring(mid[1], str.length - postLen);
+        const xy = diff.diffWords(x, y);
+        diffMatches.push({
+          x: x,
+          y: y,
+          mid: mid,
+          diff: xy,
+          cost: costOfDifference(xy)
+        });
       }
-      if(diffMatches.length === 0)
-        continue df;
-      const match = diffMatches.sort((a,b) => a.cost < b.cost ? -1 : a.cost === b.cost ? 0 : 1)[0];
+      if (diffMatches.length === 0) continue df;
+      const match = diffMatches.sort((a, b) =>
+        a.cost < b.cost ? -1 : a.cost === b.cost ? 0 : 1
+      )[0];
 
       const pre = text.subtextCount(txt, 0, preLen);
       const part1 = text.subtextCount(txt, preLen, match.x.length);
       const mid = text.subtext(txt, match.mid[0], match.mid[1]);
       const part2 = text.subtextCount(txt, match.mid[1], match.y.length);
-      const post = text.subtextCount(txt, match.mid[1]+match.y.length, postLen);
-      const part1Delta = text.annotateDiffAdded(part1,match.diff,{diffSubstitutions: true, mode: "old"});
-      const part2Delta = text.annotateDiffAdded(part2,match.diff,{diffSubstitutions: true, mode: "new"});
-      return text.normalizeText(text.append(pre,part1Delta,mid,part2Delta,post));
+      const post = text.subtextCount(
+        txt,
+        match.mid[1] + match.y.length,
+        postLen
+      );
+      const part1Delta = text.annotateDiffAdded(part1, match.diff, {
+        diffSubstitutions: true,
+        mode: "old"
+      });
+      const part2Delta = text.annotateDiffAdded(part2, match.diff, {
+        diffSubstitutions: true,
+        mode: "new"
+      });
+      return text.normalizeText(
+        text.append(pre, part1Delta, mid, part2Delta, post)
+      );
     }
   }
   return txt;
