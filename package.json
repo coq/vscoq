@@ -11,7 +11,7 @@
   "publisher": "maximedenes",
   "license": "MIT",
   "engines": {
-    "vscode": "^1.23.0"
+    "vscode": "^1.41.0"
   },
   "categories": [
     "Programming Languages"
@@ -776,19 +776,51 @@
       }
     ]
   },
-  "main": "./client/out/src/extension",
+  "main": "./out/client/src/extension",
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "cd client && npm run compile && cd ../server && npm run compile && cd ../html_views && npm run compile",
-    "postinstall": "cd client && npm install && cd ../server && npm install && cd ../html_views && npm install && cd .."
-  },
-  "devDependencies": {
-    "typescript": "^3.7.3",
-    "ts-prune": "^0.3.0",
-    "vsce": "^1.71.0"
+    "compile": "webpack && tsc -b",
+    "watch": "tsc -b -w",
+    "test": "node ./node_modules/vscode/bin/test",
+    "postinstall": "node ./node_modules/vscode/bin/install"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/coq-community/vscoq.git"
+  },
+  "devDependencies": {
+    "@types/diff": "^4.0.2",
+    "@types/glob": "^7.1.1",
+    "@types/jquery": "^3.3.31",
+    "@types/mocha": "^5.2.7",
+    "@types/mustache": "0.8.32",
+    "@types/sax": "^1.2.0",
+    "@types/semver": "^6.2.0",
+    "@types/ws": "^6.0.4",
+    "@types/xml2js": "^0.4.5",
+    "bufferutil": "^4.0.1",
+    "copy-webpack-plugin": "^5.1.1",
+    "jquery": "^3.4.1",
+    "mustache": "^3.2.0",
+    "regenerate": "^1.4.0",
+    "sax": "^1.2.4",
+    "ts-loader": "^6.2.1",
+    "ts-prune": "^0.3.0",
+    "typescript": "^3.7.3",
+    "utf-8-validate": "^5.0.2",
+    "vsce": "^1.71.0",
+    "vscode": "^1.1.36",
+    "vscode-jsonrpc": "^4.0.0",
+    "vscode-languageclient": "^5.2.1",
+    "vscode-languageserver": "^5.2.1",
+    "webpack": "^4.41.4",
+    "webpack-cli": "^3.3.10",
+    "ws": "^7.2.1"
+  },
+  "dependencies": {
+    "unicode-9.0.0": "^0.7.5",
+    "string-argv": "^0.3.1",
+    "async": "^3.1.0",
+    "pegjs": "^0.10.0"
   }
 }
