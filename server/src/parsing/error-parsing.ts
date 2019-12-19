@@ -195,7 +195,7 @@ function* indicesOf(str: string, substr: string|RegExp, start?: number, end?: nu
   }
 }
 
-function costOfDifference(d: diff.IDiffResult[]) : number {
+function costOfDifference(d: diff.Change[]): number {
   return d.reduce((v,x) => v + (x.added||x.removed ? x.value.length : 0), 0);
 }
 
@@ -207,12 +207,24 @@ export function parseError(txt: AnnotatedText) : AnnotatedText {
     if(preMatch && postMatch) {
       const preLen = preMatch[0].length;
       const postLen = postMatch[0].length;
-      const diffMatches : {x: string, y: string, mid: [number,number], diff: diff.IDiffResult[], cost: number}[] = [];
-      for(let mid of indicesOf(str,df.mid, preLen, str.length-postLen)) {
+      const diffMatches: {
+        x: string;
+        y: string;
+        mid: [number, number];
+        diff: diff.Change[];
+        cost: number;
+      }[] = [];
+      for (let mid of indicesOf(str, df.mid, preLen, str.length - postLen)) {
         const x = str.substring(preLen, mid[0]);
-        const y = str.substring(mid[1], str.length-postLen);
-        const xy = diff.diffWords(x,y);
-        diffMatches.push({x:x, y:y, mid: mid, diff: xy, cost: costOfDifference(xy)})
+        const y = str.substring(mid[1], str.length - postLen);
+        const xy = diff.diffWords(x, y);
+        diffMatches.push({
+          x: x,
+          y: y,
+          mid: mid,
+          diff: xy,
+          cost: costOfDifference(xy)
+        });
       }
       if(diffMatches.length === 0)
         continue df;

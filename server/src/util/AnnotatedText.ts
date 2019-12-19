@@ -326,7 +326,7 @@ export function combineAnnotationText(text: TextAnnotation|string, baseAnn: Anno
   return normalizeTextAnnotationOrString(result);
 }
 
-function toDiff(d: diff.IDiffResult, mode: "old"|"new") : "added"|"removed"|undefined{
+function toDiff(d: diff.Change, mode: "old"|"new") : "added"|"removed"|undefined{
   if(mode === "new" && d.added)
     return "added";
   else if(mode === "old" && d.removed)
@@ -338,7 +338,7 @@ function toDiff(d: diff.IDiffResult, mode: "old"|"new") : "added"|"removed"|unde
 /**
  * @param mode - whether `text` is the old or new string 
  */
-export function annotateDiffAdded(text: AnnotatedText, differences: diff.IDiffResult[], options: {diffSubstitutions: boolean, mode: "old"|"new"}) : AnnotatedText {
+export function annotateDiffAdded(text: AnnotatedText, differences: diff.Change[], options: {diffSubstitutions: boolean, mode: "old"|"new"}) : AnnotatedText {
   let idx = 0; // the current diff
   let offset = 0; // position of current diff w.r.t. textToString() (not textToDisplayString())
   let diffOffset = 0; // the offset into the current diff; used when a diff spans multiple text parts
