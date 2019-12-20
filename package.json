@@ -804,6 +804,7 @@
     "mustache": "^3.2.0",
     "regenerate": "^1.4.0",
     "sax": "^1.2.4",
+    "string-argv": "^0.3.1",
     "ts-loader": "^6.2.1",
     "ts-prune": "^0.3.0",
     "typescript": "^3.7.3",
@@ -819,7 +820,6 @@
   },
   "dependencies": {
     "unicode-9.0.0": "^0.7.5",
-    "string-argv": "^0.3.1",
     "async": "^3.1.0",
     "pegjs": "^0.10.0"
   }
