@@ -7,6 +7,7 @@ import { PrettifySymbolsMode } from "./util/PrettifySymbols";
 import * as nodeAsync from "./util/nodejs-async";
 import { CoqTop } from "./coqtop/CoqTop";
 import { CoqTop as CoqTop8 } from "./coqtop/CoqTop8";
+import * as argv from "string-argv";
 
 const coqProjectFileName = "_CoqProject";
 
@@ -32,6 +33,7 @@ export class CoqProject {
       connection.console.log("Loaded project at " + workspaceRoot);
     else connection.console.log("Loading project with no root directory");
     this.workspaceRoot = workspaceRoot;
+    this.loadCoqProject();
   }
 
   public get console(): vscode.RemoteConsole {
@@ -153,7 +155,7 @@ export class CoqProject {
 
   private static parseCoqProject(text: string): string[] {
     const args: string[] = [];
-    const projectArgs: string[] = require("string-argv")(text);
+    const projectArgs: string[] = argv.parseArgsStringToArgv(text);
     for (let idx = 0; idx < projectArgs.length; ++idx) {
       const opt = projectArgs[idx];
       if (opt === "-R") args.push("-R", projectArgs[++idx], projectArgs[++idx]);
@@ -161,7 +163,7 @@ export class CoqProject {
       else if (opt === "-Q")
         args.push("-Q", projectArgs[++idx], projectArgs[++idx]);
       else if (opt === "-arg")
-        args.push(...require("string-argv")(projectArgs[++idx]));
+        args.push(...argv.parseArgsStringToArgv(projectArgs[++idx]));
     }
     return args;
   }
@@ -183,6 +185,7 @@ export class CoqProject {
         ...this.settingsCoqTopArgs
       ];
     } catch (err) {
+      this.connection.console.log("Failed to load _CoqProject");
     } finally {
       this.loadingCoqProjectInProcess = false;
     }
