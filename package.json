@@ -47,7 +47,7 @@
       {
         "language": "coq",
         "scopeName": "source.coq",
-        "path": "./client/syntaxes/coq.tmLanguage"
+        "path": "./syntaxes/coq.tmLanguage.json"
       }
     ],
     "configuration": {
@@ -779,7 +779,7 @@
   "main": "./out/client/src/extension",
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "webpack && tsc -b",
+    "compile": "webpack && npx js-yaml syntaxes/coq.tmLanguage.yaml >syntaxes/coq.tmLanguage.json && tsc -b",
     "watch": "tsc -b -w",
     "test": "node ./node_modules/vscode/bin/test",
     "postinstall": "node ./node_modules/vscode/bin/install"
@@ -801,6 +801,7 @@
     "bufferutil": "^4.0.1",
     "copy-webpack-plugin": "^5.1.1",
     "jquery": "^3.4.1",
+    "js-yaml": "^3.13.1",
     "mustache": "^3.2.0",
     "regenerate": "^1.4.0",
     "sax": "^1.2.4",

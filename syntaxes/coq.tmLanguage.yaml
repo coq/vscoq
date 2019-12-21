@@ -1,0 +1,107 @@
+fileTypes:
+  - v
+name: Coq
+patterns:
+  - match: \b(Require|Import|Export|Local|Global|Open|Scope|Context)\b
+    comment: "Vernacular import keywords"
+    name: keyword.control.import.coq
+  - match: '(Lemma|Theorem|Goal|Example)\s+(([\p{L}-]|[0-9]|[_''])+)'
+    comment: "Theorem declarations"
+    captures:
+      "1":
+        name: keyword.source.coq
+      "2":
+        name: entity.name.function.theorem.coq
+  - match: '(Program Definition|Program Fixpoint|Program CoFixpoint|Program Function|Function|CoFixpoint|Fixpoint|Definition|Let|Section|Arguments)\s+(([\p{L}-]|[0-9]|[_''])+)'
+    comment: Definitions
+    captures:
+      "1":
+        name: keyword.source.coq
+      "2":
+        name: entity.name.function.coq
+  - match: '(CoInductive|Inductive|Record)\s+(([\p{L}-]|[0-9]|[_''])+)'
+    comment: "Inductive type declarations"
+    captures:
+      "1":
+        name: keyword.source.coq
+      "2":
+        name: entity.name.type.coq
+  - match: '(Ltac)\s+(([\p{L}-]|[0-9]|[_''])+)'
+    comment: "Ltac declarations"
+    captures:
+      "1":
+        name: keyword.source.coq
+      "2":
+        name: entity.name.function.ltac
+  - match: "(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Tactic Notation|Notation|Reserved Notation|Module Type|Module|End|Variables|Check|Print|Eval|Next Obligation)"
+    comment: "Vernacular keywords"
+    name: keyword.source.coq
+  - match: \b(admit|Admitted)\b
+    comment: "Admits are bad"
+    name: invalid.illegal.admit.coq
+  - match: ':|\||=|<|>|\*|\+|-|\{|\}'
+    comment: Operators
+    name: keyword.operator.coq
+  - match: \b(forall|exists|Type|Set|Prop)\b
+    comment: "Type keywords"
+    name: support.type.coq
+  - match: \b(try|repeat|progress|set|fresh|solve|now|first)\b
+    comment: "Ltac keywords"
+    name: keyword.control.ltac
+  - match: \b(into|with|eqn|by|move|as|using)\b
+    comment: "Common Ltac connectors"
+    name: keyword.control.ltac
+  - match: \b(match|lazymatch|multimatch|fun|with|returns|end|let|in|if|then|else)\b
+    comment: "Gallina keywords"
+    name: keyword.control.gallina
+  - match: \b(intro|intros|induction|destruct|auto|eauto|eassumption|apply|eapply|assumption|constructor|econstructor|reflexivity|inversion|assert|split|omega|fold|unfold|specialize|rewrite|erewrite|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember)\b
+    comment: "Ltac builtins"
+    name: support.function.builtin.ltac
+  - applyEndPatternLast: 1
+    begin: '\(\*(?!#)'
+    end: '\*\)'
+    name: comment.block.coq
+    patterns:
+      - include: "#block_comment"
+      - include: "#block_double_quoted_string"
+  - match: \bnil\b
+    name: constant.language.nil.gallina
+  - match: '\b((0(x|X)[0-9a-fA-F]+)|([0-9]+(\.[0-9]+)?))\b'
+    name: constant.numeric.gallina
+  - match: \bTrue\b
+    name: constant.language.boolean.true.gallina
+  - match: \bFalse\b
+    name: constant.language.boolean.false.gallina
+  - match: \b_\b
+    name: constant.language.wildcard.coq
+  - begin: '"'
+    beginCaptures:
+      "0":
+        name: punctuation.definition.string.begin.coq
+    end: '"'
+    endCaptures:
+      "0":
+        name: punctuation.definition.string.end.coq
+    name: string.quoted.double.coq
+repository:
+  block_comment:
+    applyEndPatternLast: 1
+    begin: '\(\*(?!#)'
+    end: '\*\)'
+    name: comment.block.coq
+    patterns:
+      - include: "#block_comment"
+      - include: "#block_double_quoted_string"
+  block_double_quoted_string:
+    applyEndPatternLast: 1
+    begin: '"'
+    beginCaptures:
+      "0":
+        name: punctuation.definition.string.begin.coq
+    end: '"'
+    endCaptures:
+      "0":
+        name: punctuation.definition.string.end.coq
+    name: string.quoted.double.coq
+scopeName: source.coq
+uuid: CDE1AD3A-C094-457D-B321-93009C6BCFDA
