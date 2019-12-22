@@ -4,7 +4,7 @@ import * as assert from "assert";
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as text from "../src/util/AnnotatedText";
-import * as proto from "../src/coqtop/coq-proto";
+import { CoqProto as proto } from "../../lib";
 import * as db from "../src/coqtop/xml-protocol/deserialize.base";
 import * as d from "../src/coqtop/xml-protocol/deserialize.8.7";
 import * as p from "../src/coqtop/xml-protocol/coq-xml";

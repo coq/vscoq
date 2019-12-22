@@ -4,7 +4,7 @@ import {
   Hypothesis,
   HypothesisDifference,
   UnfocusedGoalStack
-} from "../protocol";
+} from "../../../lib";
 import * as text from "../util/AnnotatedText";
 import * as server from "../server";
 

@@ -1,13 +1,11 @@
 import * as events from "events";
 import * as sax from "sax";
-import * as coqProto from "../coq-proto";
-import {
-  StateId,
-  StateFeedback,
-  Message,
-  ValueReturn,
-  RouteId
-} from "../coq-proto";
+import { CoqProto } from "../../../../lib";
+import StateId = CoqProto.StateId;
+import StateFeedback = CoqProto.StateFeedback;
+import Message = CoqProto.Message;
+import ValueReturn = CoqProto.ValueReturn;
+import RouteId = CoqProto.RouteId;
 import * as text from "../../util/AnnotatedText";
 import { Deserialize } from "./deserialize.base";
 
@@ -61,16 +59,16 @@ export class XmlStream extends events.EventEmitter {
       if (callbacks.onValue)
         this.on("response: value", (x: ValueReturn) => callbacks.onValue(x));
       if (callbacks.onFeedback)
-        this.on("response: feedback", (x: coqProto.StateFeedback) =>
+        this.on("response: feedback", (x: CoqProto.StateFeedback) =>
           callbacks.onFeedback(x)
         );
       if (callbacks.onMessage)
         this.on(
           "response: message",
           (
-            x: coqProto.Message,
-            routeId: coqProto.RouteId,
-            stateId?: coqProto.StateId
+            x: CoqProto.Message,
+            routeId: CoqProto.RouteId,
+            stateId?: CoqProto.StateId
           ) => callbacks.onMessage(x, routeId, stateId)
         );
       if (callbacks.onOther)

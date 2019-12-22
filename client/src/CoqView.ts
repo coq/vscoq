@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import * as proto from "./protocol";
+import * as proto from "../../lib";
 
 export enum DisplayState {
   Proof,

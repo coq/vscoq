@@ -1,4 +1,4 @@
-import { AnnotatedText, TextAnnotation, Substitution } from "../protocol";
+import { AnnotatedText, TextAnnotation, Substitution } from "../../../lib";
 import {
   combineAnnotationText,
   Annotation,

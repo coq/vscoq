@@ -1,4 +1,4 @@
-import { AnnotatedText, TextAnnotation, ScopedText } from "./protocol";
+import { AnnotatedText, TextAnnotation, ScopedText } from "../../lib";
 export {
   ProofView,
   Goal,
@@ -7,7 +7,7 @@ export {
   HypothesisDifference,
   TextAnnotation,
   ScopedText
-} from "./protocol";
+} from "../../lib";
 
 export interface Annotation {
   /** the relationship this text has to the text of another state */

@@ -1,6 +1,7 @@
 import { RequestType, NotificationType } from "vscode-jsonrpc";
 import * as vscode from "vscode-languageserver-types";
-import { RouteId } from "./coqtop/coq-proto";
+import { CoqProto } from ".";
+import RouteId = CoqProto.RouteId;
 
 export interface DocumentFilter {
   language?: string;

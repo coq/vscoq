@@ -1,9 +1,9 @@
 import { Position, Range, DiagnosticSeverity } from "vscode-languageserver";
 import * as vscode from "vscode-languageserver";
-import * as coqProto from "./../coqtop/coq-proto";
+import { CoqProto } from "./../../../lib";
 import * as parser from "./../parsing/coq-parser";
 import * as textUtil from "./../util/text-util";
-import { ProofView } from "../protocol";
+import { ProofView } from "../../../lib";
 import { AnnotatedText } from "../util/AnnotatedText";
 import * as diff from "./DiffProofView";
 import { ProofViewReference, GoalsCache } from "./GoalsCache";
@@ -154,32 +154,32 @@ export class State {
   public updateWorkerStatus(workerId: string, status: string) {}
 
   /** Handle sentence-status updates as they come from coqtop */
-  public updateStatus(status: coqProto.SentenceStatus) {
+  public updateStatus(status: CoqProto.SentenceStatus) {
     switch (status) {
-      case coqProto.SentenceStatus.Parsing:
+      case CoqProto.SentenceStatus.Parsing:
         this.status = StateStatusFlags.Parsing;
         break;
-      case coqProto.SentenceStatus.AddedAxiom:
+      case CoqProto.SentenceStatus.AddedAxiom:
         this.status &= ~(StateStatusFlags.Processing | StateStatusFlags.Error);
         this.status |= StateStatusFlags.Unsafe;
         break;
-      case coqProto.SentenceStatus.Processed:
+      case CoqProto.SentenceStatus.Processed:
         if (this.status & StateStatusFlags.Processing) {
           this.status &= ~StateStatusFlags.Processing;
         }
         break;
-      case coqProto.SentenceStatus.ProcessingInWorker:
+      case CoqProto.SentenceStatus.ProcessingInWorker:
         if (!(this.status & StateStatusFlags.Processing)) {
           this.status |= StateStatusFlags.Processing;
         }
         break;
-      case coqProto.SentenceStatus.Incomplete:
+      case CoqProto.SentenceStatus.Incomplete:
         this.status |= StateStatusFlags.Incomplete;
         break;
-      case coqProto.SentenceStatus.Complete:
+      case CoqProto.SentenceStatus.Complete:
         this.status &= ~StateStatusFlags.Incomplete;
         break;
-      case coqProto.SentenceStatus.InProgress:
+      case CoqProto.SentenceStatus.InProgress:
         break;
     }
   }
@@ -363,7 +363,7 @@ export class State {
   public pushDiagnostic(
     message: AnnotatedText,
     severity: DiagnosticSeverity,
-    location?: coqProto.Location
+    location?: CoqProto.Location
   ): Range | null {
     var d: CoqDiagnosticInternal = { message, severity };
     if (location && location.start !== location.stop) {

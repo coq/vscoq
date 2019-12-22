@@ -1,4 +1,4 @@
-import * as coqProto from "../coq-proto";
+import { CoqProto } from "../../../../lib";
 import { AnnotatedText } from "../../util/AnnotatedText";
 import { Deserialize, Node, Nodes } from "./deserialize.base";
 
@@ -7,11 +7,11 @@ namespace Nodes_8_7 {
     $name: "message";
     $: {};
     $children: {
-      [0]: coqProto.MessageLevel;
-      [1]: coqProto.Location;
+      [0]: CoqProto.MessageLevel;
+      [1]: CoqProto.Location;
       [2]: AnnotatedText;
     } & {}[];
-    message_level: coqProto.MessageLevel;
+    message_level: CoqProto.MessageLevel;
   }
 
   export interface MessageFeedbackNode {
@@ -19,8 +19,8 @@ namespace Nodes_8_7 {
     $kind: "message"; // set for type narrowing
     $: { val: "message" };
     $children: {
-      [0]: coqProto.MessageLevel;
-      [1]: coqProto.Location;
+      [0]: CoqProto.MessageLevel;
+      [1]: CoqProto.Location;
       [2]: AnnotatedText;
     } & {}[];
   }
@@ -34,7 +34,7 @@ namespace Nodes_8_7 {
       ncalls: string;
       max_total: string;
     };
-    $children: coqProto.LtacProfTactic[];
+    $children: CoqProto.LtacProfTactic[];
   }
 
   export type FeedbackContentNode =
@@ -81,7 +81,7 @@ namespace Nodes_8_7 {
 }
 
 export class Deserialize_8_7 extends Deserialize {
-  public deserialize(v: Node): coqProto.CoqValue {
+  public deserialize(v: Node): CoqProto.CoqValue {
     const value = v as Nodes_8_7.TypedNode;
     try {
       switch (value.$name) {
@@ -90,12 +90,12 @@ export class Deserialize_8_7 extends Deserialize {
             level: value.$children[0],
             location: value.$children[1],
             message: value.$children[2]
-          } as coqProto.Message;
+          } as CoqProto.Message;
         case "ltacprof":
           return {
             total_time: +value.$.total_time,
             tactics: value.$children
-          } as coqProto.LtacProfResults;
+          } as CoqProto.LtacProfResults;
         case "ltacprof_tactic":
           return {
             name: value.$.name,
@@ -106,7 +106,7 @@ export class Deserialize_8_7 extends Deserialize {
               max_total: +value.$.max_total
             },
             tactics: value.$children
-          } as coqProto.LtacProfTactic;
+          } as CoqProto.LtacProfTactic;
         default:
           return super.deserialize(v);
       }

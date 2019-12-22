@@ -8,8 +8,8 @@ import {
 } from "vscode-languageserver";
 import * as vscode from "vscode-languageserver";
 import { CancellationToken } from "vscode-jsonrpc";
-import * as thmProto from "./protocol";
-import * as coqProto from "./coqtop/coq-proto";
+import * as thmProto from "../../lib";
+import { CoqProto } from "../../lib";
 import * as coqParser from "./parsing/coq-parser";
 import * as textUtil from "./util/text-util";
 import { AnnotatedText, textToDisplayString } from "./util/AnnotatedText";
@@ -30,14 +30,14 @@ export interface MessageCallback {
   sendMessage(
     level: string,
     message: AnnotatedText,
-    routeId: coqProto.RouteId
+    routeId: CoqProto.RouteId
   ): void;
 }
 export interface ResetCallback {
   sendReset(): void;
 }
 export interface LtacProfCallback {
-  sendLtacProfResults(results: coqProto.LtacProfResults): void;
+  sendLtacProfResults(results: CoqProto.LtacProfResults): void;
 }
 
 export interface CoqtopStartCallback {
@@ -193,37 +193,37 @@ export class CoqDocument implements TextDocument {
     return this.document.positionAt(offset);
   }
 
-  // private sentenceStatusToHighlightType(status: coqProto.SentenceStatus) : thmProto.HighlightType {
+  // private sentenceStatusToHighlightType(status: CoqProto.SentenceStatus) : thmProto.HighlightType {
   //   switch(status) {
-  //     case coqProto.SentenceStatus.Complete:
+  //     case CoqProto.SentenceStatus.Complete:
   //       return thmProto.HighlightType.Complete;
-  //     case coqProto.SentenceStatus.Incomplete:
+  //     case CoqProto.SentenceStatus.Incomplete:
   //       return thmProto.HighlightType.Incomplete;
-  //     case coqProto.SentenceStatus.InProgress:
+  //     case CoqProto.SentenceStatus.InProgress:
   //       return thmProto.HighlightType.InProgress;
-  //     case coqProto.SentenceStatus.Parsed:
+  //     case CoqProto.SentenceStatus.Parsed:
   //       return thmProto.HighlightType.Parsing;
-  //     case coqProto.SentenceStatus.Processed:
+  //     case CoqProto.SentenceStatus.Processed:
   //       return thmProto.HighlightType.Processed;
-  //     case coqProto.SentenceStatus.ProcessingInput:
+  //     case CoqProto.SentenceStatus.ProcessingInput:
   //       return thmProto.HighlightType.Processing;
   //   }
   // }
 
-  // private highlightTypeToSentenceStatus(type: thmProto.HighlightType) : coqProto.SentenceStatus {
+  // private highlightTypeToSentenceStatus(type: thmProto.HighlightType) : CoqProto.SentenceStatus {
   //   switch(type) {
   //     case thmProto.HighlightType.Complete:
-  //       return coqProto.SentenceStatus.Complete;
+  //       return CoqProto.SentenceStatus.Complete;
   //     case thmProto.HighlightType.Incomplete:
-  //       return coqProto.SentenceStatus.Incomplete;
+  //       return CoqProto.SentenceStatus.Incomplete;
   //     case thmProto.HighlightType.InProgress:
-  //       return coqProto.SentenceStatus.InProgress;
+  //       return CoqProto.SentenceStatus.InProgress;
   //     case thmProto.HighlightType.Parsing:
-  //       return coqProto.SentenceStatus.Parsed;
+  //       return CoqProto.SentenceStatus.Parsed;
   //     case thmProto.HighlightType.Processed:
-  //       return coqProto.SentenceStatus.Processed;
+  //       return CoqProto.SentenceStatus.Processed;
   //     case thmProto.HighlightType.Processing:
-  //       return coqProto.SentenceStatus.ProcessingInput;
+  //       return CoqProto.SentenceStatus.ProcessingInput;
   //     default:
   //       throw `Cannot convert ${thmProto.HighlightType[type]} to a SentenceStatus`
   //   }
@@ -308,14 +308,14 @@ export class CoqDocument implements TextDocument {
   }
 
   private onCoqMessage(
-    level: coqProto.MessageLevel,
+    level: CoqProto.MessageLevel,
     message: AnnotatedText,
-    routeId: coqProto.RouteId
+    routeId: CoqProto.RouteId
   ) {
-    this.callbacks.sendMessage(coqProto.MessageLevel[level], message, routeId);
+    this.callbacks.sendMessage(CoqProto.MessageLevel[level], message, routeId);
   }
 
-  private onCoqStateLtacProf(range: Range, results: coqProto.LtacProfResults) {
+  private onCoqStateLtacProf(range: Range, results: CoqProto.LtacProfResults) {
     this.callbacks.sendLtacProfResults(results);
   }
 
@@ -543,7 +543,7 @@ export class CoqDocument implements TextDocument {
   // }
 
   // private errorGoalResult(error: FailureResult) : thmProto.CoqTopGoalResult {
-  //   const e = <coqProto.FailValue>{
+  //   const e = <CoqProto.FailValue>{
   //     message: error.message,
   //     range: error.range
   //     };
@@ -637,7 +637,7 @@ export class CoqDocument implements TextDocument {
   //   try {
   //     unlock = await this.processingLock.lock(this.cancelProcessing.event);
   //   } catch(reason) {
-  //     return <coqProto.FailValue>{message: "operation cancelled"};
+  //     return <CoqProto.FailValue>{message: "operation cancelled"};
   //   }
   //   try {
   //     if(!this.coqTop.isRunning()) {
@@ -648,7 +648,7 @@ export class CoqDocument implements TextDocument {
   //     } else
   //       return await this.cancellableOperation(op(false));
   //   } catch(reason) {
-  //     return <coqProto.FailValue>{message: reason};
+  //     return <CoqProto.FailValue>{message: reason};
   //   } finally {
   //     unlock();
   //   }
@@ -730,7 +730,7 @@ export class CoqDocument implements TextDocument {
   //   const cancelSignal = this.cancelProcessing;
   //   return this.interactionCommands.process<X>(async () => {
   //     if(cancelSignal.isCancelled())
-  //       return Promise.reject<X>(<coqProto.FailValue>{message: 'operation cancelled'})
+  //       return Promise.reject<X>(<CoqProto.FailValue>{message: 'operation cancelled'})
 
   //     this.interactionLoopStatus = InteractionLoopStatus.CoqCommand;
   //     const startTime = process.hrtime();
@@ -739,7 +739,7 @@ export class CoqDocument implements TextDocument {
   //     try {
   //       return await Promise.race<X>(
   //         [ this.doCoqOperation(task, lazyInitializeCoq)
-  //         , cancelSignal.event.then(() => Promise.reject<X>(<coqProto.FailValue>{message: 'operation cancelled'}))
+  //         , cancelSignal.event.then(() => Promise.reject<X>(<CoqProto.FailValue>{message: 'operation cancelled'}))
   //         ]);
   //     } catch(error) {
   //       this.updateComputingStatus(thmProto.ComputingStatus.Interrupted, startTime);
@@ -963,7 +963,7 @@ export class CoqDocument implements TextDocument {
   public async query(
     query: "locate" | "check" | "print" | "search" | "about" | "searchAbout",
     term: string,
-    routeId: coqProto.RouteId
+    routeId: CoqProto.RouteId
   ) {
     if (!this.isStmRunning()) return "Coq is not running";
     switch (query) {

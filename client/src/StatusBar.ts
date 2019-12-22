@@ -2,7 +2,7 @@
  *
  */
 import * as vscode from "vscode";
-import * as proto from "./protocol";
+import * as proto from "../../lib";
 import * as textUtil from "./text-util";
 
 type StoppedState = { status: "stopped" };

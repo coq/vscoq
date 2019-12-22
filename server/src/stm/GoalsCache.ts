@@ -1,4 +1,4 @@
-import { ProofView, Goal, UnfocusedGoalStack } from "../protocol";
+import { ProofView, Goal, UnfocusedGoalStack } from "../../../lib";
 
 export type GoalId = number;
 

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import * as proto from "./protocol";
+import * as proto from "../../lib";
 import { decorations } from "./Decorations";
 // import {RangeSet} from './RangeSet';
 

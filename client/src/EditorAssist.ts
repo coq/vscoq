@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 const regenerate = require("regenerate");
-import { CoqSettings } from "./protocol";
+import { CoqSettings } from "../../lib";
 
 let subscriptions: vscode.Disposable[] = [];
 
