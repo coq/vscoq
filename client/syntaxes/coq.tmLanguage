@@ -45,7 +45,7 @@
 
         <dict>
             <key>match</key>
-            <string>(Lemma|Theorem|Goal|Example)\s+([a-zA-Z][a-zA-Z0-9_']*)</string>
+            <string>(Lemma|Theorem|Goal|Example)\s+(\p{L}(\p{L}|[0-9_'])*)</string>
             <key>comment</key>
             <string>Theorem declarations</string>
             <key>captures</key>
@@ -65,7 +65,7 @@
 
         <dict>
             <key>match</key>
-            <string>(Program Definition|Program Fixpoint|Program CoFixpoint|Program Function|Function|CoFixpoint|Fixpoint|Definition|Let)\s+([a-zA-Z_][a-zA-Z0-9_']*)</string>
+            <string>(Program Definition|Program Fixpoint|Program CoFixpoint|Program Function|Function|CoFixpoint|Fixpoint|Definition|Let)\s+(\p{L}(\p{L}|[0-9_'])*)</string>
             <key>comment</key>
             <string>Definitions</string>
             <key>captures</key>
@@ -85,7 +85,7 @@
 
         <dict>
             <key>match</key>
-            <string>(CoInductive|Inductive)\s+([a-zA-Z][a-zA-Z0-9_']*)</string>
+            <string>(CoInductive|Inductive)\s+(\p{L}(\p{L}|[0-9_'])*)</string>
             <key>comment</key>
             <string>Inductive type declarations</string>
             <key>captures</key>
@@ -105,7 +105,7 @@
 
         <dict>
             <key>match</key>
-            <string>(Ltac)\s+([a-zA-Z][a-zA-Z0-9_']*)</string>
+            <string>(Ltac)\s+(\p{L}(\p{L}|[0-9_'])*)</string>
             <key>comment</key>
             <string>Ltac declarations</string>
             <key>captures</key>
@@ -170,7 +170,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(into|with|eqn|by|as|using)\b</string>
+            <string>\b(into|with|eqn|by|move|as|using)\b</string>
             <key>comment</key>
             <string>Common Ltac connectors</string>
             <key>name</key>
@@ -295,7 +295,7 @@
             <array>
                 <dict>
                     <key>include</key>
-                    <string>#block_comment</string>                    
+                    <string>#block_comment</string>
                 </dict>
                 <dict>
                     <key>include</key>
