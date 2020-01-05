@@ -32,6 +32,10 @@ export interface Settings {
 export interface CoqTopSettings {
   /** Path to coqc and coqtop binaries. @default `""` */
   binPath: string;
+  /** Name of coqtop binary. @default `"coqtop"` */
+  coqtopExe: string;
+  /** Name of coqidetop binary. @default `"coqidetop.opt"` */
+  coqidetopExe: string;
   /** A list of arguments to send to coqtop. @default `[]` */
   args: string[];
   /** When should an instance of coqtop be started for a Coq script */

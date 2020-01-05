@@ -41,6 +41,8 @@ describe("Coqtop 8.6", function() {
 
   const settings : proto.CoqTopSettings = {
     binPath: COQBIN_8_6,
+    coqtopExe: "coqtop",
+    coqidetopExe: "coqidetop.opt",
     args: [],
     startOn: "open-script",
   }
