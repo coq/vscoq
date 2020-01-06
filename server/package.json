@@ -13,24 +13,24 @@
     "node": "*"
   },
   "dependencies": {
-    "vscode-jsonrpc": "3.1.0",
-    "vscode-languageserver": "3.1.0",
-    "sax": "^1.2.2",
-    "xml2js": "^0.4.17",
-    "async": "^2.1.5",
-    "diff": "^3.5.0",
+    "vscode-jsonrpc": "4.0.0",
+    "vscode-languageserver": "5.2.1",
+    "sax": "^1.2.4",
+    "xml2js": "^0.4.23",
+    "async": "^3.1.0",
+    "diff": "^4.0.1",
     "pegjs": "0.10.0",
-    "string-argv": "0.0.2",
-    "semver": "6.0.0",
-    "@types/sax": "^1.0.0",
-    "@types/xml2js": "^0.0.32",
-    "@types/diff": "^0.0.31",
-    "@types/semver": "6.0.0"
+    "string-argv": "0.3.1",
+    "semver": "7.1.1",
+    "@types/sax": "^1.2.0",
+    "@types/xml2js": "^0.4.5",
+    "@types/diff": "^4.0.2",
+    "@types/semver": "6.2.0"
   },
   "devDependencies": {
-    "@types/mocha": "^2.2.39",
-    "@types/node": "^7.0.5",
-    "mocha": "^6.1.4"
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^13.1.4",
+    "mocha": "^7.0.0"
   },
   "scripts": {
     "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./",
