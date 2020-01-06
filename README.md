@@ -27,3 +27,26 @@ The recommended way to install VsCoq is via the [Visual Studio Marketplace](http
 
 ## Screenshots
 ![vscoq](https://user-images.githubusercontent.com/647105/64025392-dbf12100-cb3c-11e9-8e7f-5c63296500f9.png)
+
+## Instructions
+1. install [Coq](https://coq.inria.fr/download)
+2. install [vscode](https://code.visualstudio.com/)
+3. run `code`
+4. install this extension: press `F1` to open the command palette, start typing "Extensions: Install Extension", press `enter`, and search for `vscoq`
+5. select "enable" on the extension
+
+## Basic usage
+* if you use _CoqProject - start vscode via `code my/project/root` (or `code .` from the root folder of your project), or else select File|Open Folder... from vscode's menu.
+* step forward: `alt+down`
+* step backward: `alt+up`
+* interpret to point: `alt+right`
+* interpret to end: `alt+end`
+* interpret to home: `alt+home`
+* *explore more commands*: `F1` and begin typing `Coq:`
+* [vscode documentation](https://code.visualstudio.com/docs/editor/codebasics)
+
+## Settings
+(Press `F1` and start typing "settings" to open either workspace/project or user settings.)
+* `"coqtop.binPath": ""` -- specify the path to coqtop (e.g. "path/to/coq/bin/")
+* `"coqtop.args": []` -- an array of strings specifying additional command line arguments for coqtop
+* `"coqtop.loadCoqProject": true` -- set to `false` to ignore <span>_CoqProject</span>
