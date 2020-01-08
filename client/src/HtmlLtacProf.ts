@@ -48,7 +48,7 @@ export class HtmlLtacProf {
       coqViewProvider = new IFrameDocumentProvider();
       this.docRegistration = vscode.workspace.registerTextDocumentContentProvider('coq-ltacprof', coqViewProvider);
     }
-    
+
     const httpServer = this.httpServer = http.createServer();
     this.serverReady = new Promise<void>((resolve, reject) =>
       httpServer.listen(0,'localhost',undefined,(e:any) => {
@@ -65,15 +65,10 @@ export class HtmlLtacProf {
 
     this.createBuffer();
   }
-  
+
   private handleClientMessage(event: {data: any; type: string; target: WebSocket}) {
-    // const message = <ControllerEvent>JSON.parse(event.data);
-    // switch(message.eventName) {
-    //   case 'resize':
-        
-    // }
   }
-  
+
   private createBuffer() {
     this.bufferReady = new Promise<void>(async (resolve, reject) => {
       try {
@@ -115,15 +110,4 @@ export class HtmlLtacProf {
   dispose() {
     this.docRegistration.dispose();
   }
-  
-  // public async update(state: proto.CoqTopGoalResult) {
-  //   this.currentState = state;
-  //   for(const connection of this.server.clients) {
-  //     try {
-  //     connection.send(JSON.stringify(state));
-  //     } catch(error) {}
-  //   }
-
-  // }
-  
 }

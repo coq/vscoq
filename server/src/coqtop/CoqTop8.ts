@@ -14,6 +14,7 @@ export {Interrupted, CoqtopSpawnError, CallFailure,
   NoProofTag, ProofModeTag, NoProofResult, ProofModeResult, GoalResult} from './CoqTop';
 import {CoqtopSpawnError, InitResult} from './CoqTop';
 import {IdeSlave as IdeSlave8, IdeSlaveState} from './IdeSlave8';
+import { AddressInfo } from 'net';
 
 export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private mainChannelServer: net.Server;
@@ -107,13 +108,11 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     const port = 0;
     const host = 'localhost';
     return new Promise<void>((resolve,reject) => {
-      server.listen({port: port, host: host}, (err:any) => {
-        if (err)
-          reject(err);
-        else {
-          this.console.log(`Listening at ${server.address().address}:${server.address().port}`);
-          resolve();
-        }
+      server.on('error', (err) => reject(err));
+      server.listen({port: port, host: host}, () => {
+        const serverAddress = server.address() as AddressInfo;
+        this.console.log(`Listening at ${serverAddress.address}:${serverAddress.port}`);
+        resolve();
       });
     });
   }
@@ -143,10 +142,10 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private async setupCoqTopReadAndWritePorts() : Promise<void> {
     await Promise.all(this.readyToListen);
 
-    var mainAddr = this.mainChannelServer.address();
-    var mainPortW = this.mainChannelServer2.address().port;
-    var controlAddr = this.controlChannelServer.address();
-    var controlPortW = this.controlChannelServer2.address().port;
+    var mainAddr = this.mainChannelServer.address() as AddressInfo;
+    var mainPortW = (this.mainChannelServer2.address() as AddressInfo).port;
+    var controlAddr = this.controlChannelServer.address() as AddressInfo;
+    var controlPortW = (this.controlChannelServer2.address() as AddressInfo).port;
     var mainAddressArg = mainAddr.address + ':' + mainAddr.port + ':' + mainPortW;
     var controlAddressArg = controlAddr.address + ':' + controlAddr.port + ':' + controlPortW;
 

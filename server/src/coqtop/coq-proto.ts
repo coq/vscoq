@@ -331,8 +331,7 @@ export function GetValue(x: string, value: ValueReturn) : ReturnValue {
     } case 'Evars': {
       return value.result as Evars_rty || []
     } case 'Hints': {
-      let v = value.result as Hints_rty;
-      return {hintsA: v[0], hintB: v[1]}
+      return value.result as Hints_rty;
     } case 'Status': {
       return value.result as CoqStatus;
     } case 'Search': {

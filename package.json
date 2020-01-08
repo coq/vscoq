@@ -783,9 +783,9 @@
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd ../html_views && npm install && cd .."
 	},
 	"devDependencies": {
-		"typescript": "^2.2.1",
-		"ts-prune": "^0.2.3",
-		"vsce": "^1.66.0"
+		"typescript": "^3.7.4",
+		"ts-prune": "^0.3.0",
+		"vsce": "^1.71.0"
 	},
 	"repository": {
 		"type": "git",
