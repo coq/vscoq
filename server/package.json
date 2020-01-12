@@ -36,7 +36,7 @@
     "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./",
     "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ./",
     "test": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./ && mocha -u tdd ../client/server/test",
-    "test-debug": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./ && mocha -u tdd --debug-brk=5858 ../client/server/test"
+    "test-debug": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./ && mocha -u tdd --inspect-brk=5858 ../client/server/test"
   },
   "repository": {
     "type": "git",
