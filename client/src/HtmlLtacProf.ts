@@ -5,8 +5,7 @@ import * as proto from './protocol'
 import * as WebSocket from 'ws';
 import * as http from 'http';
 import { extensionContext } from './extension'
-
-
+import { AddressInfo } from 'net';
 
 function coqViewToFileUri(uri: vscode.Uri) {
   return `file://${uri.path}?${uri.query}#${uri.fragment}`;
@@ -50,13 +49,12 @@ export class HtmlLtacProf {
     }
 
     const httpServer = this.httpServer = http.createServer();
-    this.serverReady = new Promise<void>((resolve, reject) =>
-      httpServer.listen(0, 'localhost', undefined, (e: any) => {
-        if (e)
-          reject(e)
-        else
-          resolve();
-      }));
+    this.serverReady = new Promise<void>((resolve, reject) => {
+      httpServer.on('error', (err) => reject(err));
+      httpServer.listen(0, 'localhost', undefined, () => {
+        resolve();
+      });
+    });
     this.server = new WebSocket.Server({ server: httpServer });
     this.server.on('connection', (ws: WebSocket) => {
       ws.onmessage = (event) => this.handleClientMessage(event);
@@ -76,7 +74,7 @@ export class HtmlLtacProf {
         const serverAddress = this.httpServer.address();
 
         const templateFileName = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/ltacprof/LtacProf.html'));
-        this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
+        this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${(serverAddress as AddressInfo).address}&port=${(serverAddress as AddressInfo).port}`);
         console.log("LtacProf: " + decodeURIComponent(this.coqViewUri.with({ scheme: 'file' }).toString()));
         resolve();
         // this.show(true);
@@ -91,7 +89,7 @@ export class HtmlLtacProf {
     await this.bufferReady;
     this.results = results;
     await Promise.all<void>(
-      this.server.clients.map((c) => {
+      [...this.server.clients].map((c) => {
         if (c.readyState === c.OPEN)
           return new Promise<void>((resolve, reject) => c.send(JSON.stringify(this.results), (err) => resolve()));
         else

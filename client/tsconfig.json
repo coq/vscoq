@@ -9,7 +9,7 @@
     "sourceMap": true,
     "noLib": false,
     "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": true,
+    // "noImplicitAny": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
