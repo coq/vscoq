@@ -1,23 +1,25 @@
 {
-	"compilerOptions": {
-		"target": "es6",
-		"lib": [ "es6" ],
-		"module": "commonjs",
-		"outDir": "out",
-		"sourceMap": true,
-		"noLib": false,
-		"forceConsistentCasingInFileNames": true,
-		"noImplicitAny": true,
-		"noImplicitReturns": true,
-		"noFallthroughCasesInSwitch": true,
-		"noUnusedLocals": true,
-		"noImplicitThis": true,
-		"strictNullChecks": true,		
-		"rootDir": "."
-	},
+  "compilerOptions": {
+    "target": "es6",
+    "lib": [
+      "es6"
+    ],
+    "module": "commonjs",
+    "outDir": "out",
+    "sourceMap": true,
+    "noLib": false,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "rootDir": "."
+  },
   "exclude": [
-		"node_modules",
-		"server",
+    "node_modules",
+    "server",
     "html_views"
-	]
+  ]
 }

@@ -4,7 +4,7 @@ import * as vscode from 'vscode'
 import * as proto from './protocol'
 import * as WebSocket from 'ws';
 import * as http from 'http';
-import {extensionContext} from './extension'
+import { extensionContext } from './extension'
 
 
 
@@ -22,42 +22,42 @@ class IFrameDocumentProvider implements vscode.TextDocumentContentProvider {
 
   }
   // function () {document.getElementById("box").style.backgroundColor='red'
-  
+
   public get onDidChange(): vscode.Event<vscode.Uri> {
     return this.onDidChangeEmitter.event;
   }
 }
 
-var coqViewProvider : IFrameDocumentProvider|null = null;
+var coqViewProvider: IFrameDocumentProvider | null = null;
 
 /**
  * Displays a Markdown-HTML file which contains javascript to connect to this view
  * and update the goals and show other status info
  */
 export class HtmlLtacProf {
-  private server : WebSocket.Server;
-  private httpServer : http.Server;
-  private serverReady : Promise<void>;
-  private bufferReady : Promise<void>;
-  private coqViewUri : vscode.Uri; 
-  private docRegistration : {dispose(): any}; 
+  private server: WebSocket.Server;
+  private httpServer: http.Server;
+  private serverReady: Promise<void>;
+  private bufferReady: Promise<void>;
+  private coqViewUri: vscode.Uri;
+  private docRegistration: { dispose(): any };
 
-  
+
   constructor(private results: proto.LtacProfResults) {
-    if(coqViewProvider===null) {    
+    if (coqViewProvider === null) {
       coqViewProvider = new IFrameDocumentProvider();
       this.docRegistration = vscode.workspace.registerTextDocumentContentProvider('coq-ltacprof', coqViewProvider);
     }
 
     const httpServer = this.httpServer = http.createServer();
     this.serverReady = new Promise<void>((resolve, reject) =>
-      httpServer.listen(0,'localhost',undefined,(e:any) => {
-        if(e)
+      httpServer.listen(0, 'localhost', undefined, (e: any) => {
+        if (e)
           reject(e)
         else
           resolve();
       }));
-    this.server = new WebSocket.Server({server: httpServer});
+    this.server = new WebSocket.Server({ server: httpServer });
     this.server.on('connection', (ws: WebSocket) => {
       ws.onmessage = (event) => this.handleClientMessage(event);
       ws.send(JSON.stringify(this.results));
@@ -66,7 +66,7 @@ export class HtmlLtacProf {
     this.createBuffer();
   }
 
-  private handleClientMessage(event: {data: any; type: string; target: WebSocket}) {
+  private handleClientMessage(event: { data: any; type: string; target: WebSocket }) {
   }
 
   private createBuffer() {
@@ -77,23 +77,23 @@ export class HtmlLtacProf {
 
         const templateFileName = vscode.Uri.file(extensionContext.asAbsolutePath('html_views/ltacprof/LtacProf.html'));
         this.coqViewUri = vscode.Uri.parse(`coq-view://${templateFileName.path.replace(/%3A/, ':')}?host=${serverAddress.address}&port=${serverAddress.port}`);
-        console.log("LtacProf: " + decodeURIComponent(this.coqViewUri.with({scheme: 'file'}).toString()));
+        console.log("LtacProf: " + decodeURIComponent(this.coqViewUri.with({ scheme: 'file' }).toString()));
         resolve();
         // this.show(true);
-      } catch(err) {
+      } catch (err) {
         vscode.window.showErrorMessage(err.toString());
         reject();
       }
     });
   }
 
-  public async update(results : proto.LtacProfResults) {
+  public async update(results: proto.LtacProfResults) {
     await this.bufferReady;
     this.results = results;
     await Promise.all<void>(
       this.server.clients.map((c) => {
-        if(c.readyState === c.OPEN)
-          return new Promise<void>((resolve,reject) => c.send(JSON.stringify(this.results), (err) => resolve()));
+        if (c.readyState === c.OPEN)
+          return new Promise<void>((resolve, reject) => c.send(JSON.stringify(this.results), (err) => resolve()));
         else
           return Promise.resolve();
       }));
