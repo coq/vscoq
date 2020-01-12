@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@types/mocha": "^5.2.7",
-    "@types/node": "^13.1.4",
+    "@types/node": "^13.1.6",
     "mocha": "^7.0.0"
   },
   "scripts": {
