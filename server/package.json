@@ -29,14 +29,14 @@
   },
   "devDependencies": {
     "@types/mocha": "^5.2.7",
-    "@types/node": "^13.1.4",
+    "@types/node": "^13.1.6",
     "mocha": "^7.0.0"
   },
   "scripts": {
     "compile": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./",
     "watch": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc --watch -p ./",
     "test": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./ && mocha -u tdd ../client/server/test",
-    "test-debug": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./ && mocha -u tdd --debug-brk=5858 ../client/server/test"
+    "test-debug": "installServerIntoExtension ../client ./package.json ./tsconfig.json && tsc -p ./ && mocha -u tdd --inspect-brk=5858 ../client/server/test"
   },
   "repository": {
     "type": "git",
