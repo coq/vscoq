@@ -48,7 +48,7 @@
     "body": [
       "Notation \"$1\" :=",
       "\t($2)",
-      "\t(at level $3, ${4:[no|left|right]} associativity)",
+      "\t(at level $3, ${4|no,left,right|} associativity)",
       "\t: ${5:scope}.\n"
     ],
     "description": "Notation, level, associativity, scope"
@@ -56,41 +56,41 @@
   "Section": {
     "prefix": "Section",
     "body": [
-      "Section ${name}.",
+      "Section ${1:name}.",
       "\t$0",
-      "End ${name}.\n"
+      "End ${1:name}.\n"
       ],
     "description": "Section..."
   },
   "Module": {
     "prefix": "Module",
     "body": [
-      "Module ${name}.",
+      "Module ${1:name}.",
       "\t$0",
-      "End ${name}.\n"
+      "End ${1:name}.\n"
       ],
     "description": "Module..."
   },
   "Module Type": {
     "prefix": "Module Type",
     "body": [
-      "Module Type ${name}.",
+      "Module Type ${1:name}.",
       "\t$0",
-      "End ${name}.\n"
+      "End ${1:name}.\n"
       ],
     "description": "Module Type..."
   },
   "Obligation Tactic": {
     "prefix": "Obligation Tactic",
-    "body": ["Obligation Tactic := ${expr}."]
+    "body": ["Obligation Tactic := ${1:expr}."]
   },
   "Local Obligation Tactic": {
     "prefix": "Local Obligation Tactic",
-    "body": ["Local Obligation Tactic := ${expr}."]
+    "body": ["Local Obligation Tactic := ${1:expr}."]
   },
   "Global Obligation Tactic": {
     "prefix": "Global Obligation Tactic",
-    "body": ["Global Obligation Tactic := ${expr}."]
+    "body": ["Global Obligation Tactic := ${1:expr}."]
   },
   "Show Obligation Tactic": {
     "prefix": "Show Obligation Tactic",
@@ -102,15 +102,15 @@
   },
   "Obligations of...": {
     "prefix": "Obligations of",
-    "body": ["Obligations of ${ident}."]
+    "body": ["Obligations of ${1:ident}."]
   },
   "Obligation (num)": {
     "prefix": "Obligation",
-    "body": ["Obligation ${num}."]
+    "body": ["Obligation ${1:num}."]
   },
   "Obligation (num) of...": {
     "prefix": "Obligation of",
-    "body": ["Obligation ${num} of ${ident}."]
+    "body": ["Obligation ${1:num} of ${2:ident}."]
   },
   "Next Obligation": {
     "prefix": "Next Obligation",
@@ -118,7 +118,7 @@
   },
   "Next Obligation of...": {
     "prefix": "Next Obligation of",
-    "body": ["Next Obligation of ${ident}."]
+    "body": ["Next Obligation of ${1:ident}."]
   },
   "Solve Obligation": {
     "prefix": "Solve Obligation",
@@ -126,11 +126,11 @@
   },
   "Solve Obligation of...": {
     "prefix": "Solve Obligation of",
-    "body": ["Solve Obligation of ${ident}."]
+    "body": ["Solve Obligation of ${1:ident}."]
   },
   "Solve Obligation of... with...": {
     "prefix": "Solve Obligation of",
-    "body": ["Solve Obligation of ${ident} with ${expr}."]
+    "body": ["Solve Obligation of ${1:ident} with ${2:expr}."]
   },
   "Solve All Obligations": {
     "prefix": "Solve All Obligations",
@@ -138,7 +138,7 @@
   },
   "Solve All Obligations with...": {
     "prefix": "Solve All Obligations with",
-    "body": ["Solve All Obligations with ${expr}."]
+    "body": ["Solve All Obligations with ${1:expr}."]
   },
   "Admit Obligations": {
     "prefix": "Admit Obligations",
@@ -146,7 +146,7 @@
   },
   "Admit Obligations of...": {
     "prefix": "Admit Obligations of",
-    "body": ["Admit Obligations of ${ident}."]
+    "body": ["Admit Obligations of ${1:ident}."]
   },
   "Preterm": {
     "prefix": "Preterm",
@@ -154,7 +154,7 @@
   },
   "Preterm of...": {
     "prefix": "Preterm of",
-    "body": ["Preterm of ${ident}."]
+    "body": ["Preterm of ${1:ident}."]
   }
 
 }
