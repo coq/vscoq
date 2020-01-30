@@ -11,7 +11,7 @@
   "publisher": "maximedenes",
   "license": "MIT",
   "engines": {
-    "vscode": "^1.30.0"
+    "vscode": "^1.38.0"
   },
   "categories": [
     "Programming Languages"
@@ -799,31 +799,32 @@
     "@types/ws": "^7.2.0",
     "@types/xml2js": "^0.4.5",
     "@types/node": "^13.1.6",
-    "bufferutil": "^4.0.1",
-    "copy-webpack-plugin": "^5.1.1",
     "jquery": "^3.4.1",
-    "mustache": "^4.0.0",
-    "regenerate": "^1.4.0",
-    "sax": "^1.2.4",
     "ts-loader": "^6.2.1",
     "ts-prune": "^0.3.0",
     "typescript": "^3.7.5",
-    "utf-8-validate": "^5.0.2",
-    "vsce": "^1.71.0",
-    "semver": "^7.1.1",
     "vscode": "^1.1.36",
-    "vscode-jsonrpc": "^4.0.0",
-    "vscode-languageclient": "^5.2.1",
-    "vscode-languageserver": "^5.2.1",
     "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10",
-    "ws": "^7.2.1",
-    "xml2js": "^0.4.23"
+    "webpack-cli": "^3.3.10"
   },
   "dependencies": {
     "unicode-9.0.0": "^0.7.5",
     "string-argv": "^0.3.1",
     "async": "^3.1.0",
-    "pegjs": "^0.10.0"
+    "pegjs": "^0.10.0",
+    "vscode-jsonrpc": "^4.0.0",
+    "vscode-languageclient": "^5.2.1",
+    "vscode-languageserver": "^5.2.1",
+    "bufferutil": "^4.0.1",
+    "copy-webpack-plugin": "^5.1.1",
+    "diff": "4.0.2",
+    "mustache": "^4.0.0",
+    "regenerate": "^1.4.0",
+    "sax": "^1.2.4",
+    "utf-8-validate": "^5.0.2",
+    "vsce": "^1.71.0",
+    "semver": "^7.1.1",
+    "ws": "^7.2.1",
+    "xml2js": "^0.4.23"
   }
 }
