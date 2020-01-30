@@ -3,4 +3,5 @@ node_js:
   - "10.16.0"
 
 script:
-  - make
+  - npm install
+  - npm run compile
