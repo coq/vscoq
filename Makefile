@@ -3,7 +3,7 @@ world: compile
 
 clean:
 	rm -rf node_modules html_views/node_modules server/node_modules client/node_modules
-	rm -rf client/server client/html_views
+	rm -rf out
 
 node_modules:
 	npm install
