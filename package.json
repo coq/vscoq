@@ -11,7 +11,7 @@
   "publisher": "maximedenes",
   "license": "MIT",
   "engines": {
-    "vscode": "^1.38.0"
+    "vscode": "^1.30.0"
   },
   "categories": [
     "Programming Languages"

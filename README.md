@@ -19,7 +19,7 @@ original author of this extension is @siegebell.
 * LtacProf results treeview
 
 ## Requirements
-* VsCode 1.38.0 or more recent
+* VsCode 1.30.0 or more recent
 * Coq 8.7.0 or more recent
 
 ## Installation
