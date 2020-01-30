@@ -1,4 +1,3 @@
-node_modules/**
 .vscode/**
 client/out/test/**
 client/test/**
