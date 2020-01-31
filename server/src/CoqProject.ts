@@ -1,4 +1,3 @@
-
 import {CoqDocument, DocumentCallbacks, TextDocumentItem} from './document';
 import {Settings, DocumentSelector} from './protocol';
 import * as vscode from 'vscode-languageserver';
@@ -8,7 +7,7 @@ import {PrettifySymbolsMode} from './util/PrettifySymbols';
 import * as nodeAsync from './util/nodejs-async';
 import {CoqTop} from './coqtop/CoqTop';
 import {CoqTop as CoqTop8} from './coqtop/CoqTop8';
-
+import stringArgv from 'string-argv';
 
 
 const coqProjectFileName = '_CoqProject';
@@ -145,7 +144,7 @@ export class CoqProject {
 
   private static parseCoqProject(text: string) : string[] {
     const args : string[] = [];
-    const projectArgs : string[] = require('string-argv')(text);
+    const projectArgs : string[] = stringArgv(text);
     for(let idx = 0; idx < projectArgs.length; ++idx) {
       const opt = projectArgs[idx]
       if(opt === '-R')
@@ -155,7 +154,7 @@ export class CoqProject {
       else if(opt === '-Q')
         args.push('-Q', projectArgs[++idx], projectArgs[++idx])
       else if(opt === '-arg')
-        args.push(...require('string-argv')(projectArgs[++idx]))
+        args.push(...stringArgv(projectArgs[++idx]))
     }
     return args;
   }
