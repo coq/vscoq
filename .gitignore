@@ -1,8 +1,7 @@
 node_modules/
-client/out
-server/out
-html_views/out
+out/
 
 backup.sh
 start-env.ps1
 **/npm-debug.log
+*.tsbuildinfo
