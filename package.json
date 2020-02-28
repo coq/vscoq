@@ -10,6 +10,7 @@
   "version": "0.3.0",
   "publisher": "maximedenes",
   "license": "MIT",
+  "icon": "images/logo.png",
   "engines": {
     "vscode": "^1.38.0"
   },
