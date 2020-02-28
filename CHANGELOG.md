@@ -1,5 +1,8 @@
 ## 0.3.1
-* fix #74 (document desynchronized after undo)
+* fix #74 (document desynchronized after undo) (by @maximedenes)
+* Add utf8 syntax highlighting (#71, by @KyleDavidE)
+* fix #76 (auto bracketting and comment) (by @GabrielaMafra)
+* various improvements of the build layout (by @artagnon)
 
 ## 0.3.0
 * development moved to Coq Community
