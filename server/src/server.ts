@@ -57,11 +57,6 @@ connection.onInitialize((params): InitializeResult => {
 			completionProvider: {
 				resolveProvider: true
 			},
-      documentLinkProvider: {
-        resolveProvider: true
-      },
-      documentSymbolProvider: true,
-      definitionProvider: true,
 		}
 	}
 });
@@ -245,34 +240,6 @@ export interface DocumentLinkParams {
      */
     textDocument: TextDocumentIdentifier;
 }
-
-connection.onDefinition((params: vscodeLangServer.TextDocumentPositionParams) : Promise<vscodeLangServer.Location|vscodeLangServer.Location[]>|vscodeLangServer.Location|vscodeLangServer.Location[] => {
-  const doc = project.lookup(params.textDocument.uri);
-  if(!doc)
-    return [];
-  else
-    return doc.provideDefinition(params.position);
-})
-
-connection.onDocumentSymbol((params:vscodeLangServer.DocumentSymbolParams) : vscodeLangServer.SymbolInformation[] => {
-  const doc = project.lookup(params.textDocument.uri);
-  if(!doc)
-    return [];
-  else
-    return doc.provideSymbols();
-})
-
-connection.onDocumentLinks((p:DocumentLinkParams,token: CancellationToken) : Promise<vscodeLangServer.DocumentLink[]> => {
-  return Promise.resolve([]);
-  // return project.lookup(p.textDocument.uri)
-    // .provideDocumentLinks(token);
-})
-
-connection.onDocumentLinkResolve((link: vscodeLangServer.DocumentLink,token: CancellationToken) : vscodeLangServer.DocumentLink => {
-return link;
-  // connection.console.log("onDocumentLinkResolve: " + link);
-  // return link;  
-})
 
 connection.onDidOpenTextDocument((params: vscodeLangServer.DidOpenTextDocumentParams) => {
   const uri = params.textDocument.uri; 
