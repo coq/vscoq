@@ -238,7 +238,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   public /* override */ async coqInterrupt() : Promise<boolean> {
     if(!this.coqtopProc)
       return false;
-    else if(!super.coqInterrupt()) {
+    else {
       this.console.log('--------------------------------');
       this.console.log('Sending SIGINT');
       this.coqtopProc.kill("SIGINT");

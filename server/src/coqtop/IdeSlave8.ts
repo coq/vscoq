@@ -205,24 +205,7 @@ export class IdeSlave extends coqtop.IdeSlave {
 
   /** @returns true if an interrupt message was sent via the xml protocol */
   public async coqInterrupt() : Promise<boolean> {
-    if(!this.isConnected())
-      return false;
-    else if(this.useInterruptMessage) {
-      this.parser.once('response: value', (value:coqProto.ValueReturn) => {
-        this.console.log('interrupted');
-      });
-      this.console.log('interrupt');
-      
-      this.console.log('--------------------------------');
-      this.console.log('Call Interrupt()');
-      this.writeMain('<call val="Interrupt"><unit/></call>');
-      return true;
-    } else {
-      return false;
-      // this.console.log('--------------------------------');
-      // this.console.log('Sending SIGINT');
-      // this.coqtopProc.kill("SIGINT");
-    }
+    return false;
   }
 
   protected async checkState() : Promise<void> {
