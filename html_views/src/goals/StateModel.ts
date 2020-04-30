@@ -189,7 +189,7 @@ export class StateModel {
               , createFocusedGoals(state.goals)
             ])
             var elmnt = document.getElementById("firstGoal");
-            elmnt.scrollIntoView(false); 
+            elmnt.scrollIntoView({block: "center", inline: "nearest"}); 
           } else {
             this.setMessage("There are unfocused goals.");
           }
