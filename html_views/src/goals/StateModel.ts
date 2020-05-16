@@ -114,8 +114,8 @@ function createHypotheses(hyps: Hypothesis[]) {
 
 function createGoal(goal: Goal, idx:number, count:number) {
   let expr = $('<span>').addClass('expr');
-  expr.append($(createAnnotatedText(goal.goal)))
-
+  expr.append($(createAnnotatedText(goal.goal)));
+  if (idx == 0) {expr.attr("id", "firstGoal")};
   return $('<li>')
     .addClass('goal')
     .append(
@@ -188,6 +188,8 @@ export class StateModel {
               [ createHypotheses(state.goals[0].hypotheses)
               , createFocusedGoals(state.goals)
             ])
+            var elmnt = document.getElementById("firstGoal");
+            elmnt.scrollIntoView({block: "center", inline: "nearest"}); 
           } else {
             this.setMessage("There are unfocused goals.");
           }
