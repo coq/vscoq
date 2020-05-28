@@ -1,4 +1,19 @@
-[![Build Status](https://travis-ci.com/coq-community/vscoq.svg?branch=master)](https://travis-ci.com/coq-community/vscoq) [![Join the chat at https://gitter.im/coq-community/vscoq](https://badges.gitter.im/coq-community/vscoq.svg)](https://gitter.im/coq-community/vscoq?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Travis][travis-shield]][travis-link]
+[![Contributing][contributing-shield]][contributing-link]
+[![Code of Conduct][conduct-shield]][conduct-link]
+[![Zulip][zulip-shield]][zulip-link]
+
+[travis-shield]: https://travis-ci.com/coq-community/vscoq.svg?branch=master
+[travis-link]: https://travis-ci.com/coq-community/vscoq/builds
+
+[contributing-shield]: https://img.shields.io/badge/contributions-welcome-%23f7931e.svg
+[contributing-link]: https://github.com/coq-community/manifesto/blob/master/CONTRIBUTING.md
+
+[conduct-shield]: https://img.shields.io/badge/%E2%9D%A4-code%20of%20conduct-%23f15a24.svg
+[conduct-link]: https://github.com/coq-community/manifesto/blob/master/CODE_OF_CONDUCT.md
+
+[zulip-shield]: https://img.shields.io/badge/chat-on%20zulip-%23c1272d.svg
+[zulip-link]: https://coq.zulipchat.com/#narrow/stream/237662-VsCoq-devs.20.26.20users
 
 VsCoq is an extension for [Visual Studio
 Code](https://code.visualstudio.com/) with support for the [Coq Proof
