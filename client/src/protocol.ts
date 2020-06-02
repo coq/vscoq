@@ -132,9 +132,9 @@ export type AnnotatedText = string | TextAnnotation | ScopedText | (string | Tex
 
 export enum HypothesisDifference { None, Changed, New, MovedUp, MovedDown }
 export interface Hypothesis {
-  identifier: string;
-  relation: string;
-  expression: AnnotatedText;
+  identifiers: string[];
+  type: AnnotatedText;
+  body: AnnotatedText;
   diff: HypothesisDifference;
 }
 export interface Goal {
