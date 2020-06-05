@@ -288,6 +288,7 @@ export class CoqDocument implements vscode.Disposable {
 
   private async userSetCoqtopPath(global = false) {
     const current = vscode.workspace.getConfiguration("coqtop").get("binPath", "");
+    const coqtopExe = vscode.workspace.getConfiguration("coqtop").get("coqtopExe", "");
     const newPath = await vscode.window.showInputBox({ignoreFocusOut: true, value: current, validateInput: (v:string):string => {
       try {
         const statDir = fs.statSync(v);
@@ -298,16 +299,17 @@ export class CoqDocument implements vscode.Disposable {
       }
       let stat : fs.Stats|undefined = undefined;
       try {
-        stat = fs.statSync(path.join(v, 'coqtop'));
-      } catch(err) {}
-      if(!stat && os.platform()==='win32') {
-        try {
-          stat = fs.statSync(path.join(v, 'coqtop.exe'));
-        } catch(err) { }
+        stat = fs.statSync(path.join(v, coqtopExe));
+      } catch {
+        if (os.platform() === 'win32') {
+          try {
+            stat = fs.statSync(path.join(v, coqtopExe, '.exe'));
+          } catch {}
+        }
       }
-      if(!stat)
+      if (!stat)
         return "coqtop not found here"
-      if(!stat.isFile())
+      if (!stat.isFile())
         return "coqtop found here, but is not an executable file";
 
       return "";
@@ -316,7 +318,8 @@ export class CoqDocument implements vscode.Disposable {
       if(!newPath)
         return false;
       try {
-        return await fs.existsSync(path.join(newPath, 'coqtop')) || await fs.existsSync(path.join(newPath, 'coqtop.exe'))
+        return await fs.existsSync(path.join(newPath, coqtopExe)) ||
+          os.platform() === 'win32' && await fs.existsSync(path.join(newPath, coqtopExe, '.exe'))
       } catch(err) {
         return false;
       }

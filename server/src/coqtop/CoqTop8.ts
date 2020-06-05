@@ -199,11 +199,11 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   }
 
   private get coqtopBin() {
-    return path.join(this.settings.binPath.trim(), 'coqtop');
+    return path.join(this.settings.binPath.trim(), this.settings.coqtopExe);
   }
 
   private get coqidetopBin() {
-    return path.join(this.settings.binPath.trim(), 'coqidetop.opt');
+    return path.join(this.settings.binPath.trim(), this.settings.coqidetopExe);
   }
 
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
