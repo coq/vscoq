@@ -1,9 +1,9 @@
 'use strict';
 import * as vscode from 'vscode';
 
-const STM_FOCUS_IMAGE = "./images/stm-focus.svg";
-const STM_FOCUS_IMAGE_BEFORE = "./images/stm-focus-before.svg";
-const STM_FOCUS_IMAGE_PROOF_VIEW = "./images/stm-focus-proof-view.svg";
+const STM_FOCUS_IMAGE = "out/images/stm-focus.svg";
+const STM_FOCUS_IMAGE_BEFORE = "out/images/stm-focus-before.svg";
+const STM_FOCUS_IMAGE_PROOF_VIEW = "out/images/stm-focus-proof-view.svg";
 
 interface DecorationsInternal extends Decorations {
   parsing: vscode.TextEditorDecorationType;
