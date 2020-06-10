@@ -36,7 +36,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Require|Import|Export|Local|Global|Open|Scope)\b</string>
+            <string>\b(From|Require|Import|Export|Local|Global|Open|Scope)\b</string>
             <key>comment</key>
             <string>Vernacular import keywords</string>
             <key>name</key>
@@ -45,7 +45,7 @@
 
         <dict>
             <key>match</key>
-            <string>(Lemma|Theorem|Goal|Example)\s+(\p{L}(\p{L}|[0-9_'])*)</string>
+            <string>(Theorem|Lemma|Remark|Fact|Corollary|Property|Proposition|Goal)\s+(\p{L}(\p{L}|[0-9_'])*)</string>
             <key>comment</key>
             <string>Theorem declarations</string>
             <key>captures</key>
@@ -65,7 +65,28 @@
 
         <dict>
             <key>match</key>
-            <string>(Program Definition|Program Fixpoint|Program CoFixpoint|Program Function|Function|CoFixpoint|Fixpoint|Definition|Let)\s+(\p{L}(\p{L}|[0-9_'])*)</string>
+            <string>(Parameters?|Axioms?|Conjectures?|Variables?|Hypothesis|Hypotheses)\s+(\p{L}(\p{L}|[0-9_'])*)</string>
+            <key>comment</key>
+            <string>Assumptions</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>2</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.assumption.coq</string>
+                </dict>
+            </dict>
+        </dict>
+
+
+        <dict>
+            <key>match</key>
+            <string>(Program Definition|Program Fixpoint|Program CoFixpoint|Program Function|Function|CoFixpoint|Fixpoint|Definition|Example|Let)\s+(\p{L}(\p{L}|[0-9_'])*)</string>
             <key>comment</key>
             <string>Definitions</string>
             <key>captures</key>
@@ -125,11 +146,20 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Arguments|Tactic Notation|Notation|Section|Module Type|Module|End|Variables|Record|Check|Print|Eval)\b</string>
+            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Arguments|Tactic Notation|Notation|Section|Module Type|Module|End|Record|Check|Print|Eval)\b</string>
             <key>comment</key>
             <string>Vernacular keywords</string>
             <key>name</key>
             <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Quit|Drop|Time|Redirect|Timeout|Fail)\b</string>
+            <key>comment</key>
+            <string>Vernacular Debug keywords</string>
+            <key>name</key>
+            <string>keyword.debug.coq</string>
         </dict>
 
         <dict>
@@ -188,7 +218,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(intro|intros|induction|destruct|auto|eauto|eassumption|apply|eapply|assumption|constructor|econstructor|reflexivity|inversion|assert|split|omega|fold|unfold|specialize|rewrite|erewrite|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember)\b</string>
+            <string>\b(intro|intros|induction|destruct|auto|eauto|eassumption|apply|eapply|assumption|constructor|econstructor|reflexivity|inversion|assert|split|omega|fold|unfold|specialize|rewrite|erewrite|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy)\b</string>
             <key>comment</key>
             <string>Ltac builtins</string>
             <key>name</key>
