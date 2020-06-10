@@ -127,6 +127,11 @@ export class HtmlCoqView implements view.CoqView {
         }
       );
 
+      this.panel.onDidDispose(() => {
+        this.visible = false;
+        this.panel = null;
+      });
+
       let doc = await vscode.workspace.openTextDocument(this.coqViewUri);
 
       let csspath = path.join(extensionContext.extensionPath,  'out', VIEW_PATH, 'proof-view.css');
