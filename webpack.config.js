@@ -40,6 +40,11 @@ module.exports = {
         from: "html_views/src/**/*.css",
         to: path.resolve(__dirname, "out", "html_views"),
         flatten: true
+      },
+      {
+        from: "client/images/*.svg",
+        to: path.resolve(__dirname, "out", "images"),
+        flatten: true
       }
     ])
   ]
