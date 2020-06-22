@@ -1,19 +1,64 @@
 {
-	"comments": {
-		// symbols used for start and end a block comment. Remove this entry if your language does not support block comments
-		"blockComment": [ "(*", "*)" ]
-	},
-	// symbols used as brackets
-	"brackets": [
-		["{", "}"],
-		["[", "]"],
-		["(", ")"]
-	]
-,
-	"autoClosingPairs": [
-		{ "open": "{", "close": "}" },
-		{ "open": "[", "close": "]" },
-		{ "open": "(", "close": ")" },
-		{ "open": "(*", "close": "*" }
-	  ]
+  "comments": {
+    "blockComment": [
+      "(*",
+      "*)"
+    ]
+  },
+  "brackets": [
+    [
+      "{",
+      "}"
+    ],
+    [
+      "[",
+      "]"
+    ],
+    [
+      "(",
+      ")"
+    ],
+    [
+      "Proof.",
+      "Qed."
+    ],
+    [
+      "Proof.",
+      "Admitted."
+    ],
+    [
+      "Proof.",
+      "Abort."
+    ],
+    [
+      "match",
+      "end"
+    ],
+    [
+      "repeat match",
+      "end"
+    ],
+    [
+      "repeat lazymatch",
+      "end"
+    ]
+  ],
+  "autoClosingPairs": [
+    {
+      "open": "{",
+      "close": "}"
+    },
+    {
+      "open": "[",
+      "close": "]"
+    },
+    {
+      "open": "(",
+      "close": ")"
+    },
+    {
+      "open": "(*",
+      "close": "*"
+    }
+  ]
 }
