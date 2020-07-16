@@ -1,3 +1,14 @@
+## 0.3.2
+* improved indentation rules (#90, by @artagnon)
+* auto-focus ProofView when its content is updated (#143, @JimmyZJX)
+* more keyword highlighting (#136, by @artagnon)
+* fix paths to icons representing focus (#141, by @maximedenes)
+* acquire new setting for executing hoqidetop (#97, by @artagnon)
+* interrupt Coq with SIGINT (#127, by @jad-hamza)
+* improved position in proof view for large contexts (#130, by @thery)
+* add icon (#117, by @maximedenes)
+* fix `_CoqProject` parsing (#111, by @maximedenes)
+
 ## 0.3.1
 * fix #74 (document desynchronized after undo) (by @maximedenes)
 * Add utf8 syntax highlighting (#71, by @KyleDavidE)
