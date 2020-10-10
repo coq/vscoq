@@ -209,7 +209,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(match|lazymatch|multimatch|fun|with|returns|end|let|in|if|then|else)\b|λ</string>
+            <string>\b(match|lazymatch|multimatch|fun|with|return|end|let|in|if|then|else)\b|λ</string>
             <key>comment</key>
             <string>Gallina keywords</string>
             <key>name</key>
