@@ -322,10 +322,17 @@ export interface DocumentPositionParams extends NotificationParams {
   position: vscode.Position;
 }
 
+export interface ProofViewParams extends NotificationParams {
+  proofview: ProofViewResult;
+}
+
 export namespace CoqStmFocusNotification {
   export const type = new NotificationType<DocumentPositionParams,void>('coqtop/stmFocus')
 }
 
+export namespace CoqProofviewNotification {
+  export const type = new NotificationType<ProofViewParams,void>('coqtop/updateProofview')
+}
 
 export enum ComputingStatus {Finished, Computing, Interrupted}
 // export interface NotifyComputingStatusParams extends NotificationParams {

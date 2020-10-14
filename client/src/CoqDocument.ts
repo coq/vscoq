@@ -91,6 +91,7 @@ export class CoqDocument implements vscode.Disposable {
     this.langServer.onMessage((p) => this.onCoqMessage(p));
     this.langServer.onReset((p) => this.onCoqReset());
     this.langServer.onUpdateCoqStmFocus((p) => this.updateFocus(p.position));
+    this.langServer.onUpdateProofview((p) => this.updateView(p.proofview, true));
     this.langServer.onLtacProfResults((p) => this.onLtacProfResults(p));
     this.langServer.onCoqtopStart(p => {
       //this.coqtopRunning = true;

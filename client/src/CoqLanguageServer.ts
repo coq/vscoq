@@ -31,7 +31,7 @@ export class CoqLanguageServer implements vscode.Disposable {
 
     let launchServer = async () => {
       let command = 'vscoqtop.opt';
-      let serverProcess = cp.spawn(command, [], {});
+      let serverProcess = cp.spawn(command, ["-debug"], {});
       if (!serverProcess || !serverProcess.pid) {
           return Promise.reject(`Launching server using command ${command} failed.`);
       }
@@ -71,6 +71,11 @@ export class CoqLanguageServer implements vscode.Disposable {
           if(doc)
             doc.onUpdateCoqStmFocus.forEach(l => l(p));
           // this.onUpdateCoqStmFocusHandlers.forEach((h) => h(p))
+        });
+        this.server.onNotification(proto.CoqProofviewNotification.type, (p) => {
+          const doc = this.documentCallbacks.get(p.uri);
+          if(doc)
+            doc.onUpdateProofview.forEach(l => l(p));
         });
         this.server.onNotification(proto.CoqLtacProfResultsNotification.type, (p) => {
           const doc = this.documentCallbacks.get(p.uri);
@@ -251,6 +256,7 @@ interface DocumentCallbacks {
   onMessage: ((params: proto.NotifyMessageParams) => void)[],
   onReset: ((params: proto.NotificationParams) => void)[],
   onUpdateCoqStmFocus: ((params: proto.DocumentPositionParams) => void)[],
+  onUpdateProofview: ((params: proto.ProofViewParams) => void)[],
   onLtacProfResults: ((params: proto.LtacProfResults) => void)[],
   onCoqtopStart: ((params: proto.NotificationParams) => void)[],
   onCoqtopStop: ((params: proto.NotifyCoqtopStopParams) => void)[],
@@ -274,6 +280,7 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
     onMessage: [],
     onReset: [],
     onUpdateCoqStmFocus: [],
+    onUpdateProofview: [],
     onLtacProfResults: [],
     onCoqtopStart: [],
     onCoqtopStop: [],
@@ -291,6 +298,7 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
       onMessage: [],
       onReset: [],
       onUpdateCoqStmFocus: [],
+      onUpdateProofview: [],
       onLtacProfResults: [],
       onCoqtopStart: [],
       onCoqtopStop: [],
@@ -313,6 +321,10 @@ export class CoqDocumentLanguageServer implements vscode.Disposable {
 
   public onUpdateCoqStmFocus(listener: (params: proto.DocumentPositionParams) => void) {
     return registerCallback(this.callbacks.onUpdateCoqStmFocus, listener);
+  }
+
+  public onUpdateProofview(listener: (params: proto.ProofViewParams) => void) {
+    return registerCallback(this.callbacks.onUpdateProofview, listener);
   }
 
   public onLtacProfResults(listener: (params: proto.LtacProfResults) => void) {
