@@ -123,10 +123,20 @@
           "default": "first-interaction",
           "description": "Create the proof view when a Coq script is opened, the user first interacts with coqtop, or else let the user do it manually."
         },
+        "coq.proofViewDiff.addedTextItalic": {
+          "type": "boolean",
+          "default": "true",
+          "description": "If `true`, in the proof view, the diff will show added characters in italic. Note: the color of added characters can be changed in `#coq.addedCharacter#`."
+        },
+        "coq.proofViewDiff.removedTextStrikethrough": {
+          "type": "boolean",
+          "default": "true",
+          "description": "If `true`, in the proof view, the diff will show removed characters with a line through. Note: the color of added characters can be changed in `#coq.removedCharacter#`."
+        },
         "coq.format.enable": {
           "type": "boolean",
           "default": true,
-          "description": "If `false`, then all auto-formatting under `coq.format` is disabled"
+          "description": "If `false`, then all auto-formatting under `#coq.format#` is disabled"
         },
         "coq.format.indentAfterBullet": {
           "type": "string",
@@ -146,7 +156,7 @@
         "coq.format.unindentOnCloseProof": {
           "type": "boolean",
           "default": true,
-          "description": "Auto-unindent `Qed.`, `Defined.`, and `Admitted.`. Note: requires `editor.formatOnType' to be set to `true` in settings.json"
+          "description": "Auto-unindent `Qed.`, `Defined.`, and `Admitted.`. Note: requires `#editor.formatOnType#' to be set to `true` in settings.json"
         }
       }
     },

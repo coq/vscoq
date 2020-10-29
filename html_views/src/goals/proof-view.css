@@ -128,20 +128,28 @@ body {
   font-style: italic;
 }
 .charsAdded {
-  font-style: italic;
   background-color: var(--vscode-coq-addedCharacter);
+}
+.proofView_addedTextItalic .charsAdded{
+  font-style: italic;
 }
 span[class~=charsAdded][class~=substitution]::before {
+  font-style: var(--vscode-coq-proofViewDiff-addedInTermStyle);
+}
+.proofView_addedTextItalic span[class~=charsAdded][class~=substitution]::before  {
   font-style: italic;
-  background-color: var(--vscode-coq-addedCharacter);
 }
 .charsRemoved {
-  text-decoration: line-through;
   background-color: var(--vscode-coq-removedCharacter);
 }
-span[class~=charsRemoved][class~=substitution]::before {
+.proofView_proofView_removedTextStrikethrough .charsRemoved{
   text-decoration: line-through;
+}
+span[class~=charsRemoved][class~=substitution]::before {
   background-color: var(--vscode-coq-removedCharacter);
+}
+.proofView_proofView_removedTextStrikethrough span[class~=charsRemoved][class~=substitution]::before  {
+  text-decoration: line-through;
 }
 
 .hypothesese, .hypothesis, .goal, #stdout, #textMeasurer, #measureTest {
