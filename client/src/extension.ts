@@ -121,23 +121,33 @@ async function withDocAsync<T>(editor: TextEditor, callback: (doc: CoqDocument) 
     await callback(doc);
 }
 
+function coqIdOrNotationFromPosition(editor: TextEditor) {
+  let regExpQualifiedCoqIdent = /((\p{L}|_)(\p{L}|[0-9_'])*)(\.((\p{L}|_)(\p{L}|[0-9_'])*))*/u;
+  let range = editor.document.getWordRangeAtPosition(editor.selection.active,regExpQualifiedCoqIdent);
+  if (range)
+    return editor.document.getText(range);
+
+  let regExpCoqNotation = /[^\p{Z}\p{C}"]+/u;
+  range = editor.document.getWordRangeAtPosition(editor.selection.active,regExpCoqNotation);
+  if (range)
+    return "\""+editor.document.getText(range)+"\"";
+  return "";
+}
 
 async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {
-  let placeHolder = editor.document.getText(editor.selection);
-  if (editor.selection.isEmpty)
-    placeHolder = editor.document.getText(editor.document.getWordRangeAtPosition(editor.selection.active));
   return await vscode.window.showInputBox({
     prompt: prompt,
-    value: placeHolder
+    value: coqIdOrNotationFromPosition(editor)
   });
 }
 
 async function queryStringFromPosition(prompt: string, editor: TextEditor) {
-  let query = editor.document.getText(editor.selection);
-  if (editor.selection.isEmpty)
-    query = editor.document.getText(editor.document.getWordRangeAtPosition(editor.selection.active));
+  let query = coqIdOrNotationFromPosition(editor);
   if (query.trim() === "")
-    return await queryStringFromPlaceholder(prompt, editor);
+    return await vscode.window.showInputBox({
+      prompt: prompt,
+      value: undefined
+    });
   else
     return query;
 }
