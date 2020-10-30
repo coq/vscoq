@@ -152,6 +152,7 @@ export class HtmlCoqView implements view.CoqView {
       });
 
       this.panel.webview.onDidReceiveMessage(message => this.handleClientMessage(message));
+      await this.updateSettings();
     }
   }
 

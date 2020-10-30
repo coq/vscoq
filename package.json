@@ -125,12 +125,12 @@
         },
         "coq.proofViewDiff.addedTextItalic": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "If `true`, in the proof view, the diff will show added characters in italic. Note: the color of added characters can be changed in `#coq.addedCharacter#`."
         },
         "coq.proofViewDiff.removedTextStrikethrough": {
           "type": "boolean",
-          "default": "true",
+          "default": true,
           "description": "If `true`, in the proof view, the diff will show removed characters with a line through. Note: the color of added characters can be changed in `#coq.removedCharacter#`."
         },
         "coq.format.enable": {
