@@ -142,13 +142,13 @@ span[class~=charsAdded][class~=substitution]::before {
 .charsRemoved {
   background-color: var(--vscode-coq-removedCharacter);
 }
-.proofView_proofView_removedTextStrikethrough .charsRemoved{
+.proofView_removedTextStrikethrough .charsRemoved{
   text-decoration: line-through;
 }
 span[class~=charsRemoved][class~=substitution]::before {
   background-color: var(--vscode-coq-removedCharacter);
 }
-.proofView_proofView_removedTextStrikethrough span[class~=charsRemoved][class~=substitution]::before  {
+.proofView_removedTextStrikethrough span[class~=charsRemoved][class~=substitution]::before  {
   text-decoration: line-through;
 }
 
