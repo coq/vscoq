@@ -128,8 +128,8 @@ export class CoqLanguageServer implements vscode.Disposable {
   }
 
   public registerDocument(uri: string, doc: DocumentCallbacks) {
-    if(this.documentCallbacks.has(uri))
-      throw "Duplicate Coq document being registered.";
+    //if(this.documentCallbacks.has(uri))
+    //  throw "Duplicate Coq document being registered.";
     this.documentCallbacks.set(uri, doc);
   }
 
