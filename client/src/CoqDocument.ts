@@ -143,6 +143,8 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public dispose() {
+    this.quitCoq();
+    this.langServer.dispose();
     this.highlights.clearAll(this.allEditors());
     this.statusBar.dispose();
     if(this.view)
@@ -210,7 +212,7 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateReady();
   }
 
-  public async quitCoq(editor: TextEditor) {
+  public async quitCoq(editor?: TextEditor) {
     this.statusBar.setStateMessage('Killing CoqTop');
     try {
       await this.langServer.quitCoq();
@@ -219,7 +221,7 @@ export class CoqDocument implements vscode.Disposable {
     this.statusBar.setStateReady();
   }
 
-  public async resetCoq(editor: TextEditor) {
+  public async resetCoq(editor?: TextEditor) {
     this.statusBar.setStateMessage('Resetting Coq');
     try {
       await this.langServer.resetCoq();
@@ -403,9 +405,15 @@ export class CoqDocument implements vscode.Disposable {
     }
   }
 
+  private async makePreviewOpenedFilePermanent(editor: TextEditor){
+     //Make sure that the file is really open instead of preview-open, to avoid accidentaly closing the file
+    await vscode.commands.executeCommand("workbench.action.keepEditor",editor.document.uri);
+  }
+
   public async stepForward(editor: TextEditor) {
     this.statusBar.setStateWorking('Stepping forward');
     try {
+      this.makePreviewOpenedFilePermanent(editor);
       this.rememberCursors();
       const value = await this.langServer.stepForward();
       this.updateView(value, true);
@@ -418,6 +426,7 @@ export class CoqDocument implements vscode.Disposable {
   public async stepBackward(editor: TextEditor) {
     this.statusBar.setStateWorking('Stepping backward');
     try {
+      this.makePreviewOpenedFilePermanent(editor);
       this.rememberCursors();
       const value = await this.langServer.stepBackward();
       this.updateView(value, true);
@@ -443,6 +452,7 @@ export class CoqDocument implements vscode.Disposable {
     try {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
+      this.makePreviewOpenedFilePermanent(editor);
       const value = await this.langServer.interpretToPoint(editor.selection.active, synchronous);
       this.updateView(value, true);
       this.handleResult(value);
@@ -457,6 +467,7 @@ export class CoqDocument implements vscode.Disposable {
   public async interpretToEnd(editor: TextEditor, synchronous = false) {
     this.statusBar.setStateWorking('Interpreting to end');
     try {
+      this.makePreviewOpenedFilePermanent(editor);
       const value = await this.langServer.interpretToEnd(synchronous);
       this.updateView(value, true);
       this.handleResult(value);
