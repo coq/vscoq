@@ -27,7 +27,7 @@ function computePrintingWidth() {
     const stateView = $('#states')[0];
     const ctx = ($('#textMeasurer')[0] as HTMLCanvasElement).getContext("2d")!;
     ctx.font = getComputedStyle($('#textMeasurer')[0]).font || "";
-    const widthClient =stateView.clientWidth;
+    const widthClient =stateView.clientWidth - 27;
     const widthOneChar = ctx.measureText("O").width;
     let widthChars = Math.floor( widthClient / widthOneChar);
     if (widthClient == 0)
