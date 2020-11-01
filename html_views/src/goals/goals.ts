@@ -5,9 +5,12 @@ import { ControllerEvent, ResizeEvent, SettingsState, ProofViewProtocol } from '
 const stateModel = new stm.StateModel();
 
 
-var throttleTimeout : number|null = null;
-var throttleTimeoutCount = 0;
-var throttleEventHandler = <X>(handler: (x:X) => void) => (event:X) => {
+
+var throttleEventHandler = <X>(handler: (x:X) => void) => {
+  var throttleTimeout : number|null = null;
+  var throttleTimeoutCount = 0;
+
+  return (event:X) => {
   throttleTimeoutCount = (throttleTimeoutCount + 1)%10;
   if(throttleTimeoutCount == 1)
     handler(event);
@@ -17,18 +20,20 @@ var throttleEventHandler = <X>(handler: (x:X) => void) => (event:X) => {
       handler(event);
     }, 500);
   }
-}
+}}
 
 function computePrintingWidth() {
   try {
     const stateView = $('#states')[0];
     const ctx = ($('#textMeasurer')[0] as HTMLCanvasElement).getContext("2d")!;
     ctx.font = getComputedStyle($('#textMeasurer')[0]).font || "";
-    let widthChars = Math.floor(stateView.clientWidth / ctx.measureText("O").width);
+    const widthClient =stateView.clientWidth;
+    const widthOneChar = ctx.measureText("O").width;
+    let widthChars = Math.floor( widthClient / widthOneChar);
     if (widthChars === Number.POSITIVE_INFINITY)
       widthChars = 1;
     widthChars = Math.max(widthChars,5);
-    $('#measureTest').text("<" + "-".repeat(widthChars-2) + ">")
+    $('#measureTest').text("<" + "-".repeat(widthChars-2) + ">");
     if(vscode)
       vscode.postMessage(JSON.stringify(<ControllerEvent>{
         eventName: 'resize',
@@ -58,12 +63,17 @@ function setPrettifySymbolsMode(enabled: boolean) {
 declare var acquireVsCodeApi : any;
 const vscode = acquireVsCodeApi();
 
-function goalsLoad() {
+function goalsLoad(_event :Event) {
 
   window.addEventListener("resize",throttleEventHandler(event => computePrintingWidth()));
   window.addEventListener("focus", onWindowGetFocus, true);
 
+  var resizedOnFirstResponse = false;
   window.addEventListener('message', event => {
+    if(!resizedOnFirstResponse){
+      resizedOnFirstResponse = true;
+      computePrintingWidth();
+    }
     const message = event.data;
     handleMessage(message);
   });
