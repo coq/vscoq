@@ -122,8 +122,7 @@ async function withDocAsync<T>(editor: TextEditor, callback: (doc: CoqDocument) 
 }
 
 function coqIdOrNotationFromPosition(editor: TextEditor) {
-  let regExpQualifiedCoqIdent = /((\p{L}|_)(\p{L}|[0-9_'])*)(\.((\p{L}|_)(\p{L}|[0-9_'])*))*/u;
-  let range = editor.document.getWordRangeAtPosition(editor.selection.active,regExpQualifiedCoqIdent);
+  let range = editor.document.getWordRangeAtPosition(editor.selection.active);
   if (range)
     return editor.document.getText(range);
 
