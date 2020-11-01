@@ -10,4 +10,4 @@ client/tsconfig.json
 server/**
 html_views/**
 out/**/*.js.map
-out/server/test/**
+out/server/test

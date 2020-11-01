@@ -816,7 +816,8 @@
     "typescript": "^3.7.5",
     "vscode": "^1.1.36",
     "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10"
+    "webpack-cli": "^3.3.10",
+    "vsce": "^1.75.0"
   },
   "dependencies": {
     "async": "^3.1.0",
@@ -831,7 +832,6 @@
     "string-argv": "^0.3.1",
     "unicode-9.0.0": "^0.7.5",
     "utf-8-validate": "^5.0.2",
-    "vsce": "^1.75.0",
     "vscode-jsonrpc": "^4.0.0",
     "vscode-languageclient": "^5.2.1",
     "vscode-languageserver": "^5.2.1",
