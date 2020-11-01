@@ -30,7 +30,9 @@ function computePrintingWidth() {
     const widthClient =stateView.clientWidth;
     const widthOneChar = ctx.measureText("O").width;
     let widthChars = Math.floor( widthClient / widthOneChar);
-    if (widthChars === Number.POSITIVE_INFINITY)
+    if (widthClient == 0)
+      widthChars = 80;
+    else if (widthChars === Number.POSITIVE_INFINITY)
       widthChars = 1;
     widthChars = Math.max(widthChars,5);
     $('#measureTest').text("<" + "-".repeat(widthChars-2) + ">");
