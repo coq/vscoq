@@ -82,7 +82,7 @@
             "interaction"
           ],
           "default": "interaction",
-          "description": "When to start an instance of coqtop: when a Coq script is opened (`open-script`) or else when the user begins interaction (`interaction`; default)."
+          "markdownDescription": "When to start an instance of coqtop: when a Coq script is opened (`open-script`) or else when the user begins interaction (`interaction`; default)."
         },
         "coq.loadCoqProject": {
           "type": "boolean",
@@ -97,12 +97,12 @@
         "coq.interpretToEndOfSentence": {
           "type": "boolean",
           "default": false,
-          "description": "Interpret to point will interpret up to *and including* the sentence at the cursor"
+          "markdownDescription": "Interpret to point will interpret up to *and including* the sentence at the cursor"
         },
         "coq.autoRevealProofStateAtCursor": {
           "type": "boolean",
           "default": false,
-          "description": "If `true`, then auto-update the proof view with the cached state of the sentence the at the cursor. States are only cached when stepping through a proof, so the proof view will not be updated if e.g. the sentence was processed asynchronously and never had direct focus."
+          "markdownDescription": "If `true`, then auto-update the proof view with the cached state of the sentence the at the cursor. States are only cached when stepping through a proof, so the proof view will not be updated if e.g. the sentence was processed asynchronously and never had direct focus."
         },
         "coq.revealProofStateAtCursorDirection": {
           "type": "string",
@@ -126,17 +126,17 @@
         "coq.proofViewDiff.addedTextItalic": {
           "type": "boolean",
           "default": true,
-          "description": "If `true`, in the proof view, the diff will show added characters in italic. Note: the color of added characters can be changed in `#coq.addedCharacter#`."
+          "markdownDescription": "If `true`, in the proof view, the diff will show added characters in italic. Note: the color of added characters can be changed in `#coq.addedCharacter#`."
         },
         "coq.proofViewDiff.removedTextStrikethrough": {
           "type": "boolean",
           "default": true,
-          "description": "If `true`, in the proof view, the diff will show removed characters with a line through. Note: the color of added characters can be changed in `#coq.removedCharacter#`."
+          "markdownDescription": "If `true`, in the proof view, the diff will show removed characters with a line through. Note: the color of added characters can be changed in `#coq.removedCharacter#`."
         },
         "coq.format.enable": {
           "type": "boolean",
           "default": true,
-          "description": "If `false`, then all auto-formatting under `#coq.format#` is disabled"
+          "markdownDescription": "If `false`, then all auto-formatting under `#coq.format#` is disabled"
         },
         "coq.format.indentAfterBullet": {
           "type": "string",
@@ -146,17 +146,17 @@
             "align"
           ],
           "default": "none",
-          "description": "Control how to indent the line after a bullet. \"none\" - no indent; \"indent\" - tab-indent; \"align\" - align to the previous line's tactic"
+          "markdownDescription": "Control how to indent the line after a bullet. `none` - no indent; `indent` - tab-indent; `align` - align to the previous line's tactic"
         },
         "coq.format.indentAfterOpenProof": {
           "type": "boolean",
           "default": false,
-          "description": "Indent after opening a proof with 'Proof'"
+          "markdownDescription": "Indent after opening a proof with 'Proof'"
         },
         "coq.format.unindentOnCloseProof": {
           "type": "boolean",
           "default": true,
-          "description": "Auto-unindent `Qed.`, `Defined.`, and `Admitted.`. Note: requires `#editor.formatOnType#' to be set to `true` in settings.json"
+          "markdownDescription": "Auto-unindent `Qed.`, `Defined.`, and `Admitted.`. Note: requires `#editor.formatOnType#' to be set to `true` in settings.json"
         }
       }
     },
