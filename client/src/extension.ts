@@ -132,7 +132,7 @@ function coqIdOrNotationFromPosition(editor: TextEditor) {
   let text = editor.document.getText(range);
 
   if (new RegExp("\^"+regExpCoqNotation.source+"\$",regExpCoqNotation.flags).test(text)
-      && ! new RegExp("\^"+editorAssist.regExpQualifiedCoqIdent+"\$",regExpCoqNotation.flags).test(text))
+      && ! new RegExp("\^"+editorAssist.regExpQualifiedCoqIdent.source+"\$",regExpCoqNotation.flags).test(text))
     return "\""+text+"\"";
   return text;
 }
