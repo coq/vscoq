@@ -131,9 +131,9 @@ function coqIdOrNotationFromPosition(editor: TextEditor) {
     range = editor.document.getWordRangeAtPosition(editor.selection.active,regExpCoqNotation);
   let text = editor.document.getText(range);
 
-
-  if (new RegExp("\^"+regExpCoqNotation.source+"\$",regExpCoqNotation.flags).test(text))
-    return "\""+editor.document.getText(range)+"\"";
+  if (new RegExp("\^"+regExpCoqNotation.source+"\$",regExpCoqNotation.flags).test(text)
+      && ! new RegExp("\^"+editorAssist.regExpQualifiedCoqIdent+"\$",regExpCoqNotation.flags).test(text))
+    return "\""+text+"\"";
   return text;
 }
 
