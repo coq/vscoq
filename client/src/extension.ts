@@ -122,15 +122,19 @@ async function withDocAsync<T>(editor: TextEditor, callback: (doc: CoqDocument) 
 }
 
 function coqIdOrNotationFromPosition(editor: TextEditor) {
-  let range = editor.document.getWordRangeAtPosition(editor.selection.active);
-  if (range)
-    return editor.document.getText(range);
-
+  let range : vscode.Range | undefined = editor.selection;
+  if (range.isEmpty)
+    range = editor.document.getWordRangeAtPosition(editor.selection.active);
+    
   let regExpCoqNotation = /[^\p{Z}\p{C}"]+/u;
-  range = editor.document.getWordRangeAtPosition(editor.selection.active,regExpCoqNotation);
-  if (range)
+  if (range == undefined)
+    range = editor.document.getWordRangeAtPosition(editor.selection.active,regExpCoqNotation);
+  let text = editor.document.getText(range);
+
+
+  if (new RegExp("\^"+regExpCoqNotation.source+"\$",regExpCoqNotation.flags).test(text))
     return "\""+editor.document.getText(range)+"\"";
-  return "";
+  return text;
 }
 
 async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {
