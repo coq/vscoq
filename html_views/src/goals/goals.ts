@@ -30,7 +30,7 @@ function computePrintingWidth() {
     const widthClient =stateView.clientWidth - 27;
     const widthOneChar = ctx.measureText("O").width;
     let widthChars = Math.floor( widthClient / widthOneChar);
-    if (widthClient <= 0 || widthChars <= 1){
+    if (widthClient <= 0 || widthChars <= 1 || widthChars === Number.POSITIVE_INFINITY){
       console.log("Fallback to width 80 because: widthClient = "+widthClient + " and widthChars = " + widthChars);
       widthChars = 80;
     }
