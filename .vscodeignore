@@ -1,5 +1,5 @@
 .vscode/**
-client/out/test/**
+out/client/test/**
 client/test/**
 client/src/**
 client/server/installServerIntoExtension.cmd
@@ -9,3 +9,5 @@ client/**/*.map
 client/tsconfig.json
 server/**
 html_views/**
+out/**/*.js.map
+out/server/test
