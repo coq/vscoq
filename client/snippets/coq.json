@@ -136,10 +136,6 @@
     "prefix": "Solve All Obligations",
     "body": ["Solve All Obligations."]
   },
-  "Solve All Obligations with...": {
-    "prefix": "Solve All Obligations with",
-    "body": ["Solve All Obligations with ${1:expr}."]
-  },
   "Admit Obligations": {
     "prefix": "Admit Obligations",
     "body": ["Admit Obligations."]
