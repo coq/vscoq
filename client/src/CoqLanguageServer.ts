@@ -31,7 +31,8 @@ export class CoqLanguageServer implements vscode.Disposable {
 
     let launchServer = async () => {
       let command = 'vscoqtop.opt';
-      let serverProcess = cp.spawn(command, ["-debug"], {});
+      let args = vscode.workspace.workspaceFolders ? {cwd: vscode.workspace.workspaceFolders[0].uri.fsPath} : {}
+      let serverProcess = cp.spawn(command, ["-debug"], args);
       if (!serverProcess || !serverProcess.pid) {
           return Promise.reject(`Launching server using command ${command} failed.`);
       }
