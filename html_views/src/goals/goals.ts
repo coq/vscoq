@@ -30,11 +30,10 @@ function computePrintingWidth() {
     const widthClient =stateView.clientWidth - 27;
     const widthOneChar = ctx.measureText("O").width;
     let widthChars = Math.floor( widthClient / widthOneChar);
-    if (widthClient == 0)
+    if (widthClient <= 0 || widthChars <= 1){
+      console.log("Fallback to width 80 because: widthClient = "+widthClient + " and widthChars = " + widthChars);
       widthChars = 80;
-    else if (widthChars === Number.POSITIVE_INFINITY)
-      widthChars = 1;
-    widthChars = Math.max(widthChars,5);
+    }
     $('#measureTest').text("<" + "-".repeat(widthChars-2) + ">");
     if(vscode)
       vscode.postMessage(JSON.stringify(<ControllerEvent>{
