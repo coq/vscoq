@@ -65,3 +65,8 @@ The recommended way to install VsCoq is via the [Visual Studio Marketplace](http
 * `"coqtop.binPath": ""` -- specify the path to coqtop (e.g. "path/to/coq/bin/")
 * `"coqtop.args": []` -- an array of strings specifying additional command line arguments for coqtop
 * `"coqtop.loadCoqProject": true` -- set to `false` to ignore <span>_CoqProject</span>
+
+## Install a local version
+
+Checkout the repo, run make, and install the produced .vsix file in the repository root by following https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix. So, either "Cmd-Shift-P" and "Extensions: Install from VSIX", or running code --install-extension vscoq-0.3.2.vsix (or whatever version number) from the terminal.
+
