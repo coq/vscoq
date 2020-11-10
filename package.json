@@ -123,14 +123,14 @@
           "default": "first-interaction",
           "description": "Create the proof view when a Coq script is opened, the user first interacts with coqtop, or else let the user do it manually."
         },
-        "coq.proofViewDiff.addedTextItalic": {
+        "coq.proofViewDiff.addedTextIsItalic": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "markdownDescription": "If `true`, in the proof view, the diff will show added characters in italic. Note: the color of added characters can be changed in `#coq.addedCharacter#`."
         },
-        "coq.proofViewDiff.removedTextStrikethrough": {
+        "coq.proofViewDiff.removedTextIsStrikedthrough": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "markdownDescription": "If `true`, in the proof view, the diff will show removed characters with a line through. Note: the color of added characters can be changed in `#coq.removedCharacter#`."
         },
         "coq.format.enable": {

@@ -64,9 +64,9 @@ function setPrettifySymbolsMode(enabled: boolean) {
 
 function setProofViewDiffOptions(settings: ProofViewDiffSettings) {
   $(document.body)
-    .toggleClass("proofView_addedTextItalic", settings.addedTextItalic);
+    .toggleClass("proofView_addedTextIsItalic", settings.addedTextIsItalic);
   $(document.body)
-    .toggleClass("proofView_removedTextStrikethrough", settings.removedTextStrikethrough);
+    .toggleClass("proofView_removedTextIsStrikedthrough", settings.removedTextIsStrikedthrough);
 }
 
 declare var acquireVsCodeApi : any;

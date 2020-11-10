@@ -130,25 +130,25 @@ body {
 .charsAdded {
   background-color: var(--vscode-coq-addedCharacter);
 }
-.proofView_addedTextItalic .charsAdded{
+.proofView_addedTextIsItalic .charsAdded{
   font-style: italic;
 }
 span[class~=charsAdded][class~=substitution]::before {
   font-style: var(--vscode-coq-proofViewDiff-addedInTermStyle);
 }
-.proofView_addedTextItalic span[class~=charsAdded][class~=substitution]::before  {
+.proofView_addedTextIsItalic span[class~=charsAdded][class~=substitution]::before  {
   font-style: italic;
 }
 .charsRemoved {
   background-color: var(--vscode-coq-removedCharacter);
 }
-.proofView_removedTextStrikethrough .charsRemoved{
+.proofView_removedTextIsStrikedthrough .charsRemoved{
   text-decoration: line-through;
 }
 span[class~=charsRemoved][class~=substitution]::before {
   background-color: var(--vscode-coq-removedCharacter);
 }
-.proofView_removedTextStrikethrough span[class~=charsRemoved][class~=substitution]::before  {
+.proofView_removedTextIsStrikedthrough span[class~=charsRemoved][class~=substitution]::before  {
   text-decoration: line-through;
 }
 
