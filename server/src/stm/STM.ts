@@ -40,7 +40,7 @@ interface BufferedFeedbackFileLoaded extends BufferedFeedbackBase {
 
 
 interface CoqProject {
-  getWorkspaceRoot() : string,
+  getCoqProjectRoot() : string,
   readonly console : vscode.RemoteConsole,
   readonly settings : Settings,
 }
