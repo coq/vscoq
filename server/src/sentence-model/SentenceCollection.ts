@@ -375,7 +375,63 @@ export class SentenceCollection implements vscode.TextDocument {
           //
           removed.forEach((sent) => sent.dispose());
           return {removed: removed, added: reparsed, endOfSentences: false};
-        }
+        } else if(idx >= minCount && start+idx+1 < this.sentences.length 
+              && currentOffset+sent.text.length === this.sentences[start+idx+1].getDocumentEndOffset()
+              && sent.text === this.sentences[start+idx+1].getText()) {
+          //we joined two sentences by removing a "." somewhere
+          // no need to parse further; keep remaining sentences
+          const removed = this.sentences.splice(start, idx+1, ...reparsed)
+          // adjust prev/next reference at the last reparsed sentence
+          if(reparsed.length > 0) {
+            const lastReparsed = reparsed[reparsed.length-1];
+            lastReparsed.next = this.sentences[start+reparsed.length] || null;
+            if(lastReparsed.next)
+              lastReparsed.next.prev = lastReparsed;
+          } else {
+            if(this.sentences[start-1]){
+              console.log("Case A: should " + this.sentences[start-1].toString() +" point to next:" +this.sentences[start] +"?");
+              this.sentences[start-1].next = this.sentences[start] || null;
+            }
+            if(this.sentences[start])
+            console.log("Case B: should " + this.sentences[start].toString() +" point to prev:" +this.sentences[start-1] +"?");
+              this.sentences[start].prev = this.sentences[start-1] || null;
+          } 
+
+          // this.sentences[start+reparsed.length-1].next = this.sentences[start+reparsed.length]||null;
+          // if(start+reparsed.length < this.sentences.length)           
+          //   this.sentences[start+reparsed.length].prev = this.sentences[start+reparsed.length-1]||null;           
+          //
+          removed.forEach((sent) => sent.dispose());
+          return {removed: removed, added: reparsed, endOfSentences: false};
+        } else if(idx >= minCount && 0 <= start+idx-1 && start+idx-1 < this.sentences.length 
+          && currentOffset+sent.text.length === this.sentences[start+idx-1].getDocumentEndOffset()
+          && sent.text === this.sentences[start+idx-1].getText()) {
+            //we joined two sentences by removing a "." somewhere
+            // no need to parse further; keep remaining sentences
+            const removed = this.sentences.splice(start, idx-1, ...reparsed)
+            // adjust prev/next reference at the last reparsed sentence
+            if(reparsed.length > 0) {
+              const lastReparsed = reparsed[reparsed.length-1];
+              lastReparsed.next = this.sentences[start+reparsed.length] || null;
+              if(lastReparsed.next)
+                lastReparsed.next.prev = lastReparsed;
+            } else {
+              if(this.sentences[start-1]){
+                console.log("Case C: should " + this.sentences[start-1].toString() +" point to next:" +this.sentences[start] +"?");
+                this.sentences[start-1].next = this.sentences[start] || null;
+              }
+              if(this.sentences[start])
+              console.log("Case D: should " + this.sentences[start].toString() +" point to prev:" +this.sentences[start-1] +"?");
+                this.sentences[start].prev = this.sentences[start-1] || null;
+            } 
+  
+            // this.sentences[start+reparsed.length-1].next = this.sentences[start+reparsed.length]||null;
+            // if(start+reparsed.length < this.sentences.length)           
+            //   this.sentences[start+reparsed.length].prev = this.sentences[start+reparsed.length-1]||null;           
+            //
+            removed.forEach((sent) => sent.dispose());
+            return {removed: removed, added: reparsed, endOfSentences: false};
+          }
 
         const command = sent.text;
         const range = Range.create(currentPosition, textUtil.positionAtRelative(currentPosition, command, sent.text.length));
