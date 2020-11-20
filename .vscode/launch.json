@@ -19,7 +19,7 @@
 			"request": "attach",
 			"protocol": "inspector",
 			"name": "Attach to Server",
-			"port": 6007,
+			"port": 6009,
 			"restart": true,
 			"outFiles": ["${workspaceRoot}/out/server/**/*.js"]
         }
