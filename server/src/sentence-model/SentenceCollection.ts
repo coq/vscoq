@@ -342,6 +342,7 @@ export class SentenceCollection implements vscode.TextDocument {
     }
 
     try {
+      var oldSentenceCandidate : number = start;
       for(let idx = 0; /**/; ++idx) {
         const parseText = this.documentText.substring(currentOffset);
         const sent = parser.parseSentence(parseText);
@@ -352,16 +353,23 @@ export class SentenceCollection implements vscode.TextDocument {
           if(reparsed.length == 0 && this.sentences[start-1])
             this.sentences[start-1].next = null;
           //
+          if (removed.length>0 && reparsed.length > 0 && removed[removed.length-1].getText()===reparsed[reparsed.length-1].getText() )
+            console.log("Internal inefficiency: detecting unchanged suffix after editing failed, and we parsed the whole document until end, please report.");
           removed.forEach((sent) => sent.dispose());
-          if (reparsed.length > 10){
-            console.log("NOTICE: some editing change lead us to reparse until EOF.")
-          }
           return {removed: removed, added: reparsed, endOfSentences: true};
         }
         
         var fixByLocalGlueing : undefined | number  =  undefined;
 
-        if(idx >= minCount && start+idx < this.sentences.length
+        while(oldSentenceCandidate < this.sentences.length && currentOffset+sent.text.length > this.sentences[oldSentenceCandidate].getDocumentEndOffset())
+          ++oldSentenceCandidate;
+        
+        if (idx >= minCount && oldSentenceCandidate < this.sentences.length
+            && currentOffset+sent.text.length === this.sentences[oldSentenceCandidate].getDocumentEndOffset()
+            && sent.text === this.sentences[oldSentenceCandidate].getText())
+          fixByLocalGlueing = oldSentenceCandidate - start; //found the old, parsed document again
+/*
+        if (idx >= minCount && start+idx < this.sentences.length
             && currentOffset+sent.text.length === this.sentences[start+idx].getDocumentEndOffset()
             && sent.text === this.sentences[start+idx].getText())
           fixByLocalGlueing = 0; //we probably edited inside the sentence before this
@@ -372,7 +380,7 @@ export class SentenceCollection implements vscode.TextDocument {
         else if(idx >= minCount && 0 <= start+idx-1 && start+idx-1 < this.sentences.length 
               && currentOffset+sent.text.length === this.sentences[start+idx-1].getDocumentEndOffset()
               && sent.text === this.sentences[start+idx-1].getText())
-          fixByLocalGlueing = -1;//we probably seperated a sentence into two by adding a "."
+          fixByLocalGlueing = -1;//we probably seperated a sentence into two by adding a "."*/
         
         if(fixByLocalGlueing !== undefined) {
           // no need to parse further; keep remaining sentences
@@ -394,10 +402,9 @@ export class SentenceCollection implements vscode.TextDocument {
           // if(start+reparsed.length < this.sentences.length)           
           //   this.sentences[start+reparsed.length].prev = this.sentences[start+reparsed.length-1]||null;           
           //
+          if (removed.length>1 && reparsed.length > 1 && removed[removed.length-2].getText()===reparsed[reparsed.length-2].getText())
+            console.log("Internal inefficiency: detecting unchanged suffix after editing and reparsed more than needed ("+reparsed.length+" total), please report.");
           removed.forEach((sent) => sent.dispose());
-          if (reparsed.length > 10){
-            console.log("NOTICE: some editing change lead us to reparse a lot of code, but we catched ourself, most likely because a lot of subsequent sentences where changed.")
-          }
           return {removed: removed, added: reparsed, endOfSentences: false};
         }
 
@@ -418,9 +425,7 @@ export class SentenceCollection implements vscode.TextDocument {
         // treat the rest of the document as unparsed
         const removed = this.sentences.splice(start, this.sentences.length - start, ...reparsed)
         removed.forEach((sent) => sent.dispose());
-        if (reparsed.length > 10){
-          console.log("NOTICE: some editing change lead us to reparse a lot of code, and we catched an exception.")
-        }
+        console.log("Notice: detecting unchanged suffix after editing lead to syntax error.")
         return {removed: removed, added: reparsed, endOfSentences: true};
       } else {
         server.connection.console.warn("unknown parsing error: " + util.inspect(error,false,undefined))
