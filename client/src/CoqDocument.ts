@@ -551,7 +551,7 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public async setDisplayOption(item?: proto.DisplayOption, value?: proto.SetDisplayOption) {
-    if(!item) {
+    if(item===undefined) {
       item = await this.queryDisplayOptionChange() || undefined;
       if(!item)
         return;
