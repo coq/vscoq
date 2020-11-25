@@ -8,7 +8,7 @@ export function unload() {
   subscriptions = [];
 }
 
-export const regExpQualifiedCoqIdent = /((\p{L}|_\u00A0)(\p{L}|[0-9_\u00A0'])*)(\.((\p{L}|_\u00A0)(\p{L}|[0-9_\u00A0'])*))*/u;
+export const regExpQualifiedCoqIdent = /((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)(\.((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*))*/u;
 
 export function reload() : vscode.Disposable {
   unload();
