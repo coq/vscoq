@@ -2,10 +2,10 @@
 
 * clean up makefile (#178, by @artagnon)
 * fix mangled diffs of changed terms (#172, by @fakusb)
-* improved recognition of qualified identifiers and notations for query guessing (#165 and #175, by fakusb)
+* improved recognition of qualified identifiers and notations for query guessing (#165 and #175, by @fakusb)
 * added build and install instructions from source to README (#145, by @thery)
-* remove Snippet that interfered with `match ... with` (#160, by @artagnon
-* reduced npm dependencies (#171, by fakusb)
+* remove Snippet that interfered with `match ... with` (#160, by @artagnon)
+* reduced npm dependencies (#171, by @fakusb)
 * files can now be reentered by coq after closing (#169, by @fakusb)
 * fix very narrow proof view (#170 and #173, by @fakusb)
 * recognise more keywords (#159 and #168, by @artagnon)
