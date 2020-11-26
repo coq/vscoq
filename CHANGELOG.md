@@ -1,3 +1,17 @@
+## 0.3.3
+
+* clean up makefile (#178, by @artagnon)
+* fix mangled diffs of changed terms (#172, by @fakusb)
+* improved recognition of qualified identifiers and notations for query guessing (#165 and #175, by fakusb)
+* added build and install instructions from source to README (#145, by @thery)
+* remove Snippet that interfered with `match ... with` (#160, by @artagnon
+* reduced npm dependencies (#171, by fakusb)
+* files can now be reentered by coq after closing (#169, by @fakusb)
+* fix very narrow proof view (#170 and #173, by @fakusb)
+* recognise more keywords (#159 and #168, by @artagnon)
+* deleted outdated TODO.md (#149, by @Blaisorblade)
+* bumped dependencies to avoid vulnerabilities (#148 and #152, by @dependabot)
+
 ## 0.3.2
 * improved indentation rules (#90, by @artagnon)
 * auto-focus ProofView when its content is updated (#143, @JimmyZJX)
