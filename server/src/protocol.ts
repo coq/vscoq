@@ -139,7 +139,7 @@ export interface Hypothesis {
   diff: HypothesisDifference;
 }
 export interface Goal {
-  id: number;
+  id: string;
   hypotheses: Hypothesis[];
   goal: AnnotatedText;
 }

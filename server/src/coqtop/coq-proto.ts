@@ -197,7 +197,7 @@ export interface CoqInfo {
 }
 
 export interface Subgoal {
-  id: number;
+  id: string;
   hypotheses: AnnotatedText[];
   goal: AnnotatedText;
 }

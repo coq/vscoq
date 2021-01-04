@@ -1,6 +1,6 @@
 import {ProofView,Goal,UnfocusedGoalStack} from '../protocol';
 
-export type GoalId  = number;
+export type GoalId  = string;
 
 interface UnfocusedGoalStackReference {
   before: GoalId[];
