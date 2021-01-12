@@ -4,6 +4,7 @@ import * as net from 'net';
 import * as path from 'path';
 import * as vscode from 'vscode-languageserver';
 import * as semver from 'semver';
+import * as fs from 'fs';
 
 import {ChildProcess, spawn} from 'child_process';
 import {CoqTopSettings} from '../protocol';
@@ -198,12 +199,22 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     this.console.log('coqtop-stdout:' + data);
   }
 
+  private fs_prefer_exists(current:string, alternative:string) {
+    if (fs.existsSync(current)) return current;
+    if (fs.existsSync(alternative)) return alternative;
+    return current;
+  }
+
   private get coqtopBin() {
-    return path.join(this.settings.binPath.trim(), this.settings.coqtopExe);
+    var coqtop = path.join(this.settings.binPath.trim(), this.settings.coqtopExe);
+    coqtop = this.fs_prefer_exists(coqtop,"/snap/bin/coq-prover.coqtop");
+    return coqtop;
   }
 
   private get coqidetopBin() {
-    return path.join(this.settings.binPath.trim(), this.settings.coqidetopExe);
+    var coqidetop = path.join(this.settings.binPath.trim(), this.settings.coqidetopExe);
+    coqidetop = this.fs_prefer_exists(coqidetop,"/snap/bin/coq-prover.coqidetop");
+    return coqidetop;
   }
 
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
