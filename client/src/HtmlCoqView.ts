@@ -165,10 +165,8 @@ export class HtmlCoqView implements view.CoqView {
   }
 
   private async sendMessage(message: ProofViewProtocol) {
-    if (this.panel !== null) {
-      this.panel.reveal(this.panel.viewColumn, true);
+    if (this.panel !== null)
       this.panel.webview.postMessage(message);
-    }
   }
 
   private async updateClient(state: proto.CommandResult) {
