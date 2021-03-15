@@ -1,3 +1,6 @@
+## 0.3.4
+* added changelog from 0.3.3
+
 ## 0.3.3
 
 * fix very narrow proof view (#170 and #173, by @fakusb)
