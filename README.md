@@ -19,7 +19,7 @@ VsCoq is an extension for [Visual Studio
 Code](https://code.visualstudio.com/) with support for the [Coq Proof
 Assistant](https://coq.inria.fr/).
 
-This extension is currently developped by @maximedenes and contributors, as
+This extension is currently developed by @maximedenes and contributors, as
 part of [Coq Community](https://github.com/coq-community/manifesto). The
 original author of this extension is @siegebell.
 
