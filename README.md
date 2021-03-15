@@ -2,8 +2,8 @@
 [![Contributing][contributing-shield]][contributing-link]
 [![Code of Conduct][conduct-shield]][conduct-link]
 [![Zulip][zulip-shield]][zulip-link]
-[![vs-marketplace-shield]][vs-marketplace-link]
-[![open-vsx-shield]][open-vsx-link]
+[![Available on the VsCode marketplace][vs-marketplace-shield]][vs-marketplace-link]
+[![Available on the Open VSX marketplace][open-vsx-shield]][open-vsx-link]
 
 
 [travis-shield]: https://travis-ci.com/coq-community/vscoq.svg?branch=master
@@ -79,4 +79,3 @@ The recommended way to install VsCoq is via the [Visual Studio Marketplace](http
 ## Install a local version
 
 Checkout the repo, run make, and install the produced .vsix file in the repository root by following https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix. So, either "Cmd-Shift-P" and "Extensions: Install from VSIX", or running code --install-extension vscoq-0.3.2.vsix (or whatever version number) from the terminal.
-
