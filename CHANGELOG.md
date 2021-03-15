@@ -9,7 +9,7 @@
 * fix mangled diffs of changed terms (#172, by @fakusb)
 * added option to not italicize/strikethrough diffs of changed terms (#166, by @fakusb)
 * added option to select location of `_CoqProject` (#179, by @fakusb)
-* proofviuew no longer gets put to foreground on changed (#195, by @Blaisorblade)
+* proofview no longer gets put to foreground on changed (#195, by @Blaisorblade)
 * fixed wrong assumption on Coq-xml protocol (#191, by @fakusb)
 * clean up makefile (#178, by @artagnon)
 * added build and install instructions from source to README (#145, by @thery)
