@@ -2,6 +2,9 @@
 [![Contributing][contributing-shield]][contributing-link]
 [![Code of Conduct][conduct-shield]][conduct-link]
 [![Zulip][zulip-shield]][zulip-link]
+[![Available on the VsCode marketplace][vs-marketplace-shield]][vs-marketplace-link]
+[![Available on the Open VSX marketplace][open-vsx-shield]][open-vsx-link]
+
 
 [travis-shield]: https://travis-ci.com/coq-community/vscoq.svg?branch=master
 [travis-link]: https://travis-ci.com/coq-community/vscoq/builds
@@ -14,6 +17,12 @@
 
 [zulip-shield]: https://img.shields.io/badge/chat-on%20zulip-%23c1272d.svg
 [zulip-link]: https://coq.zulipchat.com/#narrow/stream/237662-VsCoq-devs.20.26.20users
+
+[vs-marketplace-shield]: https://img.shields.io/visual-studio-marketplace/v/maximedenes.vscoq?label=Visual%20Studio%20Marketplace
+[vs-marketplace-link]: https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq
+
+[open-vsx-shield]: https://img.shields.io/open-vsx/v/maximedenes/vscoq
+[open-vsx-link]: https://open-vsx.org/extension/maximedenes/vscoq
 
 VsCoq is an extension for [Visual Studio
 Code](https://code.visualstudio.com/) with support for the [Coq Proof
@@ -38,7 +47,7 @@ original author of this extension is @siegebell.
 * Coq 8.7.0 or more recent
 
 ## Installation
-The recommended way to install VsCoq is via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq).
+The recommended way to install VsCoq is via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq) or [Open VSX](https://open-vsx.org/extension/maximedenes/vscoq) .
 
 ## Screenshots
 ![vscoq](https://user-images.githubusercontent.com/647105/64025392-dbf12100-cb3c-11e9-8e7f-5c63296500f9.png)
@@ -70,4 +79,3 @@ The recommended way to install VsCoq is via the [Visual Studio Marketplace](http
 ## Install a local version
 
 Checkout the repo, run make, and install the produced .vsix file in the repository root by following https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix. So, either "Cmd-Shift-P" and "Extensions: Install from VSIX", or running code --install-extension vscoq-0.3.2.vsix (or whatever version number) from the terminal.
-
