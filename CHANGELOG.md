@@ -17,6 +17,7 @@
 * reduced npm dependencies (#171, by @fakusb)
 * deleted outdated TODO.md (#149, by @Blaisorblade)
 * cleaned up readme file (#196, by @Blaisorblade)
+* collapsed duplicates and modernized license files (#177, by @artagnon)
 * bumped dependencies to avoid vulnerabilities (#148, #152, #174, #189 and #210, by @dependabot)
 
 ## 0.3.2
