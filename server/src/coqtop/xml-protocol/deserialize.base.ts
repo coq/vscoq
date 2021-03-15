@@ -226,7 +226,7 @@ export namespace Nodes {
   export interface GoalNode {
     $name: 'goal',
     $: { },
-    $children: {[0]: number, [1]: AnnotatedText[], [2]: AnnotatedText|null} & {}[]
+    $children: {[0]: string, [1]: AnnotatedText[], [2]: AnnotatedText|null} & {}[]
   }
 
   export interface GoalsNode {
@@ -435,7 +435,7 @@ export abstract class Deserialize {
       }
       case 'goal':
         return check(value.$name, {
-          id: +value.$children[0],
+          id: value.$children[0],
           hypotheses: value.$children[1],
           goal: value.$children[2] || []
         })
