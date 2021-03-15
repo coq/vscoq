@@ -88,8 +88,8 @@ connection.onShutdown(() => {
 // as well.
 connection.onDidChangeConfiguration((change) => {
 	let settings = change.settings as Settings;
-	project.updateSettings(settings);
-	connection.console.log('Changed path to: ' + project.settings.coqtop.binPath);
+  project.updateSettings(settings);
+	connection.console.log('Coqtop binPath is: ' + project.settings.coqtop.binPath);
 	// Revalidate any open text documents
 	//documents.all().forEach(validateTextDocument);
 });

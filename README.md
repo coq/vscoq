@@ -65,6 +65,7 @@ The recommended way to install VsCoq is via the [Visual Studio Marketplace](http
 * `"coqtop.binPath": ""` -- specify the path to coqtop (e.g. "path/to/coq/bin/")
 * `"coqtop.args": []` -- an array of strings specifying additional command line arguments for coqtop
 * `"coqtop.loadCoqProject": true` -- set to `false` to ignore <span>_CoqProject</span>
+* `"coqtop.coqProjectRoot": "."` -- where to expect the <span>_CoqProject</span> relative to the workspace root
 
 ## Install a local version
 

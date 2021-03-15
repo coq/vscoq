@@ -50,6 +50,7 @@ describe("CoqStateMachine", function() {
       externalViewScheme: "file",
       externalViewUrlCommand: "",
       loadCoqProject: false,
+      coqProjectRoot: ".",
       interpretToEndOfSentence: false,
       moveCursorToFocus: false,
       format: {
@@ -72,7 +73,7 @@ describe("CoqStateMachine", function() {
       fillServerCapabilities: undefined,
       initialize() {}
     },
-    getWorkspaceRoot: () => ".",
+    getCoqProjectRoot: () => ".",
     settings: projectSettings,
   };
 

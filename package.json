@@ -87,7 +87,12 @@
         "coq.loadCoqProject": {
           "type": "boolean",
           "default": true,
-          "description": "Load settings from _CoqProject (if found at the root of the Code project)"
+          "description": "Load settings from `_CoqProject` (if found at the root of the Code project)"
+        },
+        "coq.coqProjectRoot": {
+          "type": "string",
+          "default": ".",
+          "description": "The path of the coq project relative to the workspace root. Also determins where to look for the `_CoqProject` file. Requires reloading."
         },
         "coq.moveCursorToFocus": {
           "type": "boolean",
