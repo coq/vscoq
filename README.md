@@ -2,6 +2,8 @@
 [![Contributing][contributing-shield]][contributing-link]
 [![Code of Conduct][conduct-shield]][conduct-link]
 [![Zulip][zulip-shield]][zulip-link]
+[![](https://img.shields.io/visual-studio-marketplace/v/maximedenes.vscoq)](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq)
+[![](https://img.shields.io/visual-studio-marketplace/i/maximedenes.vscoq)](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq)
 
 [travis-shield]: https://travis-ci.com/coq-community/vscoq.svg?branch=master
 [travis-link]: https://travis-ci.com/coq-community/vscoq/builds
@@ -36,9 +38,6 @@ original author of this extension is @siegebell.
 ## Requirements
 * VsCode 1.30.0 or more recent
 * Coq 8.7.0 or more recent
-
-## Installation
-The recommended way to install VsCoq is via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq).
 
 ## Screenshots
 ![vscoq](https://user-images.githubusercontent.com/647105/64025392-dbf12100-cb3c-11e9-8e7f-5c63296500f9.png)
