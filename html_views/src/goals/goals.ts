@@ -1,6 +1,6 @@
 import * as $ from 'jquery';
 import * as stm from './StateModel'
-import { ControllerEvent, ResizeEvent, SettingsState, ProofViewProtocol } from './protocol'
+import { ControllerEvent, ResizeEvent, SettingsState, ProofViewProtocol, ProofViewDiffSettings } from './protocol'
 
 const stateModel = new stm.StateModel();
 
@@ -61,6 +61,13 @@ function setPrettifySymbolsMode(enabled: boolean) {
     .toggleClass("prettifySymbolsMode", enabled);
 }
 
+function setProofViewDiffOptions(settings: ProofViewDiffSettings) {
+  $(document.body)
+    .toggleClass("proofView_addedTextIsItalic", settings.addedTextIsItalic);
+  $(document.body)
+    .toggleClass("proofView_removedTextIsStrikedthrough", settings.removedTextIsStrikedthrough);
+}
+
 declare var acquireVsCodeApi : any;
 const vscode = acquireVsCodeApi();
 
@@ -90,6 +97,8 @@ function goalsLoad(_event :Event) {
 function updateSettings(settings: SettingsState) : void {
   if(settings.prettifySymbolsMode !== undefined)
     setPrettifySymbolsMode(settings.prettifySymbolsMode);
+  if(settings.proofViewDiff !== undefined)
+    setProofViewDiffOptions(settings.proofViewDiff);
   computePrintingWidth();
 }
 

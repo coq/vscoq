@@ -28,11 +28,17 @@ interface SettingsUpdate extends SettingsState {
   command: 'settings-update'
 }
 
+export interface ProofViewDiffSettings {
+  addedTextIsItalic : boolean,
+  removedTextIsStrikedthrough : boolean,
+}
+
 interface SettingsState {
   fontFamily?: string,
   fontSize?: string,
   fontWeight?: string,
   prettifySymbolsMode?: boolean,
+  proofViewDiff? : ProofViewDiffSettings,
 }
 
 
@@ -146,6 +152,7 @@ export class HtmlCoqView implements view.CoqView {
       });
 
       this.panel.webview.onDidReceiveMessage(message => this.handleClientMessage(message));
+      await this.updateSettings();
     }
   }
 
@@ -184,6 +191,7 @@ export class HtmlCoqView implements view.CoqView {
     this.currentSettings.fontFamily = vscode.workspace.getConfiguration("editor").get("fontFamily") as string;
     this.currentSettings.fontSize = `${vscode.workspace.getConfiguration("editor").get("fontSize") as number}pt`;
     this.currentSettings.fontWeight = vscode.workspace.getConfiguration("editor").get("fontWeight") as string;
+    this.currentSettings.proofViewDiff = vscode.workspace.getConfiguration("coq").get("proofViewDiff") as ProofViewDiffSettings;
     this.currentSettings.prettifySymbolsMode = psm.isEnabled();
     await this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>(this.currentSettings,{command: 'settings-update'}));
   }

@@ -15,11 +15,17 @@ interface SettingsUpdate extends SettingsState {
   command: 'settings-update'
 }
 
+export interface ProofViewDiffSettings {
+  addedTextIsItalic : boolean,
+  removedTextIsStrikedthrough : boolean,
+}
+
 export interface SettingsState {
   fontFamily?: string,
   fontSize?: string,
   fontWeight?: string,
   prettifySymbolsMode?: boolean,
+  proofViewDiff? : ProofViewDiffSettings,
 }
 
 export type ProofViewProtocol = GoalUpdate | SettingsUpdate;
