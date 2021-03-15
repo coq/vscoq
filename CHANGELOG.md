@@ -1,3 +1,25 @@
+## 0.3.3
+
+* fix very narrow proof view (#170 and #173, by @fakusb)
+* files can now be reentered by coq after closing (#169, by @fakusb)
+* recognise more keywords (#159, #168 and #209, by @artagnon)
+* improved recognition of qualified identifiers and notations for query guessing (#165 and #175, by @fakusb)
+* remove snippet that interfered with `match ... with` (#160, by @artagnon)
+* "Display Implicit Arguments" now indeed does display the implicit arguments (@182, by @fakusb)
+* fix mangled diffs of changed terms (#172, by @fakusb)
+* added option to not italicize/strikethrough diffs of changed terms (#166, by @fakusb)
+* added option to select location of `_CoqProject` (#179, by @fakusb)
+* proofview no longer gets put to foreground on changed (#195, by @Blaisorblade)
+* fixed wrong assumption on Coq-xml protocol (#191, by @fakusb)
+* clean up makefile (#178, by @artagnon)
+* added build and install instructions from source to README (#145, by @thery)
+* fixed debugger integration for language server (#180, by @fakusb) 
+* reduced npm dependencies (#171, by @fakusb)
+* deleted outdated TODO.md (#149, by @Blaisorblade)
+* cleaned up readme file (#196, by @Blaisorblade)
+* collapsed duplicates and modernized license files (#177, by @artagnon)
+* bumped dependencies to avoid vulnerabilities (#148, #152, #174, #189 and #210, by @dependabot)
+
 ## 0.3.2
 * improved indentation rules (#90, by @artagnon)
 * auto-focus ProofView when its content is updated (#143, @JimmyZJX)
