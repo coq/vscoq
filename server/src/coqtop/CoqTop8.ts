@@ -84,10 +84,14 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     this.console.log('starting coqtop');
 
     let coqtopVersion = await coqtop.detectVersion(this.coqtopBin, this.projectRoot, this.console);
+
     if(coqtopVersion)
       this.console.log(`Detected coqtop version ${coqtopVersion}`)
-    else
-      this.console.warn(`Could not detect coqtop version`)
+    else {
+      let fallbackVersion = "8.10"; //no changed behaviour in vscoq since this version
+      this.console.warn(`Could not detect coqtop version, defaulting to >= ${fallbackVersion}.`);
+      coqtopVersion = fallbackVersion;
+    }
 
     this.coqtopVersion = semver.coerce(coqtopVersion);
     this.console.log(`Coqtop version parsed into semver version ${this.coqtopVersion.format()}`);
