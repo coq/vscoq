@@ -30,20 +30,19 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
     return result;
   }
   decorationsInternal = {
-    // parsed
     parsing: create({
-      overviewRulerColor: 'rgba(0,0,70,0.5)', 
-      overviewRulerLane: vscode.OverviewRulerLane.Center,
+      outlineWidth: '1px',
+      outlineStyle: 'solid', 
+      overviewRulerColor: 'cyan', 
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
+      light: {outlineColor: 'rgba(32, 165, 218,0.7)', backgroundColor: 'rgba(0, 255, 255, 0.2)'},
+      dark: {outlineColor: 'rgba(32, 165, 218,0.7)', backgroundColor: 'rgba(0, 255, 255, 0.2)'},
     }),
-    // checked
     processing: create({
-      overviewRulerColor: 'rgba(0,0,255,0.5)', 
+      overviewRulerColor: 'blue', 
       overviewRulerLane: vscode.OverviewRulerLane.Center,
-    }),
-    // checked by delegate
-    incomplete: create({
-      overviewRulerColor: 'rgba(0,0,125,0.5)', 
-      overviewRulerLane: vscode.OverviewRulerLane.Center,
+      light: {backgroundColor: 'rgba(0,0,255,0.3)'},
+      dark: {backgroundColor: 'rgba(0,0,255,0.3)'},
     }),
     stateError: create({
       borderWidth: '1px',
@@ -58,12 +57,22 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
         },
     }),
     processed: create({
+      overviewRulerColor: 'green', 
+      overviewRulerLane: vscode.OverviewRulerLane.Center,
       light: {backgroundColor: 'rgba(0,150,0,0.2)'},
       dark: {backgroundColor: 'rgba(0,150,0,0.2)'},
     }),
     axiom: create({
+      overviewRulerColor: 'yellow',
+      overviewRulerLane: vscode.OverviewRulerLane.Center,
       light: {backgroundColor: 'rgba(180,180,0,0.7)'},
       dark: {backgroundColor: 'rgba(120,120,0,0.7)'},
+    }),
+    incomplete: create({
+      overviewRulerColor: 'purple', 
+      overviewRulerLane: vscode.OverviewRulerLane.Center,
+      light: {backgroundColor: 'violet'},
+      dark: {backgroundColor: 'darkmagenta'},
     }),
     focus: create({
       gutterIconPath: context.asAbsolutePath(STM_FOCUS_IMAGE),
