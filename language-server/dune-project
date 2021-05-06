@@ -1,0 +1,5 @@
+(lang dune 2.5)
+(name vscoq-language-server)
+(license LGPL-2.1-only)
+(authors "Maxime Dénès and Enrico Tassi")
+(source (github coq-community/vscoq-language-server))

@@ -1,0 +1,23 @@
+(library
+ (name dm)
+ (public_name vscoq-language-server.dm)
+ (private_modules scheduler delegationManager document)
+ (modules delegationManager parTactic documentManager document executionManager scheduler types)
+ (flags -rectypes)
+ (libraries coq-core.sysinit coq-core.vernac sel))
+
+(executable
+ (name vscoqtop_proof_worker)
+ (public_name vscoqtop_proof_worker.opt)
+ (modules vscoqtop_proof_worker)
+ (flags -rectypes -linkall)
+ (package vscoq-language-server)
+ (libraries coq-core.sysinit coq-core.tactics dm))
+
+(executable
+ (name vscoqtop_tactic_worker)
+ (public_name vscoqtop_tactic_worker.opt)
+ (modules vscoqtop_tactic_worker)
+ (flags -rectypes -linkall)
+ (package vscoq-language-server)
+ (libraries coq-core.sysinit coq-core.tactics dm))
