@@ -21,7 +21,7 @@ let changes_the_parser ast =
   | VtSideff (_, VtNow) -> true
   | _ -> false
 
-module SM = Map.Make (Stateid)
+module SM = CMap.Make (Stateid)
 
 type task =
   | Skip of sentence_id
