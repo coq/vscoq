@@ -125,10 +125,12 @@ export class HtmlCoqView implements view.CoqView {
       this.panel = vscode.window.createWebviewPanel(
         'html_coq',
         "ProofView: " + path.basename(this.docUri.fsPath),
-        { preserveFocus: true,
+        {
+          preserveFocus: true,
           viewColumn: pane,
         },
-        {enableScripts: true,
+        {
+          enableScripts: true,
           localResourceRoots: [vscode.Uri.file(path.join(extensionContext.extensionPath, 'out', VIEW_PATH))]
         }
       );
@@ -140,11 +142,11 @@ export class HtmlCoqView implements view.CoqView {
 
       let doc = await vscode.workspace.openTextDocument(this.coqViewUri);
 
-      let csspath = path.join(extensionContext.extensionPath,  'out', VIEW_PATH, 'proof-view.css');
-      let csspasthAsVscodeResource = vscode.Uri.file(csspath).with({ scheme: 'vscode-resource' });
+      let csspath = path.join(extensionContext.extensionPath, 'out', VIEW_PATH, 'proof-view.css');
+      let csspasthAsVscodeResource = this.panel.webview.asWebviewUri(vscode.Uri.file(csspath));
 
       let jspath = path.join(extensionContext.extensionPath, 'out', VIEW_PATH, 'goals.js');
-      let jspathAsVscodeResource = vscode.Uri.file(jspath).with({ scheme: 'vscode-resource' });
+      let jspathAsVscodeResource = this.panel.webview.asWebviewUri(vscode.Uri.file(jspath));
 
       this.panel.webview.html = mustache.render(doc.getText(), {
         jsPath: jspathAsVscodeResource,
