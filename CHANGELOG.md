@@ -1,3 +1,10 @@
+## 0.3.5
+* compatibility with vscode 1.57.0 (#238, by @swils)
+* fixed compatibility with snap (#223, by @gares and @fakusb)
+* add shields to readme (#218, by @fakusb)
+* typo readme (#217, by @artagnon)
+* bumped dependencies to avoid vulnerabilities (#222, by @dependabot)
+
 ## 0.3.4
 * added changelog from 0.3.3
 
