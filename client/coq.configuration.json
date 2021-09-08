@@ -43,6 +43,11 @@
       "end"
     ]
   ],
+  "colorizedBracketPairs": [
+		["{", "}"],
+		["[", "]"],
+		["(", ")"]
+	],
   "autoClosingPairs": [
     {
       "open": "{",
