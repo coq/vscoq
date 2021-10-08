@@ -116,7 +116,7 @@ let interp_ast ~doc_id ~state_id vernac_st ast =
 (* This adapts the Future API with our event model *)
 let interp_qed_delayed ~state_id vernac_st =
   let f proof =
-    let fix_exn x = x in (* FIXME *)
+    let fix_exn = None in (* FIXME *)
     let f, assign = Future.create_delegate ~blocking:false ~name:"XX" fix_exn in
     Declare.Proof.close_future_proof ~feedback_id:state_id proof f, assign
   in
