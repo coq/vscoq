@@ -271,9 +271,9 @@ let execute ~doc_id st (vs, events, interrupted) task =
                 Vernacstate.LemmaStack.with_top (Option.get @@ vernac_st.Vernacstate.lemmas) ~f
               | Error ((loc,err),_) ->
                   log "Aborted future";
-                  assign (`Exn (CErrors.UserError(None,Pp.str err), Option.fold_left Loc.add_loc Exninfo.null loc))
+                  assign (`Exn (CErrors.UserError(Pp.str err), Option.fold_left Loc.add_loc Exninfo.null loc))
               with exn when CErrors.noncritical exn ->
-                assign (`Exn (CErrors.UserError(None,Pp.str "error closing proof"), Exninfo.null))
+                assign (`Exn (CErrors.UserError(Pp.str "error closing proof"), Exninfo.null))
             in
             let st = update st terminator_id (success last_vs) in
             let st = List.fold_left (fun st id ->
