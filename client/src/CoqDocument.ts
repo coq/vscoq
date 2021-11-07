@@ -448,7 +448,7 @@ export class CoqDocument implements vscode.Disposable {
   }
 
   public async interpretToCursorPosition(editor: TextEditor, synchronous = false) {
-    this.statusBar.setStateWorking('Interpretting to point');
+    this.statusBar.setStateWorking('Interpreting to point');
     try {
       if(!editor || editor.document.uri.toString() !== this.documentUri)
        return;
