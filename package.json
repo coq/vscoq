@@ -116,7 +116,7 @@
             "subsequent"
           ],
           "default": "preceding",
-          "description": "Controls whether viewing the state of a sentence reveaks either the parent/source/preceding or child/subsequent state."
+          "description": "Controls whether viewing the state of a sentence reveals either the parent/source/preceding or child/subsequent state."
         },
         "coq.showProofViewOn": {
           "type": "string",
