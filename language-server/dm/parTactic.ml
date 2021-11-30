@@ -54,20 +54,21 @@ let worker_solve_one_goal { TacticJob.state; ast; goalno; goal; name } ~send_bac
   let focus_cond = Proof.no_cond command_focus in
   Vernacstate.unfreeze_interp_state state;
   try
+    let pr_goal g = string_of_int (Evar.repr g) in
     Vernacstate.LemmaStack.with_top (Option.get state.Vernacstate.lemmas) ~f:(fun pstate ->
     let pstate = Declare.Proof.map pstate ~f:(Proof.focus focus_cond () goalno) in
     let pstate = ComTactic.solve ~pstate Goal_select.SelectAll ~info:None ast ~with_end_tac:false in
     let { Proof.sigma } = Declare.Proof.fold pstate ~f:Proof.data in
     match Evd.(evar_body (find sigma goal)) with
     | Evd.Evar_empty ->
-        log @@ "no progress on goal " ^ Pp.string_of_ppcmds (Goal.pr_goal goal);
+        log @@ "no progress on goal " ^ pr_goal goal;
         send_back (TacticJob.UpdateSolution (goal,TacticJob.NoProgress))
     | Evd.Evar_defined t ->
         let t = Evarutil.nf_evar sigma t in
         let evars = Evarutil.undefined_evars_of_term sigma t in
         if Evar.Set.is_empty evars then
           let t = EConstr.Unsafe.to_constr t in
-          log @@ "closed goal " ^ Pp.string_of_ppcmds (Goal.pr_goal goal);
+          log @@ "closed goal " ^ pr_goal goal;
           send_back (TacticJob.UpdateSolution (goal,TacticJob.Solved(t, Evd.evar_universe_context sigma)))
         else
           CErrors.user_err ~hdr:"parTactic"
