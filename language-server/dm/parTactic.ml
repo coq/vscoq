@@ -88,7 +88,7 @@ let interp_par ~pstate ~info ast ~abstract ~with_end_tac : Declare.Proof.t =
   let events, job_ids = List.split @@
     Declare.Proof.fold pstate ~f:(fun p ->
      (Proof.data p).Proof.goals |> CList.map_i (fun goalno goal ->
-       let job = { TacticJob.state; ast; goalno = goalno + 1; goal; name = Goal.uid goal} in
+       let job = { TacticJob.state; ast; goalno = goalno + 1; goal; name = string_of_int (Evar.repr goal) } in
        let job_id = DelegationManager.mk_job_id !feedback_id in
        Queue.push (job_id,job) queue;
        TacticWorker.worker_available ~jobs:queue ~fork_action:worker_solve_one_goal, job_id

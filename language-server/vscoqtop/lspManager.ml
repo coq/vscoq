@@ -135,11 +135,12 @@ let send_highlights uri doc =
   output_json @@ mk_notification ~event:"coqtop/updateHighlights" ~params
 
 let mk_goal sigma g =
-  let env = Goal.V82.env sigma g in
+  let evi = Evd.find sigma g in
+  let env = Evd.evar_filtered_env (Global.env ()) evi in
   let min_env = Environ.reset_context env in
-  let id = Goal.uid g in
+  let id = Evar.repr g in
   let ccl =
-    pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
+    pr_letype_env ~goal_concl_style:true env sigma (Evd.evar_concl evi)
   in
   let mk_hyp d (env,l) =
     let d' = CompactedDecl.to_named_context d in
@@ -163,7 +164,7 @@ let mk_goal sigma g =
     Context.Compacted.fold mk_hyp
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
   `Assoc [
-    "id", `Int (int_of_string id);
+    "id", `Int id;
     "hypotheses", `List (List.rev hyps);
     "goal", `String (Pp.string_of_ppcmds ccl)
   ]
