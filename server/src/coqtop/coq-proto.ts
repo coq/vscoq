@@ -244,7 +244,7 @@ export type CoqValue =
   ValueReturn | FailValue;
 
 
-export type Add_rty = Pair<StateId,Pair<Union<{},StateId>,AnnotatedText>>;
+export type Add_rty = Pair<StateId,Pair<Union<{},StateId>,AnnotatedText>>|Pair<StateId,Union<{}, StateId>>;
 export type Goal_rty = Goals
 export type EditAt_rty = Union<{},Pair<StateId,Pair<StateId,StateId>>>;
 export type Query_rty = {};
@@ -317,7 +317,11 @@ export function GetValue(x: string, value: ValueReturn) : ReturnValue {
   switch(x) {
     case 'Add': {
       let v = value.result as Add_rty;
-      return {assignedState: v[0], nextFocusState: v[1][0].tag === 'inr' ? v[1][0].value : undefined, message: v[0][0]};
+      if ("tag" in v[1]) {
+        return {assignedState: v[0], nextFocusState: undefined, message: undefined}
+      } else {
+        return {assignedState: v[0], nextFocusState: v[1][0].tag === 'inr' ? v[1][0].value : undefined, message: v[1][1]}
+      };
     } case 'Edit_at': {
       let v = value.result as EditAt_rty;
       if(v.tag === 'inl')
