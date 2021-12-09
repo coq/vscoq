@@ -313,7 +313,7 @@ export class IdeSlave extends coqtop.IdeSlave {
     const verboseStr = verbose === false ? "false" : "true";
     this.console.log('--------------------------------');
     this.console.log(`Call Add("${command.trim().substr(0, 20) + (command.trim().length > 20 ? "..." : "")}", editId: ${editId}, stateId: ${stateId}, verbose: ${verboseStr})`);
-    this.writeMain(`<call val="Add"><pair><pair><string>${coqXml.escapeXml(command)}</string><int>${editId}</int></pair><pair><state_id val="${stateId}"/><bool val="${verboseStr}"/></pair></pair></call>`);
+    this.writeMain(`<call val="Add"><pair><pair><pair><pair><string>${coqXml.escapeXml(command)}</string><int>${editId}</int></pair><pair><state_id val="${stateId}"/><bool val="${verboseStr}"/></pair></pair><int>0</int></pair><pair><int>0</int><int>0</int></pair></pair></call>`);
 
     const value = coqProto.GetValue('Add', await coqResult);
     let result : AddResult = {
