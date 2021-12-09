@@ -3,6 +3,7 @@
 import * as util from 'util';
 import * as coqXml from './xml-protocol/coq-xml';
 import * as vscode from 'vscode-languageserver';
+import * as semver from 'semver';
 
 import * as coqProto from './coq-proto';
 import * as xmlTypes from './xml-protocol/CoqXmlProtocolTypes';
@@ -40,6 +41,8 @@ export class IdeSlave extends coqtop.IdeSlave {
   private parser : coqXml.XmlStream|null = null;
   private coqResultValueListener : {onValue: (value:coqProto.ValueReturn|coqProto.FailValue) => void, onError: (reason: any)=>void} | null = null;
 
+  private version : semver.SemVer;
+
 
   protected state = IdeSlaveState.Disconnected;
 
@@ -51,13 +54,14 @@ export class IdeSlave extends coqtop.IdeSlave {
     this.console = console;
   }
 
-  protected connect(version: string, mainR: NodeJS.ReadableStream, mainW: NodeJS.WritableStream, controlR: NodeJS.ReadableStream, controlW: NodeJS.WritableStream) {
+  protected connect(version: semver.SemVer, mainR: NodeJS.ReadableStream, mainW: NodeJS.WritableStream, controlR: NodeJS.ReadableStream, controlW: NodeJS.WritableStream) {
     this.mainChannelR = mainR;
     this.mainChannelW = mainW;
     this.controlChannelW = controlW;
     this.state = IdeSlaveState.Connected;
+    this.version = version;
   
-    const deserializer = createDeserializer(version);
+    const deserializer = createDeserializer(version.format());
     this.parser = new coqXml.XmlStream(this.mainChannelR, deserializer, {
       onFeedback: (feedback: coqProto.StateFeedback) => this.doOnFeedback(feedback),
       onMessage: (msg: coqProto.Message, routeId: coqProto.RouteId, stateId?: coqProto.StateId) => this.doOnMessage(msg, routeId, stateId),
@@ -313,7 +317,12 @@ export class IdeSlave extends coqtop.IdeSlave {
     const verboseStr = verbose === false ? "false" : "true";
     this.console.log('--------------------------------');
     this.console.log(`Call Add("${command.trim().substr(0, 20) + (command.trim().length > 20 ? "..." : "")}", editId: ${editId}, stateId: ${stateId}, verbose: ${verboseStr})`);
-    this.writeMain(`<call val="Add"><pair><pair><pair><pair><string>${coqXml.escapeXml(command)}</string><int>${editId}</int></pair><pair><state_id val="${stateId}"/><bool val="${verboseStr}"/></pair></pair><int>0</int></pair><pair><int>0</int><int>0</int></pair></pair></call>`);
+    let compat_8_15 = semver.satisfies(this.version, ">= 8.15");
+    this.writeMain(`<call val="Add"><pair><pair>`
+      + (compat_8_15?`<pair><pair>`:``)
+      + `<string>${coqXml.escapeXml(command)}</string><int>${editId}</int></pair><pair><state_id val="${stateId}"/><bool val="${verboseStr}"/>`
+      + (compat_8_15?`</pair></pair><int>0</int></pair><pair><int>0</int><int>0</int>`:``)
+      + `</pair></pair></call>`);
 
     const value = coqProto.GetValue('Add', await coqResult);
     let result : AddResult = {

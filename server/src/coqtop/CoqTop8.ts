@@ -167,7 +167,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
         this.acceptConnection(this.controlChannelServer2, 'control channel W'),
       ]);
 
-    this.connect(this.coqtopVersion.format(), channels[0], channels[1], channels[2], channels[3])
+    this.connect(this.coqtopVersion, channels[0], channels[1], channels[2], channels[3])
   }
 
   private startCoqTop(process : ChildProcess) {
