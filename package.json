@@ -807,8 +807,7 @@
     "vscode:prepublish": "npm run compile",
     "compile": "webpack && tsc -b",
     "watch": "tsc -b -w",
-    "test": "node ./node_modules/vscode/bin/test",
-    "postinstall": "node ./node_modules/vscode/bin/install"
+    "test": "node ./node_modules/vscode/bin/test"
   },
   "repository": {
     "type": "git",
@@ -823,21 +822,20 @@
     "@types/node": "^13.1.6",
     "@types/sax": "^1.2.0",
     "@types/semver": "^6.2.0",
+    "@types/vscode": "^1.38.0",
     "@types/ws": "^7.2.0",
     "@types/xml2js": "^0.4.5",
+    "copy-webpack-plugin": "^5.1.2",
     "jquery": "^3.5.0",
     "ts-loader": "^6.2.1",
     "ts-prune": "^0.3.0",
     "typescript": "^3.7.5",
     "vsce": "^1.75.0",
-    "vscode": "^1.1.37",
     "webpack": "^4.41.5",
     "webpack-cli": "^3.3.10"
   },
   "dependencies": {
-    "async": "^3.1.0",
     "bufferutil": "^4.0.1",
-    "copy-webpack-plugin": "^5.1.1",
     "diff": "4.0.2",
     "mustache": "^4.0.0",
     "pegjs": "^0.10.0",
@@ -848,7 +846,6 @@
     "vscode-jsonrpc": "^4.0.0",
     "vscode-languageclient": "^5.2.1",
     "vscode-languageserver": "^5.2.1",
-    "ws": "^7.4.6",
-    "xml2js": "^0.4.23"
+    "ws": "^7.4.6"
   }
 }
