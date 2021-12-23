@@ -12,7 +12,8 @@
   "license": "MIT",
   "icon": "images/logo.png",
   "engines": {
-    "vscode": "^1.38.0"
+    "vscode": "^1.38.0",
+    "node":">=14.0.0"
   },
   "categories": [
     "Programming Languages"
@@ -832,7 +833,7 @@
     "typescript": "^3.7.5",
     "vsce": "^2.5.3",
     "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10"
+    "webpack-cli": "^4.9.1"
   },
   "dependencies": {
     "bufferutil": "^4.0.1",
