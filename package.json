@@ -826,7 +826,7 @@
     "@types/vscode": "^1.38.0",
     "@types/ws": "^7.2.0",
     "@types/xml2js": "^0.4.5",
-    "copy-webpack-plugin": "^7.0.0",
+    "copy-webpack-plugin": "^10.2.0",
     "jquery": "^3.5.0",
     "ts-loader": "^6.2.1",
     "ts-prune": "^0.10.3",

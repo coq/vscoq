@@ -33,15 +33,15 @@ module.exports = {
     new CopyPlugin({patterns: [
       {
         from: "html_views/src/**/*.html",
-        to: path.resolve(__dirname, "out", "html_views","[name].[ext]")
+        to: path.resolve(__dirname, "out", "html_views","[name][ext]")
       },
       {
         from: "html_views/src/**/*.css",
-        to: path.resolve(__dirname, "out", "html_views","[name].[ext]")
+        to: path.resolve(__dirname, "out", "html_views","[name][ext]")
       },
       {
         from: "client/images/*.svg",
-        to: path.resolve(__dirname, "out", "images","[name].[ext]")
+        to: path.resolve(__dirname, "out", "images","[name][ext]")
       }
     ]})
   ]
