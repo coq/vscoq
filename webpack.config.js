@@ -30,22 +30,19 @@ module.exports = {
       $: "jquery",
       jquery: "jquery"
     }),
-    new CopyPlugin([
+    new CopyPlugin({patterns: [
       {
         from: "html_views/src/**/*.html",
-        to: path.resolve(__dirname, "out", "html_views"),
-        flatten: true
+        to: path.resolve(__dirname, "out", "html_views","[name][ext]")
       },
       {
         from: "html_views/src/**/*.css",
-        to: path.resolve(__dirname, "out", "html_views"),
-        flatten: true
+        to: path.resolve(__dirname, "out", "html_views","[name][ext]")
       },
       {
         from: "client/images/*.svg",
-        to: path.resolve(__dirname, "out", "images"),
-        flatten: true
+        to: path.resolve(__dirname, "out", "images","[name][ext]")
       }
-    ])
+    ]})
   ]
 };

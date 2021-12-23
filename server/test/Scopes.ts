@@ -23,11 +23,16 @@ export interface IScopeDeclaration {
   privateSymbols : Symbol[];
   localSymbols : Symbol[];
   exportSymbols : Symbol[];
+  addExportSymbol(s: Symbol) : void;
+  isBegin(name?: string) : this is ScopeDeclaration&{node: {kind:"begin",name:string,exports:boolean}}
+  isEnd(name?: string) : this is ScopeDeclaration&{node: {kind:"end",name:string}};
+  lookup(id: QualId, flags: ScopeFlags) : SymbolInformation[];
   lookupSymbolInList(id: QualId, symbols: Symbol[]) : SymbolInformation|null;
   lookupHere(id: QualId, flags: ScopeFlags) : SymbolInformation|null;
   getPreviousSentence() : ScopeDeclaration|null;
   getNextSentence() : ScopeDeclaration|null;
   getParentScope() : ScopeDeclaration|null;
+  getPrefixes() : QualId[];
   resolveSymbol(s: SymbolInformation|null) : SymbolInformation|null;
   resolveId(id: QualId, flags: ScopeFlags) : SymbolInformation|null;
 }
@@ -125,12 +130,12 @@ describe("Scopes", function() {
     it("constructor1", function() {
       s.scope = new ScopeDeclaration(s,[], null) as any;
       const sc = s.scope as any as IScopeDeclaration;
-      assert.equal(s.scope.lookup([],ScopeFlags.All),null);
-      assert.equal(s.scope.lookup(['foo'],ScopeFlags.All),null);
-      assert.equal(s.scope.lookup(['M','foo'],ScopeFlags.All),null);
-      assert.equal(s.scope.isBegin(), false);
-      assert.equal(s.scope.isEnd(), false);
-      assert.deepStrictEqual(s.scope.getPrefixes(), []);
+      assert.equal(sc.lookup([],ScopeFlags.All),null);
+      assert.equal(sc.lookup(['foo'],ScopeFlags.All),null);
+      assert.equal(sc.lookup(['M','foo'],ScopeFlags.All),null);
+      assert.equal(sc.isBegin(), false);
+      assert.equal(sc.isEnd(), false);
+      assert.deepStrictEqual(sc.getPrefixes(), []);
       assert.deepStrictEqual(sc.getNextSentence(), null);
       assert.deepStrictEqual(sc.getPreviousSentence(), null);
       assert.deepStrictEqual(sc.getParentScope(), null);
@@ -138,30 +143,33 @@ describe("Scopes", function() {
 
     it("constructor2", function() {
       s.scope = new ScopeDeclaration(s,['M'], null) as any;
-      assert.equal(s.scope.lookup([],ScopeFlags.All),null);
-      assert.equal(s.scope.lookup(['foo'],ScopeFlags.All),null);
-      assert.equal(s.scope.lookup(['M','foo'],ScopeFlags.All),null);
-      assert.equal(s.scope.isBegin(), false);
-      assert.equal(s.scope.isEnd(), false);
-      assert.deepStrictEqual(s.scope.getPrefixes(), []);      
+      const sc = s.scope as any as IScopeDeclaration;
+      assert.equal(sc.lookup([],ScopeFlags.All),null);
+      assert.equal(sc.lookup(['foo'],ScopeFlags.All),null);
+      assert.equal(sc.lookup(['M','foo'],ScopeFlags.All),null);
+      assert.equal(sc.isBegin(), false);
+      assert.equal(sc.isEnd(), false);
+      assert.deepStrictEqual(sc.getPrefixes(), []);      
     })
 
     it("isBegin", function() {
       s.scope = new ScopeDeclaration(s,['M'], {kind: "begin", name: "MOO", exports:true}) as any;
-      assert.equal(s.scope.isBegin('M'), false);
-      assert.equal(s.scope.isBegin('MOO'), true);
-      assert.equal(s.scope.isEnd('MOO'), false);
-      assert.equal(s.scope.isEnd('M'), false);
-      assert.equal(s.scope.isEnd(), false);
+      const sc = s.scope as any as IScopeDeclaration;
+      assert.equal(sc.isBegin('M'), false);
+      assert.equal(sc.isBegin('MOO'), true);
+      assert.equal(sc.isEnd('MOO'), false);
+      assert.equal(sc.isEnd('M'), false);
+      assert.equal(sc.isEnd(), false);
     })
 
     it("isEnd", function() {
       s.scope = new ScopeDeclaration(s,['M'], {kind: "end", name: "MOO"}) as any;
-      assert.equal(s.scope.isBegin('M'), false);
-      assert.equal(s.scope.isBegin('MOO'), false);
-      assert.equal(s.scope.isEnd('MOO'), true);
-      assert.equal(s.scope.isEnd('M'), false);
-      assert.equal(s.scope.isEnd(), true);
+      const sc = s.scope as any as IScopeDeclaration;
+      assert.equal(sc.isBegin('M'), false);
+      assert.equal(sc.isBegin('MOO'), false);
+      assert.equal(sc.isEnd('MOO'), true);
+      assert.equal(sc.isEnd('M'), false);
+      assert.equal(sc.isEnd(), true);
     })
 
     function assertSymbolLookup(si: SymbolInformation[]|null, sy: Symbol[], p: QualId) {
@@ -183,7 +191,7 @@ describe("Scopes", function() {
     it("lookupHere", function() {
       s.scope = new ScopeDeclaration(s,['M'], null) as any;
       const sc = s.scope as any as IScopeDeclaration;
-      s.scope.addExportSymbol(symb.foo);
+      sc.addExportSymbol(symb.foo);
       assert.equal(sc.lookupHere(['bar'],ScopeFlags.All), null);      
       assert.equal(sc.lookupHere(['foo'],ScopeFlags.Local), null);      
       assert.equal(sc.lookupHere(['foo'],ScopeFlags.Private), null);      
@@ -195,7 +203,7 @@ describe("Scopes", function() {
       s.scope = new ScopeDeclaration(s,['M'], null) as any;
       const sc = s.scope as any as IScopeDeclaration;
       assert.equal(sc.resolveSymbol(null), null);      
-      s.scope.addExportSymbol(symb.foo);
+      sc.addExportSymbol(symb.foo);
       assert.equal(sc.resolveSymbol(null), null);      
       const si1 : SymbolInformation = {
         assumedPrefix: [],
@@ -215,7 +223,7 @@ describe("Scopes", function() {
       const si3 : SymbolInformation = {assumedPrefix: ['M2'], id: ['foo'], source: s, symbol: symb.foo}
       assert.deepStrictEqual(sc.resolveSymbol(si3), null);
 
-      s.scope.getPrefixes = function() {
+      sc.getPrefixes = function() {
         return [['M1','M2']]
       }
       assert.deepStrictEqual(sc.resolveSymbol(si1).assumedPrefix, []);
@@ -228,10 +236,11 @@ describe("Scopes", function() {
 
     it("lookup", function() {
       s.scope = new ScopeDeclaration(s,['M'], null) as any;
-      s.scope.addExportSymbol(symb.foo);
+      const sc = s.scope as any as IScopeDeclaration;
+      sc.addExportSymbol(symb.foo);
 
-      assertSymbolLookup(s.scope.lookup(['foo'],ScopeFlags.All), symb.foo, []);
-      assert.equal(s.scope.lookup(['bar'],ScopeFlags.All), null);
+      assertSymbolLookup(sc.lookup(['foo'],ScopeFlags.All), symb.foo, []);
+      assert.equal(sc.lookup(['bar'],ScopeFlags.All), null);
     })
 
   })
@@ -300,7 +309,10 @@ describe("Scopes", function() {
 
     it.skip("getPrefix", function() {
       function testGetPrefix(tests: [number,QualId][]) {
-        tests.forEach(([idx,expected]) => assert.deepStrictEqual(s[idx].scope.getPrefixes(), expected, `s[${idx}].prefix === ${expected.toString()}`));
+        tests.forEach(([idx,expected]) => {
+          const sc = s[idx].scope as any as IScopeDeclaration;
+          assert.deepStrictEqual(sc.getPrefixes(), expected, `s[${idx}].prefix === ${expected.toString()}`)
+        });
       }      
       testGetPrefix([
         [ 0, [] ],
@@ -318,7 +330,8 @@ describe("Scopes", function() {
     it.skip("lookup", function() {
       function testLookup(tests: [number,QualId,ScopeFlags,number[],QualId[]][]) {
         tests.forEach(([idx,id,f,expectedSource,expectedId]) => {
-          const x = s[idx].scope.lookup(id,f);
+          const sc = s[idx].scope as any as IScopeDeclaration;
+          const x = sc.lookup(id,f);
           x.forEach((x, idx) => {
             assert.deepStrictEqual(x.source, s[expectedSource[idx]], `s[${idx}].lookup(${id.toString()}).source === s[${expectedSource[idx].toString()}]`);
             assert.deepStrictEqual(x.id, expectedId[idx], `s[${idx}].lookup(${id.toString()}).id === ${expectedId[idx].toString()}`);

@@ -1,6 +1,7 @@
 node_modules/
 out/
 _opam/
+.vscode-test/
 
 backup.sh
 start-env.ps1
