@@ -1,5 +1,4 @@
 import * as nfs from 'fs'
-import * as nzlib from 'zlib'
 
 export namespace fs {
   export function open(path: string|Buffer, flags: string|number) : Promise<number> {
@@ -27,46 +26,25 @@ export namespace fs {
     })
   }
 
-  export function readFile(filename: string, encoding: string) : Promise<string>;
+  export function readFile(filename: string, encoding: BufferEncoding) : Promise<string>;
   export function readFile(filename: string) : Promise<Buffer>;
   export function readFile(filename: string, options: {flag?:string}) : Promise<Buffer>;
-  export function readFile(filename: string, options: {encoding: string, flag?:string}) : Promise<string>;
-  export function readFile(filename: string, options?: string|{flag?:string}) : Promise<Buffer|string> {
+  export function readFile(filename: string, options: {encoding: BufferEncoding, flag?:string}) : Promise<string>;
+  export function readFile(...args: any[]) : Promise<Buffer|string> {
     return new Promise<Buffer|string>((resolve,reject) => {
-      if (typeof options === "string") {
-        nfs.readFile(filename, options, (err,data) => {
-          if(err)
-            reject(err);
-          else
-            resolve(data);
-        });
-      } else {
-        nfs.readFile(filename, options, (err,data) => {
-          if(err)
-            reject(err);
-          else
-            resolve(data);
-        });
-      } });
-  }
-
-  export function exists(path: string|Buffer) : Promise<boolean> {
-    return new Promise<boolean>((resolve,reject) => {
-      nfs.exists(path, (ex) => resolve(ex));
-    });
-  }
-}
-
-
-export namespace zlib {
-  export function gunzip(data: Buffer, encoding = 'utf8') : Promise<string> {
-    return new Promise<string>((resolve,reject) => {
-      nzlib.gunzip(data, (err,data) => {
+      nfs.readFile(args[0], args[1], (err,data) => {
         if(err)
           reject(err);
         else
-          resolve(data.toString(encoding));
+          resolve(data);
       });
+    });
+  }
+
+  
+  export function exists(path: string|Buffer) : Promise<boolean> {
+    return new Promise<boolean>((resolve,reject) => {
+      nfs.exists(path, (ex) => resolve(ex));
     });
   }
 }
