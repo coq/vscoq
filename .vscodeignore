@@ -1,13 +1,27 @@
+**/.gitignore
+shared.webpack.config.js
+webpack.*.config.js
+**/*.ts
+**/*.map
+**/webpack.config.js
+**/tsconfig.json
+**/tsconfig.base.json
+**/tslint.json
 .vscode/**
-out/client/test/**
+node_modules
+tsconfig.tsbuildinfo
+
+
+# The client is partially web packed. So only ship extension.js
 client/test/**
 client/src/**
-client/server/installServerIntoExtension.cmd
-client/server/installServerIntoExtension
-client/**/*.map
-.gitignore
-client/tsconfig.json
+client/out/**
+!client/out/extension.js
+
+# The html_views are partially web packed.
+html_views/src
+html_views/typing
+
+# The server is web packed. So only ship server.js
 server/**
-html_views/**
-out/**/*.js.map
-out/server/test
+!server/out/server.js
