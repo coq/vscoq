@@ -1,3 +1,11 @@
+## 0.3.6
+* compatibility with Coq 8.15 (#264, by @quarkcool and @fakusb)
+* bumped and cleaned up dependencies (#234, #263, #264 and #265 by @dependabot and @fakusb)
+* fixed colorization of keywords in identifiers (#251, by @julesjacobs)
+* give more informative goal message on shelved/admitted goals (#184, by @fakusb)
+* fixed typos (#258 and #259, by @jacklee1792 and @j3parker)
+* better documentation for coqtop.args option (#224, by @fakusb)
+
 ## 0.3.5
 * compatibility with vscode 1.57.0 (#238, by @swils)
 * fixed compatibility with snap (#223, by @gares and @fakusb)
