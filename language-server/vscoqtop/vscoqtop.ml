@@ -40,8 +40,8 @@ let loop injections =
     log ""
 ;;
 
-let vscoqtop_specific_usage = {
-  Usage.executable_name = "vscoqtop";
+let vscoqtop_specific_usage = Boot.Usage.{
+  executable_name = "vscoqtop";
   extra_args = "";
   extra_options = "";
 }

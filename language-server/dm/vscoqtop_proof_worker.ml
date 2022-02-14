@@ -22,7 +22,7 @@ let main_worker options =
     log bt;
     flush_all ()
 
-let vscoqtop_specific_usage = Usage.{
+let vscoqtop_specific_usage = Boot.Usage.{
   executable_name = "vscoqtop_proof_worker";
   extra_args = "";
   extra_options = "";
