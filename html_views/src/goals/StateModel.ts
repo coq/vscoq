@@ -189,9 +189,11 @@ export class StateModel {
               , createFocusedGoals(state.goals)
             ])
             var elmnt = document.getElementById("firstGoal");
-            elmnt.scrollIntoView({block: "center", inline: "nearest"}); 
-          } else if (state.backgroundGoals.before.length > 0 || state.backgroundGoals.after.length > 0 ||  state.backgroundGoals.next != undefined ) {
-            this.setMessage("There are unfocused goals.");
+            elmnt.scrollIntoView({block: "center", inline: "nearest"});
+          } else if (state.backgroundGoals) {
+            if (state.backgroundGoals.before.length > 0 || state.backgroundGoals.after.length > 0 || state.backgroundGoals.next) {
+                this.setMessage("There are unfocused goals.");
+            }
           } else if (state.shelvedGoals.length > 0 ) {
             this.setMessage("There are shelved goals. Try using `Unshelve`.");
           } else if (state.abandonedGoals.length > 0 ) {
@@ -199,7 +201,7 @@ export class StateModel {
           } else
           this.setMessage("No more subgoals. Internal invariant violated. Please report.")
         }
-        
+
       if(hasSubstitutions)
         $('#togglePrettifySymbols').removeClass("hidden")
       else
