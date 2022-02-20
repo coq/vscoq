@@ -112,10 +112,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/diff@npm:^4.0.2":
-  version: 4.0.2
-  resolution: "@types/diff@npm:4.0.2"
-  checksum: 80986254f881e29a146c7258654b0c1ddecbb487dc2eca9ad424dab7a17f54d57f91271526661f4c3bf0bb77903d90bc627b63e389a30711adc622865bc30d94
+"@types/diff@npm:^5.0.2":
+  version: 5.0.2
+  resolution: "@types/diff@npm:5.0.2"
+  checksum: 8fbc419b5aca33f494026bf5f70e026f76367689677ef114f9c078ac738d7dbe96e6dda3fd8290e4a7c35281e2b60b034e3d7e3c968b850cf06a21279e7ddcbe
   languageName: node
   linkType: hard
 
@@ -162,10 +162,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mocha@npm:^5.2.7":
-  version: 5.2.7
-  resolution: "@types/mocha@npm:5.2.7"
-  checksum: 446e64292f37f4eac9221161f4c1026dd4a0dbeea0f16c4617227fcf5a1286b53d97e36a32ff7cb3a0435ab78791dd43e9ac1006f92abedb47d7d1d7636cb55c
+"@types/mocha@npm:^9.1.0":
+  version: 9.1.0
+  resolution: "@types/mocha@npm:9.1.0"
+  checksum: 21e1000dafcfe387c6812be41c44a47b48c27a74d5a70c3d5ef1bb5c88eadadfc74dba06e93f160e7248c8a57b3977b590f82504c801c9927816ecd4668023c0
   languageName: node
   linkType: hard
 
@@ -213,12 +213,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/ws@npm:^7.4.7":
-  version: 7.4.7
-  resolution: "@types/ws@npm:7.4.7"
+"@types/ws@npm:^8.2.3":
+  version: 8.2.3
+  resolution: "@types/ws@npm:8.2.3"
   dependencies:
     "@types/node": "*"
-  checksum: b4c9b8ad209620c9b21e78314ce4ff07515c0cadab9af101c1651e7bfb992d7fd933bd8b9c99d110738fd6db523ed15f82f29f50b45510288da72e964dedb1a3
+  checksum: 94e949ef66909334eb8d77079a28ce8fcea8780295eadab1bccdbb85adc0534d96d9a61910a80720769c6019e7bfaba90cea6f95f58e93de135b766074aa53cb
   languageName: node
   linkType: hard
 
@@ -1076,10 +1076,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"diff@npm:4.0.2":
-  version: 4.0.2
-  resolution: "diff@npm:4.0.2"
-  checksum: f2c09b0ce4e6b301c221addd83bf3f454c0bc00caa3dd837cf6c127d6edf7223aa2bbe3b688feea110b7f262adbfc845b757c44c8a9f8c0c5b15d8fa9ce9d20d
+"diff@npm:5.0.0":
+  version: 5.0.0
+  resolution: "diff@npm:5.0.0"
+  checksum: f19fe29284b633afdb2725c2a8bb7d25761ea54d321d8e67987ac851c5294be4afeab532bd84531e02583a3fe7f4014aa314a3eda84f5590e7a9e6b371ef3b46
   languageName: node
   linkType: hard
 
@@ -3457,17 +3457,17 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "vscoq@workspace:."
   dependencies:
-    "@types/diff": ^4.0.2
+    "@types/diff": ^5.0.2
     "@types/jquery": ^3.5.13
-    "@types/mocha": ^5.2.7
+    "@types/mocha": ^9.1.0
     "@types/node": ^17.0.18
     "@types/sax": ^1.2.4
     "@types/semver": ^7.3.9
     "@types/vscode": ^1.64.0
-    "@types/ws": ^7.4.7
+    "@types/ws": ^8.2.3
     bufferutil: ^4.0.6
     copy-webpack-plugin: ^10.2.4
-    diff: 4.0.2
+    diff: 5.0.0
     jquery: ^3.6.0
     mustache: ^4.2.0
     pegjs: ^0.10.0
@@ -3484,7 +3484,7 @@ __metadata:
     vscode-languageserver: ^5.2.1
     webpack: ^5.69.1
     webpack-cli: ^4.9.2
-    ws: ^7.5.7
+    ws: ^8.5.0
   languageName: unknown
   linkType: soft
 
@@ -3619,9 +3619,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^7.5.7":
-  version: 7.5.7
-  resolution: "ws@npm:7.5.7"
+"ws@npm:^8.5.0":
+  version: 8.5.0
+  resolution: "ws@npm:8.5.0"
   peerDependencies:
     bufferutil: ^4.0.1
     utf-8-validate: ^5.0.2
@@ -3630,7 +3630,7 @@ __metadata:
       optional: true
     utf-8-validate:
       optional: true
-  checksum: 5c1f669a166fb57560b4e07f201375137fa31d9186afde78b1508926345ce546332f109081574ddc4e38cc474c5406b5fc71c18d71eb75f6e2d2245576976cba
+  checksum: 76f2f90e40344bf18fd544194e7067812fb1372b2a37865678d8f12afe4b478ff2ebc0c7c0aff82cd5e6b66fc43d889eec0f1865c2365d8f7a66d92da7744a77
   languageName: node
   linkType: hard
 
