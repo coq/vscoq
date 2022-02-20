@@ -805,7 +805,7 @@
   },
   "main": "./out/client/src/extension",
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "yarn run compile",
     "compile": "webpack && tsc -b",
     "watch": "tsc -b -w",
     "test": "node ./node_modules/vscode/bin/test"
@@ -828,7 +828,7 @@
     "ts-loader": "^9.2.6",
     "ts-prune": "^0.10.3",
     "typescript": "^3.9.10",
-    "vsce": "^2.6.7",
+    "vsce-yarn-patch": "^1.66.2",
     "webpack": "^5.69.1",
     "webpack-cli": "^4.9.2"
   },
