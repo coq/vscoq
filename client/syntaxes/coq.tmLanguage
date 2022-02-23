@@ -146,7 +146,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Unset|Remove Printing|Arguments|Tactic Notation|Notation|Infix|Reserved Notation|Section|Module Type|Module|End|Record|Class|Check|Print|Eval|Universe)\b</string>
+            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Unset|Remove Printing|Arguments|Tactic Notation|Notation|Infix|Reserved Notation|Section|Module Type|Module|End|Record|Class|Instance|Check|Print|Eval|Universe)\b</string>
             <key>comment</key>
             <string>Vernacular keywords</string>
             <key>name</key>
@@ -218,7 +218,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(intro|intros|revert|induction|destruct|auto|eauto|eassumption|apply|eapply|do|assumption|constructor|econstructor|reflexivity|inversion|injection|assert|split|esplit|omega|fold|unfold|specialize|rewrite|erewrite|change|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|set|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy|unshelve|pattern)\b</string>
+            <string>\b(intro|intros|revert|induction|destruct|auto|eauto|eassumption|apply|eapply|do|assumption|constructor|econstructor|reflexivity|inversion|injection|assert|split|esplit|omega|fold|unfold|specialize|rewrite|erewrite|change|symmetry|transitivity|etransitivity|f_equal|exfalso|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|set|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy|unshelve|pattern)\b</string>
             <key>comment</key>
             <string>Ltac builtins</string>
             <key>name</key>
