@@ -190,7 +190,7 @@ export class StateModel {
             ])
             var elmnt = document.getElementById("firstGoal");
             elmnt.scrollIntoView({block: "center", inline: "nearest"}); 
-          } else if (state.backgroundGoals!= null && (state.backgroundGoals.before.length > 0 || state.backgroundGoals.after!= null && state.backgroundGoals.after.length > 0 ||  state.backgroundGoals.next != undefined )) {
+          } else if (state.backgroundGoals && (state.backgroundGoals.before.length > 0 || state.backgroundGoals.after && state.backgroundGoals.after.length > 0 || state.backgroundGoals.next)) {
             this.setMessage("There are unfocused goals.");
           } else if (state.shelvedGoals.length > 0 ) {
             this.setMessage("There are shelved goals. Try using `Unshelve`.");
