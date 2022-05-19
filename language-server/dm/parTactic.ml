@@ -20,7 +20,7 @@ module TacticJob = struct
     state    : Vernacstate.t;
     ast      : ComTactic.interpretable;
     goalno   : int;
-    goal     : Goal.goal;
+    goal     : Evar.t;
     name     : string }
   let name = "tactic"
   let binary_name = "vscoqtop_tactic_worker.opt"
