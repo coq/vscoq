@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Gramlib
 open Types
 
 let debug_document = CDebug.create ~name:"vscoq.document" ()
