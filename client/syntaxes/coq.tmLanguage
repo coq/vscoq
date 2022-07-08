@@ -182,7 +182,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(forall|exists|Type|Set|Prop)\b|∀|∃</string>
+            <string>\b(forall|exists|Type|Set|Prop|nat|bool|option|list|unit|sum|prod|comparison|Empty_set)\b|∀|∃</string>
             <key>comment</key>
             <string>Type keywords</string>
             <key>name</key>
