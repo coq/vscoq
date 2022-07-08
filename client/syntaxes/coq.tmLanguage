@@ -86,7 +86,7 @@
 
         <dict>
             <key>match</key>
-            <string>(Program Definition|Program Fixpoint|Program CoFixpoint|Program Function|Function|CoFixpoint|Fixpoint|Definition|Example|Let|Instance)\s+((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <string>(Program Definition|Program Fixpoint|Program CoFixpoint|Program Function|Function|CoFixpoint|Fixpoint|Definition|Example|Let|Instance|Program Instance)\s+((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
             <key>comment</key>
             <string>Definitions</string>
             <key>captures</key>
@@ -146,7 +146,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Unset|Remove Printing|Arguments|Tactic Notation|Notation|Infix|Reserved Notation|Section|Module Type|Module|End|Record|Class|Check|Print|Eval|Universe)\b</string>
+            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Unset|Remove Printing|Arguments|Tactic Notation|Notation|Infix|Reserved Notation|Section|Module Type|Module|End|Record|Class|Check|Print|Eval|Universe|Coercions?)\b</string>
             <key>comment</key>
             <string>Vernacular keywords</string>
             <key>name</key>
