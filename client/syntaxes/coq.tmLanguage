@@ -249,13 +249,6 @@
 
         <dict>
             <key>match</key>
-            <string>\bnil\b</string>
-            <key>name</key>
-            <string>constant.language.nil.gallina</string>
-        </dict>
-
-        <dict>
-            <key>match</key>
             <string>\b((0(x|X)[0-9a-fA-F]+)|([0-9]+(\.[0-9]+)?))\b</string>
             <key>name</key>
             <string>constant.numeric.gallina</string>
@@ -263,16 +256,11 @@
 
         <dict>
             <key>match</key>
-            <string>\bTrue\b</string>
+            <string>\b(True|False|tt|false|true|Some|None|nil|cons|pair|inl|inr|O|S|Eq|Lt|Gt|id)\b</string>
+            <key>comment</key>
+            <string>Gallina builtin constructors</string>
             <key>name</key>
-            <string>constant.language.boolean.true.gallina</string>
-        </dict>
-
-        <dict>
-            <key>match</key>
-            <string>\bFalse\b</string>
-            <key>name</key>
-            <string>constant.language.boolean.false.gallina</string>
+            <string>constant.language.constructor.gallina</string>
         </dict>
 
         <dict>
