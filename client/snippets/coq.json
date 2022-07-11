@@ -53,6 +53,21 @@
     ],
     "description": "Notation, level, associativity, scope"
   },
+  "Infix (Simple)": {
+    "prefix": "Infix",
+    "body": [ "Infix \"$1\" := $2.\n$0" ],
+    "description": "Infix"
+  },
+  "Infix (Full)": {
+    "prefix": "Infix",
+    "body": [
+      "Infix \"$1\" :=",
+      "\t$2",
+      "\t(at level $3, ${4|no,left,right|} associativity)",
+      "\t: ${5:scope}.\n"
+    ],
+    "description": "Notation, level, associativity, scope"
+  },
   "Section": {
     "prefix": "Section",
     "body": [
@@ -151,6 +166,21 @@
   "Preterm of...": {
     "prefix": "Preterm of",
     "body": ["Preterm of ${1:ident}."]
+  },
+  "Coercion": {
+    "prefix": "Coercion",
+    "body": "Coercion ${1:ident} : ${2:ident} >-> ${3:ident}."
+  },
+  "pose": {
+    "prefix": "pose",
+    "body": ["pose ($1) as ${2:ident}."]
+  },
+  "destruct": {
+    "prefix": "destruct",
+    "body": ["destruct {$1:ident} as [$2]."]
+  },
+  "replace": {
+    "prefix": "replace",
+    "body": ["replace ($1) with ($2)."]
   }
-
 }
