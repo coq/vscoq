@@ -146,7 +146,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Unset|Remove Printing|Arguments|Tactic Notation|Notation|Infix|Reserved Notation|Section|Module Type|Module|End|Record|Class|Check|Print|Eval|Universe|Coercions?)\b</string>
+            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Unset|Remove Printing|Arguments|Tactic Notation|Notation|Infix|Reserved Notation|Section|Module Type|Module|End|Record|Class|Check|Print|Eval|Search|Universe|Coercions?)\b</string>
             <key>comment</key>
             <string>Vernacular keywords</string>
             <key>name</key>
