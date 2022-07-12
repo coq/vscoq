@@ -182,5 +182,29 @@
   "replace": {
     "prefix": "replace",
     "body": ["replace ($1) with ($2)."]
+  },
+  "Class": {
+    "prefix": "Class",
+    "body": [
+      "Class ${1:ident} := {",
+      "\t${2:field} : ${3:Type};",
+      "}."
+    ]
+  },
+  "Record": {
+    "prefix": "Record",
+    "body": [
+      "Record ${1:ident} := {",
+      "\t${2:field} : ${3:Type};",
+      "}."
+    ]
+  },
+  "Structure": {
+    "prefix": "Structure",
+    "body": [
+      "Structure ${1:ident} := {",
+      "\t${2:field} : ${3:Type};",
+      "}."
+    ]
   }
 }
