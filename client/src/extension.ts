@@ -116,20 +116,18 @@ export function activate(context: ExtensionContext) {
 
   context.subscriptions.push(vscode.languages.registerHoverProvider("coq", {
     provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) {
-    //   const proj = CoqProject.getInstance();
-    //   if (!proj) return;
-    //   const lang = proj.getLanguageServer();
-
-    //   const doc = project.getOrCurrent(document.uri.toString());
-    //   if (!doc) return;
-    //   const pos = document.offsetAt(position);
-    //   if (doc)
-    //     await callback(doc);
 
       let range = document.getWordRangeAtPosition(position);
       if (range == undefined)
         range = document.getWordRangeAtPosition(position, regExpCoqNotation);
-      const text = coqIdOrNotationFromRange(document, range);
+      const text = coqIdOrNotationFromRange(document, range).trim();
+      if (text === "") return;
+
+      // const doc = project.getOrCurrent(document.uri.toString());
+      // if (!doc) return;
+
+      // const response = await doc.query("check", text);
+
       return new vscode.Hover({language:"coq", value:`found: ${text}`});
     }
   }))
