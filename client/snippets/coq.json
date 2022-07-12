@@ -218,5 +218,21 @@
   "Existing Instance" : {
     "prefix": "Existing Instance",
     "body": ["Existing Instance ${1:ident}."]
+  },
+  "match (simple)" : {
+    "prefix": "match",
+    "body": [
+      "match ${1:expr} with",
+      "| ${2:pattern} => ${3:expr}",
+      "end"
+    ]
+  },
+  "match (full)" : {
+    "prefix": "match",
+    "body": [
+      "match ${1:expr} as ${2:ident} return ${3:Type} with",
+      "| ${4:pattern} => ${5:expr}",
+      "end"
+    ]
   }
 }
