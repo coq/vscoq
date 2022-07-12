@@ -115,20 +115,25 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(psm.load());
 
   context.subscriptions.push(vscode.languages.registerHoverProvider("coq", {
-    provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) {
+    async provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) {
 
       let range = document.getWordRangeAtPosition(position);
       if (range == undefined)
         range = document.getWordRangeAtPosition(position, regExpCoqNotation);
       const text = coqIdOrNotationFromRange(document, range).trim();
       if (text === "") return;
+      vscode.window.showErrorMessage("Calling hover");
+      const doc = project.getOrCurrent(document.uri.toString());
+      if (!doc) return;
+      const response = await doc.hoverQuery(text);
+      if (!response) return new vscode.Hover({language:"coq", value:`No response`});
+      // 1. Send "Check $text." query to server
+      // 2. await response
+      // 3. catch any errors
+      // 4. Strip output of anything but the type
+      // 5. Format the type to be pretty and compact (e.g. replace forall with ∀)
 
-      // const doc = project.getOrCurrent(document.uri.toString());
-      // if (!doc) return;
-
-      // const response = await doc.query("check", text);
-
-      return new vscode.Hover({language:"coq", value:`found: ${text}`});
+      return new vscode.Hover({language:"coq", value:`found: ${text}\n${response}`});
     }
   }))
 }
