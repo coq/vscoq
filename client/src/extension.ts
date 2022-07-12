@@ -15,6 +15,7 @@ console.log(`Coq Extension: process.version: ${process.version}, process.arch: $
 
 let project: CoqProject;
 
+const regExpCoqNotation = /[^\p{Z}\p{C}"]+/u;
 
 export var extensionContext: ExtensionContext;
 
@@ -112,6 +113,26 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(editorAssist.reload());
   snippets.setupSnippets(context.subscriptions);
   context.subscriptions.push(psm.load());
+
+  context.subscriptions.push(vscode.languages.registerHoverProvider("coq", {
+    provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) {
+    //   const proj = CoqProject.getInstance();
+    //   if (!proj) return;
+    //   const lang = proj.getLanguageServer();
+
+    //   const doc = project.getOrCurrent(document.uri.toString());
+    //   if (!doc) return;
+    //   const pos = document.offsetAt(position);
+    //   if (doc)
+    //     await callback(doc);
+
+      let range = document.getWordRangeAtPosition(position);
+      if (range == undefined)
+        range = document.getWordRangeAtPosition(position, regExpCoqNotation);
+      const text = coqIdOrNotationFromRange(document, range);
+      return new vscode.Hover({language:"coq", value:`found: ${text}`});
+    }
+  }))
 }
 
 
@@ -125,12 +146,13 @@ function coqIdOrNotationFromPosition(editor: TextEditor) {
   let range : vscode.Range | undefined = editor.selection;
   if (range.isEmpty)
     range = editor.document.getWordRangeAtPosition(editor.selection.active);
-    
-  let regExpCoqNotation = /[^\p{Z}\p{C}"]+/u;
   if (range == undefined)
     range = editor.document.getWordRangeAtPosition(editor.selection.active,regExpCoqNotation);
-  let text = editor.document.getText(range);
+  return coqIdOrNotationFromRange(editor.document, range);
+}
 
+function coqIdOrNotationFromRange(document: vscode.TextDocument, range:vscode.Range|undefined) {
+  let text = document.getText(range);
   if (new RegExp("\^"+regExpCoqNotation.source+"\$",regExpCoqNotation.flags).test(text)
       && ! new RegExp("\^"+editorAssist.regExpQualifiedCoqIdent.source+"\$",regExpCoqNotation.flags).test(text))
     return "\""+text+"\"";

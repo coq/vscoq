@@ -801,7 +801,10 @@
           "highContrast": "#ffa500"
         }
       }
-    ]
+    ],
+    "capabilities": {
+      "hoverProvider": true
+    }
   },
   "main": "./out/client/src/extension",
   "scripts": {
