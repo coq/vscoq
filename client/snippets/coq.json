@@ -206,5 +206,17 @@
       "\t${2:field} : ${3:Type};",
       "}."
     ]
+  },
+  "Instance": {
+    "prefix": "Instance",
+    "body": [
+      "Instance ${1:ident} : ${2:class} := {|",
+      "\t${3:field} := ${4:expression}",
+      "|}."
+    ]
+  },
+  "Existing Instance" : {
+    "prefix": "Existing Instance",
+    "body": ["Existing Instance ${1:ident}."]
   }
 }
