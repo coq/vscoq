@@ -234,5 +234,13 @@
       "| ${4:pattern} => ${5:expr}",
       "end"
     ]
+  },
+  "Generalizable All": {
+    "prefix": "Generalizable All",
+    "body": ["Generalizable All."]
+  },
+  "Generalizable Variables...": {
+    "prefix": "Generalizable Variables",
+    "body": ["Generalizable Variables ${1:ident}."]
   }
 }
