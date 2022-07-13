@@ -508,6 +508,8 @@ export class CoqDocument implements vscode.Disposable {
         };
         this.hoverListener = listener;
       });
+      // timeout needed because no coq message is returned
+      // when perfoming an invalid query (like checking a keyword)
       const timeout = Promise.race([
         promise,
         new Promise<string>((_r, rej) => setTimeout(rej, this.hoverQueryTimeout))

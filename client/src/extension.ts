@@ -116,24 +116,61 @@ export function activate(context: ExtensionContext) {
 
   context.subscriptions.push(vscode.languages.registerHoverProvider("coq", {
     async provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) {
-
+      // 1. Get text under cursor
       let range = document.getWordRangeAtPosition(position);
-      if (range == undefined)
+      if (!range)
         range = document.getWordRangeAtPosition(position, regExpCoqNotation);
       const text = coqIdOrNotationFromRange(document, range).trim();
       if (text === "") return;
-      vscode.window.showErrorMessage("Calling hover");
+
+      // 2. Send "Check $text." query to server and await response
       const doc = project.getOrCurrent(document.uri.toString());
       if (!doc) return;
       const response = await doc.hoverQuery(text);
-      if (!response) return new vscode.Hover({language:"coq", value:`No response`});
-      // 1. Send "Check $text." query to server
-      // 2. await response
-      // 3. catch any errors
-      // 4. Strip output of anything but the type
-      // 5. Format the type to be pretty and compact (e.g. replace forall with ∀)
+      if (!response) return;
 
-      return new vscode.Hover({language:"coq", value:`found: ${text}\n${response}`});
+      // 4. Strip output of anything but the type
+      // Check a. prints
+      // |a
+      // |\t : Type
+      // |       type (continued if long) (7 space indent)
+      // |where
+      // |?optional = whatever
+      const array = response.split("\nwhere\n");
+      let type = array[0];
+      // let where = array[1];
+      type = type.replace(/^.*?\n\t : /, ""); // remove identifier
+      type = type.replace(/^ {7}/gm, ""); // remove indent
+
+      // 5. Format the type to be pretty and compact (e.g. replace forall with ∀)
+      const operator_regex = (s:string) => {
+        // Matching operators is simple, as Coq will kindly
+        // print spaces before/after them
+        return new RegExp("(?<=\\s)" + s + "(?=\\s)", "g");
+      }
+      const replaces = [
+        {match:/\bfun\b/g, subst:"λ"},
+        {match:/\bforall\b/g, subst:"∀"},
+        {match:/\bexists\b/g, subst:"∃"},
+        {match:operator_regex("\\\\\\/"), subst:"∨"},
+        {match:operator_regex("\\/\\\\"), subst:"∧"},
+        {match:operator_regex("<->"), subst:"⟷"}, // the default arrow "↔" is too small/low...
+        {match:operator_regex("->"), subst:"➞"}, // the default arrow "→" is too small/low...
+        {match:operator_regex("<="), subst:"≤"},
+        {match:operator_regex(">="), subst:"≥"},
+        // {match:operator_regex("=>"), subst:"⇒"}, // very ugly render
+        {match:operator_regex("<>"), subst:"≠"},
+        {match:operator_regex("~"), subst:"¬"}
+      ];
+      for (const replace of replaces) {
+        type = type.replace(replace.match, replace.subst);
+      }
+
+      if (type === "") return;
+      let hover = [{language:"coq", value:type}];
+      // if (where)
+      //  hover.push({language:"coq", value:where});
+      return new vscode.Hover(hover);
     }
   }))
 }
