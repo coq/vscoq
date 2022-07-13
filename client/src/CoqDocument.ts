@@ -47,6 +47,7 @@ export class CoqDocument implements vscode.Disposable {
   /** A list of things to dispose */
   private readonly queryRouteId = 2;
   private readonly hoverQueryRouteId = 3;
+  private readonly hoverQueryTimeout = 300; // ms
   private hoverListener : undefined | ((str:string) => void);
   private subscriptions : Disposable[] = []
   private statusBar: StatusBar;
@@ -507,13 +508,16 @@ export class CoqDocument implements vscode.Disposable {
         };
         this.hoverListener = listener;
       });
+      const timeout = Promise.race([
+        promise,
+        new Promise<string>((_r, rej) => setTimeout(rej, this.hoverQueryTimeout))
+      ])
       this.langServer.query("check", term, this.hoverQueryRouteId);
-      const txt = await promise;
+      const txt = await timeout;
+      this.statusBar.setStateReady()
       return txt;
     } catch (err) {}
-    finally {
-      this.statusBar.setStateReady();
-    }
+    this.statusBar.setStateReady();
     return undefined;
   }
 
