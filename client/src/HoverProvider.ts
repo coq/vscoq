@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 import { CoqProject } from './CoqProject';
 import * as editorAssist from './EditorAssist';
 
-const excludes = [
-  '', '":"', '":="', '","', '"."', '"("', '")"'];
+// Inputs to ignore when calling hover
+const excludes = [ '' ];
 
 function operatorRegex(str: string) {
   // Matching operators is simple, as Coq will kindly
@@ -83,7 +83,7 @@ function formatLocate(response: string) {
     const begin = match.index + match[0].length;
     const end = findClosingParenthese(response, begin);
     if (end === null) continue;
-    const definition = response.slice(begin, end);
+    const definition = compactify(response.slice(begin, end));
     hover.push({ language: "coq", value: `"${notation}" := ${definition}` })
   }
   return new vscode.Hover(hover);
@@ -126,7 +126,7 @@ export async function provideHover(position: vscode.Position, project: CoqProjec
   const input = coqIdOrNotationFromRange(document, range).trim();
   if (excludes.includes(input)) return;
 
-  const is_notation = input[0] === "\"";
+  let is_notation = input[0] === "\"";
 
   // § Check if query was recently performed
   recent_queries = recent_queries.filter(filterOld);
@@ -136,7 +136,13 @@ export async function provideHover(position: vscode.Position, project: CoqProjec
 
   // § if not, perform query
   const method = is_notation ? "locate" : "check";
-  const response = await query(method, input, project, document);
+  let response = await query(method, input, project, document);
+  if (!response && !is_notation) {
+    // Something that looks like an identifier might in fact be a notation
+    response = await query("locate", `"${input}"`, project, document);
+    is_notation = true;
+  }
+
   if (!response) return;
   const output = is_notation ? formatLocate(response) : formatCheck(response);
   if (!output) return;
