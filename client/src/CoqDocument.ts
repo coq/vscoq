@@ -47,7 +47,7 @@ export class CoqDocument implements vscode.Disposable {
   /** A list of things to dispose */
   private readonly queryRouteId = 2;
   private readonly hoverQueryRouteId = 3;
-  private readonly hoverQueryTimeout = 300; // ms
+  private readonly hoverQueryTimeout = 500; // ms
   private hoverListener : undefined | ((str:string) => void);
   private subscriptions : Disposable[] = []
   private statusBar: StatusBar;
