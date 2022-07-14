@@ -3,6 +3,9 @@ import * as vscode from 'vscode';
 import { CoqProject } from './CoqProject';
 import * as editorAssist from './EditorAssist';
 
+const excludes = [
+  '', '":"', '":="', '","', '"."', '"("', '")"'];
+
 function operatorRegex(str: string) {
   // Matching operators is simple, as Coq will kindly
   // print spaces before and after them,
@@ -10,22 +13,8 @@ function operatorRegex(str: string) {
   return new RegExp("(?<=\\s)" + str + "(?=\\s)", "g");
 }
 
-function formatHover(response: string) {
-  // response is the string printed by "Check a." :
-  // |a
-  // |\t : Type
-  // |       type (continued if long) (7 space indent)
-  // |where
-  // |?optional = whatever
-
-  // § Strip output of anything but the type
-  const array = response.split("\nwhere\n");
-  let type = array[0];
-  // let where = array[1];
-  type = type.replace(/^.*?\n\t : /, ""); // remove identifier
-  type = type.replace(/^ {7}/gm, ""); // remove indent
-
-  // § Format the type to be pretty and compact (e.g. replace forall with ∀)
+// Format a Coq type to be pretty and compact (e.g. replace forall with ∀)
+function compactify(str: string) {
   const replaces = [
     { match: /\bfun\b/g, subst: "λ" },
     { match: /\bforall\b/g, subst: "∀" },
@@ -41,10 +30,28 @@ function formatHover(response: string) {
     { match: operatorRegex("~"), subst: "¬" }
   ];
   for (const replace of replaces) {
-    type = type.replace(replace.match, replace.subst);
+    str = str.replace(replace.match, replace.subst);
   }
+  return str;
+}
+
+function formatCheck(response: string) {
+  // response is the string printed by "Check a." :
+  // |a
+  // |\t : Type
+  // |       type (continued if long) (7 space indent)
+  // |where
+  // |?optional = whatever
+
+  // § Strip output of anything but the type
+  const array = response.split("\nwhere\n");
+  let type = array[0];
+  // let where = array[1];
+  type = type.replace(/^.*?\n\t : /, ""); // remove identifier
+  type = type.replace(/^ {7}/gm, ""); // remove indent
 
   if (type === "") return;
+  type = compactify(type);
 
   let hover = [{ language: "coq", value: type }];
   // if (where)
@@ -52,11 +59,41 @@ function formatHover(response: string) {
   return new vscode.Hover(hover);
 }
 
+function findClosingParenthese(str: string, start:number) {
+  let depth = 0;
+  for (let i = start; i < str.length; i++) {
+    if (str[i] === "(") depth++;
+    if (str[i] === ")") depth--;
+    if (depth < 0) return i;
+  }
+  return null;
+}
+
+function formatLocate(response: string) {
+  response = response.trim()
+  if (response === "Unknown notation") return;
+  const notationRegex = /^(Reserved\s+)?Notation\s*"(.*?)"\s*:=\s*\(/gms;
+  const matches = response.matchAll(notationRegex)
+  if (!matches) return;
+
+  let hover = [];
+  for (const match of matches) {
+    if (match.index === undefined) continue;
+    const notation = match[2];
+    const begin = match.index + match[0].length;
+    const end = findClosingParenthese(response, begin);
+    if (end === null) continue;
+    const definition = response.slice(begin, end);
+    hover.push({ language: "coq", value: `"${notation}" := ${definition}` })
+  }
+  return new vscode.Hover(hover);
+}
+
 // Perform a query to get hover text
-async function queryHover(text: string, project: CoqProject, document: vscode.TextDocument) {
+async function query(query:"check"|"locate",text: string, project: CoqProject, document: vscode.TextDocument) {
   const doc = project.getOrCurrent(document.uri.toString());
   if (!doc) return;
-  const response = await doc.hoverQuery(text);
+  const response = await doc.hoverQuery(query, text);
   return response;
 }
 
@@ -87,7 +124,9 @@ export async function provideHover(position: vscode.Position, project: CoqProjec
   if (!range)
     range = document.getWordRangeAtPosition(position, regExpCoqNotation);
   const input = coqIdOrNotationFromRange(document, range).trim();
-  if (input === "") return;
+  if (excludes.includes(input)) return;
+
+  const is_notation = input[0] === "\"";
 
   // § Check if query was recently performed
   recent_queries = recent_queries.filter(filterOld);
@@ -96,9 +135,10 @@ export async function provideHover(position: vscode.Position, project: CoqProjec
     return has_query.output;
 
   // § if not, perform query
-  const response = await queryHover(input, project, document);
+  const method = is_notation ? "locate" : "check";
+  const response = await query(method, input, project, document);
   if (!response) return;
-  const output = formatHover(response);
+  const output = is_notation ? formatLocate(response) : formatCheck(response);
   if (!output) return;
 
   // § Add query to recent queries
