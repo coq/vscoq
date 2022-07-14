@@ -65,7 +65,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Parameters?|Axioms?|Conjectures?|Variables?|Context|Hypothesis|Hypotheses)\s+((\p{L}|[_\u00A0]|\(\s*|\{\s*)(\p{L}|[0-9_\u00A0'])*)</string>
+            <string>\b(Parameters?|Axioms?|Conjectures?|Variables?|Context|Hypothesis|Hypotheses)(\s+Inline)?\b\s*\(?\s*((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
             <key>comment</key>
             <string>Assumptions</string>
             <key>captures</key>
@@ -76,6 +76,31 @@
                     <string>keyword.source.coq</string>
                 </dict>
                 <key>2</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>3</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.assumption.coq</string>
+                </dict>
+            </dict>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Context)\b\s*(\(|\{)?\s*((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <key>comment</key>
+            <string>Context</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>3</key>
                 <dict>
                     <key>name</key>
                     <string>entity.name.assumption.coq</string>
