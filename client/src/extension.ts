@@ -7,6 +7,7 @@ import * as snippets from './Snippets';
 import { initializeDecorations } from './Decorations';
 import * as editorAssist from './EditorAssist';
 import * as psm from './prettify-symbols-mode';
+import * as hover from "./HoverProvider";
 
 vscode.Range.prototype.toString = function rangeToString(this: vscode.Range) { return `[${this.start.toString()},${this.end.toString()})` }
 vscode.Position.prototype.toString = function positionToString(this: vscode.Position) { return `{${this.line}@${this.character}}` }
@@ -15,7 +16,6 @@ console.log(`Coq Extension: process.version: ${process.version}, process.arch: $
 
 let project: CoqProject;
 
-const regExpCoqNotation = /[^\p{Z}\p{C}"]+/u;
 
 export var extensionContext: ExtensionContext;
 
@@ -115,64 +115,10 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(psm.load());
 
   context.subscriptions.push(vscode.languages.registerHoverProvider("coq", {
-    async provideHover(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) {
-      // 1. Get text under cursor
-      let range = document.getWordRangeAtPosition(position);
-      if (!range)
-        range = document.getWordRangeAtPosition(position, regExpCoqNotation);
-      const text = coqIdOrNotationFromRange(document, range).trim();
-      if (text === "") return;
-
-      // 2. Send "Check $text." query to server and await response
-      const doc = project.getOrCurrent(document.uri.toString());
-      if (!doc) return;
-      const response = await doc.hoverQuery(text);
-      if (!response) return;
-
-      // 4. Strip output of anything but the type
-      // Check a. prints
-      // |a
-      // |\t : Type
-      // |       type (continued if long) (7 space indent)
-      // |where
-      // |?optional = whatever
-      const array = response.split("\nwhere\n");
-      let type = array[0];
-      // let where = array[1];
-      type = type.replace(/^.*?\n\t : /, ""); // remove identifier
-      type = type.replace(/^ {7}/gm, ""); // remove indent
-
-      // 5. Format the type to be pretty and compact (e.g. replace forall with ∀)
-      const operator_regex = (s:string) => {
-        // Matching operators is simple, as Coq will kindly
-        // print spaces before/after them
-        return new RegExp("(?<=\\s)" + s + "(?=\\s)", "g");
-      }
-      const replaces = [
-        {match:/\bfun\b/g, subst:"λ"},
-        {match:/\bforall\b/g, subst:"∀"},
-        {match:/\bexists\b/g, subst:"∃"},
-        {match:operator_regex("\\\\\\/"), subst:"∨"},
-        {match:operator_regex("\\/\\\\"), subst:"∧"},
-        {match:operator_regex("<->"), subst:"⟷"}, // the default arrow "↔" is too small/low...
-        {match:operator_regex("->"), subst:"➞"}, // the default arrow "→" is too small/low...
-        {match:operator_regex("<="), subst:"≤"},
-        {match:operator_regex(">="), subst:"≥"},
-        // {match:operator_regex("=>"), subst:"⇒"}, // very ugly render
-        {match:operator_regex("<>"), subst:"≠"},
-        {match:operator_regex("~"), subst:"¬"}
-      ];
-      for (const replace of replaces) {
-        type = type.replace(replace.match, replace.subst);
-      }
-
-      if (type === "") return;
-      let hover = [{language:"coq", value:type}];
-      // if (where)
-      //  hover.push({language:"coq", value:where});
-      return new vscode.Hover(hover);
+    async provideHover(document: vscode.TextDocument, position: vscode.Position, _token: vscode.CancellationToken) {
+      return hover.provideHover(position, project, document);
     }
-  }))
+  }));
 }
 
 
@@ -187,16 +133,8 @@ function coqIdOrNotationFromPosition(editor: TextEditor) {
   if (range.isEmpty)
     range = editor.document.getWordRangeAtPosition(editor.selection.active);
   if (range == undefined)
-    range = editor.document.getWordRangeAtPosition(editor.selection.active,regExpCoqNotation);
-  return coqIdOrNotationFromRange(editor.document, range);
-}
-
-function coqIdOrNotationFromRange(document: vscode.TextDocument, range:vscode.Range|undefined) {
-  let text = document.getText(range);
-  if (new RegExp("\^"+regExpCoqNotation.source+"\$",regExpCoqNotation.flags).test(text)
-      && ! new RegExp("\^"+editorAssist.regExpQualifiedCoqIdent.source+"\$",regExpCoqNotation.flags).test(text))
-    return "\""+text+"\"";
-  return text;
+    range = editor.document.getWordRangeAtPosition(editor.selection.active, hover.regExpCoqNotation);
+  return hover.coqIdOrNotationFromRange(editor.document, range);
 }
 
 async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {
