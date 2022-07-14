@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { CoqProject } from './CoqProject';
 import * as editorAssist from './EditorAssist';
 
-function operator_regex(str: string) {
+function operatorRegex(str: string) {
   // Matching operators is simple, as Coq will kindly
   // print spaces before and after them,
   // we use lookahead/lookbehind to avoid catching them
@@ -30,15 +30,15 @@ function formatHover(response: string) {
     { match: /\bfun\b/g, subst: "λ" },
     { match: /\bforall\b/g, subst: "∀" },
     { match: /\bexists\b/g, subst: "∃" },
-    { match: operator_regex("\\\\\\/"), subst: "∨" },
-    { match: operator_regex("\\/\\\\"), subst: "∧" },
-    { match: operator_regex("<->"), subst: "⟷" }, // the default arrow "↔" is too small/low...
-    { match: operator_regex("->"), subst: "➞" }, // the default arrow "→" is too small/low...
-    { match: operator_regex("<="), subst: "≤" },
-    { match: operator_regex(">="), subst: "≥" },
-    // {match:operator_regex("=>"), subst:"⇒"}, // very ugly render
-    { match: operator_regex("<>"), subst: "≠" },
-    { match: operator_regex("~"), subst: "¬" }
+    { match: operatorRegex("\\\\\\/"), subst: "∨" },
+    { match: operatorRegex("\\/\\\\"), subst: "∧" },
+    { match: operatorRegex("<->"), subst: "⟷" }, // the default arrow "↔" is too small/low...
+    { match: operatorRegex("->"), subst: "➞" }, // the default arrow "→" is too small/low...
+    { match: operatorRegex("<="), subst: "≤" },
+    { match: operatorRegex(">="), subst: "≥" },
+    { match: operatorRegex("=>"), subst:"⇒" },
+    { match: operatorRegex("<>"), subst: "≠" },
+    { match: operatorRegex("~"), subst: "¬" }
   ];
   for (const replace of replaces) {
     type = type.replace(replace.match, replace.subst);
@@ -65,10 +65,10 @@ async function queryHover(text: string, project: CoqProject, document: vscode.Te
 type query_result = { input: string, time: number, output: vscode.Hover };
 
 let recent_queries: query_result[] = [];
-const query_redo_delay = 5000; // milliseconds
+const query_redo_delay = 2000; // milliseconds
 
 function filterOld(query: query_result) {
-  return Date.now() - query.time >= query_redo_delay;
+  return Date.now() - query.time <= query_redo_delay;
 }
 
 export const regExpCoqNotation = /[^\p{Z}\p{C}"]+/u;
@@ -102,7 +102,6 @@ export async function provideHover(position: vscode.Position, project: CoqProjec
   if (!output) return;
 
   // § Add query to recent queries
-  recent_queries = recent_queries.filter((query) => query.input !== input);
   recent_queries.push({ input, time: Date.now(), output });
   return output;
 }
