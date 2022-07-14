@@ -499,14 +499,11 @@ export class CoqDocument implements vscode.Disposable {
   // Hover queries aren't printed to the query screen
   // They instead return their value directly
   public async hoverQuery(term: string) {
+    let response: string|undefined = undefined;
     try {
       // wait for response from server (called by onCoqMessage)
       const promise = new Promise<string>((resolve) => {
-        const listener = (str:string) => {
-          this.hoverListener = undefined;
-          resolve(str);
-        };
-        this.hoverListener = listener;
+        this.hoverListener = resolve;
       });
       // timeout needed because no coq message is returned
       // when perfoming an invalid query (like checking a keyword)
@@ -515,12 +512,11 @@ export class CoqDocument implements vscode.Disposable {
         new Promise<string>((_r, rej) => setTimeout(rej, this.hoverQueryTimeout))
       ])
       this.langServer.query("check", term, this.hoverQueryRouteId);
-      const txt = await timeout;
-      this.statusBar.setStateReady()
-      return txt;
+      response = await timeout;
     } catch (err) {}
+    this.hoverListener = undefined;
     this.statusBar.setStateReady();
-    return undefined;
+    return response;
   }
 
   public async viewGoalState(editor: TextEditor) {
