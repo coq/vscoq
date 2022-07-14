@@ -256,7 +256,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(True|False|tt|false|true|Some|None|nil|cons|pair|inl|inr|O|S|Eq|Lt|Gt|id)\b</string>
+            <string>\b(True|False|tt|false|true|Some|None|nil|cons|pair|inl|inr|O|S|Eq|Lt|Gt|id|ex|all|unique)\b</string>
             <key>comment</key>
             <string>Gallina builtin constructors</string>
             <key>name</key>
