@@ -65,7 +65,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Parameters?|Axioms?|Conjectures?|Variables?|Context|Hypothesis|Hypotheses)(\s+Inline)?\b\s*\(?\s*((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <string>\b(Parameters?|Axioms?|Conjectures?|Variables?|Hypothesis|Hypotheses)(\s+Inline)?\b\s*\(?\s*((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
             <key>comment</key>
             <string>Assumptions</string>
             <key>captures</key>
