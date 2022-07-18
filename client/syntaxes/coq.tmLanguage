@@ -36,9 +36,18 @@
 
         <dict>
             <key>match</key>
-            <string>\b(From|Require|Import|Export|Local|Global|Open|Scope|Include)\b</string>
+            <string>\b(From|Require|Import|Export|Local|Global|Include)\b</string>
             <key>comment</key>
             <string>Vernacular import keywords</string>
+            <key>name</key>
+            <string>keyword.control.import.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b((Open|Close|Delimit|Undelimit|Bind)\s+Scope)\b</string>
+            <key>comment</key>
+            <string>Vernacular scope keywords</string>
             <key>name</key>
             <string>keyword.control.import.coq</string>
         </dict>
@@ -248,7 +257,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(intro|intros|revert|induction|destruct|auto|eauto|tauto|eassumption|apply|eapply|do|assumption|constructor|econstructor|reflexivity|inversion|injection|assert|split|esplit|omega|fold|unfold|specialize|rewrite|erewrite|change|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|set|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy|unshelve|pattern|transitivity|etransitivity|f_equal|exfalso|replace)\b</string>
+            <string>\b(intro|intros|revert|induction|destruct|auto|eauto|tauto|eassumption|apply|eapply|do|assumption|constructor|econstructor|reflexivity|inversion|injection|assert|split|esplit|omega|fold|unfold|specialize|rewrite|erewrite|change|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|set|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy|unshelve|pattern|transitivity|etransitivity|f_equal|exfalso|replace|abstract)\b</string>
             <key>comment</key>
             <string>Ltac builtins</string>
             <key>name</key>
