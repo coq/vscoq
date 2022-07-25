@@ -42,7 +42,11 @@
         "extensions": [
           ".v"
         ],
-        "configuration": "./client/coq.configuration.json"
+        "configuration": "./client/coq.configuration.json",
+        "icon": {
+          "light": "./images/logo.png",
+          "dark": "./images/logo.png"
+        }
       }
     ],
     "grammars": [
