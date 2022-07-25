@@ -145,6 +145,21 @@
 
         <dict>
             <key>match</key>
+            <string>\b((Show\s+)?Obligation\s+Tactic|Obligations\s+of|Obligation|Next\s+Obligation(\s+of)?|Solve\s+Obligations(\s+of)?|Solve\s+All\s+Obligations|Admit\s+Obligations(\s+of)?)\b</string>
+            <key>comment</key>
+            <string>Obligations</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+            </dict>
+        </dict>
+
+        <dict>
+            <key>match</key>
             <string>(CoInductive|Inductive|Variant|Record|Structure|Class)\s+(>\s*)?((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
             <key>comment</key>
             <string>Type declarations</string>
