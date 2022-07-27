@@ -200,9 +200,18 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Unset|Remove Printing|Arguments|Tactic Notation|Notation|Infix|Reserved Notation|Section|Module Type|Module|End|Check|Print|Eval|Search|Universe|Coercions?|Generalizable All|Generalizable Variable?|Existing Instance|Existing Class|Canonical|About|Locate)\b</string>
+            <string>\b(Hint|Constructors|Resolve|Rewrite|Ltac|Implicit|Set|Unset|Remove\s+Printing|Arguments|Tactic\s+Notation|Notation|Infix|Reserved\s+Notation|Section|Module\s+Type|Module|End|Check|Print|Eval|Search|Universe|Coercions?|Generalizable\s+All|Generalizable\s+Variable?|Existing\s+Instance|Existing\s+Class|Canonical|About|Locate|Collection)\b</string>
             <key>comment</key>
             <string>Vernacular keywords</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Proof|Qed|Defined|Save|Abort(\s+All)?|Undo(\s+To)?|Restart|Focus|Unfocus|Unfocused|Show\s+Proof|Show\s+Existentials)\b</string>
+            <key>comment</key>
+            <string>Proof keywords</string>
             <key>name</key>
             <string>keyword.source.coq</string>
         </dict>
