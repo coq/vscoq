@@ -61,11 +61,11 @@ The recommended way to install VsCoq is via the [Visual Studio Marketplace](http
 
 ## Basic usage
 * if you use `_CoqProject` - start vscode via `code my/project/root` (or `code .` from the root folder of your project), or else select File|Open Folder... from vscode's menu.
-* step forward: `alt+down`
-* step backward: `alt+up`
-* interpret to point: `alt+right`
-* interpret to end: `alt+end`
-* interpret to home: `alt+home`
+* step forward: `alt+down` (MacOS: `Control+Option+down`)
+* step backward: `alt+up` (MacOS: `Control+Option+up`)
+* interpret to point: `alt+right` (MacOS: `Control+Option+right`)
+* interpret to end: `alt+end` (MacOS: `Control+Option+End`)
+* reset (interpret to home): `alt+home` (MacOS: `Control+Command+Home`)
 * *explore more commands*: `F1` and begin typing `Coq:`
 * [vscode documentation](https://code.visualstudio.com/docs/editor/codebasics)
 
