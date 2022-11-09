@@ -133,6 +133,8 @@ function createFocusedGoals(goals: Goal[]) : JQuery {
   //   createGoal(g, idx, goals.length)));
 }
 
+const givenUpAndShelvedGoalCountElement = document.getElementById("#given-up-and-shelved-goal-count");
+
 export class StateModel {
 
   // private static hypothesesNodeClass = '.hypotheses';
@@ -140,7 +142,6 @@ export class StateModel {
   // private static focusedStateClass = '.focusedState';
   //private focusedState = 0;
   // private coqState : ProofView;
-
 
   constructor() {
   }
@@ -169,6 +170,7 @@ export class StateModel {
       $('#stdout').text('');
 
       $('#states').empty();
+
       if(state.type === 'failure')
         this.setErrorMessage(state.message);
       else if(state.type === 'not-running')
@@ -181,6 +183,20 @@ export class StateModel {
         if (countAllGoals(state) == 0) {
           this.setMessage("No more subgoals.");
         } else if (state.goals) {
+          if (state.shelvedGoals.length > 0 || state.abandonedGoals.length > 0) {
+            const shelvedGoalCountElement = document.createElement("div");
+            shelvedGoalCountElement.style.cssText = "font-weight: bold; color: cyan";
+            const givenUpGoalCountElement = document.createElement("div");
+            givenUpGoalCountElement.style.cssText = "font-weight: bold; color: orange";
+            shelvedGoalCountElement.textContent = "Shelved goal count: " + state.shelvedGoals.length;
+            givenUpGoalCountElement.textContent = "Given up goal count: " + state.abandonedGoals.length;
+
+            givenUpAndShelvedGoalCountElement.innerHTML = "";
+            if (state.shelvedGoals.length > 0) givenUpAndShelvedGoalCountElement.appendChild(shelvedGoalCountElement);
+            if (state.abandonedGoals.length > 0) givenUpAndShelvedGoalCountElement.appendChild(givenUpGoalCountElement);
+          } else {
+            givenUpAndShelvedGoalCountElement.innerHTML = "";
+          }
           if(state.goals.length > 0) {
             this.setMessage("");
             $('#states')
@@ -194,7 +210,7 @@ export class StateModel {
             this.setMessage("There are unfocused goals.");
           } else if (state.shelvedGoals.length > 0 ) {
             this.setMessage("There are shelved goals. Try using `Unshelve`.");
-          } else if (state.abandonedGoals.length > 0 ) {
+          } else if (state.abandonedGoals.length > 0) {
             this.setMessage("There are some goals you gave up. You need to go back and solve them, or use `Admitted.`.")
           } else
           this.setMessage("No more subgoals. Internal invariant violated. Please report.")
