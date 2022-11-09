@@ -133,8 +133,7 @@ function createFocusedGoals(goals: Goal[]) : JQuery {
   //   createGoal(g, idx, goals.length)));
 }
 
-const givenUpAndShelvedGoalCountElement = document.getElementById("#given-up-and-shelved-goal-count");
-
+const givenUpAndShelvedGoalCountElement = document.getElementById("given-up-and-shelved-goal-count");
 export class StateModel {
 
   // private static hypothesesNodeClass = '.hypotheses';
@@ -185,9 +184,9 @@ export class StateModel {
         } else if (state.goals) {
           if (state.shelvedGoals.length > 0 || state.abandonedGoals.length > 0) {
             const shelvedGoalCountElement = document.createElement("div");
-            shelvedGoalCountElement.style.cssText = "font-weight: bold; color: cyan";
+            shelvedGoalCountElement.style.cssText = "font-weight: bold; color: cyan; padding: 2pt 10pt;";
             const givenUpGoalCountElement = document.createElement("div");
-            givenUpGoalCountElement.style.cssText = "font-weight: bold; color: orange";
+            givenUpGoalCountElement.style.cssText = "font-weight: bold; color: orange; padding: 2pt 10pt;";
             shelvedGoalCountElement.textContent = "Shelved goal count: " + state.shelvedGoals.length;
             givenUpGoalCountElement.textContent = "Given up goal count: " + state.abandonedGoals.length;
 
