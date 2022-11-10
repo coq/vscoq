@@ -191,8 +191,14 @@ export class StateModel {
             givenUpGoalCountElement.textContent = "Given up goal count: " + state.abandonedGoals.length;
 
             givenUpAndShelvedGoalCountElement.innerHTML = "";
-            if (state.shelvedGoals.length > 0) givenUpAndShelvedGoalCountElement.appendChild(shelvedGoalCountElement);
-            if (state.abandonedGoals.length > 0) givenUpAndShelvedGoalCountElement.appendChild(givenUpGoalCountElement);
+            if (state.shelvedGoals.length > 0) {
+              givenUpAndShelvedGoalCountElement.appendChild(shelvedGoalCountElement);
+              $(givenUpAndShelvedGoalCountElement).append(createFocusedGoals(state.shelvedGoals));
+            }
+            if (state.abandonedGoals.length > 0) {
+              givenUpAndShelvedGoalCountElement.appendChild(givenUpGoalCountElement);
+              $(givenUpAndShelvedGoalCountElement).append(createFocusedGoals(state.abandonedGoals));
+            }
           } else {
             givenUpAndShelvedGoalCountElement.innerHTML = "";
           }
