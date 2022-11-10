@@ -129,18 +129,10 @@ function createFocusedGoals(goals: Goal[]) : JQuery {
   return $('<ul>')
     .addClass('goalsList')
     .append(goals.map((g,i) => createGoal(g,i,goals.length)));
-  // return $(goals.map((g,idx) =>
-  //   createGoal(g, idx, goals.length)));
 }
 
 const givenUpAndShelvedGoalCountElement = document.getElementById("given-up-and-shelved-goal-count");
 export class StateModel {
-
-  // private static hypothesesNodeClass = '.hypotheses';
-  // private static goalNodeClass = '.goal';
-  // private static focusedStateClass = '.focusedState';
-  //private focusedState = 0;
-  // private coqState : ProofView;
 
   constructor() {
   }
@@ -164,7 +156,6 @@ export class StateModel {
   public updateState(state: CommandResult) {
     try {
       hasSubstitutions = false;
-      //this.focusedState = 0;
       this.clearErrorMessage();
       $('#stdout').text('');
 
@@ -226,14 +217,6 @@ export class StateModel {
       else
         $('#togglePrettifySymbols').addClass("hidden")
     }
-      //   case 'not-running':
-      //     return DisplayState.NotRunning;
-      //   case 'no-proof':
-      //     return DisplayState.NoProof;
-      //   case 'interrupted':
-      //     return DisplayState.Interrupted;
-      // }
-
     } catch(err) {
       this.setMessage(err);
     }
