@@ -146,11 +146,6 @@ export class HtmlCoqView implements view.CoqView {
         },
         {
           enableScripts: true,
-          localResourceRoots: [
-            vscode.Uri.file(
-              path.join(extensionContext.extensionPath, "out", VIEW_PATH)
-            ),
-          ],
         }
       );
 
