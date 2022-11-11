@@ -835,6 +835,7 @@
   "dependencies": {
     "@types/mustache": "^4.2.1",
     "@vscode/webview-ui-toolkit": "^1.1.0",
+    "@types/pegjs": "^0.10.3",
     "bufferutil": "^4.0.1",
     "diff": "4.0.2",
     "mustache": "^4.0.0",
