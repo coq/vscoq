@@ -1,18 +1,18 @@
-'use strict';
-import * as vscode from 'vscode'
+"use strict";
+import * as vscode from "vscode";
 
-import * as view from './CoqView'
-import {extensionContext} from './extension'
-import * as proto from './protocol'
-import * as path from 'path';
-import * as docs from './CoqProject';
-import * as psm from './prettify-symbols-mode';
+import * as view from "./CoqView";
+import { extensionContext } from "./extension";
+import * as proto from "./protocol";
+import * as path from "path";
+import * as docs from "./CoqProject";
+import * as psm from "./prettify-symbols-mode";
 
-import mustache = require('mustache');
+import mustache = require("mustache");
 
 interface ControllerEvent {
   eventName: string;
-  params: ResizeEvent // | | | | | ;
+  params: ResizeEvent; // | | | | | ;
 }
 
 interface ResizeEvent {
@@ -20,40 +20,40 @@ interface ResizeEvent {
 }
 
 interface GoalUpdate {
-  command: 'goal-update',
-  goal: proto.CommandResult
+  command: "goal-update";
+  goal: proto.CommandResult;
 }
 
 interface SettingsUpdate extends SettingsState {
-  command: 'settings-update'
+  command: "settings-update";
 }
 
 export interface ProofViewDiffSettings {
-  addedTextIsItalic : boolean,
-  removedTextIsStrikedthrough : boolean,
+  addedTextIsItalic: boolean;
+  removedTextIsStrikedthrough: boolean;
 }
 
 interface SettingsState {
-  fontFamily?: string,
-  fontSize?: string,
-  fontWeight?: string,
-  prettifySymbolsMode?: boolean,
-  proofViewDiff? : ProofViewDiffSettings,
+  fontFamily?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  prettifySymbolsMode?: boolean;
+  proofViewDiff?: ProofViewDiffSettings;
 }
-
 
 type ProofViewProtocol = GoalUpdate | SettingsUpdate;
 
-const VIEW_PATH = 'html_views';
+const VIEW_PATH = "html_views";
 
 function proofViewFile(file: string = "") {
-  return vscode.Uri.file(extensionContext.asAbsolutePath(path.join('out', VIEW_PATH, file)));
+  return vscode.Uri.file(
+    extensionContext.asAbsolutePath(path.join("out", VIEW_PATH, file))
+  );
 }
 
 function proofViewHtmlPath() {
-  return proofViewFile('Coq.html');
+  return proofViewFile("Coq.html");
 }
-
 
 /**
  * Displays a Markdown-HTML file which contains javascript to connect to this view
@@ -61,25 +61,34 @@ function proofViewHtmlPath() {
  */
 export class HtmlCoqView implements view.CoqView {
   private docUri: vscode.Uri;
-  private coqViewUri : vscode.Uri;
-  private currentSettings : SettingsState = {};
+  private coqViewUri: vscode.Uri;
+  private currentSettings: SettingsState = {};
   private visible = false;
-  private initialState : undefined | proto.CommandResult;
+  private initialState: undefined | proto.CommandResult;
 
-  private panel : vscode.WebviewPanel | null = null;
+  private panel: vscode.WebviewPanel | null = null;
 
   private resizeEvent = new vscode.EventEmitter<number>();
 
-  public get resize() : vscode.Event<number> { return this.resizeEvent.event; }
+  public get resize(): vscode.Event<number> {
+    return this.resizeEvent.event;
+  }
 
   constructor(uri: vscode.Uri, context: vscode.ExtensionContext) {
-    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(() => this.updateSettings()))
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration(() => this.updateSettings())
+    );
 
     this.docUri = uri;
 
     psm.onEnabledChange((enabled) => {
       this.currentSettings.prettifySymbolsMode = enabled;
-      this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>({prettifySymbolsMode: enabled},{command: 'settings-update'}));
+      this.sendMessage(
+        Object.assign<SettingsState, { command: "settings-update" }>(
+          { prettifySymbolsMode: enabled },
+          { command: "settings-update" }
+        )
+      );
     });
   }
 
@@ -89,30 +98,36 @@ export class HtmlCoqView implements view.CoqView {
 
   private handleClientMessage(event: string) {
     const message = <ControllerEvent>JSON.parse(event);
-    switch(message.eventName) {
-      case 'resize':
+    switch (message.eventName) {
+      case "resize":
         this.handleClientResize(message.params);
         return;
-      case 'focus':
+      case "focus":
         docs.getProject().setActiveDoc(this.docUri);
         return;
-      case 'getInitialGoal':
-        if (this.initialState)
-          this.update(this.initialState);
+      case "getInitialGoal":
+        if (this.initialState) this.update(this.initialState);
         return;
     }
   }
 
-  private async createBuffer() : Promise<void> {
+  private async createBuffer(): Promise<void> {
     try {
-      this.coqViewUri = vscode.Uri.parse(`file://${proofViewHtmlPath().path.replace(/%3A/, ':')}`);
-      console.log("Goals: " + decodeURIComponent(this.coqViewUri.with({scheme: 'file'}).toString()));
-    } catch(err) {
+      this.coqViewUri = vscode.Uri.parse(
+        `file://${proofViewHtmlPath().path.replace(/%3A/, ":")}`
+      );
+      console.log(
+        "Goals: " +
+          decodeURIComponent(
+            this.coqViewUri.with({ scheme: "file" }).toString()
+          )
+      );
+    } catch (err) {
       vscode.window.showErrorMessage(err.toString());
     }
   }
 
-  public getUri() : vscode.Uri {
+  public getUri(): vscode.Uri {
     return this.coqViewUri;
   }
 
@@ -123,7 +138,7 @@ export class HtmlCoqView implements view.CoqView {
   public async initializePanel(pane: vscode.ViewColumn) {
     if (this.panel === null) {
       this.panel = vscode.window.createWebviewPanel(
-        'html_coq',
+        "html_coq",
         "ProofView: " + path.basename(this.docUri.fsPath),
         {
           preserveFocus: true,
@@ -131,7 +146,11 @@ export class HtmlCoqView implements view.CoqView {
         },
         {
           enableScripts: true,
-          localResourceRoots: [vscode.Uri.file(path.join(extensionContext.extensionPath, 'out', VIEW_PATH))]
+          localResourceRoots: [
+            vscode.Uri.file(
+              path.join(extensionContext.extensionPath, "out", VIEW_PATH)
+            ),
+          ],
         }
       );
 
@@ -140,27 +159,55 @@ export class HtmlCoqView implements view.CoqView {
         this.panel = null;
       });
 
-      let doc = await vscode.workspace.openTextDocument(this.coqViewUri);
+      const doc = await vscode.workspace.openTextDocument(this.coqViewUri);
 
-      let csspath = path.join(extensionContext.extensionPath, 'out', VIEW_PATH, 'proof-view.css');
-      let csspasthAsVscodeResource = this.panel.webview.asWebviewUri(vscode.Uri.file(csspath));
+      const csspath = path.join(
+        extensionContext.extensionPath,
+        "out",
+        VIEW_PATH,
+        "proof-view.css"
+      );
+      const csspathAsVscodeResource = this.panel.webview.asWebviewUri(
+        vscode.Uri.file(csspath)
+      );
 
-      let jspath = path.join(extensionContext.extensionPath, 'out', VIEW_PATH, 'goals.js');
-      let jspathAsVscodeResource = this.panel.webview.asWebviewUri(vscode.Uri.file(jspath));
+      const jspath = path.join(
+        extensionContext.extensionPath,
+        "out",
+        VIEW_PATH,
+        "goals.js"
+      );
+      const jspathAsVscodeResource = this.panel.webview.asWebviewUri(
+        vscode.Uri.file(jspath)
+      );
+
+      const toolkitpath = path.join(
+        extensionContext.extensionPath,
+        "node_modules",
+        "@vscode",
+        "webview-ui-toolkit",
+        "dist",
+        "toolkit.js"
+      );
+      const toolkitpathAsVscodeResource = this.panel.webview.asWebviewUri(
+        vscode.Uri.file(toolkitpath)
+      );
 
       this.panel.webview.html = mustache.render(doc.getText(), {
         jsPath: jspathAsVscodeResource,
-        cssPath: csspasthAsVscodeResource
+        cssPath: csspathAsVscodeResource,
+        toolkitPath: toolkitpathAsVscodeResource,
       });
 
-      this.panel.webview.onDidReceiveMessage(message => this.handleClientMessage(message));
+      this.panel.webview.onDidReceiveMessage((message) =>
+        this.handleClientMessage(message)
+      );
       await this.updateSettings();
     }
   }
 
   public async show(pane: vscode.ViewColumn, state?: proto.CommandResult) {
-    if(!this.coqViewUri)
-      await this.createBuffer();
+    if (!this.coqViewUri) await this.createBuffer();
 
     this.initialState = state;
     this.initializePanel(pane);
@@ -169,31 +216,40 @@ export class HtmlCoqView implements view.CoqView {
   }
 
   public dispose() {
-    if (this.panel !== null)
-      this.panel.dispose()
+    if (this.panel !== null) this.panel.dispose();
   }
 
   private async sendMessage(message: ProofViewProtocol) {
-    if (this.panel !== null)
-      this.panel.webview.postMessage(message);
+    if (this.panel !== null) this.panel.webview.postMessage(message);
   }
 
   private async updateClient(state: proto.CommandResult) {
-    await this.sendMessage({command: 'goal-update', goal: state});
+    await this.sendMessage({ command: "goal-update", goal: state });
   }
 
   public update(state: proto.CommandResult) {
     this.updateClient(state);
   }
 
-
   private async updateSettings() {
-    this.currentSettings.fontFamily = vscode.workspace.getConfiguration("editor").get("fontFamily") as string;
-    this.currentSettings.fontSize = `${vscode.workspace.getConfiguration("editor").get("fontSize") as number}pt`;
-    this.currentSettings.fontWeight = vscode.workspace.getConfiguration("editor").get("fontWeight") as string;
-    this.currentSettings.proofViewDiff = vscode.workspace.getConfiguration("coq").get("proofViewDiff") as ProofViewDiffSettings;
+    this.currentSettings.fontFamily = vscode.workspace
+      .getConfiguration("editor")
+      .get("fontFamily") as string;
+    this.currentSettings.fontSize = `${
+      vscode.workspace.getConfiguration("editor").get("fontSize") as number
+    }pt`;
+    this.currentSettings.fontWeight = vscode.workspace
+      .getConfiguration("editor")
+      .get("fontWeight") as string;
+    this.currentSettings.proofViewDiff = vscode.workspace
+      .getConfiguration("coq")
+      .get("proofViewDiff") as ProofViewDiffSettings;
     this.currentSettings.prettifySymbolsMode = psm.isEnabled();
-    await this.sendMessage(Object.assign<SettingsState,{command: 'settings-update'}>(this.currentSettings,{command: 'settings-update'}));
+    await this.sendMessage(
+      Object.assign<SettingsState, { command: "settings-update" }>(
+        this.currentSettings,
+        { command: "settings-update" }
+      )
+    );
   }
-
 }
