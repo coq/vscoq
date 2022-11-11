@@ -1,10 +1,9 @@
 import * as $ from 'jquery';
+import { WebviewApi } from 'vscode-webview';
 import * as stm from './StateModel'
 import { ControllerEvent, ResizeEvent, SettingsState, ProofViewProtocol, ProofViewDiffSettings } from './protocol'
 
 const stateModel = new stm.StateModel();
-
-
 
 var throttleEventHandler = <X>(handler: (x:X) => void) => {
   var throttleTimeout : number|null = null;
@@ -68,8 +67,8 @@ function setProofViewDiffOptions(settings: ProofViewDiffSettings) {
     .toggleClass("proofView_removedTextIsStrikedthrough", settings.removedTextIsStrikedthrough);
 }
 
-declare var acquireVsCodeApi : any;
-const vscode = acquireVsCodeApi();
+declare const acquireVsCodeApi : any;
+const vscode : WebviewApi<unknown> = acquireVsCodeApi();
 
 function goalsLoad(_event :Event) {
 
