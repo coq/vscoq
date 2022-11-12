@@ -49,28 +49,24 @@ function computePrintingWidth() {
       widthChars = 80;
     }
     $("#measureTest").text("<" + "-".repeat(widthChars - 2) + ">");
-    if (vscode)
-      vscode.postMessage(
-        JSON.stringify(<ControllerEvent>{
-          eventName: "resize",
-          params: <ResizeEvent>{ columns: widthChars },
-        })
-      );
+    vscode.postMessage(
+      JSON.stringify(<ControllerEvent>{
+        eventName: "resize",
+        params: <ResizeEvent>{ columns: widthChars },
+      })
+    );
   } catch (error) {
     $("#stdout").text("!" + error);
   }
 }
 
 function onWindowGetFocus(event: FocusEvent) {
-  try {
-    if (vscode)
-      vscode.postMessage(
-        JSON.stringify(<ControllerEvent>{
-          eventName: "focus",
-          params: {},
-        })
-      );
-  } catch (error) {}
+  vscode.postMessage(
+    JSON.stringify(<ControllerEvent>{
+      eventName: "focus",
+      params: {},
+    })
+  );
 }
 
 function setPrettifySymbolsMode(enabled: boolean) {
