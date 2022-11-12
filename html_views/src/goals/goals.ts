@@ -5,9 +5,9 @@ import { ControllerEvent, ResizeEvent, SettingsState, ProofViewProtocol, ProofVi
 
 const stateModel = new stm.StateModel();
 
-var throttleEventHandler = <X>(handler: (x:X) => void) => {
-  var throttleTimeout : number|null = null;
-  var throttleTimeoutCount = 0;
+const throttleEventHandler = <X>(handler: (x:X) => void) => {
+  let throttleTimeout : number|null = null;
+  let throttleTimeoutCount = 0;
 
   return (event:X) => {
   throttleTimeoutCount = (throttleTimeoutCount + 1)%10;
@@ -75,7 +75,7 @@ function goalsLoad(_event :Event) {
   window.addEventListener("resize",throttleEventHandler(event => computePrintingWidth()));
   window.addEventListener("focus", onWindowGetFocus, true);
 
-  var resizedOnFirstResponse = false;
+  let resizedOnFirstResponse = false;
   window.addEventListener('message', event => {
     if(!resizedOnFirstResponse){
       resizedOnFirstResponse = true;
