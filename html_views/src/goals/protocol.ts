@@ -66,6 +66,7 @@ export interface Goal {
 }
 
 // this is a linked list
+// see https://github.com/coq/coq/blob/master/dev/doc/xml-protocol.md#returns-4
 export interface UnfocusedGoalStack {
   // subgoals that appear before the focus
   before: Goal[];
