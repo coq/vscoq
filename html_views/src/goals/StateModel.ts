@@ -164,89 +164,82 @@ export class StateModel {
   }
 
   public updateState(state: CommandResult) {
-    try {
-      hasSubstitutions = false;
-      this.clearErrorMessage();
-      $("#stdout").text("");
+    hasSubstitutions = false;
+    this.clearErrorMessage();
+    $("#stdout").text("");
 
-      $("#states").empty();
+    $("#states").empty();
 
-      if (state.type === "failure") this.setErrorMessage(state.message);
-      else if (state.type === "not-running") this.setMessage("Not running.");
-      else if (state.type === "no-proof") this.setMessage("Not in proof mode.");
-      else if (state.type === "interrupted") this.setMessage("Interrupted.");
-      else if (state.type === "proof-view") {
-        if (countAllGoals(state) == 0) {
-          this.setMessage("No more subgoals.");
-        } else if (state.goals) {
-          if (
-            state.shelvedGoals.length > 0 ||
-            state.abandonedGoals.length > 0
-          ) {
-            const shelvedGoalCountElement = document.createElement("div");
-            shelvedGoalCountElement.style.cssText =
-              "font-weight: bold; color: cyan; padding: 2pt 10pt;";
-            const givenUpGoalCountElement = document.createElement("div");
-            givenUpGoalCountElement.style.cssText =
-              "font-weight: bold; color: orange; padding: 2pt 10pt;";
-            shelvedGoalCountElement.textContent =
-              "Shelved goal count: " + state.shelvedGoals.length;
-            givenUpGoalCountElement.textContent =
-              "Given up goal count: " + state.abandonedGoals.length;
+    if (state.type === "failure") this.setErrorMessage(state.message);
+    else if (state.type === "not-running") this.setMessage("Not running.");
+    else if (state.type === "no-proof") this.setMessage("Not in proof mode.");
+    else if (state.type === "interrupted") this.setMessage("Interrupted.");
+    else if (state.type === "proof-view") {
+      if (countAllGoals(state) == 0) {
+        this.setMessage("No more subgoals.");
+      } else if (state.goals) {
+        if (state.shelvedGoals.length > 0 || state.abandonedGoals.length > 0) {
+          const shelvedGoalCountElement = document.createElement("div");
+          shelvedGoalCountElement.style.cssText =
+            "font-weight: bold; color: cyan; padding: 2pt 10pt;";
+          const givenUpGoalCountElement = document.createElement("div");
+          givenUpGoalCountElement.style.cssText =
+            "font-weight: bold; color: orange; padding: 2pt 10pt;";
+          shelvedGoalCountElement.textContent =
+            "Shelved goal count: " + state.shelvedGoals.length;
+          givenUpGoalCountElement.textContent =
+            "Given up goal count: " + state.abandonedGoals.length;
 
-            givenUpAndShelvedGoalCountElement.innerHTML = "";
-            if (state.shelvedGoals.length > 0) {
-              givenUpAndShelvedGoalCountElement.appendChild(
-                shelvedGoalCountElement
-              );
-              $(givenUpAndShelvedGoalCountElement).append(
-                createFocusedGoals(state.shelvedGoals)
-              );
-            }
-            if (state.abandonedGoals.length > 0) {
-              givenUpAndShelvedGoalCountElement.appendChild(
-                givenUpGoalCountElement
-              );
-              $(givenUpAndShelvedGoalCountElement).append(
-                createFocusedGoals(state.abandonedGoals)
-              );
-            }
-          } else {
-            givenUpAndShelvedGoalCountElement.innerHTML = "";
+          givenUpAndShelvedGoalCountElement.innerHTML = "";
+          if (state.shelvedGoals.length > 0) {
+            givenUpAndShelvedGoalCountElement.appendChild(
+              shelvedGoalCountElement
+            );
+            $(givenUpAndShelvedGoalCountElement).append(
+              createFocusedGoals(state.shelvedGoals)
+            );
           }
-          if (state.goals.length > 0) {
-            this.setMessage("");
-            $("#states").append([
-              createHypotheses(state.goals[0].hypotheses),
-              createFocusedGoals(state.goals),
-            ]);
-            var elmnt = document.getElementById("firstGoal");
-            elmnt.scrollIntoView({ block: "center", inline: "nearest" });
-          } else if (
-            state.backgroundGoals &&
-            (state.backgroundGoals.before.length > 0 ||
-              (state.backgroundGoals.after &&
-                state.backgroundGoals.after.length > 0) ||
-              state.backgroundGoals.next)
-          ) {
-            this.setMessage("There are unfocused goals.");
-          } else if (state.shelvedGoals.length > 0) {
-            this.setMessage("There are shelved goals. Try using `Unshelve`.");
-          } else if (state.abandonedGoals.length > 0) {
-            this.setMessage(
-              "There are some goals you gave up. You need to go back and solve them, or use `Admitted.`."
+          if (state.abandonedGoals.length > 0) {
+            givenUpAndShelvedGoalCountElement.appendChild(
+              givenUpGoalCountElement
             );
-          } else
-            this.setMessage(
-              "No more subgoals. Internal invariant violated. Please report."
+            $(givenUpAndShelvedGoalCountElement).append(
+              createFocusedGoals(state.abandonedGoals)
             );
+          }
+        } else {
+          givenUpAndShelvedGoalCountElement.innerHTML = "";
         }
-
-        if (hasSubstitutions) $("#togglePrettifySymbols").removeClass("hidden");
-        else $("#togglePrettifySymbols").addClass("hidden");
+        if (state.goals.length > 0) {
+          this.setMessage("");
+          $("#states").append([
+            createHypotheses(state.goals[0].hypotheses),
+            createFocusedGoals(state.goals),
+          ]);
+          var elmnt = document.getElementById("firstGoal");
+          elmnt.scrollIntoView({ block: "center", inline: "nearest" });
+        } else if (
+          state.backgroundGoals &&
+          (state.backgroundGoals.before.length > 0 ||
+            (state.backgroundGoals.after &&
+              state.backgroundGoals.after.length > 0) ||
+            state.backgroundGoals.next)
+        ) {
+          this.setMessage("There are unfocused goals.");
+        } else if (state.shelvedGoals.length > 0) {
+          this.setMessage("There are shelved goals. Try using `Unshelve`.");
+        } else if (state.abandonedGoals.length > 0) {
+          this.setMessage(
+            "There are some goals you gave up. You need to go back and solve them, or use `Admitted.`."
+          );
+        } else
+          this.setMessage(
+            "No more subgoals. Internal invariant violated. Please report."
+          );
       }
-    } catch (err) {
-      this.setMessage(err);
+
+      if (hasSubstitutions) $("#togglePrettifySymbols").removeClass("hidden");
+      else $("#togglePrettifySymbols").addClass("hidden");
     }
   }
 }
