@@ -28,36 +28,32 @@ const throttleEventHandler = <X>(handler: (x: X) => void) => {
 };
 
 function computePrintingWidth() {
-  try {
-    const stateView = $("#states")[0];
-    const ctx = ($("#textMeasurer")[0] as HTMLCanvasElement).getContext("2d")!;
-    ctx.font = getComputedStyle($("#textMeasurer")[0]).font || "";
-    const widthClient = stateView.clientWidth - 27;
-    const widthOneChar = ctx.measureText("O").width;
-    let widthChars = Math.floor(widthClient / widthOneChar);
-    if (
-      widthClient <= 0 ||
-      widthChars <= 1 ||
-      widthChars === Number.POSITIVE_INFINITY
-    ) {
-      console.log(
-        "Fallback to width 80 because: widthClient = " +
-          widthClient +
-          " and widthChars = " +
-          widthChars
-      );
-      widthChars = 80;
-    }
-    $("#measureTest").text("<" + "-".repeat(widthChars - 2) + ">");
-    vscode.postMessage(
-      JSON.stringify(<ControllerEvent>{
-        eventName: "resize",
-        params: <ResizeEvent>{ columns: widthChars },
-      })
+  const stateView = $("#states")[0];
+  const ctx = ($("#textMeasurer")[0] as HTMLCanvasElement).getContext("2d")!;
+  ctx.font = getComputedStyle($("#textMeasurer")[0]).font || "";
+  const widthClient = stateView.clientWidth - 27;
+  const widthOneChar = ctx.measureText("O").width;
+  let widthChars = Math.floor(widthClient / widthOneChar);
+  if (
+    widthClient <= 0 ||
+    widthChars <= 1 ||
+    widthChars === Number.POSITIVE_INFINITY
+  ) {
+    console.log(
+      "Fallback to width 80 because: widthClient = " +
+        widthClient +
+        " and widthChars = " +
+        widthChars
     );
-  } catch (error) {
-    $("#stdout").text("!" + error);
+    widthChars = 80;
   }
+  $("#measureTest").text("<" + "-".repeat(widthChars - 2) + ">");
+  vscode.postMessage(
+    JSON.stringify(<ControllerEvent>{
+      eventName: "resize",
+      params: <ResizeEvent>{ columns: widthChars },
+    })
+  );
 }
 
 function onWindowGetFocus(event: FocusEvent) {
