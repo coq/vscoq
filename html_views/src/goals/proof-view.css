@@ -20,7 +20,6 @@ body {
   color: var(--vscode-coq-proofviewText);
 }
 #messages {
-  padding: 0 10pt;
   font-family: var(--vscode-editor-font-family);
   font-size: var(--vscode-editor-font-size);
 }
@@ -34,7 +33,6 @@ body {
   white-space: pre-wrap;
   font-family: var(--vscode-editor-font-family);
   font-size: var(--vscode-editor-font-size);
-  padding: 0 10pt;
 }
 #error {
   color: var(--vscode-coq-proofviewError);
@@ -56,6 +54,7 @@ body {
   border-bottom: 2pt solid;
   padding: 0pt;
   padding-bottom: 1em;
+  margin: 0;
 }
 .hypotheses {
   border-bottom-color: var(--vscode-coq-hypothesesSeparator);
@@ -77,7 +76,7 @@ body {
 .hypotheses > li {
   list-style-type: none;
   display: block;
-  padding: 2pt 10pt;
+  padding: 2pt 0pt;
   text-indent: 0pt
 }
 .hypotheses li:nth-child(odd) {
@@ -169,7 +168,7 @@ span[class~=charsRemoved][class~=substitution]::before {
 .goalsList li {
   background-color: var(--vscode-coq-subgoalBackground);
   border-top: 1pt solid;
-  padding: 5pt 10pt;
+  padding: 5pt 0pt;
   border-top-color: var(--vscode-coq-subgoalSeparator);
 }
 #measureTest {
@@ -226,4 +225,17 @@ span[class~=charsRemoved][class~=substitution]::before {
 }
 .prettifySymbolsMode #togglePrettifySymbols {
   text-decoration: none
+}
+
+.panels {
+  padding-left: 10pt;
+  padding-right: 10pt;
+}
+
+vscode-panel-view {
+  flex-direction: column;
+}
+
+vscode-panel-tab {
+  line-height: 18px;
 }

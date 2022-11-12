@@ -1,28 +1,53 @@
 <!DOCTYPE HTML5>
 <head>
   <title>Coq</title>
-  <link href="{{cssPath}}" rel="stylesheet">
+  <link href="{{cssPath}}" rel="stylesheet" />
   <script type="module" src="{{toolkitPath}}"></script>
   <script type="text/javascript">
     try {
       eval("[...[1,2]]");
-    } catch(err) {
-      alert("Warning: Coq proof-view requires a browser that supports ECMAScript 6 or higher.");
+    } catch (err) {
+      alert(
+        "Warning: Coq proof-view requires a browser that supports ECMAScript 6 or higher."
+      );
     }
   </script>
 </head>
-<body class="prettifySymbolsMode" class="proofView_addedTextIsItalic" class="proofView_removedTextIsStrikedthrough">
+<body
+  class="prettifySymbolsMode"
+  class="proofView_addedTextIsItalic"
+  class="proofView_removedTextIsStrikedthrough"
+>
+  <vscode-panels class="panels">
+    <vscode-panel-tab id="tab-1">
+      MAIN <vscode-badge appearance="secondary" id="main-count">0</vscode-badge>
+    </vscode-panel-tab>
+    <vscode-panel-tab id="tab-2">
+      BACKGROUND <vscode-badge appearance="secondary" id="background-count">0</vscode-badge>
+    </vscode-panel-tab>
+    <vscode-panel-tab id="tab-3">
+      SHELVED <vscode-badge appearance="secondary" id="shelved-count">0</vscode-badge>
+    </vscode-panel-tab>
+    <vscode-panel-tab id="tab-4">
+      GIVEN UP <vscode-badge appearance="secondary" id="given-up-count">0</vscode-badge>
+    </vscode-panel-tab>
+    <vscode-panel-view id="view-1">
+      <div id="given-up-and-shelved-goal-count"></div>
+      <div id="states">
+        <div class="focusedState">
+          <div class="hypotheses"></div>
+          <div class="goal"></div>
+        </div>
+      </div>
+      <div id="error"></div>
+      <div id="messages"></div>
+      <h1><div id="stdout"></div></h1>
+    </vscode-panel-view>
+    <vscode-panel-view id="view-2">Output content.</vscode-panel-view>
+    <vscode-panel-view id="view-3">Debug content.</vscode-panel-view>
+    <vscode-panel-view id="view-4">Terminal content.</vscode-panel-view>
+  </vscode-panels>
   <div id="measureTest"></div>
   <canvas id="textMeasurer" style="display: none"></canvas>
-  <div id="given-up-and-shelved-goal-count"></div>
-  <div id="states">
-    <div class="focusedState">
-      <div class="hypotheses"></div>
-      <div class="goal"></div>
-    </div>
-  </div>
-  <div id="error"></div>
-  <div id="messages"></div>
-  <h1><div id="stdout"></div></h1>
   <script src="{{jsPath}}"></script>
 </body>
