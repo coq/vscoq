@@ -162,11 +162,9 @@ span[class~=charsRemoved][class~=substitution]::before {
   padding-left: 0;
 }
 .goalsList li:first-child {
-  background-color: var(--vscode-coq-mainSubgoalBackground);
   border-top: 0pt;
 }
 .goalsList li {
-  background-color: var(--vscode-coq-subgoalBackground);
   border-top: 1pt solid;
   padding: 5pt 0pt;
   border-top-color: var(--vscode-coq-subgoalSeparator);
