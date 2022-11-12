@@ -64,13 +64,15 @@ export interface Goal {
   hypotheses: Hypothesis[];
   goal: AnnotatedText;
 }
+
+// this is a linked list
 export interface UnfocusedGoalStack {
   // subgoals that appear before the focus
   before: Goal[];
-  // reference to the more-focused background goals
-  next?: UnfocusedGoalStack
   // subgoals that appear after the focus
   after: Goal[];
+  // next node of linked list
+  next?: UnfocusedGoalStack
 }
 
 interface FailValue {
