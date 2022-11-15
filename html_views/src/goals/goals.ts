@@ -1,6 +1,5 @@
 import * as $ from "jquery";
 import { WebviewApi } from "vscode-webview";
-import * as stm from "./StateModel";
 import {
   ControllerEvent,
   ResizeEvent,
@@ -8,8 +7,11 @@ import {
   ProofViewProtocol,
   ProofViewDiffSettings,
 } from "./protocol";
+import { ProofState } from "./display-proof-state";
 
-const stateModel = new stm.StateModel();
+const proofState = ProofState();
+const root = document.getElementById("root");
+root.appendChild(proofState.element);
 
 const throttleEventHandler = <X>(handler: (x: X) => void) => {
   let throttleTimeout: number | null = null;
@@ -28,7 +30,7 @@ const throttleEventHandler = <X>(handler: (x: X) => void) => {
 };
 
 function computePrintingWidth() {
-  const stateView = $("#states")[0];
+  const stateView = proofState.element;
   const ctx = ($("#textMeasurer")[0] as HTMLCanvasElement).getContext("2d")!;
   ctx.font = getComputedStyle($("#textMeasurer")[0]).font || "";
   const widthClient = stateView.clientWidth - 27;
@@ -121,7 +123,7 @@ function updateSettings(settings: SettingsState): void {
 function handleMessage(message: ProofViewProtocol): void {
   switch (message.command) {
     case "goal-update":
-      return stateModel.updateState(message.goal);
+      return proofState.updateState(message.goal);
     case "settings-update":
       updateSettings(message);
   }
