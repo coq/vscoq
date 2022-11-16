@@ -150,16 +150,23 @@ export const ProofState = () => {
   const mainGoalsElement = h("vscode-panel-view");
   const shelvedGoalsElement = h("vscode-panel-view");
   const givenUpGoalsElement = h("vscode-panel-view");
+  const mainGoalCountBadge = h("vscode-badge", "0");
+  const shelvedGoalCountBadge = h("vscode-badge", "0");
+  const givenUpGoalCountBadge = h("vscode-badge", "0");
   const element = h("vscode-panels.panels", [
-    h("vscode-panel-tab", "MAIN"),
-    h("vscode-panel-tab", "SHELVED"),
-    h("vscode-panel-tab", "GIVEN UP"),
+    h("vscode-panel-tab", "MAIN", mainGoalCountBadge),
+    h("vscode-panel-tab", "SHELVED", shelvedGoalCountBadge),
+    h("vscode-panel-tab", "GIVEN UP", givenUpGoalCountBadge),
     mainGoalsElement,
     shelvedGoalsElement,
     givenUpGoalsElement,
   ]);
 
   const updateState = (state: ProofView) => {
+    mainGoalCountBadge.textContent = String(state.goals.length);
+    shelvedGoalCountBadge.textContent = String(state.shelvedGoals.length);
+    givenUpGoalCountBadge.textContent = String(state.abandonedGoals.length);
+
     const handleNoMainGoals = (state: ProofView) => {
       if (countAllGoals(state) === 0) {
         mainGoalsElement.textContent = "Proof finished";
