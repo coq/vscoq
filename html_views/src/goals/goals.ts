@@ -7,11 +7,11 @@ import {
   ProofViewProtocol,
   ProofViewDiffSettings,
 } from "./protocol";
-import { ProofState } from "./display-proof-state";
+import { Infoview } from "./display-proof-state";
 
-const proofState = ProofState();
+const infoview = Infoview();
 const root = document.getElementById("root");
-root.appendChild(proofState.element);
+root.appendChild(infoview.element);
 
 const throttleEventHandler = <X>(handler: (x: X) => void) => {
   let throttleTimeout: number | null = null;
@@ -30,7 +30,7 @@ const throttleEventHandler = <X>(handler: (x: X) => void) => {
 };
 
 function computePrintingWidth() {
-  const stateView = proofState.element;
+  const stateView = infoview.element;
   const ctx = ($("#textMeasurer")[0] as HTMLCanvasElement).getContext("2d")!;
   ctx.font = getComputedStyle($("#textMeasurer")[0]).font || "";
   const widthClient = stateView.clientWidth - 27;
@@ -123,7 +123,7 @@ function updateSettings(settings: SettingsState): void {
 function handleMessage(message: ProofViewProtocol): void {
   switch (message.command) {
     case "goal-update":
-      return proofState.updateState(message.goal);
+      return infoview.updateState(message.goal);
     case "settings-update":
       updateSettings(message);
   }
