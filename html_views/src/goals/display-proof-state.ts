@@ -211,7 +211,7 @@ export const ProofState = () => {
 export const Infoview = () => {
   const element = h("div");
 
-  let proofStateInstance : ReturnType<typeof ProofState> | undefined = undefined;
+  let proofStateInstance: ReturnType<typeof ProofState> | undefined = undefined;
 
   const updateState = (state: CommandResult) => {
     if (state.type === "proof-view") {
@@ -235,9 +235,9 @@ export const Infoview = () => {
     } else if (state.type === "failure") {
       element.appendChild(createAnnotatedText(state.message)[0]);
     } else if (state.type === "interrupted") {
-      element.textContent = "Interrupted"
+      element.textContent = "Interrupted";
     } else if (state.type === "no-proof") {
-      element.textContent = "Not in proof mode"
+      element.textContent = "Not in proof mode";
     }
   };
 
