@@ -114,7 +114,7 @@ function createHypothesis(hyp: Hypothesis): JQuery {
     .on("dblclick", onDoubleClickBreakableText);
 }
 
-function createHypotheses(hyps: Hypothesis[]) {
+export function createHypotheses(hyps: Hypothesis[]) {
   return $("<ul>")
     .addClass("hypotheses")
     .append(hyps.map((hyp) => createHypothesis(hyp)));
@@ -137,7 +137,7 @@ function createGoal(goal: Goal, idx: number, count: number) {
     ]);
 }
 
-function createFocusedGoals(goals: Goal[]): JQuery {
+export function createFocusedGoals(goals: Goal[]): JQuery {
   return $("<ul>")
     .addClass("goalsList")
     .append(goals.map((g, i) => createGoal(g, i, goals.length)));
