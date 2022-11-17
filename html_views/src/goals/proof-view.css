@@ -55,7 +55,7 @@ body {
   background-color: var(--background-color);
   font-family: var(--font-family, 'Segoe WPC','Segoe UI', SFUIText-Light, HelveticaNeue-Light, sans-serif, 'Droid Sans Fallback');
   font-weight: var(--font-weight);
-  font-size: var(--font-size, 12pt);
+  font-size: var(--font-size, 13px);
 }
 body {
   color: var(--vscode-coq-proofviewText);
