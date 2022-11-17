@@ -211,14 +211,18 @@ export const ProofState = () => {
     if (state.shelvedGoals.length === 0) {
       shelvedGoalsElement.textContent = "No shelved goals";
     } else {
-      shelvedGoalsElement.appendChild(createFocusedGoals(state.shelvedGoals)[0]);
+      shelvedGoalsElement.appendChild(
+        createFocusedGoals(state.shelvedGoals)[0]
+      );
     }
 
     givenUpGoalsElement.innerHTML = "";
     if (state.abandonedGoals.length === 0) {
       givenUpGoalsElement.textContent = "No given up goals";
     } else {
-      givenUpGoalsElement.appendChild(createFocusedGoals(state.abandonedGoals)[0]);
+      givenUpGoalsElement.appendChild(
+        createFocusedGoals(state.abandonedGoals)[0]
+      );
     }
   };
 
@@ -250,16 +254,25 @@ export const Infoview = () => {
       }
     }
 
-    const setMessage = (message : string | HTMLElement) => {
+    const setMessage = (message: string) => {
       element.innerHTML = "";
       const formatted = h("div.message", message);
       element.appendChild(formatted);
     };
-    
+
+    const setErrorMessage = (message: HTMLElement) => {
+      element.innerHTML = "";
+      const formatted = h("div.message", [
+        h("strong", "Error: "),
+        h("code", message),
+      ]);
+      element.appendChild(formatted);
+    };
+
     if (state.type === "not-running") {
       setMessage("coqtop is not running");
     } else if (state.type === "failure") {
-      setMessage(createAnnotatedText(state.message)[0]);
+      setErrorMessage(createAnnotatedText(state.message)[0]);
     } else if (state.type === "interrupted") {
       setMessage("Interrupted");
     } else if (state.type === "no-proof") {

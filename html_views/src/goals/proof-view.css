@@ -51,6 +51,10 @@ code {
   font-family: monospace;
 }
 
+strong {
+  font-weight: bold;
+}
+
 body {
   background-color: var(--background-color);
   font-family: var(--font-family, 'Segoe WPC','Segoe UI', SFUIText-Light, HelveticaNeue-Light, sans-serif, 'Droid Sans Fallback');
