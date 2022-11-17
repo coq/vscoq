@@ -93,7 +93,7 @@
         "coq.coqProjectRoot": {
           "type": "string",
           "default": ".",
-          "description": "The path of the coq project relative to the workspace root. Also determins where to look for the `_CoqProject` file. Requires reloading."
+          "description": "The path of the coq project relative to the workspace root. Also determines where to look for the `_CoqProject` file. Requires reloading."
         },
         "coq.moveCursorToFocus": {
           "type": "boolean",
