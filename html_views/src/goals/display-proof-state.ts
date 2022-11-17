@@ -201,6 +201,11 @@ export const ProofState = () => {
     if (state.goals.length === 0) {
       handleNoMainGoals(state);
     } else {
+      if (state.abandonedGoals.length > 0) {
+        mainGoalsElement.appendChild(
+          h("div.given-up-goals-warning", [h("strong", "Warning: "), "You have given up goals"])
+        );
+      }
       mainGoalsElement.appendChild(
         createHypotheses(state.goals[0].hypotheses)[0]
       );
