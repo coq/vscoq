@@ -196,7 +196,7 @@ span[class~=charsRemoved][class~=substitution]::before {
   text-decoration: line-through;
 }
 
-.hypothesese, .hypothesis, .goal, #stdout, #textMeasurer, #measureTest {
+.hypotheses, .hypothesis, .goal, #stdout, #textMeasurer, #measureTest {
   font-family: var(--vscode-editor-font-family);
   font-weight: var(--vscode-editor-font-weight);
   font-size: var(--vscode-editor-font-size);
