@@ -176,22 +176,9 @@ export class HtmlCoqView implements view.CoqView {
         vscode.Uri.file(jspath)
       );
 
-      const toolkitpath = path.join(
-        extensionContext.extensionPath,
-        "node_modules",
-        "@vscode",
-        "webview-ui-toolkit",
-        "dist",
-        "toolkit.js"
-      );
-      const toolkitpathAsVscodeResource = this.panel.webview.asWebviewUri(
-        vscode.Uri.file(toolkitpath)
-      );
-
       this.panel.webview.html = mustache.render(doc.getText(), {
         jsPath: jspathAsVscodeResource,
         cssPath: csspathAsVscodeResource,
-        toolkitPath: toolkitpathAsVscodeResource,
       });
 
       this.panel.webview.onDidReceiveMessage((message) =>

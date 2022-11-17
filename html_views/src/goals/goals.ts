@@ -8,6 +8,7 @@ import {
   ProofViewDiffSettings,
 } from "./protocol";
 import { Infoview } from "./display-proof-state";
+import "@vscode/webview-ui-toolkit/dist/toolkit";
 
 const infoview = Infoview();
 const root = document.getElementById("root");
