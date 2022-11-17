@@ -52,10 +52,6 @@ function isScopedText(text: AnnotatedText): text is ScopedText {
   return text.hasOwnProperty("scope");
 }
 
-// TODO: setting a global variable like this could be a code smell
-// I will find out a better way to write this
-// let hasSubstitutions = false;
-
 function createAnnotatedText(text: AnnotatedText): HTMLElement[] {
   function helper(text: AnnotatedText): (Text | HTMLElement)[] {
     if (typeof text === "string") return makeBreakingText(text);
@@ -71,8 +67,6 @@ function createAnnotatedText(text: AnnotatedText): HTMLElement[] {
           ]
         : helper(text.text);
     else if (text.substitution) {
-      // TextAnnotation
-      // hasSubstitutions = true;
       return [
         $("<span>")
           .addClass("substitution")
@@ -82,7 +76,7 @@ function createAnnotatedText(text: AnnotatedText): HTMLElement[] {
           .append(makeBreakingText(text.text))
           .get(0),
       ];
-    } // TextAnnotation
+    }
     else
       return [
         $("<span>")
