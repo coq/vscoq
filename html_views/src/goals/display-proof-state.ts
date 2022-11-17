@@ -63,19 +63,28 @@ function createAnnotatedText(text: AnnotatedText): HTMLElement[] {
         return [element];
       }
       return helper(text.text);
-    } else if (text.substitution) {
-      const element = h(
-        "span",
-        { subst: text.substitution, title: text.text },
-        makeBreakingText(text.text)
-      );
-      element.classList.add("substitution");
-      element.classList.add(getTextDiffClass(text.diff));
-      return [element];
     } else {
-      const element = h("span", makeBreakingText(text.text));
-      element.classList.add(getTextDiffClass(text.diff));
-      return [element];
+      const addTextDiffClass = (element: HTMLElement) => {
+        const className = getTextDiffClass(text.diff);
+
+        if (className === "") return;
+        element.classList.add(className);
+      };
+
+      if (text.substitution) {
+        const element = h(
+          "span",
+          { subst: text.substitution, title: text.text },
+          makeBreakingText(text.text)
+        );
+        element.classList.add("substitution");
+        addTextDiffClass(element);
+        return [element];
+      } else {
+        const element = h("span", makeBreakingText(text.text));
+        addTextDiffClass(element);
+        return [element];
+      }
     }
   }
 
