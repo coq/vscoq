@@ -206,6 +206,20 @@ export const ProofState = () => {
       );
       mainGoalsElement.appendChild(createFocusedGoals(state.goals)[0]);
     }
+
+    shelvedGoalsElement.innerHTML = "";
+    if (state.shelvedGoals.length === 0) {
+      shelvedGoalsElement.textContent = "No shelved goals";
+    } else {
+      shelvedGoalsElement.appendChild(createFocusedGoals(state.shelvedGoals)[0]);
+    }
+
+    givenUpGoalsElement.innerHTML = "";
+    if (state.abandonedGoals.length === 0) {
+      givenUpGoalsElement.textContent = "No given up goals";
+    } else {
+      givenUpGoalsElement.appendChild(createFocusedGoals(state.abandonedGoals)[0]);
+    }
   };
 
   const unmount = () => {
