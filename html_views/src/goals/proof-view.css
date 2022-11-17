@@ -286,3 +286,7 @@ vscode-panel-view {
 vscode-panel-tab {
   line-height: 18px;
 }
+
+.given-up-goals-warning {
+  padding-bottom: 10px;
+}
