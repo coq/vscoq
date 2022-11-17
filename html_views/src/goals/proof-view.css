@@ -47,6 +47,10 @@ table {
 	border-spacing: 0;
 }
 
+code {
+  font-family: monospace;
+}
+
 body {
   background-color: var(--background-color);
   font-family: var(--font-family, 'Segoe WPC','Segoe UI', SFUIText-Light, HelveticaNeue-Light, sans-serif, 'Droid Sans Fallback');
