@@ -1,5 +1,4 @@
 import h = require("hyperscript");
-import * as $ from "jquery";
 import {
   ProofView,
   UnfocusedGoalStack,
@@ -30,13 +29,13 @@ function countAllGoals(state: ProofView): number {
 function getDifferenceClass(diff: HypothesisDifference) {
   switch (diff) {
     case HypothesisDifference.Changed:
-      return " changed";
+      return "changed";
     case HypothesisDifference.New:
-      return " new";
+      return "new";
     case HypothesisDifference.MovedUp:
-      return " movedUp";
+      return "movedUp";
     case HypothesisDifference.MovedDown:
-      return " movedDown";
+      return "movedDown";
     default:
       return "";
   }
@@ -93,56 +92,55 @@ function createAnnotatedText(text: AnnotatedText): HTMLElement[] {
   return [element];
 }
 
-function onDoubleClickBreakableText(event: JQueryMouseEventObject) {
-  // var target = <Element>event.currentTarget;
-  if ($(event.currentTarget).hasClass("hypothesis")) {
-    $(event.currentTarget).toggleClass("breakText");
-    $(event.currentTarget).toggleClass("noBreakText");
+function createHypothesis(hyp: Hypothesis): HTMLElement {
+  const element = h("li", [
+    h("span.ident", hyp.identifier),
+    h("span.rel", hyp.relation),
+    h("span.expr", createAnnotatedText(hyp.expression)),
+  ]);
+
+  element.classList.add("hypothesis", "breakText");
+
+  const differenceClass = getDifferenceClass(hyp.diff);
+
+  if (differenceClass !== "") {
+    element.classList.add(differenceClass);
   }
+
+  element.addEventListener("dblclick", function () {
+    const target = this;
+
+    if (target.classList.contains("hypothesis")) {
+      target.classList.toggle("breakText");
+      target.classList.toggle("noBreakText");
+    }
+  });
+
+  return element;
 }
 
-function createHypothesis(hyp: Hypothesis): JQuery {
-  return $("<li>")
-    .addClass("hypothesis")
-    .addClass("breakText")
-    .addClass(getDifferenceClass(hyp.diff))
-    .append([
-      $("<span>").addClass("ident").text(hyp.identifier),
-      $("<span>").addClass("rel").text(hyp.relation),
-      $("<span>")
-        .addClass("expr")
-        .append($(createAnnotatedText(hyp.expression))),
-    ])
-    .on("dblclick", onDoubleClickBreakableText);
+function createHypotheses(hypotheses: Hypothesis[]): HTMLElement {
+  const element = h("ul", hypotheses.map(createHypothesis));
+  element.classList.add("hypotheses");
+  return element;
 }
 
-function createHypotheses(hyps: Hypothesis[]) {
-  return $("<ul>")
-    .addClass("hypotheses")
-    .append(hyps.map((hyp) => createHypothesis(hyp)));
+function createGoal(goal: Goal, index: number, goals: Goal[]): HTMLElement {
+  const expressionElement = h("span.expr", createAnnotatedText(goal.goal));
+  const element = h("li", [
+    h("span.goalId", `${index + 1}/${goals.length}`),
+    expressionElement,
+  ]);
+
+  element.classList.add("goal");
+
+  return element;
 }
 
-function createGoal(goal: Goal, idx: number, count: number) {
-  let expr = $("<span>").addClass("expr");
-  expr.append($(createAnnotatedText(goal.goal)));
-  if (idx == 0) {
-    expr.attr("id", "firstGoal");
-  }
-  return $("<li>")
-    .addClass("goal")
-    .append([
-      $("<span>")
-        .addClass("goalId")
-        .text(`${idx + 1}/${count}`),
-      $("<span>").addClass("error"),
-      expr,
-    ]);
-}
-
-function createFocusedGoals(goals: Goal[]): JQuery {
-  return $("<ul>")
-    .addClass("goalsList")
-    .append(goals.map((g, i) => createGoal(g, i, goals.length)));
+function createFocusedGoals(goals: Goal[]): HTMLElement {
+  const element = h("ul", goals.map(createGoal));
+  element.classList.add("goalsList");
+  return element;
 }
 
 export const ProofState = () => {
@@ -208,28 +206,22 @@ export const ProofState = () => {
           ])
         );
       }
-      mainGoalsElement.appendChild(
-        createHypotheses(state.goals[0].hypotheses)[0]
-      );
-      mainGoalsElement.appendChild(createFocusedGoals(state.goals)[0]);
+      mainGoalsElement.appendChild(createHypotheses(state.goals[0].hypotheses));
+      mainGoalsElement.appendChild(createFocusedGoals(state.goals));
     }
 
     shelvedGoalsElement.innerHTML = "";
     if (state.shelvedGoals.length === 0) {
       shelvedGoalsElement.textContent = "No shelved goals";
     } else {
-      shelvedGoalsElement.appendChild(
-        createFocusedGoals(state.shelvedGoals)[0]
-      );
+      shelvedGoalsElement.appendChild(createFocusedGoals(state.shelvedGoals));
     }
 
     givenUpGoalsElement.innerHTML = "";
     if (state.abandonedGoals.length === 0) {
       givenUpGoalsElement.textContent = "No given up goals";
     } else {
-      givenUpGoalsElement.appendChild(
-        createFocusedGoals(state.abandonedGoals)[0]
-      );
+      givenUpGoalsElement.appendChild(createFocusedGoals(state.abandonedGoals));
     }
   };
 
