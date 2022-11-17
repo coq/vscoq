@@ -55,37 +55,33 @@ function isScopedText(text: AnnotatedText): text is ScopedText {
 function createAnnotatedText(text: AnnotatedText): HTMLElement[] {
   function helper(text: AnnotatedText): (Text | HTMLElement)[] {
     if (typeof text === "string") return makeBreakingText(text);
-    else if (text instanceof Array)
-      return Array.prototype.concat(...text.map(helper));
-    else if (isScopedText(text))
-      return text.scope.trim() !== ""
-        ? [
-            $("<span>")
-              .addClass(text.scope.replace(".", "-"))
-              .append(helper(text.text))
-              .get(0),
-          ]
-        : helper(text.text);
-    else if (text.substitution) {
-      return [
-        $("<span>")
-          .addClass("substitution")
-          .addClass(getTextDiffClass(text.diff))
-          .attr("subst", text.substitution)
-          .attr("title", text.text)
-          .append(makeBreakingText(text.text))
-          .get(0),
-      ];
+    else if (text instanceof Array) return text.map(helper).flat();
+    else if (isScopedText(text)) {
+      if (text.scope.trim() !== "") {
+        const element = h("span", helper(text.text));
+        element.classList.add(text.scope.replace(".", "-"));
+        return [element];
+      }
+      return helper(text.text);
+    } else if (text.substitution) {
+      const element = h(
+        "span",
+        { subst: text.substitution, title: text.text },
+        makeBreakingText(text.text)
+      );
+      element.classList.add("substitution");
+      element.classList.add(getTextDiffClass(text.diff));
+      return [element];
+    } else {
+      const element = h("span", makeBreakingText(text.text));
+      element.classList.add(getTextDiffClass(text.diff));
+      return [element];
     }
-    else
-      return [
-        $("<span>")
-          .addClass(getTextDiffClass(text.diff))
-          .append(makeBreakingText(text.text))
-          .get(0),
-      ];
   }
-  return [$("<span>").addClass("richpp").append(helper(text)).get(0)];
+
+  const element = h("span", helper(text));
+  element.classList.add("richpp");
+  return [element];
 }
 
 function onDoubleClickBreakableText(event: JQueryMouseEventObject) {
@@ -197,7 +193,10 @@ export const ProofState = () => {
     } else {
       if (state.abandonedGoals.length > 0) {
         mainGoalsElement.appendChild(
-          h("div.given-up-goals-warning", [h("strong", "Warning: "), "You have given up goals"])
+          h("div.given-up-goals-warning", [
+            h("strong", "Warning: "),
+            "You have given up goals",
+          ])
         );
       }
       mainGoalsElement.appendChild(
