@@ -250,15 +250,20 @@ export const Infoview = () => {
       }
     }
 
-    // TODO: styling for these states
+    const setMessage = (message : string | HTMLElement) => {
+      element.innerHTML = "";
+      const formatted = h("div.message", message);
+      element.appendChild(formatted);
+    };
+    
     if (state.type === "not-running") {
-      element.textContent = "coqtop is not running";
+      setMessage("coqtop is not running");
     } else if (state.type === "failure") {
-      element.appendChild(createAnnotatedText(state.message)[0]);
+      setMessage(createAnnotatedText(state.message)[0]);
     } else if (state.type === "interrupted") {
-      element.textContent = "Interrupted";
+      setMessage("Interrupted");
     } else if (state.type === "no-proof") {
-      element.textContent = "Not in proof mode";
+      setMessage("Not in proof mode");
     }
   };
 
