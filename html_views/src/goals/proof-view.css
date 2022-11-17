@@ -271,6 +271,10 @@ span[class~=charsRemoved][class~=substitution]::before {
   padding-right: 10pt;
 }
 
+.message {
+  padding: 10pt 10pt 10pt 10pt;
+}
+
 vscode-panel-view {
   flex-direction: column;
 }
