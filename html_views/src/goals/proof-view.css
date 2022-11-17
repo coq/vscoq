@@ -263,13 +263,6 @@ span[class~=charsRemoved][class~=substitution]::before {
   color: var(--vscode-coq-tacticString);
 }
 
-#togglePrettifySymbols {
-  text-decoration: line-through;
-}
-.prettifySymbolsMode #togglePrettifySymbols {
-  text-decoration: none
-}
-
 .panels {
   padding-left: 10pt;
   padding-right: 10pt;
