@@ -82,7 +82,7 @@
             "open-script",
             "interaction"
           ],
-          "default": "interaction",
+          "default": "open-script",
           "markdownDescription": "When to start an instance of coqtop: when a Coq script is opened (`open-script`) or else when the user begins interaction (`interaction`; default)."
         },
         "coq.loadCoqProject": {
@@ -93,7 +93,7 @@
         "coq.coqProjectRoot": {
           "type": "string",
           "default": ".",
-          "description": "The path of the coq project relative to the workspace root. Also determins where to look for the `_CoqProject` file. Requires reloading."
+          "description": "The path of the coq project relative to the workspace root. Also determines where to look for the `_CoqProject` file. Requires reloading."
         },
         "coq.moveCursorToFocus": {
           "type": "boolean",
