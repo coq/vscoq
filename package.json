@@ -82,7 +82,7 @@
             "open-script",
             "interaction"
           ],
-          "default": "interaction",
+          "default": "open-script",
           "markdownDescription": "When to start an instance of coqtop: when a Coq script is opened (`open-script`) or else when the user begins interaction (`interaction`; default)."
         },
         "coq.loadCoqProject": {
