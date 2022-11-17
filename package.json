@@ -828,7 +828,7 @@
     "ts-loader": "^9.2.6",
     "ts-prune": "^0.10.3",
     "typescript": "^3.7.5",
-    "vsce": "^2.5.3",
+    "vsce": "^2.14.0",
     "webpack": "^5.65.0",
     "webpack-cli": "^4.9.1"
   },
