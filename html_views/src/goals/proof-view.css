@@ -48,7 +48,7 @@ table {
 }
 
 code {
-  font-family: monospace;
+  font-family: var(--vscode-editor-font-family);
 }
 
 strong {

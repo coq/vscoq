@@ -9,6 +9,7 @@ import {
 } from "./protocol";
 import { Infoview } from "./display-proof-state";
 import "@vscode/webview-ui-toolkit/dist/toolkit";
+import h = require("hyperscript");
 
 const infoview = Infoview();
 const root = document.getElementById("root");
@@ -30,33 +31,38 @@ const throttleEventHandler = <X>(handler: (x: X) => void) => {
   };
 };
 
+// This function creates a DOM element that partially mimics the appearance
+// of ProofState to calculate number of characters that can fit in a line.
+//
+// The element is briefly inserted into the DOM before getting removed.
+// Users won't see it at all.
 function computePrintingWidth() {
-  const stateView = infoview.element;
-  const ctx = ($("#textMeasurer")[0] as HTMLCanvasElement).getContext("2d")!;
-  ctx.font = getComputedStyle($("#textMeasurer")[0]).font || "";
-  const widthClient = stateView.clientWidth - 27;
-  const widthOneChar = ctx.measureText("O").width;
-  let widthChars = Math.floor(widthClient / widthOneChar);
-  if (
-    widthClient <= 0 ||
-    widthChars <= 1 ||
-    widthChars === Number.POSITIVE_INFINITY
-  ) {
-    console.log(
-      "Fallback to width 80 because: widthClient = " +
-        widthClient +
-        " and widthChars = " +
-        widthChars
-    );
-    widthChars = 80;
-  }
-  $("#measureTest").text("<" + "-".repeat(widthChars - 2) + ">");
+  const hypotheses = h(
+    "ul.hypotheses",
+    h("li", [h("span.ident", "a"), h("span.rel", "="), h("span.expr", "3")])
+  );
+
+  const pseudoview = h("vscode-panels.panels", [
+    h("vscode-panel-tab", "MAIN"),
+    h("vscode-panel-view", hypotheses),
+  ]);
+
+  document.body.appendChild(pseudoview);
+
+  const clientWidth = hypotheses.clientWidth;
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  context.font = getComputedStyle(hypotheses).font || "monospace";
+  const characterWidth = context.measureText("O").width;
+  const characterCount = Math.max(Math.trunc(clientWidth / characterWidth), 1);
   vscode.postMessage(
     JSON.stringify(<ControllerEvent>{
       eventName: "resize",
-      params: <ResizeEvent>{ columns: widthChars },
+      params: <ResizeEvent>{ columns: characterCount },
     })
   );
+
+  document.body.removeChild(pseudoview);
 }
 
 function onWindowGetFocus(event: FocusEvent) {
