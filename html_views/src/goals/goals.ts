@@ -1,4 +1,3 @@
-import * as $ from "jquery";
 import { WebviewApi } from "vscode-webview";
 import {
   ControllerEvent,
@@ -75,15 +74,15 @@ function onWindowGetFocus(event: FocusEvent) {
 }
 
 function setPrettifySymbolsMode(enabled: boolean) {
-  $(document.body).toggleClass("prettifySymbolsMode", enabled);
+  document.body.classList.toggle("prettifySymbolsMode", enabled);
 }
 
 function setProofViewDiffOptions(settings: ProofViewDiffSettings) {
-  $(document.body).toggleClass(
+  document.body.classList.toggle(
     "proofView_addedTextIsItalic",
     settings.addedTextIsItalic
   );
-  $(document.body).toggleClass(
+  document.body.classList.toggle(
     "proofView_removedTextIsStrikedthrough",
     settings.removedTextIsStrikedthrough
   );
