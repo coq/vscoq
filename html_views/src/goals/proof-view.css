@@ -196,7 +196,7 @@ span[class~=charsRemoved][class~=substitution]::before {
   text-decoration: line-through;
 }
 
-.hypotheses, .hypothesis, .goal, #stdout, #textMeasurer, #measureTest {
+.hypotheses, .hypothesis, .goal, #stdout {
   font-family: var(--vscode-editor-font-family);
   font-weight: var(--vscode-editor-font-weight);
   font-size: var(--vscode-editor-font-size);
@@ -213,9 +213,6 @@ span[class~=charsRemoved][class~=substitution]::before {
   border-top: 1pt solid;
   padding: 5pt 0pt;
   border-top-color: var(--vscode-coq-subgoalSeparator);
-}
-#measureTest {
-  display: none;
 }
 
 .richpp .constr-notation {
