@@ -4,7 +4,7 @@ import { CoqProject } from './CoqProject';
 import * as editorAssist from './EditorAssist';
 
 // Inputs to ignore when calling hover
-const excludes = [ '' ];
+const excludes = [''];
 
 function operatorRegex(str: string) {
   // Matching operators is simple, as Coq will kindly
@@ -21,11 +21,11 @@ function compactify(str: string) {
     { match: /\bexists\b/g, subst: "∃" },
     { match: operatorRegex("\\\\\\/"), subst: "∨" },
     { match: operatorRegex("\\/\\\\"), subst: "∧" },
-    { match: operatorRegex("<->"), subst: "⟷" }, // the default arrow "↔" is too small/low...
-    { match: operatorRegex("->"), subst: "➞" }, // the default arrow "→" is too small/low...
+    { match: operatorRegex("<->"), subst: "↔" },
+    { match: operatorRegex("->"), subst: "→" },
     { match: operatorRegex("<="), subst: "≤" },
     { match: operatorRegex(">="), subst: "≥" },
-    { match: operatorRegex("=>"), subst:"⇒" },
+    { match: operatorRegex("=>"), subst: "⇒" },
     { match: operatorRegex("<>"), subst: "≠" },
     { match: operatorRegex("~"), subst: "¬" }
   ];
@@ -59,7 +59,7 @@ function formatCheck(response: string) {
   return new vscode.Hover(hover);
 }
 
-function findClosingParenthese(str: string, start:number) {
+function findClosingParenthese(str: string, start: number) {
   let depth = 0;
   for (let i = start; i < str.length; i++) {
     if (str[i] === "(") depth++;
@@ -90,7 +90,7 @@ function formatLocate(response: string) {
 }
 
 // Perform a query to get hover text
-async function query(query:"check"|"locate",text: string, project: CoqProject, document: vscode.TextDocument) {
+async function query(query: "check" | "locate", text: string, project: CoqProject, document: vscode.TextDocument) {
   const doc = project.getOrCurrent(document.uri.toString());
   if (!doc) return;
   const response = await doc.hoverQuery(query, text);
