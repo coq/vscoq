@@ -32,7 +32,7 @@ function compactify(str: string) {
   for (const replace of replaces) {
     str = str.replace(replace.match, replace.subst);
   }
-  return str;
+  return str.trim();
 }
 
 function formatCheck(response: string) {
