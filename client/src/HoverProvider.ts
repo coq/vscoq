@@ -118,14 +118,7 @@ export function coqIdOrNotationFromRange(document: vscode.TextDocument, range: v
   return text;
 }
 
-export async function provideHover(position: vscode.Position, project: CoqProject, document: vscode.TextDocument) {
-  // § Get text under cursor
-  let range = document.getWordRangeAtPosition(position);
-  if (!range)
-    range = document.getWordRangeAtPosition(position, regExpCoqNotation);
-  const input = coqIdOrNotationFromRange(document, range).trim();
-  if (excludes.includes(input)) return;
-
+async function query_input(input: string, project: CoqProject, document: vscode.TextDocument) {
   let is_notation = input[0] === "\"";
 
   // § Check if query was recently performed
@@ -150,4 +143,27 @@ export async function provideHover(position: vscode.Position, project: CoqProjec
   // § Add query to recent queries
   recent_queries.push({ input, time: Date.now(), output });
   return output;
+}
+
+export async function provideHover(position: vscode.Position, project: CoqProject, document: vscode.TextDocument) {
+  // § Get text under cursor
+  const ranges =
+    [
+      // match largest non-space segment
+      document.getWordRangeAtPosition(position, /\S+/),
+      // match identifier
+      document.getWordRangeAtPosition(position, editorAssist.regExpQualifiedCoqIdent),
+      // match symbols
+      document.getWordRangeAtPosition(position, regExpCoqNotation),
+    ];
+
+  for (const range of ranges) {
+    if (range === undefined) continue;
+    const input = coqIdOrNotationFromRange(document, range).trim();
+    if (excludes.includes(input)) continue;
+
+    const hover = await query_input(input, project, document);
+    if (hover !== undefined) return hover;
+  }
+  return;
 }
