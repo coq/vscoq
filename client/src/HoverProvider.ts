@@ -86,6 +86,16 @@ function formatLocate(response: string) {
     const definition = compactify(response.slice(begin, end));
     hover.push({ language: "coq", value: `"${notation}" := ${definition}` })
   }
+  if (hover.length === 0) {
+    // Old coq version had a different locate format
+    response = response.replace(/Notation\s*/gms, "");
+    const old_matches = response.matchAll(/\s*"(.*?)"\s*:=\s*(.*)\s*:/gms);
+    for (const match of old_matches) {
+      const notation = match[1].trim();
+      const definition = compactify(match[2].replace("(default interpretation)", ""));
+      hover.push({ language: "coq", value: `"${notation}" := ${definition}` })
+    }
+  }
   return new vscode.Hover(hover);
 }
 
