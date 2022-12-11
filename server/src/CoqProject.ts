@@ -89,6 +89,8 @@ export class CoqProject {
     if(newSettings.coq.loadCoqProject ) {
       this.watchCoqProject();
       await this.loadCoqProject();
+    } else {
+      this.currentSettings.coqtop.args = this.settingsCoqTopArgs;
     }
 
     if(newSettings.prettifySymbolsMode && newSettings.prettifySymbolsMode.substitutions) {
