@@ -41,7 +41,12 @@ interface SettingsState {
   proofViewDiff?: ProofViewDiffSettings;
 }
 
-type ProofViewProtocol = GoalUpdate | SettingsUpdate;
+interface QueryMessageUpdate {
+  command: "message-query";
+  msg: string
+}
+
+type ProofViewProtocol = GoalUpdate | SettingsUpdate | QueryMessageUpdate;
 
 const VIEW_PATH = "html_views";
 
@@ -146,6 +151,7 @@ export class HtmlCoqView implements view.CoqView {
         },
         {
           enableScripts: true,
+          enableFindWidget: true
         }
       );
 

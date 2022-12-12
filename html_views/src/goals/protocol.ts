@@ -92,17 +92,27 @@ interface CommandInterrupted {
   range: any
 }
 
+export interface QueryMessageWrapper {
+  innertext: AnnotatedText
+}
+
 type FocusPosition = {focus: any}
 type NotRunningTag = {type: 'not-running'}
 type NoProofTag = {type: 'no-proof'}
 type FailureTag = {type: 'failure'}
 type ProofViewTag = {type: 'proof-view'}
 type InterruptedTag = {type: 'interrupted'}
+type QueryMessageTag = {type: 'message-query'}
+type ClearMessageTag = {type: 'message-clear'}
 type NoProofResult = NoProofTag
 type FailureResult = FailValue & FailureTag
 type ProofViewResult = ProofView & ProofViewTag
 type InterruptedResult = CommandInterrupted & InterruptedTag
+type QueryMessageResult = QueryMessageWrapper & QueryMessageTag
+type ClearMessageResult = ClearMessageTag
 export type CommandResult =
+  QueryMessageResult |
+  ClearMessageResult |
   NotRunningTag |
   (FailureResult & FocusPosition) |
   (ProofViewResult & FocusPosition) |

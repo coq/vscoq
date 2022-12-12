@@ -175,7 +175,10 @@ export class CoqDocument implements vscode.Disposable {
   private onCoqMessage(params: proto.NotifyMessageParams) {
     if (params.routeId == this.queryRouteId) {
       this.project.queryOut.show(true);
-      this.project.queryOut.appendLine(psm.prettyTextToString(params.message));
+      const processedMessage = psm.prettyTextToString(params.message);
+      this.project.queryOut.appendLine(processedMessage);
+      // send the same message to the message panel
+      this.view.update({ innertext: params.message, type: "message-query" });
     } else {
       switch (params.level) {
         case 'warning':
@@ -358,7 +361,7 @@ export class CoqDocument implements vscode.Disposable {
       }
     } else if(value.type === 'interrupted')
       this.statusBar.setStateComputing(proto.ComputingStatus.Interrupted)
-    else
+    else if (value.type !== 'message-query' && value.type !== 'message-clear')
       this.updateFocus(value.focus, this.project.settings.moveCursorToFocus);
 
     return true;
@@ -479,6 +482,7 @@ export class CoqDocument implements vscode.Disposable {
     try {
       if (term) {
         this.project.queryOut.clear();
+        this.view.update({ type:"message-clear" });
         this.project.queryOut.show(true);
         this.langServer.query(query, term, this.queryRouteId);
       }

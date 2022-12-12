@@ -232,10 +232,33 @@ export const ProofState = () => {
   return { element, updateState, unmount };
 };
 
+export const OtherInfoView = () => {
+  const queryView = h("vscode-panel-view");
+  const element = h("vscode-panels.panels", [
+    h("vscode-panel-tab", "QUERY"),
+    queryView
+  ]);
+
+  let queryViewInnerDiv = h("pre.richpp");
+  queryView.appendChild(queryViewInnerDiv);
+
+  const resetInnerMessage = () => {
+    queryViewInnerDiv.innerHTML = "";
+  };
+
+  const updateInnerMessage = (s : AnnotatedText) => {
+    queryViewInnerDiv.appendChild(h("ul", createAnnotatedText(s)));
+  };
+
+  return { element, updateInnerMessage, resetInnerMessage };
+};
+
 export const Infoview = () => {
   const element = h("div");
 
   let proofStateInstance: ReturnType<typeof ProofState> | undefined = undefined;
+  let otherViewInstance = OtherInfoView();
+  let divider = h("vscode-divider");
 
   const updateState = (state: CommandResult) => {
     if (state.type === "proof-view") {
@@ -243,9 +266,18 @@ export const Infoview = () => {
         element.innerHTML = "";
         proofStateInstance = ProofState();
         element.appendChild(proofStateInstance.element);
+        element.appendChild(divider);
+        element.appendChild(otherViewInstance.element);
       }
 
       proofStateInstance.updateState(state);
+    } else if (state.type === "message-query") {
+      // if (state.innertext)
+      otherViewInstance.updateInnerMessage(state.innertext);
+      // else
+      //   otherViewInstance.updateInnerMessage("nothing. why?");
+    } else if (state.type === "message-clear") {
+      otherViewInstance.resetInnerMessage();
     } else {
       if (proofStateInstance !== undefined) {
         proofStateInstance.unmount();
@@ -257,6 +289,8 @@ export const Infoview = () => {
       element.innerHTML = "";
       const formatted = h("div.message", message);
       element.appendChild(formatted);
+      element.appendChild(divider);
+      element.appendChild(otherViewInstance.element);
     };
 
     const setErrorMessage = (message: HTMLElement) => {
@@ -266,6 +300,8 @@ export const Infoview = () => {
         h("code", message),
       ]);
       element.appendChild(formatted);
+      element.appendChild(divider);
+      element.appendChild(otherViewInstance.element);
     };
 
     if (state.type === "not-running") {
