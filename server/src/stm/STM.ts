@@ -421,7 +421,7 @@ export class CoqStateMachine {
     }
   }
   private get proofViewDiff(): boolean {
-    return server.project.settings.coq.proofViewDiff
+    return this.project.settings.coq.proofViewDiff
   }
 
   /**
