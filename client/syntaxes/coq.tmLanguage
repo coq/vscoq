@@ -120,7 +120,7 @@
 
         <dict>
             <key>match</key>
-            <string>(\b(?:Program|Local)\s+)?\b(Definition|Fixpoint|CoFixpoint|Function|Example|Let(?:\s+Fixpoint|\s+CoFixpoint)?|Instance|Instance)\s+((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <string>(\b(?:Program|Local)\s+)?\b(Definition|Fixpoint|CoFixpoint|Function|Example|Let(?:\s+Fixpoint|\s+CoFixpoint)?|Instance)\s+((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
             <key>comment</key>
             <string>Definitions</string>
             <key>captures</key>
@@ -200,7 +200,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Hint|Constructors|Resolve|Rewrite|Ltac|Implicit(\s+Types)?|Set|Unset|Remove\s+Printing|Arguments|Tactic\s+Notation|Notation|Infix|Reserved\s+Notation|Section|Module\s+Type|Module|End|Check|Print|Eval|Search|Universe|Coercions?|Generalizable\s+All|Generalizable\s+Variable?|Existing\s+Instance|Existing\s+Class|Canonical|About|Locate|Collection)\b</string>
+            <string>\b(Hint|Constructors|Resolve|Rewrite|Ltac|Implicit(\s+Types)?|Set|Unset|Remove\s+Printing|Arguments|Tactic\s+Notation|Notation|Infix|Reserved\s+Notation|Section|Module\s+Type|Module|End|Check|Print|Eval|Search|Universe|Coercions?|Generalizable\s+All|Generalizable\s+Variable?|Existing\s+Instance|Existing\s+Class|Canonical|About|Locate|Collection|Typeclasses\s+(Opaque|Transparent))\b</string>
             <key>comment</key>
             <string>Vernacular keywords</string>
             <key>name</key>
