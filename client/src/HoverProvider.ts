@@ -70,6 +70,20 @@ function findClosingParenthese(str: string, start: number) {
 }
 
 function formatLocate(response: string) {
+  // Response is the string printed by "Locate a."
+  // On Coq 8.13.0:
+  // |Notation "{ A } + { B }" := (sumbool A B) : type_scope
+  // |  (default interpretation)
+  // |Notation "A + { B }" := (sumor A B) : type_scope (default interpretation)
+  // |Notation "x + y" := (N.add x y) : N_scope
+  // |...
+  //
+  // On Coq 8.12.0:
+  // |Notation
+  // |"{ A } + { B }" := sumbool A B : type_scope (default interpretation)
+  // |"A + { B }" := sumor A B : type_scope (default interpretation)
+  // |"x + y" := N.add x y : N_scope
+  // |...
   response = response.trim()
   if (response === "Unknown notation") return;
   const notationRegex = /^(Reserved\s+)?Notation\s*"(.*?)"\s*:=\s*\(/gms;
