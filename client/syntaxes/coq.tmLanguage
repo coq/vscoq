@@ -145,7 +145,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b((Show\s+)?Obligation\s+Tactic|Obligations\s+of|Obligation|Next\s+Obligation(\s+of)?|Solve\s+Obligations(\s+of)?|Solve\s+All\s+Obligations|Admit\s+Obligations(\s+of)?)\b</string>
+            <string>\b((Show\s+)?Obligation\s+Tactic|Obligations\s+of|Obligation|Next\s+Obligation(\s+of)?|Solve\s+Obligations(\s+of)?|Solve\s+All\s+Obligations|Admit\s+Obligations(\s+of)?|Instance)\b</string>
             <key>comment</key>
             <string>Obligations</string>
             <key>captures</key>
