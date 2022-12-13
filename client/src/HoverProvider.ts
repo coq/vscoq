@@ -36,7 +36,7 @@ function compactify(str: string) {
 }
 
 function formatCheck(response: string) {
-  // response is the string printed by "Check a." :
+  // response is the string printed by "Check identifier." :
   // |a
   // |\t : Type
   // |       type (continued if long) (7 space indent)
@@ -70,7 +70,7 @@ function findClosingParenthese(str: string, start: number) {
 }
 
 function formatLocate(response: string) {
-  // Response is the string printed by "Locate a."
+  // Response is the string printed by "Locate "notation"."
   // On Coq 8.13.0:
   // |Notation "{ A } + { B }" := (sumbool A B) : type_scope
   // |  (default interpretation)
@@ -113,12 +113,49 @@ function formatLocate(response: string) {
   return new vscode.Hover(hover);
 }
 
+function formatAbout(response: string) {
+  // response is the string printed by "About identifier."
+  // |set_fold : ∀ A C : Type, Elements A C → ∀ B : Type, (A → B → B) → B → C → B
+  // |
+  // |set_fold is not universe polymorphic
+  // |Arguments set_fold {A C}%type_scope {H} {B}%type_scope _%function_scope
+  // |set_fold is transparent
+  // |Expands to: Constant stdpp.fin_sets.set_fold
+  //
+  // Or
+  // |set_fold not a defined object.
+  if (response.match(/not a defined object\./gs) !== null) return;
+
+  const array = response.split("\n\n"); // two newline between type and the rest
+  let type = array[0];
+  type = compactify(type.replace(/^.*?:/, "")); // remove identifier (everything before first ":")
+  if (type === "") return;
+  let hover = [{ language: "coq", value: type }];
+
+  let details = array[1].split("\n");
+  for (const detail of details) {
+    if (detail.startsWith("Arguments ")) {
+      const source = detail.replace(/Arguments \S*/, "Args: ");
+      hover.push({ language: "text", value: source });
+    }
+    if (detail.startsWith("Expands to: ")) {
+      const source = detail.replace("Expands to: ", "");
+      hover.push({ language: "text", value: source });
+    }
+  }
+  return new vscode.Hover(hover);
+}
+
 // Perform a query to get hover text
-async function query(query: "check" | "locate", text: string, project: CoqProject, document: vscode.TextDocument) {
+async function query(query: "check" | "locate" | "about", text: string, project: CoqProject, document: vscode.TextDocument) {
   const doc = project.getOrCurrent(document.uri.toString());
   if (!doc) return;
   const response = await doc.hoverQuery(query, text);
-  return response;
+  if (!response) return;
+  if (query === "check") return formatCheck(response);
+  if (query === "locate") return formatLocate(response);
+  if (query === "about") return formatAbout(response);
+  return;
 }
 
 // VSCode calls HoverProvider repeatedly
@@ -152,21 +189,18 @@ async function query_input(input: string, project: CoqProject, document: vscode.
     return has_query.output;
 
   // § if not, perform query
-  const method = is_notation ? "locate" : "check";
+  const method = is_notation ? "locate" : "about";
   let response = await query(method, input, project, document);
   if (!response && !is_notation) {
     // Something that looks like an identifier might in fact be a notation
     response = await query("locate", `"${input}"`, project, document);
     is_notation = true;
   }
-
   if (!response) return;
-  const output = is_notation ? formatLocate(response) : formatCheck(response);
-  if (!output) return;
 
   // § Add query to recent queries
-  recent_queries.push({ input, time: Date.now(), output });
-  return output;
+  recent_queries.push({ input, time: Date.now(), output: response });
+  return response;
 }
 
 export async function provideHover(position: vscode.Position, project: CoqProject, document: vscode.TextDocument) {
