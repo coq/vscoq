@@ -132,10 +132,10 @@ function formatAbout(response: string) {
   if (type === "") return;
   let hover = [{ language: "coq", value: type }];
 
-  let details = array[1].split("\n");
+  let details = array[1].split(/\n(?!\s)/gms); // split on newline NOT followed by space
   for (const detail of details) {
     if (detail.startsWith("Arguments ")) {
-      const source = detail.replace(/Arguments \S*\s*/, "Args: ");
+      const source = detail.replace(/Arguments \S*\s*/, "Args: ").replace(/\s+/gms, " ");
       hover.push({ language: "text", value: source });
     }
     if (detail.startsWith("Expands to: ")) {
