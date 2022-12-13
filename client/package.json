@@ -1,0 +1,452 @@
+{
+  "name": "vscoq",
+  "displayName": "VsCoq",
+  "description": "VsCoq is an extension for Visual Studio Code with support for the Coq Proof Assistant",
+  "publisher": "coq-community",
+  "license" : "MIT",
+  "version": "2.0.0",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^7.0.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:coq"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "coq",
+        "aliases": [
+          "Coq",
+          "coq",
+          "Gallina",
+          "gallina"
+        ],
+        "extensions": [
+          ".v"
+        ],
+        "configuration": "./coq.configuration.json",
+        "icon": {
+          "light": "./assets/logo.png",
+          "dark": "./assets/logo.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "coq",
+        "scopeName": "source.coq",
+        "path": "./syntax/coq.tmLanguage"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "coq-sidebar",
+          "title": "Coq Proof Assistant",
+          "icon": "./assets/vscoq_logo.svg"
+        }
+      ]
+    },
+    "views": {
+      "coq-sidebar": [
+        {
+          "type": "webview",
+          "id": "coq.search",
+          "name": "Query"
+        }
+      ]
+    },
+    "configuration": [
+      {
+        "title": "Coq configuration",
+        "type": "object",
+        "properties": {
+          "vscoq.trace.server": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "off",
+              "messages",
+              "verbose"
+            ],
+            "default": "messages",
+            "description": "Traces the communication between VS Code and the language server."
+          },
+          "vscoq.path": {
+            "type": "string",
+            "default": "",
+            "description": "Path to vscoqtop."
+          },
+          "vscoq.args": {
+            "type": "array",
+            "default": [
+              "-bt"
+            ],
+            "description": "vscoqtop arguments"
+          }
+        }
+      },
+      {
+        "title": "Goal and Info view panel",
+        "type": "object",
+        "properties": {
+          "vscoq.goals.display": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "Tabs",
+              "List"
+            ],
+            "default": "List",
+            "description": "Determines wether multiple goals should be displayed in different tabs or as a list of collapsible items."
+          }
+        }
+      },
+      {
+        "title": "Proof checking",
+        "type": "object",
+        "properties": {
+          "vscoq.proof.delegation": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "None",
+              "Skip",
+              "Delegate"
+            ],
+            "enumItemLabels": [
+              "No delegation (all proofs are checked on after the other)",
+              "Skip the proofs which are out of focus. This requires a continuous checking to be off",
+              "Delegate proofs"
+            ],
+            "default": "None",
+            "description": "Determines which delegation strategy should be used by the server."
+          },
+          "vscoq.proof.workers": {
+            "scope": "window",
+            "type": "number",
+            "default": "1",
+            "description": "Amount of workers assigned to proofs in delegation mode"
+          }
+        }
+      }
+    ],
+    "commands": [
+      {
+        "command": "coq.displayGoals",
+        "category": "Coq",
+        "title": "Display Goals",
+        "description": "Displays the goal view"
+      },
+      {
+        "command": "coq.searchCursor",
+        "category": "Coq",
+        "title": "Search on cursor",
+        "description": "Launches a search query for the word under the cursor"
+      },
+      {
+        "command": "coq.aboutCursor",
+        "category": "Coq",
+        "title": "About on cursor",
+        "description": "Launches an about query for the word under the cursor"
+      }
+    ],
+    "colors": [
+      {
+        "id": "coq.proofviewText",
+        "description": "Color for proofview text.",
+        "defaults": {
+          "dark": "#cccccc",
+          "light": "#333333",
+          "highContrast": "#333333"
+        }
+      },
+      {
+        "id": "coq.proofviewMessage",
+        "description": "Color for proofview messages.",
+        "defaults": {
+          "dark": "#cccccc",
+          "light": "#333333",
+          "highContrast": "#333333"
+        }
+      },
+      {
+        "id": "coq.proofviewError",
+        "description": "Color for proofview errors.",
+        "defaults": {
+          "dark": "#ffc0cb",
+          "light": "#ff0000",
+          "highContrast": "#ff0000"
+        }
+      },
+      {
+        "id": "coq.hypothesisIdent",
+        "description": "Color for goal hypotheses identifiers.",
+        "defaults": {
+          "dark": "#20b2aa",
+          "light": "#006400",
+          "highContrast": "#006400"
+        }
+      },
+      {
+        "id": "coq.hypothesesSeparator",
+        "description": "Color for hypotheses separator.",
+        "defaults": {
+          "dark": "#ffffff66",
+          "light": "#00000033",
+          "highContrast": "#00000033"
+        }
+      },
+      {
+        "id": "coq.oddHypothesisBackground",
+        "description": "Background color for hypotheses with odd index.",
+        "defaults": {
+          "dark": "#0000000d",
+          "light": "#ffffff0d",
+          "highContrast": "#ffffff0d"
+        }
+      },
+      {
+        "id": "coq.newHypothesisBackground",
+        "description": "Background color for new hypotheses.",
+        "defaults": {
+          "dark": "#00ff0017",
+          "light": "#00aa0040",
+          "highContrast": "#00aa0040"
+        }
+      },
+      {
+        "id": "coq.changedHypothesisBackground",
+        "description": "Background color for changed hypotheses.",
+        "defaults": {
+          "dark": "#0000ff26",
+          "light": "#0000ff0d",
+          "highContrast": "#0000ff0d"
+        }
+      },
+      {
+        "id": "coq.goalId",
+        "description": "Color of goal identifiers.",
+        "defaults": {
+          "dark": "#add8e6",
+          "light": "#00008b",
+          "highContrast": "#00008b"
+        }
+      },
+      {
+        "id": "coq.addedCharacter",
+        "description": "Color of added characters (in diffs).",
+        "defaults": {
+          "dark": "#00fa001a",
+          "light": "#00fa0033",
+          "highContrast": "#00fa0033"
+        }
+      },
+      {
+        "id": "coq.removedCharacter",
+        "description": "Color of removed characters (in diffs).",
+        "defaults": {
+          "dark": "#fa000099",
+          "light": "#fa000033",
+          "highContrast": "#fa000033"
+        }
+      },
+      {
+        "id": "coq.mainSubgoalBackground",
+        "description": "Background color for main subgoal.",
+        "defaults": {
+          "dark": "#ffffff0d",
+          "light": "#0000000d",
+          "highContrast": "#0000000d"
+        }
+      },
+      {
+        "id": "coq.subgoalBackground",
+        "description": "Background color for subgoals.",
+        "defaults": {
+          "dark": "#ffffff0d",
+          "light": "#0000000d",
+          "highContrast": "#0000000d"
+        }
+      },
+      {
+        "id": "coq.subgoalSeparator",
+        "description": "Color of subgoal separators.",
+        "defaults": {
+          "dark": "#ffffff33",
+          "light": "#00000033",
+          "highContrast": "#00000033"
+        }
+      },
+      {
+        "id": "coq.termNotation",
+        "description": "Color of term notations.",
+        "defaults": {
+          "dark": "#ff8c00",
+          "light": "#ff8c00",
+          "highContrast": "#ff8c00"
+        }
+      },
+      {
+        "id": "coq.termKeyword",
+        "description": "Color of term keywords.",
+        "defaults": {
+          "dark": "#6495ed",
+          "light": "#6495ed",
+          "highContrast": "#6495ed"
+        }
+      },
+      {
+        "id": "coq.termEvar",
+        "description": "Color of existential variables.",
+        "defaults": {
+          "dark": "#ff8c00",
+          "light": "#ff8c00",
+          "highContrast": "#ff8c00"
+        }
+      },
+      {
+        "id": "coq.termPath",
+        "description": "Color of term paths.",
+        "defaults": {
+          "dark": "#9370d8",
+          "light": "#ff8c00",
+          "highContrast": "#ff8c00"
+        }
+      },
+      {
+        "id": "coq.termReference",
+        "description": "Color of name references in terms.",
+        "defaults": {
+          "dark": "#7cfc00",
+          "light": "#32cd32",
+          "highContrast": "#32cd32"
+        }
+      },
+      {
+        "id": "coq.termType",
+        "description": "Color of types in terms.",
+        "defaults": {
+          "dark": "#f08080",
+          "light": "#ff7f50",
+          "highContrast": "#ff7f50"
+        }
+      },
+      {
+        "id": "coq.termVariable",
+        "description": "Color of variables in terms.",
+        "defaults": {
+          "dark": "#7fff00",
+          "light": "#20b2aa",
+          "highContrast": "#20b2aa"
+        }
+      },
+      {
+        "id": "coq.debugMessage",
+        "description": "Color of debug messages.",
+        "defaults": {
+          "dark": "#9370d8",
+          "light": "#daa520",
+          "highContrast": "#daa520"
+        }
+      },
+      {
+        "id": "coq.errorMessage",
+        "description": "Color of error messages.",
+        "defaults": {
+          "dark": "#ff0000",
+          "light": "#ff0000",
+          "highContrast": "#ff0000"
+        }
+      },
+      {
+        "id": "coq.warningMessage",
+        "description": "Color of warning messages.",
+        "defaults": {
+          "dark": "#ffff00",
+          "light": "#ffff00",
+          "highContrast": "#ffff00"
+        }
+      },
+      {
+        "id": "coq.moduleKeyword",
+        "description": "Color of module keywords.",
+        "defaults": {
+          "dark": "#6495ed",
+          "light": "#6495ed",
+          "highContrast": "#6495ed"
+        }
+      },
+      {
+        "id": "coq.tacticKeyword",
+        "description": "Color of tactic keywords.",
+        "defaults": {
+          "dark": "#6495ed",
+          "light": "#6495ed",
+          "highContrast": "#6495ed"
+        }
+      },
+      {
+        "id": "coq.tacticPrimitive",
+        "description": "Color of tactic primitives.",
+        "defaults": {
+          "dark": "#5f9ea0",
+          "light": "#5f9ea0",
+          "highContrast": "#5f9ea0"
+        }
+      },
+      {
+        "id": "coq.tacticString",
+        "description": "Color of tactic strings.",
+        "defaults": {
+          "dark": "#ffa500",
+          "light": "#ffa500",
+          "highContrast": "#ffa500"
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "install:all": "yarn install && cd goal-view-ui && yarn install && cd ../search-ui && yarn install",
+    "build:all": "cd goal-view-ui && yarn run build && cd ../search-ui && yarn run build",
+    "start:goal-view-ui": "cd goal-view-ui && yarn run start",
+    "build:goal-view-ui": "cd goal-view-ui && yarn run build",
+    "start:search-ui": "cd search-ui && yarn run start",
+    "build:search-ui": "cd search-ui && yarn run build",
+    "vscode:prepublish": "yarn run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "yarn run install:all && yarn run build:all && webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.0.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@types/tmp": "^0.2.3",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "@vscode/test-electron": "^2.2.0",
+    "eslint": "^8.28.0",
+    "expect": "^29.4.3",
+    "glob": "^8.0.3",
+    "mocha": "^10.1.0",
+    "tmp-promise": "^3.0.3",
+    "ts-loader": "^9.4.1",
+    "typescript": "^4.9.3",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.0"
+  }
+}

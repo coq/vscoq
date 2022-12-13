@@ -1,0 +1,4 @@
+.ResultStatement {
+    font-style: italic;
+    color: var(--vscode-coq-proofViewText);
+}

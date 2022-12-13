@@ -1,0 +1,15 @@
+.Hypothesis {
+    margin-top: 6px;
+}
+
+.Identifier {
+    color: var(--vscode-coq-hypothesisIdent);
+}
+
+.Separator {
+    color: var(--vscode-coq-hypothesisSeparator);
+}
+
+.Type {
+    color: var(--vscode-editor-foreground);
+}

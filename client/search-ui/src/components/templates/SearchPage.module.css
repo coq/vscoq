@@ -1,0 +1,34 @@
+.Page {
+    width: 100%;
+    display: block;
+}
+
+.PageHeader {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.Dropdown {
+    margin-left: 3px;
+}
+
+.Button {
+    margin-left: 6px;
+}
+
+.SmallButton {
+    font-size: 6px;
+    margin-left: 6px;
+}
+
+.Panels {
+    width: 100%;
+}
+
+.HiddenTab {
+    display: none;
+}

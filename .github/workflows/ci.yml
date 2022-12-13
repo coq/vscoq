@@ -1,0 +1,81 @@
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-extension:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.x
+    - run: |
+        cd client
+        yarn run package
+
+  nix-dev-build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+    - name: Configure Dune
+      run: |
+        mkdir -p ~/.config/dune
+        cat <<EOF > ~/.config/dune/config
+        (lang dune 3.2)
+        (display short)
+        EOF
+    - uses: cachix/install-nix-action@v18
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - run: nix build '.?submodules=1'
+    - run: nix develop .#vscoq-language-server -c bash -c "cd language-server && make world"
+    - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
+    - run: xvfb-run nix develop .#vscoq-client -c bash -c "cd client && yarn test"
+      if: runner.os == 'Linux'
+    - run: nix develop .#vscoq-client -c bash -c "cd client && yarn test"
+      if: runner.os != 'Linux'
+
+  build-language-server-opam:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        ocaml-compiler: [4.14.x]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+
+    - name: Use OCaml ${{ matrix.ocaml-compiler }}
+      uses: avsm/setup-ocaml@v2
+      with:
+        ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+    - name: Install Coq dependencies
+      run: opam install ./language-server/coq/coq-core.opam ./language-server/coq/coq-stdlib.opam --deps-only
+
+    - name: Install vscoq-language-server dependencies
+      run: opam install ./language-server/vscoq-language-server.opam --deps-only --with-doc --with-test
+
+    - name: Install vscoq-language-server
+      run: opam install ./language-server/vscoq-language-server.opam --with-test
+
+    - run: |
+        eval $(opam env)
+        which vscoqtop
+        vscoqtop -v
