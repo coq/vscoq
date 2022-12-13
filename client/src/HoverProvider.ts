@@ -124,7 +124,30 @@ function formatAbout(response: string) {
   //
   // Or
   // |set_fold not a defined object.
+  //
+  // Or
+  // |Notation leibnizO A := (discreteO A)
+  // |Expands to: Notation iris.algebra.ofe.leibnizO
   if (response.match(/not a defined object\./gs) !== null) return;
+
+  if (response.startsWith("Notation")) {
+    const array = response.split(/\n(?!\s)/gms); // split on newline NOT followed by space
+    let hover = []
+    const match = array[0].match(/Notation\s+(.*?)\s+:=\s+\(/);
+    if (match !== null) {
+      const notation = match[1];
+      const end = findClosingParenthese(response, match[0].length);
+      if (end === null) return;
+      const definition = compactify(response.slice(match[0].length, end));
+      hover.push({ language: "coq", value: `"${notation}" := ${definition}` })
+    }
+
+    if (array[1].startsWith("Expands to: ")) {
+      const source = array[1].replace("Expands to: ", "");
+      hover.push({ language: "text", value: source });
+    }
+    return new vscode.Hover(hover);
+  }
 
   const array = response.split("\n\n"); // two newline between type and the rest
   let type = array[0];
