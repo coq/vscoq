@@ -46,7 +46,7 @@ export class State {
   private diagnostics: CoqDiagnosticInternal[] = [];
   // set to true when a document change has invalidated the meaning of the associated sentence; this state needs to be cancelled
   private markedInvalidated = false;
-  private goal : ProofViewReference | null = null; 
+  private goal : ProofViewReference | null = null;
 
   private constructor
     ( private commandText: string
@@ -145,7 +145,7 @@ export class State {
   }
 
   public updateWorkerStatus(workerId: string, status: string) {
-    
+
   }
 
   /** Handle sentence-status updates as they come from coqtop */
@@ -200,7 +200,7 @@ export class State {
       return diff.diffProofView(oldGoals, newGoals);
     }
     return newGoals;
-  }  
+  }
 
   private translateDiagnostic(d : CoqDiagnosticInternal, delta: textUtil.RangeDelta) : void {
     if (d.range) {
@@ -326,7 +326,7 @@ export class State {
     return textUtil.positionIsAfterOrEqual(this.textRange.start, position) ||
       textUtil.positionIsAfter(this.textRange.end, position);
   }
-  
+
   /** @returns `true` if this sentence contains `position`. */
   public contains(position: Position) : boolean {
     return textUtil.positionIsBeforeOrEqual(this.textRange.start, position) &&
