@@ -39,6 +39,7 @@ original author of this extension is @siegebell.
 * Works with [prettify-symbols-mode](https://marketplace.visualstudio.com/items?itemName=siegebell.prettify-symbols-mode)
 * Supports \_CoqProject
 * LtacProf results treeview
+* Display type or notation definition on mouse hover.
 
 ## Requirements
 * VS Code or VSCodium 1.38.0, or more recent
