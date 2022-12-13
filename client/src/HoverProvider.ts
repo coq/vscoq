@@ -135,7 +135,7 @@ function formatAbout(response: string) {
   let details = array[1].split("\n");
   for (const detail of details) {
     if (detail.startsWith("Arguments ")) {
-      const source = detail.replace(/Arguments \S*/, "Args: ");
+      const source = detail.replace(/Arguments \S*\s*/, "Args: ");
       hover.push({ language: "text", value: source });
     }
     if (detail.startsWith("Expands to: ")) {
@@ -189,7 +189,7 @@ async function query_input(input: string, project: CoqProject, document: vscode.
     return has_query.output;
 
   // § if not, perform query
-  const method = is_notation ? "locate" : "about";
+  const method = is_notation ? "locate" : project.settings.hoverFunction;
   let response = await query(method, input, project, document);
   if (!response && !is_notation) {
     // Something that looks like an identifier might in fact be a notation

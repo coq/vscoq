@@ -59,6 +59,7 @@ describe("CoqStateMachine", function() {
         indentAfterOpenProof: false,
         unindentOnCloseProof: false,
       },
+      hoverFunction: "about",
     } as CoqSettings,
     coqtop: {
       args: [],
