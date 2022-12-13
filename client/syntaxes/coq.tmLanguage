@@ -36,9 +36,18 @@
 
         <dict>
             <key>match</key>
-            <string>\b(From|Require|Import|Export|Local|Global|Open|Scope)\b</string>
+            <string>\b(From|Require|Import|Export|Local|Global|Include)\b</string>
             <key>comment</key>
             <string>Vernacular import keywords</string>
+            <key>name</key>
+            <string>keyword.control.import.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b((Open|Close|Delimit|Undelimit|Bind)\s+Scope)\b</string>
+            <key>comment</key>
+            <string>Vernacular scope keywords</string>
             <key>name</key>
             <string>keyword.control.import.coq</string>
         </dict>
@@ -65,7 +74,7 @@
 
         <dict>
             <key>match</key>
-            <string>(Parameters?|Axioms?|Conjectures?|Variables?|Hypothesis|Hypotheses)\s+((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <string>\b(Parameters?|Axioms?|Conjectures?|Variables?|Hypothesis|Hypotheses)(\s+Inline)?\b\s*\(?\s*((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
             <key>comment</key>
             <string>Assumptions</string>
             <key>captures</key>
@@ -78,6 +87,31 @@
                 <key>2</key>
                 <dict>
                     <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>3</key>
+                <dict>
+                    <key>name</key>
+                    <string>entity.name.assumption.coq</string>
+                </dict>
+            </dict>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Context)\b\s*`?\s*(\(|\{)?\s*((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <key>comment</key>
+            <string>Context</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>3</key>
+                <dict>
+                    <key>name</key>
                     <string>entity.name.assumption.coq</string>
                 </dict>
             </dict>
@@ -86,7 +120,7 @@
 
         <dict>
             <key>match</key>
-            <string>(Program Definition|Program Fixpoint|Program CoFixpoint|Program Function|Function|CoFixpoint|Fixpoint|Definition|Example|Let)\s+((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <string>(\b(?:Program|Local)\s+)?\b(Definition|Fixpoint|CoFixpoint|Function|Example|Let(?:\s+Fixpoint|\s+CoFixpoint)?|Instance)\s+((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
             <key>comment</key>
             <string>Definitions</string>
             <key>captures</key>
@@ -99,6 +133,11 @@
                 <key>2</key>
                 <dict>
                     <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>3</key>
+                <dict>
+                    <key>name</key>
                     <string>entity.name.function.coq</string>
                 </dict>
             </dict>
@@ -106,9 +145,9 @@
 
         <dict>
             <key>match</key>
-            <string>(CoInductive|Inductive)\s+((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <string>\b((Show\s+)?Obligation\s+Tactic|Obligations\s+of|Obligation|Next\s+Obligation(\s+of)?|Solve\s+Obligations(\s+of)?|Solve\s+All\s+Obligations|Admit\s+Obligations(\s+of)?|Instance)\b</string>
             <key>comment</key>
-            <string>Inductive type declarations</string>
+            <string>Obligations</string>
             <key>captures</key>
             <dict>
                 <key>1</key>
@@ -116,7 +155,22 @@
                     <key>name</key>
                     <string>keyword.source.coq</string>
                 </dict>
-                <key>2</key>
+            </dict>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>(CoInductive|Inductive|Variant|Record|Structure|Class)\s+(>\s*)?((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <key>comment</key>
+            <string>Type declarations</string>
+            <key>captures</key>
+            <dict>
+                <key>1</key>
+                <dict>
+                    <key>name</key>
+                    <string>keyword.source.coq</string>
+                </dict>
+                <key>3</key>
                 <dict>
                     <key>name</key>
                     <string>entity.name.type.coq</string>
@@ -146,9 +200,18 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Hint|Constructors|Resolve|Rewrite|Proof|Ltac|Qed|Defined|Implicit|Set|Unset|Remove Printing|Arguments|Tactic Notation|Notation|Infix|Reserved Notation|Section|Module Type|Module|End|Record|Class|Check|Print|Eval|Universe)\b</string>
+            <string>\b(Hint|Constructors|Resolve|Rewrite|Ltac|Implicit(\s+Types)?|Set|Unset|Remove\s+Printing|Arguments|Tactic\s+Notation|Notation|Infix|Reserved\s+Notation|Section|Module\s+Type|Module|End|Check|Print|Eval|Search|Universe|Coercions?|Generalizable\s+All|Generalizable\s+Variable?|Existing\s+Instance|Existing\s+Class|Canonical|About|Locate|Collection|Typeclasses\s+(Opaque|Transparent))\b</string>
             <key>comment</key>
             <string>Vernacular keywords</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Proof|Qed|Defined|Save|Abort(\s+All)?|Undo(\s+To)?|Restart|Focus|Unfocus|Unfocused|Show\s+Proof|Show\s+Existentials|Show|Unshelve)\b</string>
+            <key>comment</key>
+            <string>Proof keywords</string>
             <key>name</key>
             <string>keyword.source.coq</string>
         </dict>
@@ -182,7 +245,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(forall|exists|Type|Set|Prop)\b|∀|∃</string>
+            <string>\b(forall|exists|Type|Set|Prop|nat|bool|option|list|unit|sum|prod|comparison|Empty_set)\b|∀|∃</string>
             <key>comment</key>
             <string>Type keywords</string>
             <key>name</key>
@@ -191,7 +254,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(try|repeat|rew|progress|fresh|solve|now|first)\b</string>
+            <string>\b(try|repeat|rew|progress|fresh|solve|now|first|tryif|at|once|do|only)\b</string>
             <key>comment</key>
             <string>Ltac keywords</string>
             <key>name</key>
@@ -209,7 +272,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(match|lazymatch|multimatch|fun|with|return|end|let|in|if|then|else)\b|λ</string>
+            <string>\b(match|lazymatch|multimatch|fun|with|return|end|let|in|if|then|else|fix|for|where|and)\b|λ</string>
             <key>comment</key>
             <string>Gallina keywords</string>
             <key>name</key>
@@ -218,7 +281,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(intro|intros|revert|induction|destruct|auto|eauto|eassumption|apply|eapply|do|assumption|constructor|econstructor|reflexivity|inversion|injection|assert|split|esplit|omega|fold|unfold|specialize|rewrite|erewrite|change|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|set|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy|unshelve|pattern)\b</string>
+            <string>\b(intro|intros|revert|induction|destruct|auto|eauto|tauto|eassumption|apply|eapply|assumption|constructor|econstructor|reflexivity|inversion|injection|assert|split|esplit|omega|fold|unfold|specialize|rewrite|erewrite|change|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|set|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy|unshelve|pattern|transitivity|etransitivity|f_equal|exfalso|replace|abstract|cycle|swap|revgoals|shelve|unshelve)\b</string>
             <key>comment</key>
             <string>Ltac builtins</string>
             <key>name</key>
@@ -249,13 +312,6 @@
 
         <dict>
             <key>match</key>
-            <string>\bnil\b</string>
-            <key>name</key>
-            <string>constant.language.nil.gallina</string>
-        </dict>
-
-        <dict>
-            <key>match</key>
             <string>\b((0(x|X)[0-9a-fA-F]+)|([0-9]+(\.[0-9]+)?))\b</string>
             <key>name</key>
             <string>constant.numeric.gallina</string>
@@ -263,16 +319,11 @@
 
         <dict>
             <key>match</key>
-            <string>\bTrue\b</string>
+            <string>\b(True|False|tt|false|true|Some|None|nil|cons|pair|inl|inr|O|S|Eq|Lt|Gt|id|ex|all|unique)\b</string>
+            <key>comment</key>
+            <string>Gallina builtin constructors</string>
             <key>name</key>
-            <string>constant.language.boolean.true.gallina</string>
-        </dict>
-
-        <dict>
-            <key>match</key>
-            <string>\bFalse\b</string>
-            <key>name</key>
-            <string>constant.language.boolean.false.gallina</string>
+            <string>constant.language.constructor.gallina</string>
         </dict>
 
         <dict>
