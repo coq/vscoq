@@ -2,9 +2,8 @@
 [![Contributing][contributing-shield]][contributing-link]
 [![Code of Conduct][conduct-shield]][conduct-link]
 [![Zulip][zulip-shield]][zulip-link]
-[![Available on the VsCode marketplace][vs-marketplace-shield]][vs-marketplace-link]
+[![Available on the Visual Studio marketplace][vs-marketplace-shield]][vs-marketplace-link]
 [![Available on the Open VSX marketplace][open-vsx-shield]][open-vsx-link]
-
 
 [travis-shield]: https://travis-ci.com/coq-community/vscoq.svg?branch=master
 [travis-link]: https://travis-ci.com/coq-community/vscoq/builds
@@ -24,9 +23,8 @@
 [open-vsx-shield]: https://img.shields.io/open-vsx/v/maximedenes/vscoq
 [open-vsx-link]: https://open-vsx.org/extension/maximedenes/vscoq
 
-VsCoq is an extension for [Visual Studio
-Code](https://code.visualstudio.com/) with support for the [Coq Proof
-Assistant](https://coq.inria.fr/).
+VsCoq is an extension for [Visual Studio Code](https://code.visualstudio.com/) (VS Code)
+and [VSCodium](https://vscodium.com/) with support for the [Coq Proof Assistant](https://coq.inria.fr/).
 
 This extension is currently developed by @maximedenes and contributors, as
 part of [Coq Community](https://github.com/coq-community/manifesto). The
@@ -43,31 +41,31 @@ original author of this extension is @siegebell.
 * LtacProf results treeview
 
 ## Requirements
-* VsCode 1.38.0 or more recent
-* Coq 8.7.0 or more recent
+* VS Code or VSCodium 1.38.0, or more recent
+* Coq 8.7.0, or more recent
 
 ## Installation
-The recommended way to install VsCoq is via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq) or [Open VSX](https://open-vsx.org/extension/maximedenes/vscoq) .
+The recommended way to install VsCoq is via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq) or [Open VSX](https://open-vsx.org/extension/maximedenes/vscoq).
 
 ## Screenshots
 ![vscoq](https://user-images.githubusercontent.com/647105/64025392-dbf12100-cb3c-11e9-8e7f-5c63296500f9.png)
 
 ## Instructions
 1. install [Coq](https://coq.inria.fr/download)
-2. install [vscode](https://code.visualstudio.com/)
-3. run `code`
+2. install [VS Code](https://code.visualstudio.com/) or [VSCodium](https://vscodium.com/)
+3. run `code` or `codium`
 4. install this extension: press `F1` to open the command palette, start typing "Extensions: Install Extension", press `enter`, and search for `vscoq`
 5. select "enable" on the extension
 
 ## Basic usage
 * if you use `_CoqProject` - start vscode via `code my/project/root` (or `code .` from the root folder of your project), or else select File|Open Folder... from vscode's menu.
-* step forward: `alt+down`
-* step backward: `alt+up`
-* interpret to point: `alt+right`
-* interpret to end: `alt+end`
-* interpret to home: `alt+home`
+* step forward: `alt+down` (MacOS: `Control+Option+down`)
+* step backward: `alt+up` (MacOS: `Control+Option+up`)
+* interpret to point: `alt+right` (MacOS: `Control+Option+right`)
+* interpret to end: `alt+end` (MacOS: `Control+Option+End`)
+* reset (interpret to home): `alt+home` (MacOS: `Control+Command+Home`)
 * *explore more commands*: `F1` and begin typing `Coq:`
-* [vscode documentation](https://code.visualstudio.com/docs/editor/codebasics)
+* [VS Code documentation](https://code.visualstudio.com/docs/editor/codebasics)
 
 ## Settings
 (Press `F1` and start typing "settings" to open either workspace/project or user settings.)

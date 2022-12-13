@@ -1,26 +1,22 @@
 <!DOCTYPE HTML5>
 <head>
   <title>Coq</title>
-  <link href="{{cssPath}}" rel="stylesheet">
+  <link href="{{cssPath}}" rel="stylesheet" />
   <script type="text/javascript">
     try {
       eval("[...[1,2]]");
-    } catch(err) {
-      alert("Warning: Coq proof-view requires a browser that supports ECMAScript 6 or higher.");
+    } catch (err) {
+      alert(
+        "Warning: Coq proof-view requires a browser that supports ECMAScript 6 or higher."
+      );
     }
   </script>
 </head>
-<body class="prettifySymbolsMode" class="proofView_addedTextIsItalic" class="proofView_removedTextIsStrikedthrough">
-  <div id="measureTest"></div>
-  <canvas id="textMeasurer" style="display: none"></canvas>
-  <div id="states">
-    <div class="focusedState">
-      <div class="hypotheses"></div>
-      <div class="goal"></div>
-    </div>
-  </div>
-  <div id="error"></div>
-  <div id="messages"></div>
-  <h1><div id="stdout"></div></h1>
+<body
+  class="prettifySymbolsMode"
+  class="proofView_addedTextIsItalic"
+  class="proofView_removedTextIsStrikedthrough"
+>
+  <div id="root"></div>
+  <script src="{{jsPath}}"></script>
 </body>
-<script src="{{jsPath}}"></script>

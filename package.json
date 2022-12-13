@@ -82,18 +82,18 @@
             "open-script",
             "interaction"
           ],
-          "default": "interaction",
+          "default": "open-script",
           "markdownDescription": "When to start an instance of coqtop: when a Coq script is opened (`open-script`) or else when the user begins interaction (`interaction`; default)."
         },
         "coq.loadCoqProject": {
           "type": "boolean",
           "default": true,
-          "description": "Load settings from `_CoqProject` (if found at the root of the Code project)"
+          "markdownDescription": "Load settings from `_CoqProject` (if found at the root of the Code project)"
         },
         "coq.coqProjectRoot": {
           "type": "string",
           "default": ".",
-          "description": "The path of the coq project relative to the workspace root. Also determins where to look for the `_CoqProject` file. Requires reloading."
+          "markdownDescription": "The path of the coq project relative to the workspace root. Also determines where to look for the `_CoqProject` file. Requires reloading."
         },
         "coq.moveCursorToFocus": {
           "type": "boolean",
@@ -162,7 +162,7 @@
         "coq.format.unindentOnCloseProof": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Auto-unindent `Qed.`, `Defined.`, and `Admitted.`. Note: requires `#editor.formatOnType#' to be set to `true` in settings.json"
+          "markdownDescription": "Auto-unindent `Qed.`, `Defined.`, and `Admitted.`. Note: requires `editor.formatOnType` to be set to `true` in settings.json"
         },
         "coq.hoverFunction": {
           "type": "string",
@@ -842,8 +842,14 @@
     "webpack-cli": "^4.9.1"
   },
   "dependencies": {
+    "@types/hyperscript": "^0.0.4",
+    "@types/mustache": "^4.2.1",
+    "@types/pegjs": "^0.10.3",
+    "@types/vscode-webview": "^1.57.0",
+    "@vscode/webview-ui-toolkit": "^1.1.0",
     "bufferutil": "^4.0.1",
     "diff": "4.0.2",
+    "hyperscript": "^2.0.2",
     "mustache": "^4.0.0",
     "pegjs": "^0.10.0",
     "sax": "^1.2.4",

@@ -52,7 +52,7 @@ export interface AutoFormattingSettings {
 export interface CoqSettings {
   /** Load settings from _CoqProject (if found at the root of the Code project). @default `true` */
   loadCoqProject: boolean,
-  /** The path of the coq project relative to the workspace root. Also determins where to look for the `_CoqProject` file. */
+  /** The path of the coq project relative to the workspace root. Also determines where to look for the `_CoqProject` file. */
   coqProjectRoot: string,
   /** Move the editor's cursor position as Coq interactively steps forward/backward a command. @default `true` */
   moveCursorToFocus : boolean,

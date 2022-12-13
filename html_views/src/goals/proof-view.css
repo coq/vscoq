@@ -1,26 +1,70 @@
-html, body {
-  width:100%;
-  height:100%;
-  margin:0px;
-  padding:0px;
-  border:none;
-  position:absolute;
-  top:0px;
-  left:0px;
-  right:0px;
-  bottom:0px;
+/* http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
 }
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+code {
+  font-family: var(--vscode-editor-font-family);
+}
+
+strong {
+  font-weight: bold;
+}
+
 body {
   background-color: var(--background-color);
   font-family: var(--font-family, 'Segoe WPC','Segoe UI', SFUIText-Light, HelveticaNeue-Light, sans-serif, 'Droid Sans Fallback');
   font-weight: var(--font-weight);
-  font-size: var(--font-size, 12pt);
+  font-size: var(--font-size, 13px);
 }
 body {
   color: var(--vscode-coq-proofviewText);
 }
 #messages {
-  padding: 0 10pt;
   font-family: var(--vscode-editor-font-family);
   font-size: var(--vscode-editor-font-size);
 }
@@ -34,7 +78,6 @@ body {
   white-space: pre-wrap;
   font-family: var(--vscode-editor-font-family);
   font-size: var(--vscode-editor-font-size);
-  padding: 0 10pt;
 }
 #error {
   color: var(--vscode-coq-proofviewError);
@@ -56,6 +99,7 @@ body {
   border-bottom: 2pt solid;
   padding: 0pt;
   padding-bottom: 1em;
+  margin: 0;
 }
 .hypotheses {
   border-bottom-color: var(--vscode-coq-hypothesesSeparator);
@@ -77,7 +121,7 @@ body {
 .hypotheses > li {
   list-style-type: none;
   display: block;
-  padding: 2pt 10pt;
+  padding: 2pt 0pt;
   text-indent: 0pt
 }
 .hypotheses li:nth-child(odd) {
@@ -152,7 +196,7 @@ span[class~=charsRemoved][class~=substitution]::before {
   text-decoration: line-through;
 }
 
-.hypothesese, .hypothesis, .goal, #stdout, #textMeasurer, #measureTest {
+.hypotheses, .hypothesis, .goal, #stdout {
   font-family: var(--vscode-editor-font-family);
   font-weight: var(--vscode-editor-font-weight);
   font-size: var(--vscode-editor-font-size);
@@ -163,17 +207,12 @@ span[class~=charsRemoved][class~=substitution]::before {
   padding-left: 0;
 }
 .goalsList li:first-child {
-  background-color: var(--vscode-coq-mainSubgoalBackground);
   border-top: 0pt;
 }
 .goalsList li {
-  background-color: var(--vscode-coq-subgoalBackground);
   border-top: 1pt solid;
-  padding: 5pt 10pt;
+  padding: 5pt 0pt;
   border-top-color: var(--vscode-coq-subgoalSeparator);
-}
-#measureTest {
-  display: none;
 }
 
 .richpp .constr-notation {
@@ -221,9 +260,23 @@ span[class~=charsRemoved][class~=substitution]::before {
   color: var(--vscode-coq-tacticString);
 }
 
-#togglePrettifySymbols {
-  text-decoration: line-through;
+.panels {
+  padding-left: 10pt;
+  padding-right: 10pt;
 }
-.prettifySymbolsMode #togglePrettifySymbols {
-  text-decoration: none
+
+.message {
+  padding: 10pt 10pt 10pt 10pt;
+}
+
+vscode-panel-view {
+  flex-direction: column;
+}
+
+vscode-panel-tab {
+  line-height: 18px;
+}
+
+.given-up-goals-warning {
+  padding-bottom: 10px;
 }

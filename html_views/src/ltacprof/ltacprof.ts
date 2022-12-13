@@ -1,6 +1,7 @@
 /// <reference path="../../typings/colResizable.jquery.d.ts" />
 /// <reference path="../../typings/tbltree.jquery.d.ts" />
 import * as $ from 'jquery';
+import { WebviewApi } from 'vscode-webview';
 
 interface LtacProfTactic {
   name: string,
@@ -13,15 +14,12 @@ interface LtacProfResults {
   tactics: LtacProfTactic[],
 }
 
-declare var acquireVsCodeApi: any;
-
-export var vscode : any = null;
+declare const acquireVsCodeApi: any;
+export const vscode : WebviewApi<unknown> = acquireVsCodeApi();
 
 function ltacProfLoad() {
   if(parent.parent === parent)
     document.body.style.backgroundColor = 'black';
-
-  vscode = acquireVsCodeApi();
 
   window.addEventListener('message', event => {
     const results = <LtacProfResults>JSON.parse(event.data);
