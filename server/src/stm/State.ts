@@ -191,11 +191,11 @@ export class State {
     this.goal = goal;
   }
 
-  public getGoal(goalsCache: GoalsCache) : ProofView|null {
+  public getGoal(goalsCache: GoalsCache, proofViewDiff : boolean) : ProofView|null {
     if(!this.goal)
       return null;
     const newGoals = {...goalsCache.getProofView(this.goal), focus: this.textRange.end};
-    if(this.prev && this.prev.goal) {
+    if(this.prev && this.prev.goal && proofViewDiff) {
       const oldGoals = goalsCache.getProofView(this.prev.goal);
       return diff.diffProofView(oldGoals, newGoals);
     }

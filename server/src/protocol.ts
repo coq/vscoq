@@ -77,6 +77,7 @@ export interface CoqSettings {
     /** After each command, check sentence-states for inconsistencies */
     checkSentenceStateConsistency?: boolean,
   }
+  proofViewDiff: boolean
 }
 
 export interface FailValue {
