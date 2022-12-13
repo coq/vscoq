@@ -1,0 +1,5 @@
+(lang dune 3.2)
+(name vscoq-language-server)
+(license LGPL-2.1-only)
+(authors "The VsCoq development team")
+(source (github coq-community/vscoq))

@@ -1,0 +1,3 @@
+(library
+ (name sel)
+ (public_name sel))
