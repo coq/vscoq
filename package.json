@@ -172,6 +172,15 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Auto-unindent `Qed.`, `Defined.`, and `Admitted.`. Note: requires `editor.formatOnType` to be set to `true` in settings.json"
+        },
+        "coq.hoverFunction": {
+          "type": "string",
+          "enum": [
+            "about",
+            "check"
+          ],
+          "default": "about",
+          "markdownDescription": "Hover function used to display information about an identifier. `Check` is more concise but `About` has more information. (`About`; default)."
         }
       }
     },

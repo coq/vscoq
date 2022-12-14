@@ -75,7 +75,9 @@ export interface CoqSettings {
     checkTextSynchronization?: boolean,
     /** After each command, check sentence-states for inconsistencies */
     checkSentenceStateConsistency?: boolean,
-  }
+  },
+  /** function used by hover provider to get info on identifier */
+  hoverFunction: "about" | "check",
 }
 
 export interface FailValue {

@@ -46,6 +46,9 @@ namespace DisplayOptionPicks {
 export class CoqDocument implements vscode.Disposable {
   /** A list of things to dispose */
   private readonly queryRouteId = 2;
+  private readonly hoverQueryRouteId = 3;
+  private readonly hoverQueryTimeout = 500; // ms
+  private hoverListener : undefined | ((str:string) => void);
   private subscriptions : Disposable[] = []
   private statusBar: StatusBar;
   public documentUri: string;
@@ -176,7 +179,12 @@ export class CoqDocument implements vscode.Disposable {
     if (params.routeId == this.queryRouteId) {
       this.project.queryOut.show(true);
       this.project.queryOut.appendLine(psm.prettyTextToString(params.message));
-    } else {
+    } else if (params.routeId == this.hoverQueryRouteId) {
+      const hoverText = psm.prettyTextToString(params.message);
+      if (this.hoverListener)
+        this.hoverListener(hoverText);
+    }
+    else {
       switch (params.level) {
         case 'warning':
           this.project.infoOut.show(true);
@@ -486,6 +494,29 @@ export class CoqDocument implements vscode.Disposable {
     } finally {
       this.statusBar.setStateReady();
     }
+  }
+
+  // Hover queries aren't printed to the query screen
+  // They instead return their value directly
+  public async hoverQuery(query: proto.QueryFunction, term: string) {
+    let response: string|undefined = undefined;
+    try {
+      // wait for response from server (called by onCoqMessage)
+      const promise = new Promise<string>((resolve) => {
+        this.hoverListener = resolve;
+      });
+      // timeout needed because no coq message is returned
+      // when perfoming an invalid query (like checking a keyword)
+      const timeout = Promise.race([
+        promise,
+        new Promise<string>((_r, rej) => setTimeout(rej, this.hoverQueryTimeout))
+      ])
+      this.langServer.query(query, term, this.hoverQueryRouteId);
+      response = await timeout;
+    } catch (err) {}
+    this.hoverListener = undefined;
+    this.statusBar.setStateReady();
+    return response;
   }
 
   public async viewGoalState(editor: TextEditor) {
