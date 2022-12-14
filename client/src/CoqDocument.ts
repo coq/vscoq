@@ -20,7 +20,7 @@ import {CoqDocumentLanguageServer} from './CoqLanguageServer';
 import {CoqView, adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
 import {CoqProject} from './CoqProject';
-import * as psm from './prettify-symbols-mode';
+// import * as psm from './prettify-symbols-mode';
 
 namespace DisplayOptionPicks {
   type T = vscode.QuickPickItem & {displayItem: number};
@@ -173,6 +173,8 @@ export class CoqDocument implements vscode.Disposable {
   // }
 
   private onCoqMessage(params: proto.NotifyMessageParams) {
+    this.view.update({ innertext: params.message, type: "message-query" });
+    /*
     if (params.routeId == this.queryRouteId) {
       this.project.queryOut.show(true);
       const processedMessage = psm.prettyTextToString(params.message);
@@ -203,6 +205,7 @@ export class CoqDocument implements vscode.Disposable {
           return;
       }
     }
+    */
   }
 
 
@@ -489,9 +492,9 @@ export class CoqDocument implements vscode.Disposable {
   public async query(query: proto.QueryFunction, term: string | undefined) {
     try {
       if (term) {
-        this.project.queryOut.clear();
+        // this.project.queryOut.clear();
         this.view.update({ type:"message-ready-clear" });
-        this.project.queryOut.show(true);
+        // this.project.queryOut.show(true);
         this.langServer.query(query, term, this.queryRouteId);
       }
     } catch (err) {
