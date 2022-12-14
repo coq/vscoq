@@ -79,6 +79,8 @@ export interface CoqSettings {
   },
   /** function used by hover provider to get info on identifier */
   hoverFunction: "about" | "check",
+  /** Enable/Disable proof view diff render */
+  proofViewDiff: boolean,
 }
 
 export interface FailValue {
