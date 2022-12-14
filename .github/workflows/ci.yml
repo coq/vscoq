@@ -32,7 +32,10 @@ jobs:
     - name: Configure Dune
       run: |
         mkdir -p ~/.config/dune
-        echo "(display short)" > ~/.config/dune/config
+        cat <<EOF > ~/.config/dune/config
+          (lang dune 3.2)
+          (display short)
+          EOF
     - uses: cachix/install-nix-action@v18
       with:
         nix_path: nixpkgs=channel:nixos-unstable
