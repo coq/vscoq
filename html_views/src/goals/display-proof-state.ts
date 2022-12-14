@@ -233,24 +233,35 @@ export const ProofState = () => {
 };
 
 export const OtherInfoView = () => {
-  const queryView = h("vscode-panel-view");
+  const messageView = h("vscode-panel-view");
   const element = h("vscode-panels.panels", [
-    h("vscode-panel-tab", "QUERY"),
-    queryView
+    h("vscode-panel-tab", "MESSAGE"),
+    messageView
   ]);
 
-  let queryViewInnerDiv = h("pre.richpp");
-  queryView.appendChild(queryViewInnerDiv);
+  let messageViewInnerDiv = h("pre");
+  messageView.appendChild(messageViewInnerDiv);
+  
+  /* 
+    clear-on-demand: 
+    if this flag is set, the message panel will be reset on receiving the next incoming message
+    and this flag will be unset immediately after that
+  */
+  let ready : boolean = true;
 
-  const resetInnerMessage = () => {
-    queryViewInnerDiv.innerHTML = "";
+  const readyForMessageReset = () => {
+    ready = true;
   };
 
   const updateInnerMessage = (s : AnnotatedText) => {
-    queryViewInnerDiv.appendChild(h("ul", createAnnotatedText(s)));
+    if (ready){
+      messageViewInnerDiv.innerHTML = "";
+      ready = false;
+    }
+    messageViewInnerDiv.appendChild(h("span", [...createAnnotatedText(s), "\n"]));
   };
 
-  return { element, updateInnerMessage, resetInnerMessage };
+  return { element, updateInnerMessage, readyForMessageReset };
 };
 
 export const Infoview = () => {
@@ -276,8 +287,8 @@ export const Infoview = () => {
       otherViewInstance.updateInnerMessage(state.innertext);
       // else
       //   otherViewInstance.updateInnerMessage("nothing. why?");
-    } else if (state.type === "message-clear") {
-      otherViewInstance.resetInnerMessage();
+    } else if (state.type === "message-ready-clear") {
+      otherViewInstance.readyForMessageReset();
     } else {
       if (proofStateInstance !== undefined) {
         proofStateInstance.unmount();
