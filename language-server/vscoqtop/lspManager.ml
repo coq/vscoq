@@ -120,15 +120,12 @@ let send_highlights uri doc =
     Dm.DocumentManager.executed_ranges doc in
   let parsed = List.map mk_range parsed in
   let checked = List.map mk_range checked in
-  let checked_by_delegate = List.map mk_range checked_by_delegate in
+  (* let checked_by_delegate = List.map mk_range checked_by_delegate in *)
   let legacy_highlight = List.map mk_range legacy_highlight in
-  let params = `Assoc [
+    let params = `Assoc [
     "uri", `String uri;
-    "stateErrorRange", `List [];
-    "parsingRange", `List parsed;
+    "parsedRange", `List parsed;
     "processingRange", `List checked;
-    "incompleteRange", `List checked_by_delegate;
-    "axiomRange", `List [];
     "processedRange", `List legacy_highlight;
   ]
   in
