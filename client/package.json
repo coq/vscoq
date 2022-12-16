@@ -4,7 +4,7 @@
   "description": "VsCoq is an extension for Visual Studio Code with support for the Coq Proof Assistant",
   "version": "2.0.0",
   "engines": {
-    "vscode": "^1.74.0"
+    "vscode": "^1.73.0"
   },
   "dependencies": {
     "vscode-languageclient": "^7.0.0"
@@ -47,10 +47,19 @@
       "type": "object",
       "title": "Coq configuration",
       "properties": {
-        "vscoqtop.binPath": {
+        "vscoq.path": {
           "type": "string",
           "default": "",
           "description": "Path to vscoqtop."
+        },
+        "vscoq.args": {
+          "type": "array",
+          "default": [
+            "-noinit",
+            "-bt",
+            "-boot"
+          ],
+          "description": "vscoqtop arguments"
         }
       }
     }
