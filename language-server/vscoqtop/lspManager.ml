@@ -129,7 +129,7 @@ let send_highlights uri doc =
     "processedRange", `List legacy_highlight;
   ]
   in
-  output_json @@ mk_notification ~event:"coqtop/updateHighlights" ~params
+  output_json @@ mk_notification ~event:"vscoq/updateHighlights" ~params
 
 let mk_goal sigma g =
   let evi = Evd.find sigma g in
@@ -298,11 +298,11 @@ let dispatch_method ~id method_name params : events =
   | "textDocument/didOpen" -> textDocumentDidOpen params |> inject_dm_events
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
-  | "coqtop/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
-  | "coqtop/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events
-  | "coqtop/stepForward" -> coqtopStepForward ~id params |> inject_dm_events
-  | "coqtop/resetCoq" -> coqtopResetCoq ~id params; []
-  | "coqtop/interpretToEnd" -> coqtopInterpretToEnd ~id params |> inject_dm_events
+  | "vscoq/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
+  | "vscoq/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events
+  | "vscoq/stepForward" -> coqtopStepForward ~id params |> inject_dm_events
+  | "vscoq/resetCoq" -> coqtopResetCoq ~id params; []
+  | "vscoq/interpretToEnd" -> coqtopInterpretToEnd ~id params |> inject_dm_events
   | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; []
 
 let handle_lsp_event = function

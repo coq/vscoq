@@ -1,7 +1,8 @@
 import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
 import * as path from 'path';
-import {workspace, window, ExtensionContext} from 'vscode';
-import Client from './client'
+import {workspace, window, ExtensionContext, Range} from 'vscode';
+import Client from './client';
+import {initializeDecorations} from './Decorations'
 
 import {
   LanguageClientOptions,
@@ -30,8 +31,19 @@ export function activate(context: ExtensionContext) {
 		clientOptions
 	);
 
+	client.onReady()
+	.then(() => {
+		initializeDecorations(context);
+		client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
+			client.handleHighlights(uri, parsedRange, processingRange, processedRange);
+		});
+	});
+
 	// Start the client. This will also launch the server
-	client.start();
+	context.subscriptions.push(
+		client.start(),
+	);
+
 }
 
 // This method is called when your extension is deactivated
