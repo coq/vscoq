@@ -24,7 +24,7 @@ val init : Vernacstate.t -> opts:Coqargs.injection_command list -> uri:string ->
 (** [init st opts uri text] initializes the document manager with initial vernac state
     [st] on which command line opts will be set. *)
 
-val apply_text_edits : state -> text_edit list -> state
+val apply_text_edits : state -> text_edit list -> state * events
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The
     new text is not parsed or executed. *)
 
