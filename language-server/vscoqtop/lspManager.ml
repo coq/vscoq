@@ -192,7 +192,7 @@ let send_proofview uri doc =
       "proofview", result;
     ]
     in
-    output_json @@ mk_notification ~event:"coqtop/updateProofview" ~params
+    output_json @@ mk_notification ~event:"vscoq/updateProofview" ~params
 
 let update_view uri st =
   send_highlights uri st;
@@ -225,9 +225,10 @@ let textDocumentDidChange params =
   in
   let textEdits = List.map read_edit contentChanges in
   let st = Hashtbl.find states uri in
-  let st = Dm.DocumentManager.apply_text_edits st textEdits in
+  let st, events = Dm.DocumentManager.apply_text_edits st textEdits in
   Hashtbl.replace states uri st;
-  update_view uri st
+  update_view uri st;
+  uri, events
 
 let textDocumentDidSave params =
   let open Yojson.Basic.Util in
@@ -298,7 +299,7 @@ let dispatch_method ~id method_name params : events =
   | "initialize" -> do_initialize ~id; []
   | "initialized" -> []
   | "textDocument/didOpen" -> textDocumentDidOpen params |> inject_dm_events
-  | "textDocument/didChange" -> textDocumentDidChange params; []
+  | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
   | "coqtop/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
   | "coqtop/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events

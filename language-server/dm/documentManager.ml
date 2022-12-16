@@ -217,7 +217,8 @@ let retract state loc =
 let apply_text_edits state edits =
   let document = Document.apply_text_edits state.document edits in
   let state = { state with document } in
-  retract state (Document.parsed_loc document)
+  let state = retract state (Document.parsed_loc document) in
+  interpret_to_end state
 
 let validate_document state =
   let parsing_state_hook = ExecutionManager.get_parsing_state_after state.execution_state in
