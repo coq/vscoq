@@ -42,7 +42,11 @@
         "extensions": [
           ".v"
         ],
-        "configuration": "./client/coq.configuration.json"
+        "configuration": "./client/coq.configuration.json",
+        "icon": {
+          "light": "./images/logo.png",
+          "dark": "./images/logo.png"
+        }
       }
     ],
     "grammars": [
@@ -129,6 +133,11 @@
           "default": "first-interaction",
           "description": "Create the proof view when a Coq script is opened, the user first interacts with coqtop, or else let the user do it manually."
         },
+        "coq.proofViewDiff": {
+          "type": "boolean",
+          "default": "true",
+          "markdownDescription": "Enable/disable VsCoq's Proof View Diff. Only has acceptable performance on small goals."
+        },
         "coq.proofViewDiff.addedTextIsItalic": {
           "type": "boolean",
           "default": false,
@@ -163,6 +172,15 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Auto-unindent `Qed.`, `Defined.`, and `Admitted.`. Note: requires `editor.formatOnType` to be set to `true` in settings.json"
+        },
+        "coq.hoverFunction": {
+          "type": "string",
+          "enum": [
+            "about",
+            "check"
+          ],
+          "default": "about",
+          "markdownDescription": "Hover function used to display information about an identifier. `Check` is more concise but `About` has more information. (`About`; default)."
         }
       }
     },
@@ -828,7 +846,7 @@
     "ts-loader": "^9.2.6",
     "ts-prune": "^0.10.3",
     "typescript": "^3.7.5",
-    "vsce": "^2.5.3",
+    "vsce": "^2.14.0",
     "webpack": "^5.65.0",
     "webpack-cli": "^4.9.1"
   },

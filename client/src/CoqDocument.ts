@@ -20,7 +20,7 @@ import {CoqDocumentLanguageServer} from './CoqLanguageServer';
 import {CoqView, adjacentPane} from './CoqView';
 import {StatusBar} from './StatusBar';
 import {CoqProject} from './CoqProject';
-// import * as psm from './prettify-symbols-mode';
+import * as psm from './prettify-symbols-mode';
 
 namespace DisplayOptionPicks {
   type T = vscode.QuickPickItem & {displayItem: number};
@@ -46,6 +46,9 @@ namespace DisplayOptionPicks {
 export class CoqDocument implements vscode.Disposable {
   /** A list of things to dispose */
   private readonly queryRouteId = 2;
+  private readonly hoverQueryRouteId = 3;
+  private readonly hoverQueryTimeout = 500; // ms
+  private hoverListener : undefined | ((str:string) => void);
   private subscriptions : Disposable[] = []
   private statusBar: StatusBar;
   public documentUri: string;
@@ -173,39 +176,18 @@ export class CoqDocument implements vscode.Disposable {
   // }
 
   private onCoqMessage(params: proto.NotifyMessageParams) {
-    this.view.update({ innertext: params.message, type: "message-query" });
-    /*
-    if (params.routeId == this.queryRouteId) {
-      this.project.queryOut.show(true);
-      const processedMessage = psm.prettyTextToString(params.message);
-      this.project.queryOut.appendLine(processedMessage);
-      // send the same message to the message panel
-      this.view.update({ innertext: params.message, type: "message-query" });
-    } else {
-      switch (params.level) {
-        case 'warning':
-          this.project.infoOut.show(true);
-          this.project.infoOut.appendLine(psm.prettyTextToString(params.message));
-          this.view.update({ innertext: params.message, type: "message-query" });
-          return;
-        case 'info':
-          this.project.infoOut.appendLine(psm.prettyTextToString(params.message));
-          this.view.update({ innertext: params.message, type: "message-query" });
-          return;
-        case 'notice':
-          this.project.noticeOut.show(true);
-          this.project.noticeOut.append(psm.prettyTextToString(params.message));
-          this.project.noticeOut.append("\n");
-          this.view.update({ innertext: params.message, type: "message-query" });
-          return;
-        case 'debug':
-          this.project.debugOut.show(true);
-          this.project.debugOut.appendLine(psm.prettyTextToString(params.message));
-          this.view.update({ innertext: params.message, type: "message-query" });
-          return;
-      }
-    }
+    /* 
+      originally, all messages will be output to their corresponding channels
+      now with the message panel, they will be output on the message panel, 
+        EXCEPT those which should be displayed as hovering text
     */
+    if (params.routeId == this.hoverQueryRouteId) {
+      const hoverText = psm.prettyTextToString(params.message);
+      if (this.hoverListener)
+        this.hoverListener(hoverText);
+    } else {
+      this.view.update({ innertext: params.message, type: "message-query" });
+    }
   }
 
 
@@ -501,6 +483,29 @@ export class CoqDocument implements vscode.Disposable {
     } finally {
       this.statusBar.setStateReady();
     }
+  }
+
+  // Hover queries aren't printed to the query screen
+  // They instead return their value directly
+  public async hoverQuery(query: proto.QueryFunction, term: string) {
+    let response: string|undefined = undefined;
+    try {
+      // wait for response from server (called by onCoqMessage)
+      const promise = new Promise<string>((resolve) => {
+        this.hoverListener = resolve;
+      });
+      // timeout needed because no coq message is returned
+      // when perfoming an invalid query (like checking a keyword)
+      const timeout = Promise.race([
+        promise,
+        new Promise<string>((_r, rej) => setTimeout(rej, this.hoverQueryTimeout))
+      ])
+      this.langServer.query(query, term, this.hoverQueryRouteId);
+      response = await timeout;
+    } catch (err) {}
+    this.hoverListener = undefined;
+    this.statusBar.setStateReady();
+    return response;
   }
 
   public async viewGoalState(editor: TextEditor) {

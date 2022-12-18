@@ -53,6 +53,21 @@
     ],
     "description": "Notation, level, associativity, scope"
   },
+  "Infix (Simple)": {
+    "prefix": "Infix",
+    "body": [ "Infix \"$1\" := $2.\n$0" ],
+    "description": "Infix"
+  },
+  "Infix (Full)": {
+    "prefix": "Infix",
+    "body": [
+      "Infix \"$1\" :=",
+      "\t$2",
+      "\t(at level $3, ${4|no,left,right|} associativity)",
+      "\t: ${5:scope}.\n"
+    ],
+    "description": "Notation, level, associativity, scope"
+  },
   "Section": {
     "prefix": "Section",
     "body": [
@@ -151,6 +166,81 @@
   "Preterm of...": {
     "prefix": "Preterm of",
     "body": ["Preterm of ${1:ident}."]
+  },
+  "Coercion": {
+    "prefix": "Coercion",
+    "body": "Coercion ${1:ident} : ${2:ident} >-> ${3:ident}."
+  },
+  "pose": {
+    "prefix": "pose",
+    "body": ["pose ($1) as ${2:ident}."]
+  },
+  "destruct": {
+    "prefix": "destruct",
+    "body": ["destruct {$1:ident} as [$2]."]
+  },
+  "replace": {
+    "prefix": "replace",
+    "body": ["replace ($1) with ($2)."]
+  },
+  "Class": {
+    "prefix": "Class",
+    "body": [
+      "Class ${1:ident} := {",
+      "\t${2:field} : ${3:Type};",
+      "}."
+    ]
+  },
+  "Record": {
+    "prefix": "Record",
+    "body": [
+      "Record ${1:ident} := {",
+      "\t${2:field} : ${3:Type};",
+      "}."
+    ]
+  },
+  "Structure": {
+    "prefix": "Structure",
+    "body": [
+      "Structure ${1:ident} := {",
+      "\t${2:field} : ${3:Type};",
+      "}."
+    ]
+  },
+  "Instance": {
+    "prefix": "Instance",
+    "body": [
+      "Instance ${1:ident} : ${2:class} := {|",
+      "\t${3:field} := ${4:expression}",
+      "|}."
+    ]
+  },
+  "Existing Instance" : {
+    "prefix": "Existing Instance",
+    "body": ["Existing Instance ${1:ident}."]
+  },
+  "match (simple)" : {
+    "prefix": "match",
+    "body": [
+      "match ${1:expr} with",
+      "| ${2:pattern} => ${3:expr}",
+      "end"
+    ]
+  },
+  "match (full)" : {
+    "prefix": "match",
+    "body": [
+      "match ${1:expr} as ${2:ident} return ${3:Type} with",
+      "| ${4:pattern} => ${5:expr}",
+      "end"
+    ]
+  },
+  "Generalizable All": {
+    "prefix": "Generalizable All",
+    "body": ["Generalizable All."]
+  },
+  "Generalizable Variables...": {
+    "prefix": "Generalizable Variables",
+    "body": ["Generalizable Variables ${1:ident}."]
   }
-
 }

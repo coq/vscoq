@@ -7,6 +7,7 @@ import * as snippets from './Snippets';
 import { initializeDecorations } from './Decorations';
 import * as editorAssist from './EditorAssist';
 import * as psm from './prettify-symbols-mode';
+import * as hover from "./HoverProvider";
 
 vscode.Range.prototype.toString = function rangeToString(this: vscode.Range) { return `[${this.start.toString()},${this.end.toString()})` }
 vscode.Position.prototype.toString = function positionToString(this: vscode.Position) { return `{${this.line}@${this.character}}` }
@@ -112,6 +113,12 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(editorAssist.reload());
   snippets.setupSnippets(context.subscriptions);
   context.subscriptions.push(psm.load());
+
+  context.subscriptions.push(vscode.languages.registerHoverProvider("coq", {
+    async provideHover(document: vscode.TextDocument, position: vscode.Position, _token: vscode.CancellationToken) {
+      return hover.provideHover(position, project, document);
+    }
+  }));
 }
 
 
@@ -125,16 +132,9 @@ function coqIdOrNotationFromPosition(editor: TextEditor) {
   let range : vscode.Range | undefined = editor.selection;
   if (range.isEmpty)
     range = editor.document.getWordRangeAtPosition(editor.selection.active);
-    
-  let regExpCoqNotation = /[^\p{Z}\p{C}"]+/u;
   if (range == undefined)
-    range = editor.document.getWordRangeAtPosition(editor.selection.active,regExpCoqNotation);
-  let text = editor.document.getText(range);
-
-  if (new RegExp("\^"+regExpCoqNotation.source+"\$",regExpCoqNotation.flags).test(text)
-      && ! new RegExp("\^"+editorAssist.regExpQualifiedCoqIdent.source+"\$",regExpCoqNotation.flags).test(text))
-    return "\""+text+"\"";
-  return text;
+    range = editor.document.getWordRangeAtPosition(editor.selection.active, hover.regExpCoqNotation);
+  return hover.coqIdOrNotationFromRange(editor.document, range);
 }
 
 async function queryStringFromPlaceholder(prompt: string, editor: TextEditor) {

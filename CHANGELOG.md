@@ -1,3 +1,10 @@
+## 0.3.7
+* add an option to disable "Proof View Diff" (#321 by Blaisorblade)
+* add logo as icon to coq file (#302 by dlesbre)
+* add hover provider (#300 by dlesbre)
+* add color to more keywords (#299 by dlesbre)
+* various improvements and consolidations (by Huỳnh Trần Khanh)
+* fixed leaking error message when only shelved goals remain (#268 by fakusb)
 ## 0.3.6
 * compatibility with Coq 8.15 (#264, by @quarkcool and @fakusb)
 * bumped and cleaned up dependencies (#234, #263, #264 and #265 by @dependabot and @fakusb)
