@@ -2,7 +2,7 @@ import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
 import * as path from 'path';
 import {workspace, window, ExtensionContext, Range} from 'vscode';
 import Client from './client';
-import {initializeDecorations} from './Decorations'
+import {initializeDecorations} from './Decorations';
 
 import {
   LanguageClientOptions,
@@ -40,9 +40,7 @@ export function activate(context: ExtensionContext) {
 	});
 
 	// Start the client. This will also launch the server
-	context.subscriptions.push(
-		client.start(),
-	);
+	client.start();
 
 }
 

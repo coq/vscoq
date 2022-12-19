@@ -3,10 +3,10 @@ import * as vscode from 'vscode';
 import {
   LanguageClient,
   LanguageClientOptions,
-  ServerOptions,
+  ServerOptions
 } from 'vscode-languageclient/node';
 
-import {decorations} from './Decorations'
+import {decorations} from './Decorations';
 
 export default class Client extends LanguageClient {
 
@@ -21,26 +21,26 @@ export default class Client extends LanguageClient {
 		    'Coq Language Server',
 		    serverOptions,
 		    clientOptions
-        )
+        );
 		this._channel.appendLine("vscoq initialised");
 	}
 
-    public handleHighlights(uri, parsedRange, processingRange, processedRange) {
-        this._channel.appendLine("RECIEVED HIGHLIGHT INSTRUCTION")
-        this._channel.appendLine(uri)
-        const editors = this.getDocumentEditors(uri)
+    public handleHighlights(uri: String, parsedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
+        this._channel.appendLine("RECIEVED HIGHLIGHT INSTRUCTION");
+        this._channel.appendLine(uri);
+        const editors = this.getDocumentEditors(uri);
 
         editors.map(editor => {
-            editor.setDecorations(decorations.parsed, parsedRange)
-            editor.setDecorations(decorations.processing, processingRange)
-            editor.setDecorations(decorations.processed, processedRange)
-        })
+            editor.setDecorations(decorations.parsed, parsedRange);
+            editor.setDecorations(decorations.processing, processingRange);
+            editor.setDecorations(decorations.processed, processedRange);
+        });
     }
 
     private getDocumentEditors(uri: String) {
         return vscode.window.visibleTextEditors.filter(editor => {
-            return editor.document.uri.toString() === uri
-        })
+            return editor.document.uri.toString() === uri;
+        });
     }
 
 }
