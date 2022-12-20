@@ -31,6 +31,7 @@ interface SettingsUpdate extends SettingsState {
 export interface ProofViewDiffSettings {
   addedTextIsItalic: boolean;
   removedTextIsStrikedthrough: boolean;
+  enabled: boolean;
 }
 
 interface SettingsState {
