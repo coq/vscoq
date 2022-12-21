@@ -263,7 +263,7 @@ export const Infoview = () => {
       element.innerHTML = "";
       const formatted = h("div.message", [
         h("strong", "Error: "),
-        h("code", {id: "error"}, message),
+        h("code#error", message),
       ]);
       element.appendChild(formatted);
     };
