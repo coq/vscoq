@@ -208,10 +208,11 @@ export const ProofState = () => {
         );
       }
       mainGoalsElement.appendChild(createHypotheses(state.goals[0].hypotheses));
-      mainGoalsElement.appendChild(createFocusedGoals(state.goals));
-      var element = document.getElementById("firstGoal");
-      if (element != null) {
-        element.scrollIntoView({block: "center", inline: "nearest"}); 
+      const goalElements = createFocusedGoals(state.goals);
+      mainGoalsElement.appendChild(goalElements);
+      const firstGoalElement = goalElements.firstElementChild;
+      if (firstGoalElement) {
+        firstGoalElement.scrollIntoView({ block: "center", inline: "nearest" });     mainGoalsElement.appendChild(createFocusedGoals(state.goals));
       }
     }
 
