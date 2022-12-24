@@ -5,7 +5,7 @@
 Some internal modules are actually not private in the `dune` sense, since we
 also generate binaries which do need to see these modules.
 
-- [scheduler](sheduler.mli) is in charge of analyzing a document and plan
+- [scheduler](scheduler.mli) is in charge of analyzing a document and plan
   its execution. It knows which Coq sentences change the parser and which
   sentences bracket a proof. A schedule is built incrementally, as sentences
   are discovered. The component holds a notion of dependency among sentences
