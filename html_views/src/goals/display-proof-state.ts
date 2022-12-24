@@ -126,11 +126,9 @@ function createHypotheses(hypotheses: Hypothesis[]): HTMLElement {
 }
 
 function createGoal(goal: Goal, index: number, goals: Goal[]): HTMLElement {
-  const expressionElement = h("span.expr", createAnnotatedText(goal.goal));
-  if (index == 0) {expressionElement.setAttribute("id", "firstGoal")};
   const element = h("li", [
     h("span.goalId", `${index + 1}/${goals.length}`),
-    expressionElement,
+    h("span.expr", createAnnotatedText(goal.goal)),
   ]);
 
   element.classList.add("goal");
@@ -212,7 +210,7 @@ export const ProofState = () => {
       mainGoalsElement.appendChild(goalElements);
       const firstGoalElement = goalElements.firstElementChild;
       if (firstGoalElement) {
-        firstGoalElement.scrollIntoView({ block: "center", inline: "nearest" });     mainGoalsElement.appendChild(createFocusedGoals(state.goals));
+        firstGoalElement.scrollIntoView({ block: "center", inline: "nearest" });
       }
     }
 
