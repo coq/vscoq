@@ -128,18 +128,29 @@ function formatAbout(response: string) {
   // Or
   // |Notation leibnizO A := (discreteO A)
   // |Expands to: Notation iris.algebra.ofe.leibnizO
+  //
+  // Or
+  // |Notation z_to_addr := finz.of_z
+  // |Expands to: Notation cap_machine.addr_reg.z_to_addr
   if (response.match(/not a defined object\./gs) !== null) return;
 
   if (response.startsWith("Notation")) {
     const array = response.split(/\n(?!\s)/gms); // split on newline NOT followed by space
     let hover = []
-    const match = array[0].match(/Notation\s+(.*?)\s+:=\s+\(/);
+    const match = array[0].match(/Notation\s+(.*?)\s+:=\s*/);
     if (match !== null) {
-      const notation = match[1];
-      const end = findClosingParenthese(response, match[0].length);
-      if (end === null) return;
-      const definition = compactify(response.slice(match[0].length, end));
-      hover.push({ language: "coq", value: `"${notation}" := ${definition}` })
+      const notation = match[1].trim();
+      let definition = response.slice(match[0].length).trim();
+      if (definition[0] == "(") {
+        const end = findClosingParenthese(definition, 0);
+        if (end !== null) {
+          definition = definition.slice(1, end);
+        }
+      }
+      else {
+        definition = definition.split(/\s/, 1)[0];
+      }
+      hover.push({ language: "coq", value: `"${notation}" := ${compactify(definition)}` })
     }
 
     if (array[1].startsWith("Expands to: ")) {
