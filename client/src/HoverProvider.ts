@@ -141,8 +141,8 @@ function formatAbout(response: string) {
     if (match !== null) {
       const notation = match[1].trim();
       let definition = response.slice(match[0].length).trim();
-      if (definition[0] == "(") {
-        const end = findClosingParenthese(definition, 0);
+      if (definition[0] === "(") {
+        const end = findClosingParenthese(definition, 1);
         if (end !== null) {
           definition = definition.slice(1, end);
         }
