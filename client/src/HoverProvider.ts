@@ -166,7 +166,9 @@ function formatAbout(response: string) {
   if (type === "") return;
   let hover = [{ language: "coq", value: type }];
 
-  let details = array[1].split(/\n(?!\s)/gms); // split on newline NOT followed by space
+  // re-join all remaining sections of the array,
+  // then split on newline NOT followed by space
+  let details = array.slice(1).join("\n\n").split(/\n(?!\s)/gms);
   for (const detail of details) {
     if (detail.startsWith("Arguments ")) {
       const source = detail.replace(/Arguments \S*\s*/, "Args: ").replace(/\s+/gms, " ");
