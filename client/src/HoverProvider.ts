@@ -133,7 +133,7 @@ function formatExpandsTo(line: string) {
   }
 
   if (line.trim() === "Hypothesis of the goal context.") {
-    return new vscode.MarkdownString("**Hypothesis**")
+    return new vscode.MarkdownString("**Hypothesis**");
   }
   return null;
 }
