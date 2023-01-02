@@ -35,6 +35,13 @@ function compactify(str: string) {
   return str.trim();
 }
 
+// Quickly build a vscode.MarkdownString with a simple code block
+function md_code_block(language: string, value: string) {
+  const md = new vscode.MarkdownString();
+  md.appendCodeblock(value, language);
+  return md;
+}
+
 function formatCheck(response: string) {
   // response is the string printed by "Check identifier." :
   // |a
@@ -53,9 +60,9 @@ function formatCheck(response: string) {
   if (type === "") return;
   type = compactify(type);
 
-  let hover = [{ language: "coq", value: type }];
+  let hover = [md_code_block("coq", type)];
   // if (where)
-  //  hover.push({language:"coq", value:where});
+  //  hover.push(md_code_block("coq", where));
   return new vscode.Hover(hover);
 }
 
@@ -84,10 +91,10 @@ function formatLocate(response: string) {
   // |"A + { B }" := sumor A B : type_scope (default interpretation)
   // |"x + y" := N.add x y : N_scope
   // |...
-  response = response.trim()
+  response = response.trim();
   if (response === "Unknown notation") return;
   const notationRegex = /^(Reserved\s+)?Notation\s*"(.*?)"\s*:=\s*\(/gms;
-  const matches = response.matchAll(notationRegex)
+  const matches = response.matchAll(notationRegex);
   if (!matches) return;
 
   let hover = [];
@@ -98,7 +105,7 @@ function formatLocate(response: string) {
     const end = findClosingParenthese(response, begin);
     if (end === null) continue;
     const definition = compactify(response.slice(begin, end));
-    hover.push({ language: "coq", value: `"${notation}" := ${definition}` })
+    hover.push(md_code_block("coq", `"${notation}" := ${definition}`));
   }
   if (hover.length === 0) {
     // Old coq version had a different locate format
@@ -107,10 +114,30 @@ function formatLocate(response: string) {
     for (const match of old_matches) {
       const notation = match[1].trim();
       const definition = compactify(match[2].replace("(default interpretation)", ""));
-      hover.push({ language: "coq", value: `"${notation}" := ${definition}` })
+      hover.push(md_code_block("coq", `"${notation}" := ${definition}`));
     }
   }
   return new vscode.Hover(hover);
+}
+
+// format the Expands to: xxx line returned by About queries
+function formatExpandsTo(line: string) {
+  const match_expands = line.match(/Expands to:\s+(\S+)(\s+.*)?/);
+  if (match_expands !== null) {
+    const md = new vscode.MarkdownString();
+    md.appendMarkdown("**");
+    md.appendText(match_expands[1]);
+    md.appendMarkdown("**");
+    if (match_expands[2]) {
+      md.appendText(" " + match_expands[2].trim());
+    }
+    return md;
+  }
+
+  if (line.trim() === "Hypothesis of the goal context.") {
+    return new vscode.MarkdownString("**Hypothesis**");
+  }
+  return null;
 }
 
 function formatAbout(response: string) {
@@ -128,24 +155,36 @@ function formatAbout(response: string) {
   // Or
   // |Notation leibnizO A := (discreteO A)
   // |Expands to: Notation iris.algebra.ofe.leibnizO
+  //
+  // Or
+  // |Notation z_to_addr := finz.of_z
+  // |Expands to: Notation cap_machine.addr_reg.z_to_addr
   if (response.match(/not a defined object\./gs) !== null) return;
 
   if (response.startsWith("Notation")) {
     const array = response.split(/\n(?!\s)/gms); // split on newline NOT followed by space
-    let hover = []
-    const match = array[0].match(/Notation\s+(.*?)\s+:=\s+\(/);
+    let hover: vscode.MarkdownString[] = []
+    const match = array[0].match(/Notation\s+(.*?)\s+:=\s*/);
     if (match !== null) {
-      const notation = match[1];
-      const end = findClosingParenthese(response, match[0].length);
-      if (end === null) return;
-      const definition = compactify(response.slice(match[0].length, end));
-      hover.push({ language: "coq", value: `"${notation}" := ${definition}` })
+      const notation = match[1].trim();
+      let definition = response.slice(match[0].length).trim();
+      if (definition[0] === "(") {
+        const end = findClosingParenthese(definition, 1);
+        if (end !== null) {
+          definition = definition.slice(1, end);
+        }
+      }
+      else {
+        definition = definition.split(/\s/, 1)[0];
+      }
+      hover.push(md_code_block("coq", `"${notation}" := ${compactify(definition)}`));
     }
 
-    if (array[1].startsWith("Expands to: ")) {
-      const source = array[1].replace("Expands to: ", "");
-      hover.push({ language: "text", value: source });
+    const expands_to = formatExpandsTo(array[1]);
+    if (expands_to !== null) {
+      hover.push(expands_to);
     }
+
     return new vscode.Hover(hover);
   }
 
@@ -153,17 +192,21 @@ function formatAbout(response: string) {
   let type = array[0];
   type = compactify(type.replace(/^.*?:/, "")); // remove identifier (everything before first ":")
   if (type === "") return;
-  let hover = [{ language: "coq", value: type }];
+  let hover = [md_code_block("coq", type)];
 
-  let details = array[1].split(/\n(?!\s)/gms); // split on newline NOT followed by space
+  // re-join all remaining sections of the array,
+  // then split on newline NOT followed by space
+  let details = array.slice(1).join("\n\n").split(/\n(?!\s)/gms);
   for (const detail of details) {
     if (detail.startsWith("Arguments ")) {
-      const source = detail.replace(/Arguments \S*\s*/, "Args: ").replace(/\s+/gms, " ");
-      hover.push({ language: "text", value: source });
+      const md = new vscode.MarkdownString("**Args:** `");
+      md.appendMarkdown(detail.replace(/Arguments \S*\s*/, "").replace(/\s+/gms, " ").replace(/`/gms, "\\`") + '`');
+      hover.push(md);
     }
-    if (detail.startsWith("Expands to: ")) {
-      const source = detail.replace("Expands to: ", "");
-      hover.push({ language: "text", value: source });
+
+    const expands_to = formatExpandsTo(detail);
+    if (expands_to !== null) {
+      hover.push(expands_to);
     }
   }
   return new vscode.Hover(hover);
