@@ -122,13 +122,15 @@ function formatLocate(response: string) {
 
 // format the Expands to: xxx line returned by About queries
 function formatExpandsTo(line: string) {
-  const match_expands = line.match(/Expands to:\s+(\S+)\s+(.*)/);
+  const match_expands = line.match(/Expands to:\s+(\S+)(\s+.*)?/);
   if (match_expands !== null) {
     const md = new vscode.MarkdownString();
     md.appendMarkdown("**");
     md.appendText(match_expands[1]);
-    md.appendMarkdown("** ");
-    md.appendText(match_expands[2].trim());
+    md.appendMarkdown("**");
+    if (match_expands[2]) {
+      md.appendText(" " + match_expands[2].trim());
+    }
     return md;
   }
 
