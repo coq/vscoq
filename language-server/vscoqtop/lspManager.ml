@@ -135,7 +135,7 @@ let send_highlights uri doc =
   output_json @@ mk_notification ~event:"coqtop/updateHighlights" ~params
 
 let mk_goal sigma g =
-  let evi = Evd.find sigma g in
+  let EvarInfo evi = Evd.find sigma g in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   let min_env = Environ.reset_context env in
   let id = Evar.repr g in
