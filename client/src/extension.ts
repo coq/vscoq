@@ -2,6 +2,7 @@ import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
 import * as path from 'path';
 import {workspace, window, ExtensionContext, Range} from 'vscode';
 import Client from './client';
+import GoalProvider  from './provider';
 import {initializeDecorations} from './Decorations';
 
 import {
@@ -15,6 +16,10 @@ let client: Client;
 export function activate(context: ExtensionContext) {
 
 	const config = workspace.getConfiguration('vscoq');
+    const goals = new GoalProvider(context.extensionUri);
+
+    context.subscriptions.push(
+        window.registerWebviewViewProvider(GoalProvider.viewType, goals));
 
 	let serverOptions: ServerOptions = {
 		command: config.path,
