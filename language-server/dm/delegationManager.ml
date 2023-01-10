@@ -73,7 +73,7 @@ let install_feedback send =
            is also a feedback *)
         Printf.eprintf "%s\n" @@ Pp.string_of_ppcmds m
     | Feedback.Message(lvl,loc,m) -> send (fb.Feedback.span_id,(lvl,loc,m))
-    | Feedback.AddedAxiom -> send (fb.Feedback.span_id,(Feedback.Warning,None,Pp.str "axiom added"))
+    | Feedback.AddedAxiom
     | _ -> () (* STM feedbacks are handled differently *))
 
 let master_feeder = install_feedback (fun x -> Queue.push x master_feedback_queue)

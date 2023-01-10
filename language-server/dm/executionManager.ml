@@ -140,12 +140,16 @@ let update state id v =
 
 let local_feedback = Sel.map (fun (x,y) -> LocalFeedback(x,y)) DelegationManager.local_feedback
 
-let handle_feedback id (_,_,msg as fb) state =
-  match SM.find id state.of_sentence with
-  | (s,fl) -> update_all id s (fb::fl) state
-  | exception Not_found -> 
-      log @@ "Received feedback on non-existing state id " ^ Stateid.to_string id ^ ": " ^ Pp.string_of_ppcmds msg;
-      state
+let handle_feedback id fb state =
+  match fb with
+  | (Feedback.Info, _, _) -> state
+  | (_, _, msg) ->
+    begin match SM.find id state.of_sentence with
+    | (s,fl) -> update_all id s (fb::fl) state
+    | exception Not_found -> 
+        log @@ "Received feedback on non-existing state id " ^ Stateid.to_string id ^ ": " ^ Pp.string_of_ppcmds msg;
+        state
+    end
 
 let handle_event event state =
   match event with

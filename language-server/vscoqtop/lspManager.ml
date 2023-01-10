@@ -30,7 +30,8 @@ let log msg = lsp_debug Pp.(fun () ->
 
 (*let string_field name obj = Yojson.Basic.to_string (List.assoc name obj)*)
 
-type lsp_event = Request of Yojson.Basic.t option
+type lsp_event = 
+  | Request of Yojson.Basic.t option
 
 type event =
  | LspManagerEvent of lsp_event
@@ -192,8 +193,8 @@ let send_proofview uri doc =
     output_json @@ mk_notification ~event:"vscoq/updateProofview" ~params
 
 let update_view uri st =
-  send_highlights uri st;
-  send_proofview uri st;
+  send_highlights uri st;(* 
+  send_proofview uri st; *)
   publish_diagnostics uri st
 
 let textDocumentDidOpen params =
@@ -204,9 +205,10 @@ let textDocumentDidOpen params =
   let vst, opts = get_init_state () in
   let st, events = Dm.DocumentManager.init vst ~opts ~uri ~text in
   let st = Dm.DocumentManager.validate_document st in
+  let (st, events') = Dm.DocumentManager.interpret_to_end st in
   Hashtbl.add states uri st;
   update_view uri st;
-  uri, events
+  uri, events@events'
 
 let textDocumentDidChange params =
   let open Yojson.Basic.Util in
@@ -222,7 +224,8 @@ let textDocumentDidChange params =
   in
   let textEdits = List.map read_edit contentChanges in
   let st = Hashtbl.find states uri in
-  let st, events = Dm.DocumentManager.apply_text_edits st textEdits in
+  let st = Dm.DocumentManager.apply_text_edits st textEdits in
+  let (st, events) = Dm.DocumentManager.interpret_to_end st in
   Hashtbl.replace states uri st;
   update_view uri st;
   uri, events
@@ -291,6 +294,18 @@ let inject_dm_event uri x : event Sel.event =
 let inject_dm_events (uri,l) =
   List.map (inject_dm_event uri) l
 
+let coqtopUpdateProofView ~id params = 
+  let open Yojson.Basic.Util in
+  let uri = params |> member "uri" |> to_string in
+  let loc = params |> member "location" |> parse_loc in
+  let st = Hashtbl.find states uri in
+  match Dm.DocumentManager.get_current_proof st with (*FIXME: Should use loc*)
+  | None -> ()
+  | Some (proofview, pos) ->
+    let result = mk_proofview pos proofview in
+    output_json @@ mk_response ~id ~result 
+
+
 let dispatch_method ~id method_name params : events =
   match method_name with
   | "initialize" -> do_initialize ~id; []
@@ -303,6 +318,7 @@ let dispatch_method ~id method_name params : events =
   | "vscoq/stepForward" -> coqtopStepForward ~id params |> inject_dm_events
   | "vscoq/resetCoq" -> coqtopResetCoq ~id params; []
   | "vscoq/interpretToEnd" -> coqtopInterpretToEnd ~id params |> inject_dm_events
+  | "vscoq/updateProofView" -> coqtopUpdateProofView ~id params; []
   | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; []
 
 let handle_lsp_event = function
