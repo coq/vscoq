@@ -156,6 +156,7 @@ export class HtmlCoqView implements view.CoqView {
       });
 
       const doc = await vscode.workspace.openTextDocument(this.coqViewUri);
+      vscode.window.showTextDocument(vscode.window.activeTextEditor?.document);
 
       const csspath = path.join(
         extensionContext.extensionPath,
