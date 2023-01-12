@@ -75,9 +75,7 @@ val diagnostics : state -> diagnostic list
 (** diagnostics [doc] returns the diagnostics corresponding to the sentences
     that have been executed in [doc]. *)
 
-type proof_data = (Proof.data * Position.t) option
-
-val get_current_proof : state -> proof_data
+val get_proof : state -> Position.t -> Proof.data option
 
 val handle_event : event -> state -> (state option * events)
 (** handles events and returns a new state if it was updated *)

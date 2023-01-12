@@ -168,7 +168,7 @@ let mk_goal sigma g =
   ]
 
 
-let mk_proofview loc Proof.{ goals; sigma } =
+let mk_proofview Proof.{ goals; sigma } =
   let goals = List.map (mk_goal sigma) goals in
   let shelved = List.map (mk_goal sigma) (Evd.shelf sigma) in
   let given_up = List.map (mk_goal sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
@@ -176,25 +176,11 @@ let mk_proofview loc Proof.{ goals; sigma } =
     "type", `String "proof-view";
     "goals", `List goals;
     "shelvedGoals", `List shelved;
-    "abandonedGoals", `List given_up;
-    "focus", mk_loc loc
+    "abandonedGoals", `List given_up
   ]
 
-let send_proofview uri doc =
-  match Dm.DocumentManager.get_current_proof doc with
-  | None -> ()
-  | Some (proofview, pos) ->
-    let result = mk_proofview pos proofview in
-    let params = `Assoc [
-      "uri", `String uri;
-      "proofview", result;
-    ]
-    in
-    output_json @@ mk_notification ~event:"vscoq/updateProofview" ~params
-
 let update_view uri st =
-  send_highlights uri st;(* 
-  send_proofview uri st; *)
+  send_highlights uri st;
   publish_diagnostics uri st
 
 let textDocumentDidOpen params =
@@ -299,10 +285,10 @@ let coqtopUpdateProofView ~id params =
   let uri = params |> member "uri" |> to_string in
   let loc = params |> member "location" |> parse_loc in
   let st = Hashtbl.find states uri in
-  match Dm.DocumentManager.get_current_proof st with (*FIXME: Should use loc*)
+  match Dm.DocumentManager.get_proof st loc with
   | None -> ()
-  | Some (proofview, pos) ->
-    let result = mk_proofview pos proofview in
+  | Some proofview ->
+    let result = mk_proofview proofview in
     output_json @@ mk_response ~id ~result 
 
 

@@ -247,14 +247,12 @@ let handle_event ev st =
     let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
 
-let get_current_proof st =
-  match Option.bind st.observe_loc (Document.find_sentence_before st.document) with
+let get_proof st pos =
+  let loc = Document.position_to_loc st.document pos in
+  match Document.find_sentence_before st.document loc with
   | None -> None
   | Some sentence ->
-    let pos = Document.position_of_loc st.document sentence.stop in
-    match ExecutionManager.get_proofview st.execution_state sentence.id with
-    | None -> None
-    | Some pv -> Some (pv, pos)
+    ExecutionManager.get_proofview st.execution_state sentence.id
 
 let pr_event = function
 | ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
