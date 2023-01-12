@@ -420,7 +420,7 @@ type parsing_state_hook = sentence_id -> Vernacstate.Parser.t option
 let parsed_ranges doc = ParsedDoc.parsed_ranges doc.raw_doc doc.parsed_doc
 
 let rec stream_tok n_tok acc str begin_line begin_char =
-  let e = LStream.next str in
+  let e = LStream.next (Pcoq.get_keyword_state()) str in
   if Tok.(equal e EOI) then
     List.rev acc
   else
@@ -432,16 +432,16 @@ let parse_one_sentence stream ~st =
   (* FIXME: handle proof mode correctly *)
 
 let rec junk_whitespace stream =
-  match Stream.peek stream with
+  match Stream.peek () stream with
   | Some (' ' | '\t' | '\n' |'\r') ->
-    Stream.junk stream; junk_whitespace stream
+    Stream.junk () stream; junk_whitespace stream
   | _ -> ()
 
 let rec junk_sentence_end stream =
-  match Stream.npeek 2 stream with
-  | ['.'; (' ' | '\t' | '\n' |'\r')] -> Stream.junk stream
+  match Stream.npeek () 2 stream with
+  | ['.'; (' ' | '\t' | '\n' |'\r')] -> Stream.junk () stream
   | [] -> ()
-  | _ ->  Stream.junk stream; junk_sentence_end stream
+  | _ ->  Stream.junk () stream; junk_sentence_end stream
 
 (** Parse until we need to execute more. *)
 let rec parse_more parsing_state stream raw parsed =
@@ -542,7 +542,7 @@ let validate_document ~parsing_state_hook ({ parsed_loc; raw_doc; parsed_doc } a
   | Some (stop, parsing_state, _scheduler_state) ->
     let text = RawDoc.text raw_doc in
     let stream = Stream.of_string text in
-    while Stream.count stream < stop do Stream.junk stream done;
+    while Stream.count stream < stop do Stream.junk () stream done;
     log @@ Format.sprintf "Parsing more from pos %i" stop;
     let new_sentences, more_to_parse = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
     let invalid_ids, parsed_doc = invalidate ~parsing_state_hook (stop+1) document.parsed_doc new_sentences in
