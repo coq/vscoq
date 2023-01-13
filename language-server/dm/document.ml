@@ -10,6 +10,7 @@
 
 open Gramlib
 open Types
+open Lsp.LspData
 
 let debug_document = CDebug.create ~name:"vscoq.document" ()
 

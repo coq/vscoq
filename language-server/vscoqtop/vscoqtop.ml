@@ -53,7 +53,6 @@ let _ =
     | Feedback.Message(_,_,msg) -> Printf.eprintf "%s\n" (Pp.string_of_ppcmds msg)
     | _ -> ()
   ) in
-  CDebug.set_debug_all true;
   let initial_args =
     match CoqProject_file.find_project_file ~from:(Unix.getcwd ()) ~projfile_name:"_CoqProject" with
     | None -> Coqargs.default
@@ -64,7 +63,6 @@ let _ =
       fst @@ Coqargs.parse_args ~usage:vscoqtop_specific_usage ~init:Coqargs.default args in
   let opts, () = Coqinit.parse_arguments ~usage:vscoqtop_specific_usage ~initial_args ~parse_extra:(fun x -> (), x) () in
   let injections = Coqinit.init_runtime opts in
-  CDebug.set_debug_all true;
   Flags.quiet := true;
   Sys.(set_signal sigint Signal_ignore);
   Exninfo.record_backtrace true;

@@ -8,20 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Types
-
+open Lsp.LspData
 let debug_dm = CDebug.create ~name:"vscoq.documentManager" ()
 
 let log msg = debug_dm Pp.(fun () ->
   str @@ Format.asprintf "  [%d] %s" (Unix.getpid ()) msg)
 
-type proof_data = (Proof.data * Position.t) option
-
-type diagnostic = {
-  range : Range.t;
-  message : string;
-  severity : Feedback.level;
-}
+  type proof_data = (Proof.data * Position.t) option
 
 type state = {
   uri : string;

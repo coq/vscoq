@@ -40,8 +40,7 @@ export function activate(context: ExtensionContext) {
 	.then(() => {
 		initializeDecorations(context);
 		client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
-            console.log(uri);
-			client.handleHighlights(uri, parsedRange, processingRange, processedRange);
+            client.handleHighlights(uri, parsedRange, processingRange, processedRange);
 		});
 	});
 

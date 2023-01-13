@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Types
+open Lsp.LspData
 
 (** The document manager holds the view that Coq has of the currently open
     states. It makes it easy for IDEs to handle text edits, navigate
@@ -64,12 +65,6 @@ type exec_overview = {
 val executed_ranges : state -> exec_overview
 (** returns the ranges corresponding to the sentences
     that have been executed and remotely executes *)
-
-type diagnostic = {
-  range : Range.t;
-  message : string;
-  severity : Feedback.level;
-}
 
 val diagnostics : state -> diagnostic list
 (** diagnostics [doc] returns the diagnostics corresponding to the sentences

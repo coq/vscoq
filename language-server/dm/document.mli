@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Types
+open Lsp.LspData
 
 (** This file defines operations on the content of a document (text, parsing
     of sentences, scheduling). *)

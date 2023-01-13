@@ -12,6 +12,28 @@
     used by the VsCoq extension. *)
 
 open Printer
+open Lsp.LspEncode
+open Lsp.LspData
+
+module TraceValue = struct
+  type t =
+    | Off
+    | Messages
+    | Verbose
+
+  let of_string = function
+    | "messages" -> Messages
+    | "verbose" -> Verbose
+    | "off" -> Off
+    | _ -> raise (Invalid_argument "TraceValue.parse")
+
+  let to_string = function
+    | Off -> "off"
+    | Messages -> "messages"
+    | Verbose -> "verbose"
+end
+
+let trace_value = ref TraceValue.Off
 
 module CompactedDecl = Context.Compacted.Declaration
 
@@ -53,68 +75,48 @@ let lsp : event Sel.event =
         log @@ ("failed to read message: " ^ Printexc.to_string exn);
         LspManagerEvent (Request None))
 
-let output_json obj =
+
+let logTrace ~message ~extra =
+  let event = "$/logTrace" in
+  let params =
+      match (!trace_value, extra) with
+      | Verbose, Some extra ->
+        `Assoc [ ("message", `String message); ("verbose", `String extra) ]
+      | _, _ -> `Assoc [ ("message", `String message) ]
+  in
+  mk_notification ~event ~params 
+    
+let output_json ?(trace=true) obj =
   let msg  = Yojson.Basic.pretty_to_string ~std:true obj in
   let size = String.length msg in
   let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in
   (* log @@ "sent: " ^ msg; *)
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
-let mk_notification ~event ~params = `Assoc ["jsonrpc", `String "2.0"; "method", `String event; "params", params]
-let mk_response ~id ~result = `Assoc ["jsonrpc", `String "2.0"; "id", `Int id; "result", result]
+let logMessage ~lvl ~message =
+  let event = "window/logMessage" in
+  let params = `Assoc [ "type", `String lvl; "message", `String message ] in
+  output_json @@ mk_notification ~event ~params
 
-let do_initialize ~id =
+let do_initialize ~id params =
+  let open Yojson.Basic.Util in
+  let trace = params |> member "trace" |> to_string in
   let capabilities = `Assoc [
     "textDocumentSync", `Int 2 (* Incremental *)
   ]
   in
   let result = `Assoc ["capabilities", capabilities] in
+  trace_value := TraceValue.of_string trace;
   output_json @@ mk_response ~id ~result
 
 let parse_loc json =
   let open Yojson.Basic.Util in
   let line = json |> member "line" |> to_int in
   let char = json |> member "character" |> to_int in
-  Dm.Types.Position.{ line ; char }
-
-let mk_loc Dm.Types.Position.{ line; char } =
-  `Assoc [
-    "line", `Int line;
-    "character", `Int char;
-  ]
-
-let mk_range Dm.Types.Range.{ start; stop } =
-  `Assoc [
-    "start", mk_loc start;
-    "end", mk_loc stop;
-  ]
+  Position.{ line ; char }
 
 let publish_diagnostics uri doc =
-  let mk_severity lvl =
-    let open Feedback in
-    `Int (match lvl with
-    | Error -> 1
-    | Warning -> 2
-    | Notice -> 3
-    | Info -> 3
-    | Debug -> 3
-    )
-  in
-  let mk_diagnostic d =
-    let open Dm.DocumentManager in
-    `Assoc [
-      "range", mk_range d.range;
-      "severity", mk_severity d.severity;
-      "message", `String d.message;
-    ]
-  in
-  let diagnostics = List.map mk_diagnostic @@ Dm.DocumentManager.diagnostics doc in
-  let params = `Assoc [
-    "uri", `String uri;
-    "diagnostics", `List diagnostics;
-  ]
-  in
-  output_json @@ mk_notification ~event:"textDocument/publishDiagnostics" ~params
+  output_json @@ mk_diagnostics uri @@ Dm.DocumentManager.diagnostics doc
 
 let send_highlights uri doc =
   let { Dm.DocumentManager.parsed; checked; checked_by_delegate; legacy_highlight } =
@@ -132,52 +134,6 @@ let send_highlights uri doc =
   in
   output_json @@ mk_notification ~event:"vscoq/updateHighlights" ~params
 
-let mk_goal sigma g =
-  let evi = Evd.find sigma g in
-  let env = Evd.evar_filtered_env (Global.env ()) evi in
-  let min_env = Environ.reset_context env in
-  let id = Evar.repr g in
-  let ccl =
-    pr_letype_env ~goal_concl_style:true env sigma (Evd.evar_concl evi)
-  in
-  let mk_hyp d (env,l) =
-    let d' = CompactedDecl.to_named_context d in
-    let env' = List.fold_right Environ.push_named d' env in
-    let ids, body, typ = match d with
-    | CompactedDecl.LocalAssum (ids, typ) ->
-       ids, None, typ
-    | CompactedDecl.LocalDef (ids,c,typ) ->
-      ids, Some c, typ
-    in
-  let ids = List.map (fun id -> `String (Names.Id.to_string id.Context.binder_name)) ids in
-  let typ = pr_ltype_env env sigma typ in
-    let hyp = `Assoc ([
-      "identifiers", `List ids;
-      "type", `String (Pp.string_of_ppcmds typ);
-      "diff", `String "None";
-    ] @ Option.cata (fun body -> ["body", `String (Pp.string_of_ppcmds @@ pr_lconstr_env ~inctx:true env sigma body)]) [] body) in
-    (env', hyp :: l)
-  in
-  let (_env, hyps) =
-    Context.Compacted.fold mk_hyp
-      (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
-  `Assoc [
-    "id", `Int id;
-    "hypotheses", `List (List.rev hyps);
-    "goal", `String (Pp.string_of_ppcmds ccl)
-  ]
-
-
-let mk_proofview Proof.{ goals; sigma } =
-  let goals = List.map (mk_goal sigma) goals in
-  let shelved = List.map (mk_goal sigma) (Evd.shelf sigma) in
-  let given_up = List.map (mk_goal sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
-  `Assoc [
-    "type", `String "proof-view";
-    "goals", `List goals;
-    "shelvedGoals", `List shelved;
-    "abandonedGoals", `List given_up
-  ]
 
 let update_view uri st =
   send_highlights uri st;
@@ -206,7 +162,7 @@ let textDocumentDidChange params =
     let range = edit |> member "range" in
     let start = range |> member "start" |> parse_loc in
     let stop = range |> member "end" |> parse_loc in
-    Dm.Types.Range.{ start; stop }, text
+    Range.{ start; stop }, text
   in
   let textEdits = List.map read_edit contentChanges in
   let st = Hashtbl.find states uri in
@@ -294,7 +250,7 @@ let coqtopUpdateProofView ~id params =
 
 let dispatch_method ~id method_name params : events =
   match method_name with
-  | "initialize" -> do_initialize ~id; []
+  | "initialize" -> do_initialize ~id params; []
   | "initialized" -> []
   | "textDocument/didOpen" -> textDocumentDidOpen params |> inject_dm_events
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events

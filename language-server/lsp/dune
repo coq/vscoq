@@ -1,0 +1,5 @@
+(library
+ (name lsp)
+ (public_name vscoq-language-server.lsp)
+ (modules lspData lspEncode)
+ (libraries yojson coq-core.sysinit))
