@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Scheduler
+open Types
 
 let debug_em = CDebug.create ~name:"vscoq.executionManager" ()
 
@@ -23,7 +24,6 @@ let success vernac_st = Success (Some vernac_st)
 let error loc msg vernac_st = Error ((loc,msg),(Some vernac_st))
 
 type sentence_id = Stateid.t
-type ast = Vernacexpr.vernac_control
 
 module SM = Map.Make (Stateid)
 
@@ -94,21 +94,27 @@ let interp_ast ~doc_id ~state_id vernac_st ast =
     ParTactic.set_id_for_feedback state_id;
     Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
     let result =
-      try Ok(Vernacinterp.interp ~st:vernac_st ast ~only_parsing:false,[])
+      try Ok(Vernacinterp.interp_entry ~st:vernac_st ast,[])
       with e when CErrors.noncritical e ->
         let e, info = Exninfo.capture e in
         Error (e, info) in
     Sys.(set_signal sigint Signal_ignore);
     match result with
     | Ok (vernac_st, events) ->
+      (*
         log @@ "Executed: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^
           " (" ^ (if Option.is_empty vernac_st.Vernacstate.lemmas then "no proof" else "proof")  ^ ")";
+          *)
         vernac_st, success vernac_st, (*List.map inject_pm_event*) events
     | Error (Sys.Break, _ as exn) ->
+      (*
         log @@ "Interrupted executing: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
+        *)
         Exninfo.iraise exn
     | Error (e, info) ->
+      (*
         log @@ "Failed to execute: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
+        *)
         let loc = Loc.get_loc info in
         let msg = CErrors.iprint (e, info) in
         vernac_st, error loc (Pp.string_of_ppcmds msg) vernac_st,[]
@@ -187,7 +193,7 @@ let remotize doc id =
   | None -> PSkip id
   | Some sentence ->
     begin match sentence.Document.ast with
-    | Document.ValidAst (ast,_) -> PExec(id,ast)
+    | Document.ValidAst (ast,_,_) -> PExec(id,ast)
     | Document.ParseError _ -> PSkip id
     end
 
@@ -391,7 +397,7 @@ let rec invalidate schedule id st =
 
 let get_parsing_state_after st id =
   Option.bind (find_fulfilled_opt id st.of_sentence)
-    (function Success (Some st) | Error (_,Some st) -> Some st.Vernacstate.parsing | _ -> None)
+    (function Success (Some st) | Error (_,Some st) -> Some st.Vernacstate.synterp | _ -> None)
 
 let get_proofview st id =
   match find_fulfilled_opt id st.of_sentence with

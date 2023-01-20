@@ -14,7 +14,7 @@ open Lsp.LspData
 (** This file defines operations on the content of a document (text, parsing
     of sentences, scheduling). *)
 
-type parsing_state_hook = sentence_id -> Vernacstate.Parser.t option
+type parsing_state_hook = sentence_id -> Vernacstate.Synterp.t option
 
 (** The document gathers the text, which is partially validated (parsed into
     sentences *)
@@ -43,13 +43,13 @@ val apply_text_edits : document -> text_edit list -> document
     new text is not parsed or executed. *)
 
 type parsed_ast =
-  | ValidAst of ast * Tok.t list (* the list of tokens generating ast, a sort of fingerprint to compare ASTs  *)
+  | ValidAst of ast * Vernacextend.vernac_classification * Tok.t list (* the list of tokens generating ast, a sort of fingerprint to compare ASTs  *)
   | ParseError of string Loc.located
 
 type sentence = {
   start : int;
   stop : int;
-  parsing_state : Vernacstate.Parser.t; (* st used to parse this sentence *)
+  parsing_state : Vernacstate.Synterp.t; (* st used to parse this sentence *)
   scheduler_state_before : Scheduler.state;
   scheduler_state_after : Scheduler.state;
   ast : parsed_ast;
@@ -66,9 +66,6 @@ val find_sentence : document -> int -> sentence option
 
 val find_sentence_before : document -> int -> sentence option
 (** [find_sentence_before doc loc] finds the last sentence before the loc *)
-
-val more_to_parse : document -> bool
-(** [more_to_parse doc] is false if the entire text was parsed *)
 
 val parsed_loc : document -> int
 (** the last loc of the document which was parsed *)

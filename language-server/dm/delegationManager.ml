@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-
 let debug_delegation_manager = CDebug.create ~name:"vscoq.delegationManager" ()
 
 let log msg = debug_delegation_manager Pp.(fun () ->

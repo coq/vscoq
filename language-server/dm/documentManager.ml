@@ -133,9 +133,6 @@ let interpret_to_loc state loc : (state * events) =
         let state = { state with observe_loc = Some loc } in
         (state, [])
       else
-        if Document.parsed_loc state.document < loc && Document.more_to_parse state.document then
-          (state, [Sel.now (ExecuteToLoc {loc; vst_for_next_todo; todo})])
-        else
       (*
       let executed_loc = Some stop in
       let proof_data = match ExecutionManager.get_proofview st id with

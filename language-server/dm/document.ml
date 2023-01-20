@@ -101,24 +101,26 @@ module LM = Map.Make (Int)
 module SM = Map.Make (Stateid)
 
 type parsed_ast =
-  | ValidAst of ast * Tok.t list
+  | ValidAst of ast * Vernacextend.vernac_classification * Tok.t list
   | ParseError of string Loc.located
 
 let string_of_parsed_ast = function
-  | ValidAst (ast,tokens) -> (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^ " [" ^ String.concat "--" (List.map (Tok.extract_string false) tokens) ^ "]"
+  | ValidAst (ast,classif,tokens) -> (* (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac_entry ast.expr) ^ " [" ^ String.concat "--" (List.map (Tok.extract_string false) tokens) ^ "]" *)
+  (* TODO implement printer for vernac_entry *)
+    "[" ^ String.concat "--" (List.map (Tok.extract_string false) tokens) ^ "]" 
   | ParseError _ -> "(parse error)"
 
 type pre_sentence = {
   start : int;
   stop : int;
-  parsing_state : Vernacstate.Parser.t; (* st used to parse this sentence *)
+  parsing_state : Vernacstate.Synterp.t; (* synterp state used to parse this sentence *)
   ast : parsed_ast;
 }
 
 type sentence = {
   start : int;
   stop : int;
-  parsing_state : Vernacstate.Parser.t; (* st used to parse this sentence *)
+  parsing_state : Vernacstate.Synterp.t; (* synterp state used to parse this sentence *)
   scheduler_state_before : Scheduler.state;
   scheduler_state_after : Scheduler.state;
   ast : parsed_ast;
@@ -133,7 +135,7 @@ let string_of_sentence sentence =
 
 let same_tokens (s1 : sentence) (s2 : pre_sentence) =
   match s1.ast, s2.ast with
-  | ValidAst (_,tokens1), ValidAst (_,tokens2) ->
+  | ValidAst (_,_,tokens1), ValidAst (_,_,tokens2) ->
     CList.equal Tok.equal tokens1 tokens2
   | _ -> false
 
@@ -152,7 +154,7 @@ module ParsedDoc : sig
 
   val parse_errors : RawDoc.t -> t -> (Stateid.t * (Loc.t option * string)) list
 
-  val add_sentence : t -> int -> int -> parsed_ast -> Vernacstate.Parser.t -> Scheduler.state -> t * Scheduler.state
+  val add_sentence : t -> int -> int -> parsed_ast -> Vernacstate.Synterp.t -> Scheduler.state -> t * Scheduler.state
   val remove_sentence : t -> sentence_id -> t
   val remove_sentences_after : t -> int -> t * Stateid.Set.t
   val sentences : t -> sentence list
@@ -167,8 +169,8 @@ module ParsedDoc : sig
   val next_sentence : t -> sentence_id -> sentence option
 
   val pos_at_end : t -> int
-  val state_at_end : parsing_state_hook:(sentence_id -> Vernacstate.Parser.t option) -> t -> (int * Vernacstate.Parser.t * Scheduler.state) option
-  val state_at_pos : parsing_state_hook:(sentence_id -> Vernacstate.Parser.t option) -> t -> int -> (int * Vernacstate.Parser.t * Scheduler.state) option
+  val state_at_end : parsing_state_hook:(sentence_id -> Vernacstate.Synterp.t option) -> t -> (int * Vernacstate.Synterp.t * Scheduler.state) option
+  val state_at_pos : parsing_state_hook:(sentence_id -> Vernacstate.Synterp.t option) -> t -> int -> (int * Vernacstate.Synterp.t * Scheduler.state) option
 
   val patch_sentence : t -> Scheduler.state -> sentence_id -> pre_sentence -> t * Scheduler.state
 
@@ -234,7 +236,7 @@ end = struct
     let scheduler_state_after, schedule =
       let oast =
         match ast with
-        | ValidAst (ast,_tokens) -> Some ast
+        | ValidAst (ast,classif,_tokens) -> Some (ast,classif)
         | ParseError _ -> None
       in
       Scheduler.schedule_sentence (id,oast) scheduler_state_before parsed.schedule
@@ -295,15 +297,10 @@ end = struct
       begin match ast with
       | ParseError _ ->
         Some (stop, parsing_state, scheduler_state_after)
-      | ValidAst (ast, _tokens) ->
-        if Scheduler.changes_the_parser ast then
-          match parsing_state_hook id with
-          | None -> None
-          | Some parsing_state -> Some (stop, parsing_state, scheduler_state_after)
-        else
+      | ValidAst (ast, classif, _tokens) ->
           Some (stop, parsing_state, scheduler_state_after)
       end
-    | None -> Some (-1, Vernacstate.Parser.init (), Scheduler.initial_state)
+    | None -> Some (-1, Vernacstate.Synterp.init (), Scheduler.initial_state)
 
   (** Returns the state at position [pos] if it does not require execution *)
   let state_at_pos ~parsing_state_hook parsed pos =
@@ -365,7 +362,7 @@ end = struct
     let scheduler_state_after, schedule =
       let oast =
         match ast with
-        | ValidAst (ast,_tokens) -> Some ast
+        | ValidAst (ast,classif,_tokens) -> Some (ast,classif)
         | ParseError _ -> None
       in
       Scheduler.schedule_sentence (id,oast) scheduler_state_before parsed.schedule
@@ -411,12 +408,11 @@ type document = {
   parsed_loc : int;
   raw_doc : RawDoc.t;
   parsed_doc : ParsedDoc.t;
-  more_to_parse : bool;
 }
 
 let id_of_doc doc = doc.id
 
-type parsing_state_hook = sentence_id -> Vernacstate.Parser.t option
+type parsing_state_hook = sentence_id -> Vernacstate.Synterp.t option
 
 let parsed_ranges doc = ParsedDoc.parsed_ranges doc.raw_doc doc.parsed_doc
 
@@ -427,10 +423,20 @@ let rec stream_tok n_tok acc str begin_line begin_char =
   else
     stream_tok (n_tok+1) (e::acc) str begin_line begin_char
 
+    (*
 let parse_one_sentence stream ~st =
   let pa = Pcoq.Parsable.make stream in
   Vernacstate.Parser.parse st (Pvernac.main_entry (Some (Vernacinterp.get_default_proof_mode ()))) pa
   (* FIXME: handle proof mode correctly *)
+  *)
+
+let parse_one_sentence stream ~st =
+  let entry = Pvernac.main_entry (Some (Vernacinterp.get_default_proof_mode ())) in
+  let pa = Pcoq.Parsable.make stream in
+    Vernacstate.Synterp.unfreeze st;
+    Flags.with_option Flags.we_are_parsing
+      (fun () -> Pcoq.Entry.parse entry pa)
+      ()
 
 let rec junk_whitespace stream =
   match Stream.peek stream with
@@ -460,7 +466,7 @@ let rec parse_more parsing_state stream raw parsed =
     let oast = parse_one_sentence stream ~st:parsing_state in
     let stop = Stream.count stream in
     begin match oast with
-    | None (* EOI *) -> List.rev parsed, false
+    | None (* EOI *) -> List.rev parsed
     | Some ast ->
       log @@ "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
       let begin_line, begin_char, end_char =
@@ -472,12 +478,18 @@ let rec parse_more parsing_state stream raw parsed =
       let sstr = Stream.of_string str in
       let lex = CLexer.Lexer.tok_func sstr in
       let tokens = stream_tok 0 [] lex begin_line begin_char in
-      let sentence = { ast = ValidAst(ast,tokens); start = begin_char; stop; parsing_state } in
+      let parsing_eff, entry = Synterp.synterp ~atts:ast.CAst.v.attrs ast.CAst.v.expr in
+      let classif = Vernac_classifier.classify_vernac ast in
+      let ast = CAst.make ?loc:(ast.CAst.loc) Vernacexpr.{
+        control = ast.CAst.v.control;
+        attrs = ast.CAst.v.attrs;
+        expr = entry;
+      }
+      in
+      let parsing_state = Vernacstate.Synterp.freeze ~marshallable:false in
+      let sentence = { ast = ValidAst(ast,classif,tokens); start = begin_char; stop; parsing_state } in
       let parsed = sentence :: parsed in
-      if Scheduler.changes_the_parser ast then
-        List.rev parsed, true
-      else
-        parse_more parsing_state stream raw parsed
+      parse_more parsing_state stream raw parsed
     end
     with
     | Stream.Error msg as exn ->
@@ -545,10 +557,10 @@ let validate_document ~parsing_state_hook ({ parsed_loc; raw_doc; parsed_doc } a
     let stream = Stream.of_string text in
     while Stream.count stream < stop do Stream.junk stream done;
     log @@ Format.sprintf "Parsing more from pos %i" stop;
-    let new_sentences, more_to_parse = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
+    let new_sentences = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
     let invalid_ids, parsed_doc = invalidate ~parsing_state_hook (stop+1) document.parsed_doc new_sentences in
     let parsed_loc = ParsedDoc.pos_at_end parsed_doc in
-    invalid_ids, { document with parsed_doc; more_to_parse; parsed_loc }
+    invalid_ids, { document with parsed_doc; parsed_loc }
 
 let fresh_doc_id =
   let doc_id = ref (-1) in
@@ -561,7 +573,6 @@ let create_document text =
       parsed_loc = -1;
       raw_doc;
       parsed_doc = ParsedDoc.empty;
-      more_to_parse = true;
     }
 
 let apply_text_edit document edit =
@@ -592,7 +603,6 @@ let get_sentence doc id = ParsedDoc.get_sentence doc.parsed_doc id
 let find_sentence doc loc = ParsedDoc.find_sentence doc.parsed_doc loc
 let find_sentence_before doc loc = ParsedDoc.find_sentence_before doc.parsed_doc loc
 
-let more_to_parse doc = doc.more_to_parse
 let parsed_loc doc = doc.parsed_loc
 let schedule doc = ParsedDoc.schedule doc.parsed_doc
 
