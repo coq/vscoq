@@ -73,8 +73,7 @@ let lsp : event Sel.event =
       end
     | Error exn ->
         log @@ ("failed to read message: " ^ Printexc.to_string exn);
-        LspManagerEvent (Request None))
-
+        exit 0)
 
 let logTrace ~message ~extra =
   let event = "$/logTrace" in
@@ -108,6 +107,14 @@ let do_initialize ~id params =
   let result = `Assoc ["capabilities", capabilities] in
   trace_value := TraceValue.of_string trace;
   output_json @@ mk_response ~id ~result
+
+let do_shutdown ~id params =
+  let open Yojson.Basic.Util in
+  let result = `Null in
+  output_json @@ mk_response ~id ~result
+
+let do_exit ~id params =
+  exit 0
 
 let parse_loc json =
   let open Yojson.Basic.Util in
@@ -252,6 +259,8 @@ let dispatch_method ~id method_name params : events =
   match method_name with
   | "initialize" -> do_initialize ~id params; []
   | "initialized" -> []
+  | "shutdown" -> do_shutdown ~id params; []
+  | "exit" -> do_exit ~id params
   | "textDocument/didOpen" -> textDocumentDidOpen params |> inject_dm_events
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
