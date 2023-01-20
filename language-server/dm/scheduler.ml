@@ -15,12 +15,6 @@ let debug_scheduler = CDebug.create ~name:"vscoq.scheduler" ()
 let log msg = debug_scheduler Pp.(fun () ->
   str @@ Format.asprintf "        [%d] %s" (Unix.getpid ()) msg)
 
-let changes_the_parser ast =
-  let open Vernacextend in
-  match Vernac_classifier.classify_vernac ast with
-  | VtSideff (_, VtNow) -> true
-  | _ -> false
-
 module SM = CMap.Make (Stateid)
 
 type task =
@@ -131,9 +125,9 @@ Qed.
 *)
 
 (* FIXME handle commands with side effects followed by `Abort` *)
-let push_state id ast st =
+let push_state id ast classif st =
   let open Vernacextend in
-  match Vernac_classifier.classify_vernac ast with
+  match classif with
   | VtStartProof _ -> base_id st, open_proof_block id st, Exec(id,ast)
   | VtQed (VtKeep (VtKeepAxiom | VtKeepOpaque)) when st.section_depth = 0 -> (* TODO do not delegate if command with side effect inside the proof or nested lemmas *)
     begin match st.proof_blocks with
@@ -158,6 +152,7 @@ let push_state id ast st =
   | VtMeta -> assert false
   | VtProofMode _ -> assert false
 
+  (*
 let string_of_task (task_id,(base_id,task)) =
   let s = match task with
   | Skip id -> "Skip " ^ Stateid.to_string id
@@ -166,6 +161,7 @@ let string_of_task (task_id,(base_id,task)) =
   | Query(id,ast) -> "Query " ^ Stateid.to_string id
   in
   Format.sprintf "[%s] : [%s] -> %s" (Stateid.to_string task_id) (Option.cata Stateid.to_string "init" base_id) s
+  *)
 
 let string_of_state st =
   let scopes = (List.map (fun b -> b.proof_sentences) st.proof_blocks) @ [st.document_scope] in
@@ -173,20 +169,20 @@ let string_of_state st =
 
 let schedule_sentence (id,oast) st schedule =
   let base, st, task = match oast with
-    | Some ast ->
+    | Some (ast,classif) ->
       let open Vernacexpr in
-      let (base, st, task) = push_state id ast st in
+      let (base, st, task) = push_state id ast classif st in
       begin match ast.CAst.v.expr with
-      | VernacBeginSection _ ->
+      | VernacSynterp (EVernacBeginSection _) ->
         (base, { st with section_depth = st.section_depth + 1 }, task)
-      | VernacEndSegment _ ->
+      | VernacSynterp (EVernacEndSegment _) ->
         (base, { st with section_depth = max 0 (st.section_depth - 1) }, task)
       | _ -> (base, st, task)
       end
     | None -> base_id st, st, Skip id
   in
   log @@ "Scheduled " ^ (Stateid.to_string id) ^ " based on " ^ (match base with Some id -> Stateid.to_string id | None -> "no state");
-  log @@ string_of_task (id, (base, task));
+  (* log @@ string_of_task (id, (base, task)); *)
   log @@ "New scheduler state: " ^ string_of_state st;
   let tasks = SM.add id (base, task) schedule.tasks in
   let add_dep deps x id =
@@ -234,6 +230,8 @@ let dependents schedule id =
 7. Check x.
 *)
 
+(*
 let string_of_schedule schedule =
   "Task\n" ^
   String.concat "\n" @@ List.map string_of_task @@ SM.bindings schedule.tasks
+  *)

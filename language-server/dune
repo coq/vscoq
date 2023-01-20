@@ -1,3 +1,4 @@
 (alias
    (name default)
     (deps vscoq-language-server.install sel.install))
+(vendored_dirs coq)
