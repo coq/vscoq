@@ -88,6 +88,6 @@ let mk_goal sigma g =
       "type", `String "proof-view";
       "goals", `List goals;
       "shelvedGoals", `List shelved;
-      "abandonedGoals", `List given_up
+      "givenUpGoals", `List given_up
     ]
   

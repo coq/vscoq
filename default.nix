@@ -27,6 +27,10 @@ stdenv.mkDerivation rec {
     zarith
     findlib
     ocaml-lsp
+    ppx_inline_test
+    ppx_assert
+    ppx_sexp_conv
+    sexplib
   ]);
 
 }

@@ -1,0 +1,7 @@
+(library
+  (name tests)
+  (flags -rectypes)
+  (libraries base stdio dm lsp)
+  (preprocess
+    (pps ppx_inline_test ppx_assert))
+  (inline_tests))

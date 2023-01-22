@@ -1,7 +1,6 @@
 (library
  (name dm)
  (public_name vscoq-language-server.dm)
- (private_modules scheduler delegationManager document)
  (modules delegationManager parTactic documentManager document executionManager scheduler types)
  (flags -rectypes)
  (libraries coq-core.sysinit coq-core.vernac sel lsp))

@@ -77,3 +77,8 @@ val handle_event : event -> state -> (state option * events)
 
 val pr_event : event -> Pp.t
 
+module Internal : sig
+
+  val document : state -> Document.document
+
+end

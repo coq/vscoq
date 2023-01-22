@@ -247,3 +247,10 @@ let get_proof st pos =
 let pr_event = function
 | ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
 | ExecutionManagerEvent ev -> ExecutionManager.pr_event ev
+
+module Internal = struct
+
+  let document st =
+    st.document
+
+end

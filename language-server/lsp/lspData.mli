@@ -10,4 +10,4 @@ type diagnostic = {
   range : Range.t;
   message : string;
   severity : Feedback.level;
-}
+} [@@deriving sexp]
