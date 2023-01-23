@@ -1,9 +1,12 @@
 import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
 import * as path from 'path';
-import {workspace, window, ExtensionContext, Range} from 'vscode';
+import {workspace, window, commands, ExtensionContext,
+  TextEditorSelectionChangeEvent,
+  TextEditorSelectionChangeKind, Range} from 'vscode';
 import Client from './client';
 import GoalProvider  from './provider';
 import {initializeDecorations} from './Decorations';
+import GoalPanel from './panels/GoalPanel';
 
 import {
   LanguageClientOptions,
@@ -16,9 +19,18 @@ let client: Client;
 export function activate(context: ExtensionContext) {
 
 	const config = workspace.getConfiguration('vscoq');
-    const goals = new GoalProvider(context);
 
-    context.subscriptions.push(goals);
+    // const goals = new GoalProvider(context);
+
+    // context.subscriptions.push(goals);
+
+
+    const displayGoals = commands.registerTextEditorCommand('coq.displayGoals', (editor) => {
+		GoalPanel.render(editor, context.extensionUri);
+	});
+
+
+	context.subscriptions.push(displayGoals);
 
 	let serverOptions: ServerOptions = {
 		command: config.path,
@@ -41,6 +53,20 @@ export function activate(context: ExtensionContext) {
 		client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
             client.handleHighlights(uri, parsedRange, processingRange, processedRange);
 		});
+
+        let goalsHook = window.onDidChangeTextEditorSelection(
+            (evt: TextEditorSelectionChangeEvent) => {
+
+                if (evt.textEditor.document.languageId !== "coq") { return; };
+
+                if (evt.kind === TextEditorSelectionChangeKind.Mouse || evt.kind === TextEditorSelectionChangeKind.Keyboard) {
+                    GoalPanel.sendProofViewRequest(client, evt.textEditor.document.uri, 
+                        evt.textEditor.document.version, evt.textEditor.selection.active);
+                }
+            }
+        );
+
+
 	});
 
 	// Start the client. This will also launch the server

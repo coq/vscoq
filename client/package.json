@@ -113,6 +113,9 @@
     ]
   },
   "scripts": {
+    "install:all": "yarn install && cd goal-view-ui && yarn install",
+    "start:webview": "cd goal-view-ui && yarn run start",
+    "build:webview": "cd goal-view-ui && yarn run build",
     "vscode:prepublish": "yarn run package",
     "compile": "webpack",
     "watch": "webpack --watch",
