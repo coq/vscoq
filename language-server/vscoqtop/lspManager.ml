@@ -84,7 +84,7 @@ let logTrace ~message ~extra =
       | _, _ -> `Assoc [ ("message", `String message) ]
   in
   mk_notification ~event ~params 
-    
+
 let output_json ?(trace=true) obj =
   let msg  = Yojson.Basic.pretty_to_string ~std:true obj in
   let size = String.length msg in
@@ -244,16 +244,17 @@ let inject_dm_events (uri,l) =
   List.map (inject_dm_event uri) l
 
 let coqtopUpdateProofView ~id params = 
+  log (Yojson.Basic.to_string params);
   let open Yojson.Basic.Util in
-  let uri = params |> member "uri" |> to_string in
-  let loc = params |> member "location" |> parse_loc in
+  let textDocument = params |> member "textDocument" in
+  let uri = textDocument |> member "uri" |> to_string in
+  let loc = params |> member "position" |> parse_loc in
   let st = Hashtbl.find states uri in
   match Dm.DocumentManager.get_proof st loc with
   | None -> ()
   | Some proofview ->
     let result = mk_proofview proofview in
     output_json @@ mk_response ~id ~result 
-
 
 let dispatch_method ~id method_name params : events =
   match method_name with
