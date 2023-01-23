@@ -67,13 +67,6 @@
         }
     ],
     "views": {
-        "coq-goals": [
-            {
-                "type": "webview",
-                "id": "vscoq.goals", 
-                "name": "Goals"
-            }
-        ],
         "coq-sidebar": [
             {
                 "id": "test-sidebar", 
@@ -109,7 +102,15 @@
           "description": "vscoqtop arguments"
         }
       }
-    }
+    },
+    "commands": [
+      {
+          "command": "coq.displayGoals", 
+          "category": "Coq", 
+          "title": "Display Goals",
+          "description": "Displays the goal view"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",

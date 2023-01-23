@@ -16,10 +16,9 @@ let client: Client;
 export function activate(context: ExtensionContext) {
 
 	const config = workspace.getConfiguration('vscoq');
-    const goals = new GoalProvider(context.extensionUri);
+    const goals = new GoalProvider(context);
 
-    context.subscriptions.push(
-        window.registerWebviewViewProvider(GoalProvider.viewType, goals));
+    context.subscriptions.push(goals);
 
 	let serverOptions: ServerOptions = {
 		command: config.path,

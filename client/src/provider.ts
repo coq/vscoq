@@ -1,36 +1,45 @@
 import * as vscode from 'vscode';
 
-export default class GoalProvider implements vscode.WebviewViewProvider {
+export default class GoalProvider implements vscode.Disposable {
 
     public static readonly viewType = 'vscoq.goals'; 
 
-    private _view?: vscode.WebviewView; 
+    private _view?: vscode.WebviewPanel; 
 
     constructor(
-        private readonly _extensionUri: vscode.Uri,
+        private _context: vscode.ExtensionContext,
     ){
-        
+        vscode.commands.registerTextEditorCommand('coq.displayGoals', (editor) => this.openGoalView(editor));
     }
 
-    public resolveWebviewView(
-        webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext,
-        _token: vscode.CancellationToken,
-    ) {
-        this._view = webviewView;
+    dispose(): void {
+    
+    }
 
-        webviewView.webview.options = {
-            enableScripts: false,
-        };
-
-        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-
+    private openGoalView(editor: vscode.TextEditor) {
+        let column = editor && editor.viewColumn ? editor.viewColumn + 1 : vscode.ViewColumn.Two;
+        if (column === 4) { column = vscode.ViewColumn.Three; }
+        if (this._view) {
+            this._view.reveal(column, true);
+        } else {
+            const webviewPanel = vscode.window.createWebviewPanel('coq', 'Coq Goals',
+                { viewColumn: column, preserveFocus: true },
+                {
+                    enableFindWidget: true,
+                    retainContextWhenHidden: true,
+                    enableScripts: true,
+                    enableCommandUris: true,
+                }); 
+            //TODO: WILL NEED TO CONNECT THE API TO THE WEBVIEW HERE I PRESUME
+            this._view = webviewPanel;
+            webviewPanel.webview.html = this.initialHtml();
+        }
     }
     
 
-    private _getHtmlForWebview(webview: vscode.Webview) {
+    private initialHtml() {
         
-        const styleUri = vscode.Uri.joinPath(this._extensionUri, "media", "style.css");
+        const styleUri = vscode.Uri.joinPath(this._context.extensionUri, "media", "style.css");
     
         return `<!DOCTYPE html>
                     <html lang="en">
@@ -46,6 +55,5 @@ export default class GoalProvider implements vscode.WebviewViewProvider {
                         </body>
                     </html>`;
     }
-
     
 }
