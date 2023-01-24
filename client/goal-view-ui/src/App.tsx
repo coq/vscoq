@@ -1,48 +1,51 @@
-import * as React from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 import { vscode } from "./utilities/vscode";
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react";
 import "./App.css";
 import { DidChangeWorkspaceFoldersNotification } from 'vscode-languageclient';
 import { PropertyStyleSheetBehavior } from '@microsoft/fast-foundation';
 
-interface Props {
+import Goal from './components/atoms/Goal';
+import HypothesesBlock from './components/molecules/HypothesesBlock';
+import GoalBlock from './components/molecules/GoalBlock';
+import GoalSection from './components/organisms/GoalSection';
 
-}
 
-interface State {
-  goals: String
-}
+type Goal = {
+    id: string,
+    goal: string, 
+    hypotheses: {
+        identifiers: string[],
+        type: string
+    }[]
+};
 
-class App extends React.Component<Props,State> {
-  constructor(props: any) {
-    super(props);
-    this.state = { goals: "" };
-    window.addEventListener("message", this.handleMessage.bind(this));
-  }
+const app = () => {
 
-  private handleHowdyClick() {
-    vscode.postMessage({
-      command: "hello",
-      text: "Hey there partner! 🤠",
-    });
-  }
+  const [goals, setGoals] = useState<Goal[]>([]);
 
-  private handleMessage(msg: any) {
+  const handleMessage = useCallback ((msg: any) => {
     switch (msg.data.command) {
       case 'renderProofView':
-        this.setState(() => ({goals: msg.data.text.goals[0].goal}));
-      break;
+        setGoals(msg.data.text.goals);
+        break;
     }
-  }
+  }, []);
 
-  render() {
-    return (
+    useEffect(() => {
+        window.addEventListener("message", handleMessage);
+        return () => {
+            window.removeEventListener("message", handleMessage);
+        };
+    }, [handleMessage]);
+            
+    
+    console.log("goals should be an array", goals);
+  return (
     <main>
-      <h1>{this.state.goals}</h1>
-      <VSCodeButton onClick={this.handleHowdyClick}>Howdy!</VSCodeButton>
+        <GoalSection goals={goals} />
     </main>
   );
-    }
-}
+};
 
-export default App;
+export default app;

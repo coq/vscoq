@@ -110,6 +110,260 @@
           "title": "Display Goals",
           "description": "Displays the goal view"
       }
+    ],
+    "colors": [
+      {
+        "id": "coq.proofviewText",
+        "description": "Color for proofview text.",
+        "defaults": {
+          "dark": "#cccccc",
+          "light": "#333333",
+          "highContrast": "#333333"
+        }
+      },
+      {
+        "id": "coq.proofviewMessage",
+        "description": "Color for proofview messages.",
+        "defaults": {
+          "dark": "#cccccc",
+          "light": "#333333",
+          "highContrast": "#333333"
+        }
+      },
+      {
+        "id": "coq.proofviewError",
+        "description": "Color for proofview errors.",
+        "defaults": {
+          "dark": "#ffc0cb",
+          "light": "#ff0000",
+          "highContrast": "#ff0000"
+        }
+      },
+      {
+        "id": "coq.hypothesisIdent",
+        "description": "Color for goal hypotheses identifiers.",
+        "defaults": {
+          "dark": "#20b2aa",
+          "light": "#006400",
+          "highContrast": "#006400"
+        }
+      },
+      {
+        "id": "coq.hypothesesSeparator",
+        "description": "Color for hypotheses separator.",
+        "defaults": {
+          "dark": "#ffffff66",
+          "light": "#00000033",
+          "highContrast": "#00000033"
+        }
+      },
+      {
+        "id": "coq.oddHypothesisBackground",
+        "description": "Background color for hypotheses with odd index.",
+        "defaults": {
+          "dark": "#0000000d",
+          "light": "#ffffff0d",
+          "highContrast": "#ffffff0d"
+        }
+      },
+      {
+        "id": "coq.newHypothesisBackground",
+        "description": "Background color for new hypotheses.",
+        "defaults": {
+          "dark": "#00ff0017",
+          "light": "#00aa0040",
+          "highContrast": "#00aa0040"
+        }
+      },
+      {
+        "id": "coq.changedHypothesisBackground",
+        "description": "Background color for changed hypotheses.",
+        "defaults": {
+          "dark": "#0000ff26",
+          "light": "#0000ff0d",
+          "highContrast": "#0000ff0d"
+        }
+      },
+      {
+        "id": "coq.goalId",
+        "description": "Color of goal identifiers.",
+        "defaults": {
+          "dark": "#add8e6",
+          "light": "#00008b",
+          "highContrast": "#00008b"
+        }
+      },
+      {
+        "id": "coq.addedCharacter",
+        "description": "Color of added characters (in diffs).",
+        "defaults": {
+          "dark": "#00fa001a",
+          "light": "#00fa0033",
+          "highContrast": "#00fa0033"
+        }
+      },
+      {
+        "id": "coq.removedCharacter",
+        "description": "Color of removed characters (in diffs).",
+        "defaults": {
+          "dark": "#fa000099",
+          "light": "#fa000033",
+          "highContrast": "#fa000033"
+        }
+      },
+      {
+        "id": "coq.mainSubgoalBackground",
+        "description": "Background color for main subgoal.",
+        "defaults": {
+          "dark": "#ffffff0d",
+          "light": "#0000000d",
+          "highContrast": "#0000000d"
+        }
+      },
+      {
+        "id": "coq.subgoalBackground",
+        "description": "Background color for subgoals.",
+        "defaults": {
+          "dark": "#ffffff0d",
+          "light": "#0000000d",
+          "highContrast": "#0000000d"
+        }
+      },
+      {
+        "id": "coq.subgoalSeparator",
+        "description": "Color of subgoal separators.",
+        "defaults": {
+          "dark": "#ffffff33",
+          "light": "#00000033",
+          "highContrast": "#00000033"
+        }
+      },
+      {
+        "id": "coq.termNotation",
+        "description": "Color of term notations.",
+        "defaults": {
+          "dark": "#ff8c00",
+          "light": "#ff8c00",
+          "highContrast": "#ff8c00"
+        }
+      },
+      {
+        "id": "coq.termKeyword",
+        "description": "Color of term keywords.",
+        "defaults": {
+          "dark": "#6495ed",
+          "light": "#6495ed",
+          "highContrast": "#6495ed"
+        }
+      },
+      {
+        "id": "coq.termEvar",
+        "description": "Color of existential variables.",
+        "defaults": {
+          "dark": "#ff8c00",
+          "light": "#ff8c00",
+          "highContrast": "#ff8c00"
+        }
+      },
+      {
+        "id": "coq.termPath",
+        "description": "Color of term paths.",
+        "defaults": {
+          "dark": "#9370d8",
+          "light": "#ff8c00",
+          "highContrast": "#ff8c00"
+        }
+      },
+      {
+        "id": "coq.termReference",
+        "description": "Color of name references in terms.",
+        "defaults": {
+          "dark": "#7cfc00",
+          "light": "#32cd32",
+          "highContrast": "#32cd32"
+        }
+      },
+      {
+        "id": "coq.termType",
+        "description": "Color of types in terms.",
+        "defaults": {
+          "dark": "#f08080",
+          "light": "#ff7f50",
+          "highContrast": "#ff7f50"
+        }
+      },
+      {
+        "id": "coq.termVariable",
+        "description": "Color of variables in terms.",
+        "defaults": {
+          "dark": "#7fff00",
+          "light": "#20b2aa",
+          "highContrast": "#20b2aa"
+        }
+      },
+      {
+        "id": "coq.debugMessage",
+        "description": "Color of debug messages.",
+        "defaults": {
+          "dark": "#9370d8",
+          "light": "#daa520",
+          "highContrast": "#daa520"
+        }
+      },
+      {
+        "id": "coq.errorMessage",
+        "description": "Color of error messages.",
+        "defaults": {
+          "dark": "#ff0000",
+          "light": "#ff0000",
+          "highContrast": "#ff0000"
+        }
+      },
+      {
+        "id": "coq.warningMessage",
+        "description": "Color of warning messages.",
+        "defaults": {
+          "dark": "#ffff00",
+          "light": "#ffff00",
+          "highContrast": "#ffff00"
+        }
+      },
+      {
+        "id": "coq.moduleKeyword",
+        "description": "Color of module keywords.",
+        "defaults": {
+          "dark": "#6495ed",
+          "light": "#6495ed",
+          "highContrast": "#6495ed"
+        }
+      },
+      {
+        "id": "coq.tacticKeyword",
+        "description": "Color of tactic keywords.",
+        "defaults": {
+          "dark": "#6495ed",
+          "light": "#6495ed",
+          "highContrast": "#6495ed"
+        }
+      },
+      {
+        "id": "coq.tacticPrimitive",
+        "description": "Color of tactic primitives.",
+        "defaults": {
+          "dark": "#5f9ea0",
+          "light": "#5f9ea0",
+          "highContrast": "#5f9ea0"
+        }
+      },
+      {
+        "id": "coq.tacticString",
+        "description": "Color of tactic strings.",
+        "defaults": {
+          "dark": "#ffa500",
+          "light": "#ffa500",
+          "highContrast": "#ffa500"
+        }
+      }
     ]
   },
   "scripts": {

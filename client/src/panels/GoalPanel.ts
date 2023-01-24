@@ -101,7 +101,7 @@ export default class GoalPanel {
 
     if (GoalPanel.currentPanel) {
       // If the webview panel already exists reveal it
-      GoalPanel.currentPanel._panel.reveal(ViewColumn.Two);
+      GoalPanel.currentPanel._panel.reveal(column);
     } else {
       // If a webview panel does not already exist create and show a new one
       const panel = window.createWebviewPanel(
@@ -110,7 +110,7 @@ export default class GoalPanel {
         // Panel title
         "Coq Goals",
         // The editor column the panel should be displayed in
-        ViewColumn.One,
+        column,
         // Extra panel configurations
         {
           // Enable JavaScript in the webview
