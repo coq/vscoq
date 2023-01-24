@@ -14,7 +14,7 @@
 let log = Dm.ParTactic.TacticWorkerProcess.log 
 
 let main_worker options ~opts:_ state =
-  let initial_vernac_state = Vernacstate.freeze_interp_state ~marshallable:false in
+  let initial_vernac_state = Vernacstate.freeze_full_state ~marshallable:false in
   try Dm.ParTactic.TacticWorkerProcess.main ~st:initial_vernac_state options
   with exn ->
     let bt = Printexc.get_backtrace () in

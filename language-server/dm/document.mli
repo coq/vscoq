@@ -14,8 +14,6 @@ open Lsp.LspData
 (** This file defines operations on the content of a document (text, parsing
     of sentences, scheduling). *)
 
-type parsing_state_hook = sentence_id -> Vernacstate.Synterp.t option
-
 (** The document gathers the text, which is partially validated (parsed into
     sentences *)
 type document
@@ -27,8 +25,7 @@ val create_document : string -> document
 val id_of_doc : document -> int
 (** Unique id of the document *)
 
-val validate_document : parsing_state_hook:parsing_state_hook ->
-  document -> sentence_id_set * document
+val validate_document : document -> sentence_id_set * document
 (** [validate_document doc] parses the document without forcing any execution
     and returns the set of invalidated sentences *)
 

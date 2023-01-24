@@ -89,23 +89,24 @@ let inject_proof_events st l =
 
 
 (* just a wrapper around vernac interp *)
-let interp_ast ~doc_id ~state_id vernac_st ast =
+let interp_ast ~doc_id ~state_id ~st ast =
     Feedback.set_id_for_feedback doc_id state_id;
     ParTactic.set_id_for_feedback state_id;
     Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
     let result =
-      try Ok(Vernacinterp.interp_entry ~st:vernac_st ast,[])
+      try Ok(Vernacinterp.interp_entry ~st ast,[])
       with e when CErrors.noncritical e ->
         let e, info = Exninfo.capture e in
         Error (e, info) in
     Sys.(set_signal sigint Signal_ignore);
     match result with
-    | Ok (vernac_st, events) ->
+    | Ok (interp, events) ->
       (*
         log @@ "Executed: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^
           " (" ^ (if Option.is_empty vernac_st.Vernacstate.lemmas then "no proof" else "proof")  ^ ")";
           *)
-        vernac_st, success vernac_st, (*List.map inject_pm_event*) events
+        let st = { st with interp } in
+        st, success st, (*List.map inject_pm_event*) events
     | Error (Sys.Break, _ as exn) ->
       (*
         log @@ "Interrupted executing: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
@@ -117,24 +118,25 @@ let interp_ast ~doc_id ~state_id vernac_st ast =
         *)
         let loc = Loc.get_loc info in
         let msg = CErrors.iprint (e, info) in
-        vernac_st, error loc (Pp.string_of_ppcmds msg) vernac_st,[]
+        st, error loc (Pp.string_of_ppcmds msg) st,[]
 
 (* This adapts the Future API with our event model *)
-let interp_qed_delayed ~state_id vernac_st =
+let interp_qed_delayed ~state_id ~st =
   let f proof =
     let fix_exn = None in (* FIXME *)
     let f, assign = Future.create_delegate ~blocking:false ~name:"XX" fix_exn in
     Declare.Proof.close_future_proof ~feedback_id:state_id proof f, assign
   in
-  let lemmas = Option.get @@ vernac_st.Vernacstate.lemmas in
+  let lemmas = Option.get @@ st.Vernacstate.interp.lemmas in
   let proof, assign = Vernacstate.LemmaStack.with_top lemmas ~f in
   let control = [] (* FIXME *) in
   let opaque = Vernacexpr.Opaque in
   let pending = CAst.make @@ Vernacexpr.Proved (opaque, None) in
   log "calling interp_qed_delayed done";
-  let vernac_st = Vernacinterp.interp_qed_delayed_proof ~proof ~st:vernac_st ~control pending in
+  let interp = Vernacinterp.interp_qed_delayed_proof ~proof ~st ~control pending in
   log "interp_qed_delayed done";
-  vernac_st, success vernac_st, assign
+  let st = { st with interp } in
+  st, success st, assign
 
 let update_all id v fl state =
   { state with of_sentence = SM.add id (v, fl) state.of_sentence }
@@ -223,7 +225,7 @@ let ensure_proof_over = function
       log @@ Printf.sprintf "final state: %d\n" (Bytes.length @@ Marshal.to_bytes x []);
       let f proof = log @@ Printf.sprintf "final proof: %d\n" (Bytes.length @@ Marshal.to_bytes (Declare.Proof.return_proof proof) []) in
       Vernacstate.LemmaStack.with_top (Option.get @@ st.Vernacstate.lemmas) ~f; *)
-     Vernacstate.LemmaStack.with_top (Option.get @@ st.Vernacstate.lemmas)
+     Vernacstate.LemmaStack.with_top (Option.get @@ st.Vernacstate.interp.lemmas)
        ~f:(fun p -> if Proof.is_done @@ Declare.Proof.get p then x else Error((None,"Proof is not finished"),None))
   | x -> x
 
@@ -232,7 +234,7 @@ let worker_execute ~doc_id last_step_id ~send_back (vs,events) = function
   | PSkip id ->
     (vs, events)
   | PExec (id,ast) ->
-    let vs, v, ev = interp_ast ~doc_id ~state_id:id vs ast in
+    let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
     let v = if Stateid.equal id last_step_id then purge_state (ensure_proof_over v) else purge_state v in
     send_back (ProofJob.UpdateExecStatus (id,v));
     (vs, events @ ev)
@@ -254,11 +256,11 @@ let execute ~doc_id st (vs, events, interrupted) task =
           let st = update st id (success vs) in
           (st, vs, events, false)
       | PExec (id,ast) ->
-          let vs, v, ev = interp_ast ~doc_id ~state_id:id vs ast in
+          let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
           let st = update st id v in
           (st, vs, events @ ev, false)
       | PQuery (id,ast) ->
-          let _, v, ev = interp_ast ~doc_id ~state_id:id vs ast in
+          let _, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
           let st = update st id v in
           (st, vs, events @ ev, false)
       | PDelegate { terminator_id; opener_id; last_step_id; tasks } ->
@@ -267,7 +269,7 @@ let execute ~doc_id st (vs, events, interrupted) task =
             let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id; last_proof_step_id  = last_step_id } in
             let job_id = DelegationManager.mk_job_id terminator_id in
             (* The proof was successfully opened *)
-            let last_vs, v, assign = interp_qed_delayed ~state_id:terminator_id vs in
+            let last_vs, v, assign = interp_qed_delayed ~state_id:terminator_id ~st:vs in
             let complete_job status =
               try match status with
               | Success None ->
@@ -278,7 +280,7 @@ let execute ~doc_id st (vs, events, interrupted) task =
                   log "Resolved future";
                   assign (`Val (Declare.Proof.return_proof proof))
                 in
-                Vernacstate.LemmaStack.with_top (Option.get @@ vernac_st.Vernacstate.lemmas) ~f
+                Vernacstate.LemmaStack.with_top (Option.get @@ vernac_st.Vernacstate.interp.lemmas) ~f
               | Error ((loc,err),_) ->
                   log "Aborted future";
                   assign (`Exn (CErrors.UserError(Pp.str err), Option.fold_left Loc.add_loc Exninfo.null loc))
@@ -404,8 +406,8 @@ let get_proofview st id =
   | None -> log "Cannot find state for proofview"; None
   | Some (Error _) -> log "Proofview requested in error state"; None
   | Some (Success None) -> log "Proofview requested in a remotely checked state"; None
-  | Some (Success (Some { Vernacstate.lemmas = None; _ })) -> log "Proofview requested in a state with no proof"; None
-  | Some (Success (Some { Vernacstate.lemmas = Some st; _ })) ->
+  | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = None; _ } })) -> log "Proofview requested in a state with no proof"; None
+  | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = Some st; _ } })) ->
       log "Proofview is there";
       (* nicely designed API: Proof is both a file and a deprecated module *)
       let open Proof in

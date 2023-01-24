@@ -14,7 +14,7 @@
 let log = Dm.ExecutionManager.ProofWorkerProcess.log
 
 let main_worker options =
-  let initial_vernac_state = Vernacstate.freeze_interp_state ~marshallable:false in
+  let initial_vernac_state = Vernacstate.freeze_full_state ~marshallable:false in
   try Dm.ExecutionManager.ProofWorkerProcess.main ~st:initial_vernac_state options
   with exn ->
     let bt = Printexc.get_backtrace () in

@@ -33,6 +33,10 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(displayGoals);
 
 	let serverOptions: ServerOptions = {
+		/*
+		command: "perf",
+		args: ["record","--call-graph=dwarf", "--", config.path].concat(config.args)
+		*/
 		command: config.path,
 		args: config.args
 	};

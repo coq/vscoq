@@ -100,23 +100,22 @@ let diagnostics st =
 
 let init init_vs ~opts ~uri ~text =
   let document = Document.create_document text in
-  Vernacstate.unfreeze_interp_state init_vs;
+  Vernacstate.unfreeze_full_state init_vs;
   let top = Coqargs.(dirpath_of_top (TopPhysical uri)) in
   Coqinit.start_library ~top opts;
-  let execution_state = ExecutionManager.init (Vernacstate.freeze_interp_state ~marshallable:false) in
+  let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
   { uri; opts; init_vs; document; execution_state; observe_loc = None }, [inject_em_event ExecutionManager.local_feedback]
 
 let reset { uri; opts; init_vs; document } =
   let document = Document.create_document (Document.text document) in
-  Vernacstate.unfreeze_interp_state init_vs;
+  Vernacstate.unfreeze_full_state init_vs;
   let top = Coqargs.(dirpath_of_top (TopPhysical uri)) in
   Coqinit.start_library ~top opts;
-  let execution_state = ExecutionManager.init (Vernacstate.freeze_interp_state ~marshallable:false) in
+  let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
   { uri; opts; init_vs; document; execution_state; observe_loc = None }
 
 let interpret_to_loc state loc : (state * events) =
-    let parsing_state_hook = ExecutionManager.get_parsing_state_after state.execution_state in
-    let invalid_ids, document = Document.validate_document ~parsing_state_hook state.document in
+    let invalid_ids, document = Document.validate_document state.document in
     let execution_state =
       List.fold_left (fun st id ->
         ExecutionManager.invalidate (Document.schedule state.document) id st
@@ -210,8 +209,7 @@ let apply_text_edits state edits =
   retract state (Document.parsed_loc document) 
 
 let validate_document state =
-  let parsing_state_hook = ExecutionManager.get_parsing_state_after state.execution_state in
-  let invalid_ids, document = Document.validate_document ~parsing_state_hook state.document in
+  let invalid_ids, document = Document.validate_document state.document in
   let execution_state =
     List.fold_left (fun st id ->
       ExecutionManager.invalidate (Document.schedule state.document) id st

@@ -169,8 +169,8 @@ module ParsedDoc : sig
   val next_sentence : t -> sentence_id -> sentence option
 
   val pos_at_end : t -> int
-  val state_at_end : parsing_state_hook:(sentence_id -> Vernacstate.Synterp.t option) -> t -> (int * Vernacstate.Synterp.t * Scheduler.state) option
-  val state_at_pos : parsing_state_hook:(sentence_id -> Vernacstate.Synterp.t option) -> t -> int -> (int * Vernacstate.Synterp.t * Scheduler.state) option
+  val state_at_end : t -> (int * Vernacstate.Synterp.t * Scheduler.state) option
+  val state_at_pos : t -> int -> (int * Vernacstate.Synterp.t * Scheduler.state) option
 
   val patch_sentence : t -> Scheduler.state -> sentence_id -> pre_sentence -> t * Scheduler.state
 
@@ -292,7 +292,7 @@ end = struct
     | Some (_, sentence) -> Some sentence
     | _ -> None
 
-  let state_after_sentence ~parsing_state_hook = function
+  let state_after_sentence = function
     | Some (stop, { parsing_state; scheduler_state_after; ast; id }) ->
       begin match ast with
       | ParseError _ ->
@@ -303,13 +303,13 @@ end = struct
     | None -> Some (-1, Vernacstate.Synterp.init (), Scheduler.initial_state)
 
   (** Returns the state at position [pos] if it does not require execution *)
-  let state_at_pos ~parsing_state_hook parsed pos =
-    state_after_sentence ~parsing_state_hook @@
+  let state_at_pos parsed pos =
+    state_after_sentence @@
       LM.find_last_opt (fun stop -> stop <= pos) parsed.sentences_by_end
 
   (** Returns the state at the end of [parsed] if it does not require execution *)
-  let state_at_end ~parsing_state_hook parsed =
-    state_after_sentence ~parsing_state_hook @@
+  let state_at_end parsed =
+    state_after_sentence @@
       LM.max_binding_opt parsed.sentences_by_end
 
   let pos_at_end parsed =
@@ -412,8 +412,6 @@ type document = {
 
 let id_of_doc doc = doc.id
 
-type parsing_state_hook = sentence_id -> Vernacstate.Synterp.t option
-
 let parsed_ranges doc = ParsedDoc.parsed_ranges doc.raw_doc doc.parsed_doc
 
 let rec stream_tok n_tok acc str begin_line begin_char =
@@ -503,7 +501,7 @@ let rec parse_more parsing_state stream raw parsed =
 let parse_more parsing_state stream raw =
   parse_more parsing_state stream raw []
 
-let invalidate ~parsing_state_hook top_edit parsed_doc new_sentences =
+let invalidate top_edit parsed_doc new_sentences =
   (* Algo:
   We parse the new doc from the topmost edit to the bottom one.
   - If execution is required, we invalidate everything after the parsing
@@ -542,15 +540,15 @@ let invalidate ~parsing_state_hook top_edit parsed_doc new_sentences =
       let parsed_doc, scheduler_state = List.fold_left add_sentence (parsed_doc,scheduler_state) new_sentences in
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs
   in
-  let (_,_parsing_state,scheduler_state) = Option.get @@ ParsedDoc.state_at_pos ~parsing_state_hook parsed_doc top_edit in
+  let (_,_parsing_state,scheduler_state) = Option.get @@ ParsedDoc.state_at_pos parsed_doc top_edit in
   let old_sentences = ParsedDoc.sentences_after parsed_doc top_edit in
   let diff = ParsedDoc.diff old_sentences new_sentences in
   log @@ "diff:\n" ^ ParsedDoc.string_of_diff parsed_doc diff;
   invalidate_diff parsed_doc scheduler_state Stateid.Set.empty diff
 
 (** Validate document when raw text has changed *)
-let validate_document ~parsing_state_hook ({ parsed_loc; raw_doc; parsed_doc } as document) =
-  match ParsedDoc.state_at_pos ~parsing_state_hook parsed_doc parsed_loc with
+let validate_document ({ parsed_loc; raw_doc; parsed_doc } as document) =
+  match ParsedDoc.state_at_pos parsed_doc parsed_loc with
   | None -> Stateid.Set.empty, document
   | Some (stop, parsing_state, _scheduler_state) ->
     let text = RawDoc.text raw_doc in
@@ -558,7 +556,8 @@ let validate_document ~parsing_state_hook ({ parsed_loc; raw_doc; parsed_doc } a
     while Stream.count stream < stop do Stream.junk stream done;
     log @@ Format.sprintf "Parsing more from pos %i" stop;
     let new_sentences = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
-    let invalid_ids, parsed_doc = invalidate ~parsing_state_hook (stop+1) document.parsed_doc new_sentences in
+    log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
+    let invalid_ids, parsed_doc = invalidate (stop+1) document.parsed_doc new_sentences in
     let parsed_loc = ParsedDoc.pos_at_end parsed_doc in
     invalid_ids, { document with parsed_doc; parsed_loc }
 

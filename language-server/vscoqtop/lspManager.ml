@@ -313,6 +313,6 @@ let pr_event = function
     Dm.DocumentManager.pr_event e
 
 let init injections =
-  init_state := Some (Vernacstate.freeze_interp_state ~marshallable:false, injections)
+  init_state := Some (Vernacstate.freeze_full_state ~marshallable:false, injections)
 
 

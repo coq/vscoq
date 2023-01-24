@@ -53,9 +53,9 @@ let command_focus = Proof.new_focus_kind ()
 let worker_solve_one_goal { TacticJob.state; ast; goalno; goal; name } ~send_back =
   let focus_cond = Proof.no_cond command_focus in
   let pr_goal g = string_of_int (Evar.repr g) in
-  Vernacstate.unfreeze_interp_state state;
+  Vernacstate.unfreeze_full_state state;
   try
-    Vernacstate.LemmaStack.with_top (Option.get state.Vernacstate.lemmas) ~f:(fun pstate ->
+    Vernacstate.LemmaStack.with_top (Option.get state.Vernacstate.interp.lemmas) ~f:(fun pstate ->
     let pstate = Declare.Proof.map pstate ~f:(Proof.focus focus_cond () goalno) in
     let pstate = ComTactic.solve ~pstate Goal_select.SelectAll ~info:None ast ~with_end_tac:false in
     let { Proof.sigma } = Declare.Proof.fold pstate ~f:Proof.data in
@@ -83,7 +83,7 @@ let feedback_id = ref Stateid.dummy
 let set_id_for_feedback id = feedback_id := id
 
 let interp_par ~pstate ~info ast ~abstract ~with_end_tac : Declare.Proof.t =
-  let state = Vernacstate.freeze_interp_state ~marshallable:true in
+  let state = Vernacstate.freeze_full_state ~marshallable:true in
   let queue = Queue.create () in
   let events, job_ids = List.split @@
     Declare.Proof.fold pstate ~f:(fun p ->
