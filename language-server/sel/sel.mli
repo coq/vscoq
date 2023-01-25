@@ -59,4 +59,4 @@ val map : ('a -> 'b) -> 'a event -> 'b event
 
  *)
 
-val wait : 'a event list -> 'a list * 'a event list
+val wait : ?stop_after_being_idle_for:float -> 'a event list -> 'a list * 'a event list

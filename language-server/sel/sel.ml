@@ -155,19 +155,39 @@ let rec map_filter f = function
    give a shot to system events with 0 wait, otherwise we wait until a
    system event is ready. We never sleep forever, since process death events
    do not wakeup select: we anyway wake up 10 times per second *)
-let rec wait_system_events ~return l =
-  let time = match return with `ASAP -> 0.0 | `OnEvents -> 0.1 in
+let check_for_system_events l =
   let fds = map_filter (function ReadInProgress(fd,_) -> Some fd | _ -> None) l in
-  let ready_fds, _, _ = Unix.select fds [] [] time in
+  if fds = [] then [], l
+  else
+    let ready_fds, _, _ = Unix.select fds [] [] 0.0 in
+    let l = List.map (advance ~ready_fds) l in
+    let ready, waiting = partition_map (function Ready x -> Some x | _ -> None) l in
+    ready, waiting
+
+let next_deadline delta = Unix.gettimeofday() +. delta
+
+let rec wait_for_system_events ~deadline l =
+  let fds = map_filter (function ReadInProgress(fd,_) -> Some fd | _ -> None) l in
+  let ready_fds, _, _ = Unix.select fds [] [] 0.1 in
   let l = List.map (advance ~ready_fds) l in
   let ready, waiting = partition_map (function Ready x -> Some x | _ -> None) l in
-  if ready <> [] || return = `ASAP then ready, waiting
-  else wait_system_events ~return waiting
+  if ready <> [] then ready, waiting
+  else wait ~deadline waiting
 
-let wait l =
-  let l = List.map (advance ~ready_fds:[]) l in
-  let ready, waiting = partition_map (function Ready x -> Some x | _ -> None) l in
-  if ready = [] then wait_system_events ~return:`OnEvents waiting
+and wait ?(deadline=max_float) l =
+  if l = [] then [], []
+  else if Unix.gettimeofday () > deadline then [], l
   else
-    let more_ready, waiting = wait_system_events ~return:`ASAP waiting in
-    ready @ more_ready, waiting
+    let l = List.map (advance ~ready_fds:[]) l in
+    let ready, waiting = partition_map (function Ready x -> Some x | _ -> None) l in
+    if ready = [] then wait_for_system_events ~deadline waiting
+    else
+      let more_ready, waiting = check_for_system_events waiting in
+      ready @ more_ready, waiting
+
+let wait ?stop_after_being_idle_for l =
+  match stop_after_being_idle_for with
+  | Some delta ->
+      let deadline = next_deadline delta in
+      wait ~deadline l
+  | None -> wait l
