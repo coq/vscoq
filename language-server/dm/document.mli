@@ -46,7 +46,6 @@ type parsed_ast =
 type sentence = {
   start : int;
   stop : int;
-  parsing_state : Vernacstate.Synterp.t; (* st used to parse this sentence *)
   synterp_state : Vernacstate.Synterp.t; (* synterp state after this sentence's synterp phase *)
   scheduler_state_before : Scheduler.state;
   scheduler_state_after : Scheduler.state;
