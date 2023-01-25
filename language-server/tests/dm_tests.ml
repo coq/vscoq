@@ -2,7 +2,7 @@ open Base
 open Dm
 open Lsp
 
-let init_state = Vernacstate.freeze_interp_state ~marshallable:false
+let init_state = Vernacstate.freeze_full_state ~marshallable:false
 
 let init text =
   DocumentManager.init init_state ~opts:[] ~uri:"doc" ~text
@@ -88,6 +88,7 @@ let%test_unit "exec.init" =
   let st, events = init "Definition x := true. Definition y := false." in
   let st = DocumentManager.validate_document st in
   let st, events = DocumentManager.interpret_to_end st in
+  let st = handle_events events st in
   let ranges = (DocumentManager.executed_ranges st).checked in
   let positions = Stdlib.List.map (fun s -> s.LspData.Range.start.char) ranges in
   check_no_diag st;
