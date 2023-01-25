@@ -159,7 +159,7 @@ export default class GoalPanel {
       (goals : UpdateProofViewResponse) => {
         GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "renderProofView", "text": goals });
       }
-    )
+    );
   }
 
   /**

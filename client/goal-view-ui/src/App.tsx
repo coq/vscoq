@@ -5,10 +5,7 @@ import "./App.css";
 import { DidChangeWorkspaceFoldersNotification } from 'vscode-languageclient';
 import { PropertyStyleSheetBehavior } from '@microsoft/fast-foundation';
 
-import Goal from './components/atoms/Goal';
-import HypothesesBlock from './components/molecules/HypothesesBlock';
-import GoalBlock from './components/molecules/GoalBlock';
-import GoalSection from './components/organisms/GoalSection';
+import GoalPage from './components/templates/GoalPage';
 
 
 type Goal = {
@@ -40,10 +37,9 @@ const app = () => {
     }, [handleMessage]);
             
     
-    console.log("goals should be an array", goals);
   return (
     <main>
-        <GoalSection goals={goals} />
+        <GoalPage goals={goals} />
     </main>
   );
 };
