@@ -45,8 +45,8 @@ let init vernac_state = {
 
 type prepared_task =
   | PSkip of sentence_id
-  | PExec of sentence_id * ast
-  | PQuery of sentence_id * ast
+  | PExec of sentence_id * ast * Vernacstate.Synterp.t
+  | PQuery of sentence_id * ast * Vernacstate.Synterp.t
   | PDelegate of { terminator_id: sentence_id;
                    opener_id: sentence_id;
                    last_step_id: sentence_id;
@@ -195,24 +195,24 @@ let remotize doc id =
   | None -> PSkip id
   | Some sentence ->
     begin match sentence.Document.ast with
-    | Document.ValidAst (ast,_,_) -> PExec(id,ast)
+    | Document.ValidAst (ast,_,_) -> PExec(id,ast,sentence.synterp_state)
     | Document.ParseError _ -> PSkip id
     end
 
 let prepare_task doc task : prepared_task =
   match task with
   | Skip id -> PSkip id
-  | Exec(id,ast) -> PExec(id,ast)
+  | Exec(id,ast,synterp_st) -> PExec(id,ast,synterp_st)
   | OpaqueProof { terminator_id; opener_id; tasks_ids } ->
      let tasks = List.map (remotize doc) tasks_ids in
      let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
      PDelegate {terminator_id; opener_id; last_step_id; tasks}
-  | Query(id,ast) -> PQuery(id,ast)
+  | Query(id,ast,synterp_st) -> PQuery(id,ast,synterp_st)
 
 let id_of_prepared_task = function
   | PSkip id -> id
-  | PExec(id, _) -> id
-  | PQuery(id, _) -> id
+  | PExec(id, _, _) -> id
+  | PQuery(id, _, _) -> id
   | PDelegate { terminator_id } -> terminator_id
 
 let purge_state = function
@@ -233,7 +233,8 @@ let ensure_proof_over = function
 let worker_execute ~doc_id last_step_id ~send_back (vs,events) = function
   | PSkip id ->
     (vs, events)
-  | PExec (id,ast) ->
+  | PExec (id,ast,synterp) ->
+    let vs = { vs with Vernacstate.synterp } in
     let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
     let v = if Stateid.equal id last_step_id then purge_state (ensure_proof_over v) else purge_state v in
     send_back (ProofJob.UpdateExecStatus (id,v));
@@ -255,11 +256,13 @@ let execute ~doc_id st (vs, events, interrupted) task =
       | PSkip id ->
           let st = update st id (success vs) in
           (st, vs, events, false)
-      | PExec (id,ast) ->
+      | PExec (id,ast,synterp) ->
+          let vs = { vs with Vernacstate.synterp } in
           let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
           let st = update st id v in
           (st, vs, events @ ev, false)
-      | PQuery (id,ast) ->
+      | PQuery (id,ast,synterp) ->
+          let vs = { vs with Vernacstate.synterp } in
           let _, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
           let st = update st id v in
           (st, vs, events @ ev, false)
@@ -396,10 +399,6 @@ let rec invalidate schedule id st =
   if of_sentence == st.of_sentence then st else
   let deps = Scheduler.dependents schedule id in
   Stateid.Set.fold (invalidate schedule) deps { st with of_sentence }
-
-let get_parsing_state_after st id =
-  Option.bind (find_fulfilled_opt id st.of_sentence)
-    (function Success (Some st) | Error (_,Some st) -> Some st.Vernacstate.synterp | _ -> None)
 
 let get_proofview st id =
   match find_fulfilled_opt id st.of_sentence with

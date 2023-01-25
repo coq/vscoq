@@ -21,12 +21,12 @@ val initial_state : state
 
 type task =
   | Skip of sentence_id
-  | Exec of sentence_id * ast
+  | Exec of sentence_id * ast * Vernacstate.Synterp.t
   | OpaqueProof of { terminator_id: sentence_id;
                      opener_id: sentence_id;
                      tasks_ids : sentence_id list;
                    }
-  | Query of sentence_id * ast
+  | Query of sentence_id * ast * Vernacstate.Synterp.t
 
 type schedule
 (** Holds the dependencies among sentences and a schedule to evaluate all
@@ -34,7 +34,7 @@ type schedule
 
 val initial_schedule : schedule
 
-val schedule_sentence : sentence_id * (ast * Vernacextend.vernac_classification) option -> state -> schedule -> state * schedule
+val schedule_sentence : sentence_id * (ast * Vernacextend.vernac_classification * Vernacstate.Synterp.t) option -> state -> schedule -> state * schedule
 (** Identifies the structure of the document and dependencies between sentences
     in order to easily compute the tasks to interpret the a sentence.
     Input sentence is None on parsing error. *)

@@ -114,6 +114,7 @@ type pre_sentence = {
   start : int;
   stop : int;
   parsing_state : Vernacstate.Synterp.t; (* synterp state used to parse this sentence *)
+  synterp_state : Vernacstate.Synterp.t; (* synterp state after this sentence's synterp phase *)
   ast : parsed_ast;
 }
 
@@ -121,6 +122,7 @@ type sentence = {
   start : int;
   stop : int;
   parsing_state : Vernacstate.Synterp.t; (* synterp state used to parse this sentence *)
+  synterp_state : Vernacstate.Synterp.t; (* synterp state after this sentence's synterp phase *)
   scheduler_state_before : Scheduler.state;
   scheduler_state_after : Scheduler.state;
   ast : parsed_ast;
@@ -154,7 +156,7 @@ module ParsedDoc : sig
 
   val parse_errors : RawDoc.t -> t -> (Stateid.t * (Loc.t option * string)) list
 
-  val add_sentence : t -> int -> int -> parsed_ast -> Vernacstate.Synterp.t -> Scheduler.state -> t * Scheduler.state
+  val add_sentence : t -> int -> int -> parsed_ast -> Vernacstate.Synterp.t -> Vernacstate.Synterp.t -> Scheduler.state -> t * Scheduler.state
   val remove_sentence : t -> sentence_id -> t
   val remove_sentences_after : t -> int -> t * Stateid.Set.t
   val sentences : t -> sentence list
@@ -231,18 +233,18 @@ end = struct
     in
     SM.fold collect_error parsed.sentences_by_id []
 
-  let add_sentence parsed start stop ast parsing_state scheduler_state_before =
+  let add_sentence parsed start stop ast parsing_state synterp_state scheduler_state_before =
     let id = Stateid.fresh () in
     let scheduler_state_after, schedule =
       let oast =
         match ast with
-        | ValidAst (ast,classif,_tokens) -> Some (ast,classif)
+        | ValidAst (ast,classif,_tokens) -> Some (ast,classif,synterp_state)
         | ParseError _ -> None
       in
       Scheduler.schedule_sentence (id,oast) scheduler_state_before parsed.schedule
     in
     (* FIXME may invalidate scheduler_state_XXX for following sentences -> propagate? *)
-    let sentence = { start; stop; ast; id; parsing_state; scheduler_state_before; scheduler_state_after } in
+    let sentence = { start; stop; ast; id; parsing_state; synterp_state; scheduler_state_before; scheduler_state_after } in
     { sentences_by_end = LM.add stop sentence parsed.sentences_by_end;
       sentences_by_id = SM.add id sentence parsed.sentences_by_id;
       schedule
@@ -293,12 +295,12 @@ end = struct
     | _ -> None
 
   let state_after_sentence = function
-    | Some (stop, { parsing_state; scheduler_state_after; ast; id }) ->
+    | Some (stop, { synterp_state; scheduler_state_after; ast; id }) ->
       begin match ast with
       | ParseError _ ->
-        Some (stop, parsing_state, scheduler_state_after)
+        Some (stop, synterp_state, scheduler_state_after)
       | ValidAst (ast, classif, _tokens) ->
-          Some (stop, parsing_state, scheduler_state_after)
+          Some (stop, synterp_state, scheduler_state_after)
       end
     | None -> Some (-1, Vernacstate.Synterp.init (), Scheduler.initial_state)
 
@@ -356,13 +358,13 @@ end = struct
     let current = SM.find id parsed.sentences_by_id in
     Option.map snd @@ LM.find_first_opt (fun stop -> stop > current.stop) parsed.sentences_by_end
 
-  let patch_sentence parsed scheduler_state_before id ({ ast; start; stop } : pre_sentence) =
+  let patch_sentence parsed scheduler_state_before id ({ ast; start; stop; parsing_state; synterp_state } : pre_sentence) =
     log @@ "Patching sentence " ^ Stateid.to_string id;
     let old_sentence = SM.find id parsed.sentences_by_id in
     let scheduler_state_after, schedule =
       let oast =
         match ast with
-        | ValidAst (ast,classif,_tokens) -> Some (ast,classif)
+        | ValidAst (ast,classif,_tokens) -> Some (ast,classif,synterp_state)
         | ParseError _ -> None
       in
       Scheduler.schedule_sentence (id,oast) scheduler_state_before parsed.schedule
@@ -454,7 +456,7 @@ let rec parse_more parsing_state stream raw parsed =
     log @@ "handling parse error at " ^ string_of_int start;
     junk_sentence_end stream;
     let stop = Stream.count stream in
-    let sentence = { ast = ParseError msg; start; stop; parsing_state } in
+    let sentence = { ast = ParseError msg; start; stop; parsing_state; synterp_state = parsing_state } in
     let parsed = sentence :: parsed in
     parse_more parsing_state stream raw parsed
   in
@@ -484,10 +486,10 @@ let rec parse_more parsing_state stream raw parsed =
         expr = entry;
       }
       in
-      let parsing_state = Vernacstate.Synterp.freeze ~marshallable:false in
-      let sentence = { ast = ValidAst(ast,classif,tokens); start = begin_char; stop; parsing_state } in
+      let synterp_state = Vernacstate.Synterp.freeze ~marshallable:false in
+      let sentence = { ast = ValidAst(ast,classif,tokens); start = begin_char; stop; parsing_state; synterp_state } in
       let parsed = sentence :: parsed in
-      parse_more parsing_state stream raw parsed
+      parse_more synterp_state stream raw parsed
     end
     with
     | Stream.Error msg as exn ->
@@ -534,8 +536,8 @@ let invalidate top_edit parsed_doc new_sentences =
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs
     | Added new_sentences :: diffs ->
     (* FIXME could have side effect on the following, unchanged sentences *)
-      let add_sentence (parsed_doc,scheduler_state) ({ start; stop; ast; parsing_state } : pre_sentence) =
-        ParsedDoc.add_sentence parsed_doc start stop ast parsing_state scheduler_state
+      let add_sentence (parsed_doc,scheduler_state) ({ start; stop; ast; parsing_state; synterp_state } : pre_sentence) =
+        ParsedDoc.add_sentence parsed_doc start stop ast parsing_state synterp_state scheduler_state
       in
       let parsed_doc, scheduler_state = List.fold_left add_sentence (parsed_doc,scheduler_state) new_sentences in
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs

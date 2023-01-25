@@ -19,12 +19,12 @@ module SM = CMap.Make (Stateid)
 
 type task =
   | Skip of sentence_id
-  | Exec of sentence_id * ast
+  | Exec of sentence_id * ast * Vernacstate.Synterp.t
   | OpaqueProof of { terminator_id: sentence_id;
                      opener_id: sentence_id;
                      tasks_ids : sentence_id list;
                    }
-  | Query of sentence_id * ast
+  | Query of sentence_id * ast * Vernacstate.Synterp.t
 (*
   | SubProof of ast list
   | ModuleWithSignature of ast list
@@ -125,15 +125,15 @@ Qed.
 *)
 
 (* FIXME handle commands with side effects followed by `Abort` *)
-let push_state id ast classif st =
+let push_state id ast synterp_st classif st =
   let open Vernacextend in
   match classif with
-  | VtStartProof _ -> base_id st, open_proof_block id st, Exec(id,ast)
+  | VtStartProof _ -> base_id st, open_proof_block id st, Exec(id,ast,synterp_st)
   | VtQed (VtKeep (VtKeepAxiom | VtKeepOpaque)) when st.section_depth = 0 -> (* TODO do not delegate if command with side effect inside the proof or nested lemmas *)
     begin match st.proof_blocks with
     | [] ->
       (* can happen on ill-formed documents *)
-      base_id st, push_id id st, Exec(id,ast)
+      base_id st, push_id id st, Exec(id,ast,synterp_st)
     | block :: pop ->
       let terminator_id = id in
       let tasks_ids = List.rev block.proof_sentences in
@@ -142,13 +142,13 @@ let push_state id ast classif st =
     end
   | VtQed _ ->
     let st = flatten_proof_block st in
-    base_id st, push_id id st, Exec(id,ast)
+    base_id st, push_id id st, Exec(id,ast,synterp_st)
   | VtQuery -> (* queries have no impact, we don't push them *)
-    base_id st, st, Query(id, ast)
+    base_id st, st, Query(id, ast, synterp_st)
   | VtProofStep _ ->
-    base_id st, push_id id st, Exec(id, ast)
+    base_id st, push_id id st, Exec(id, ast, synterp_st)
   | VtSideff _ ->
-    base_id st, extrude_side_effect id st, Exec(id,ast)
+    base_id st, extrude_side_effect id st, Exec(id,ast,synterp_st)
   | VtMeta -> assert false
   | VtProofMode _ -> assert false
 
@@ -169,9 +169,9 @@ let string_of_state st =
 
 let schedule_sentence (id,oast) st schedule =
   let base, st, task = match oast with
-    | Some (ast,classif) ->
+    | Some (ast,classif,synterp_st) ->
       let open Vernacexpr in
-      let (base, st, task) = push_state id ast classif st in
+      let (base, st, task) = push_state id ast synterp_st classif st in
       begin match ast.CAst.v.expr with
       | VernacSynterp (EVernacBeginSection _) ->
         (base, { st with section_depth = st.section_depth + 1 }, task)
@@ -181,9 +181,10 @@ let schedule_sentence (id,oast) st schedule =
       end
     | None -> base_id st, st, Skip id
   in
+(*
   log @@ "Scheduled " ^ (Stateid.to_string id) ^ " based on " ^ (match base with Some id -> Stateid.to_string id | None -> "no state");
-  (* log @@ string_of_task (id, (base, task)); *)
   log @@ "New scheduler state: " ^ string_of_state st;
+  *)
   let tasks = SM.add id (base, task) schedule.tasks in
   let add_dep deps x id =
     let upd = function
