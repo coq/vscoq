@@ -14,7 +14,9 @@ type Goal = {
     hypotheses: {
         identifiers: string[],
         type: string
-    }[]
+    }[],
+    isOpen: boolean, 
+    displayId: number
 };
 
 const app = () => {
@@ -24,7 +26,9 @@ const app = () => {
   const handleMessage = useCallback ((msg: any) => {
     switch (msg.data.command) {
       case 'renderProofView':
-        setGoals(msg.data.text.goals);
+        setGoals(msg.data.text.goals.map((goal: Goal, index: number) => {
+            return {...goal, isOpen: index === 0, displayId: index+1 };
+        }));
         break;
     }
   }, []);
@@ -36,10 +40,20 @@ const app = () => {
         };
     }, [handleMessage]);
             
-    
+
+    const collapseGoalHandler = (id: string) => {
+        const newGoals = goals.map(goal => {
+            if(goal.id === id){
+                return {...goal, isOpen: !goal.isOpen};
+            }
+            return goal;
+        });
+        setGoals(newGoals);
+    };
+
   return (
     <main>
-        <GoalPage goals={goals} />
+        <GoalPage goals={goals} collapseGoalHandler={collapseGoalHandler}/>
     </main>
   );
 };

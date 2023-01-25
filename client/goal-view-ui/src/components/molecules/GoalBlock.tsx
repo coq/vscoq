@@ -1,4 +1,6 @@
 import React, {FunctionComponent} from 'react';
+import {VSCodeButton} from '@vscode/webview-ui-toolkit/react';
+import {VscChevronDown} from 'react-icons/vsc';
 
 import HypothesesBlock from './HypothesesBlock';
 import Goal from '../atoms/Goal';
@@ -14,14 +16,12 @@ type GoalBlockProps = {
             identifiers: string[],
             type: string, 
         }[]
-    }
+    },
 };
 
 const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {
     
     const {goal} = props;
-
-    console.log('goal view', goal);
 
     return (
         <div className={classes.Block}>
