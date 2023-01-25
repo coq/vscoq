@@ -83,7 +83,7 @@ let%test_unit "parse.extensions" =
   [%test_eq: int list] start_positions [ 0; 35 ];
   check_no_diag st
 
-  (*
+
 let%test_unit "exec.init" =
   let st, events = init "Definition x := true. Definition y := false." in
   let st = DocumentManager.validate_document st in
@@ -91,9 +91,10 @@ let%test_unit "exec.init" =
   let st = handle_events events st in
   let ranges = (DocumentManager.executed_ranges st).checked in
   let positions = Stdlib.List.map (fun s -> s.LspData.Range.start.char) ranges in
-  check_no_diag st;
   [%test_eq: int list] positions [ 0; 22 ]
+  (*check_no_diag st*)
 
+(*
 let%test_unit "exec.insert" =
   let st, events = init "Definition x := true. Definition y := false." in
   (* let st = handle_events events st in *)
