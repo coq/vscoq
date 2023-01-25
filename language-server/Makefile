@@ -1,5 +1,6 @@
 .PHONY: coq
 world: coq
+	make -C coq dunestrap
 	dune build coq/coq-core.install coq/coq-stdlib.install vscoq-language-server.install sel.install
 
 coq/config/coq_config.ml:
