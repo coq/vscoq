@@ -3,18 +3,20 @@ name: "vscoq-language-server"
 maintainer: "Enrico Tassi <enrico.tassi@inria.fr>"
 authors: [ "Enrico Tassi" "Maxime Denes" ]
 license: "LGPL-2.1-or-later"
-homepage: "https://github.com/coq-community/vscoq-language-server"
-bug-reports: "https://github.com/coq-community/vscoq-language-server/issues"
-dev-repo: "git+https://github.com/coq-community/vscoq-language-server"
+homepage: "https://github.com/coq-community/vscoq"
+bug-reports: "https://github.com/coq-community/vscoq/issues"
+dev-repo: "git+https://github.com/coq-community/vscoq"
 
-build: [ ["dune" "subst"] {pinned}
-         [ "dune" "build" "-pvscoq-language-server,sel" ]
-       ]
-install: [ "dune" "install" ]
+build: [ make "world" ]
+install: [ "dune" "install" "-p" "sel,vscoq-language-server" ]
 depends: [
-  "coq" {= "dev" }
   "yojson"
-  ]
+  "ocamlfind"
+  "ppx_inline_test"
+  "ppx_assert"
+  "ppx_sexp_conv"
+  "sexplib"
+]
 synopsis: "VSCoq language server"
 description: """
 LSP based language server for Coq and its VSCoq user interface
