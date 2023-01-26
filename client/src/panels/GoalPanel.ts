@@ -5,51 +5,12 @@ import {
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 import { LanguageClient } from "vscode-languageclient/node";
-
-// /////////////////////////////////////////////////////////////////////////////
-// HELPER FUNCTIONS
-// MAYBE MOVE THEM TO A UTILITIES FOLDER LATER
-// /////////////////////////////////////////////////////////////////////////////
-
-
-
-/**
- * A helper function that returns a unique alphanumeric identifier called a nonce.
- *
- * @remarks This function is primarily used to help enforce content security
- * policies for resources/scripts being executed in a webview context.
- *
- * @returns A nonce
- */
-function getNonce() {
-  let text = "";
-  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
-}
-
-/**
- * A helper function which will get the webview URI of a given file or resource.
- *
- * @remarks This URI can be used within a webview's HTML as a link to the
- * given file/resource.
- *
- * @param webview A reference to the extension webview
- * @param extensionUri The URI of the directory containing the extension
- * @param pathList An array of strings representing the path to a file/resource
- * @returns A URI pointing to the file/resource
- */
-function getUri(webview: Webview, extensionUri: Uri, pathList: string[]) {
-  return webview.asWebviewUri(Uri.joinPath(extensionUri, ...pathList));
-}
-
+import { getUri } from "../utilities/getUri";
+import { getNonce } from "../utilities/getNonce";
 
 // /////////////////////////////////////////////////////////////////////////////
 // GOAL VIEW PANEL CODE
 // /////////////////////////////////////////////////////////////////////////////
-
 
 /**
  * This class manages the state and behavior of Goal webview panels.
@@ -110,7 +71,7 @@ export default class GoalPanel {
         // Panel title
         "Coq Goals",
         // The editor column the panel should be displayed in
-        column,
+        {preserveFocus: true, viewColumn: column },
         // Extra panel configurations
         {
           // Enable JavaScript in the webview
@@ -190,7 +151,7 @@ export default class GoalPanel {
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
           <link rel="stylesheet" type="text/css" href="${stylesUri}">
-          <title>Hello World</title>
+          <title>Goal View</title>
         </head>
         <body>
           <div id="root"></div>
@@ -214,10 +175,6 @@ export default class GoalPanel {
         const text = message.text;
 
         switch (command) {
-          case "hello":
-            // Code that should run in response to the hello message command
-            window.showInformationMessage(text);
-            return;
           // Add more switch case statements here as more webview message commands
           // are created within the webview context (i.e. inside media/main.js)
           case "renderProofView":

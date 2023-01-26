@@ -1,10 +1,8 @@
 import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
-import * as path from 'path';
 import {workspace, window, commands, ExtensionContext,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind, Range} from 'vscode';
 import Client from './client';
-import GoalProvider  from './provider';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 
@@ -64,6 +62,9 @@ export function activate(context: ExtensionContext) {
                 if (evt.textEditor.document.languageId !== "coq") { return; };
 
                 if (evt.kind === TextEditorSelectionChangeKind.Mouse || evt.kind === TextEditorSelectionChangeKind.Keyboard) {
+                    
+                    if(!GoalPanel.currentPanel) {commands.executeCommand('coq.displayGoals'); };
+                    
                     GoalPanel.sendProofViewRequest(client, evt.textEditor.document.uri, 
                         evt.textEditor.document.version, evt.textEditor.selection.active);
                 }
