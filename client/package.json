@@ -87,6 +87,16 @@
             "-bt"
           ],
           "description": "vscoqtop arguments"
+        },
+        "vscoq.goals.display": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "Tabs",
+              "List"
+            ],
+            "default": "List",
+            "description": "Determins wether multiple goals should be displayed in different tabs or as a list of collapsible items."
         }
       }
     },

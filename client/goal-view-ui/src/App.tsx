@@ -22,9 +22,12 @@ type Goal = {
 const app = () => {
 
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalDisplaySetting, setGoalDisplaySetting] = useState<string>("List");
 
   const handleMessage = useCallback ((msg: any) => {
     switch (msg.data.command) {
+      case 'initAppSettings':
+        setGoalDisplaySetting(msg.data.text);
       case 'renderProofView':
         setGoals(msg.data.text.goals.map((goal: Goal, index: number) => {
             return {...goal, isOpen: index === 0, displayId: index+1 };
@@ -53,7 +56,7 @@ const app = () => {
 
   return (
     <main>
-        <GoalPage goals={goals} collapseGoalHandler={collapseGoalHandler}/>
+        <GoalPage goals={goals} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting} />
     </main>
   );
 };

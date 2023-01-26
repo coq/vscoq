@@ -1,4 +1,4 @@
-import { Disposable, Webview, WebviewPanel, window, Uri, ViewColumn, TextEditor, Position } from "vscode";
+import { Disposable, Webview, WebviewPanel, window, workspace, Uri, ViewColumn, TextEditor, Position } from "vscode";
 import { UpdateProofViewRequest, UpdateProofViewResponse } from '../protocol/types';
 import {
   RequestType,
@@ -84,6 +84,8 @@ export default class GoalPanel {
       );
 
       GoalPanel.currentPanel = new GoalPanel(panel, extensionUri);
+      GoalPanel._initWebAppSettings();
+
     }
   }
 
@@ -123,6 +125,12 @@ export default class GoalPanel {
     );
   }
 
+  private static _initWebAppSettings() {
+    const config = workspace.getConfiguration('vscoq.goals');
+    GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "initAppSettings", "text": config.display });
+  };
+
+  
   /**
    * Defines and returns the HTML that should be rendered within the webview panel.
    *
