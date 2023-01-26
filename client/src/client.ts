@@ -26,15 +26,13 @@ export default class Client extends LanguageClient {
 	}
 
     public handleHighlights(uri: String, parsedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
-        this._channel.appendLine("RECIEVED HIGHLIGHT INSTRUCTION");
-        this._channel.appendLine(uri);
         const editors = this.getDocumentEditors(uri);
-
+/* 
         editors.map(editor => {
             editor.setDecorations(decorations.parsed, parsedRange);
             editor.setDecorations(decorations.processing, processingRange);
             editor.setDecorations(decorations.processed, processedRange);
-        });
+        }); */
     }
 
     private getDocumentEditors(uri: String) {

@@ -35,6 +35,9 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
 		};
 
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+            
+        // Set an event listener to listen for messages passed from the webview context
+        this._setWebviewMessageListener(webviewView.webview);
 
     }
     
@@ -55,7 +58,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                         <meta charset="UTF-8" />
                         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-                        <link rel="stylesheet" type="text/css" href="${stylesUri}">
+                        <link rel="stylesheet" type="text/css" nonce="${nonce}" href="${stylesUri}">
                         <title>Search View</title>
                     </head>
                     <body>
@@ -65,5 +68,30 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                 </html>
             `;
     }
-    
+
+  /**
+   * Sets up an event listener to listen for messages passed from the webview context and
+   * executes code based on the message that is recieved.
+   *
+   * @param webview A reference to the extension webview
+   * @param context A reference to the extension context
+   */
+  private _setWebviewMessageListener(webview: vscode.Webview) {
+    webview.onDidReceiveMessage(
+      (message: any) => {
+        const command = message.command;
+        const text = message.text;
+
+        switch (command) {
+            // Add more switch case statements here as more webview message commands
+            // are created within the webview context (i.e. inside media/main.js)
+            case "coqSearch":
+                vscode.window.showInformationMessage(text);
+                return;
+     
+        }
+      }
+    );
+  }
+
 }

@@ -28,7 +28,8 @@ const app = () => {
     switch (msg.data.command) {
       case 'initAppSettings':
         setGoalDisplaySetting(msg.data.text);
-      case 'renderProofView':
+        break;
+      case 'renderProofView':          
         setGoals(msg.data.text.goals.map((goal: Goal, index: number) => {
             return {...goal, isOpen: index === 0, displayId: index+1 };
         }));

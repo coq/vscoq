@@ -158,7 +158,7 @@ export default class GoalPanel {
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-          <link rel="stylesheet" type="text/css" href="${stylesUri}">
+          <link rel="stylesheet" type="text/css" nonce="${nonce}" href="${stylesUri}">
           <title>Goal View</title>
         </head>
         <body>
@@ -183,11 +183,12 @@ export default class GoalPanel {
         const text = message.text;
 
         switch (command) {
-          // Add more switch case statements here as more webview message commands
-          // are created within the webview context (i.e. inside media/main.js)
-          case "renderProofView":
-            window.showInformationMessage(text);
-            return;
+            // Add more switch case statements here as more webview message commands
+            // are created within the webview context (i.e. inside media/main.js)
+            case "coqSearch":
+                window.showInformationMessage(text);
+                return;
+                
         }
       },
       undefined,

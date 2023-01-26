@@ -40,7 +40,7 @@
       {
         "language": "coq",
         "scopeName": "source.coq",
-        "path": "./client/syntax/coq.tmLanguage"
+        "path": "./syntax/coq.tmLanguage"
       }
     ],
     "viewsContainers": {
