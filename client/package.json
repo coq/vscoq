@@ -47,7 +47,7 @@
       "activitybar": [
         {
           "id": "coq-sidebar",
-          "title": "Coq Sidebar",
+          "title": "Coq Proof Assistant",
           "icon": "./assets/vscoq_logo.svg"
         }
       ]
@@ -57,7 +57,7 @@
             {
                 "type": "webview",
                 "id": "coq.search", 
-                "name": "Search Coq"
+                "name": "Search"
             }
         ]
     },
