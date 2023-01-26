@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { getUri } from "./utilities/getUri";
-import { getNonce } from "./utilities/getNonce";
+import { getUri } from "../utilities/getUri";
+import { getNonce } from "../utilities/getNonce";
 
 export default class SearchViewProvider implements vscode.WebviewViewProvider {
 
-    public static readonly viewType = 'vscoq.search'; 
+    public static readonly viewType = 'coq.search'; 
 
     private _view?: vscode.WebviewView; 
 

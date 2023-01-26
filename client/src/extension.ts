@@ -1,27 +1,27 @@
-import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
 import {workspace, window, commands, ExtensionContext,
   TextEditorSelectionChangeEvent,
-  TextEditorSelectionChangeKind, Range} from 'vscode';
-import Client from './client';
-import {initializeDecorations} from './Decorations';
-import GoalPanel from './panels/GoalPanel';
+  TextEditorSelectionChangeKind,
+} from 'vscode';
 
 import {
   LanguageClientOptions,
   ServerOptions,
 } from 'vscode-languageclient/node';
 
-let client: Client;
+import Client from './client';
+import {initializeDecorations} from './Decorations';
+import GoalPanel from './panels/GoalPanel';
+import SearchViewProvider from './panels/SearchViewProvider';
 
+
+let client: Client;
 
 export function activate(context: ExtensionContext) {
 
 	const config = workspace.getConfiguration('vscoq');
 
-    // const goals = new GoalProvider(context);
-
-    // context.subscriptions.push(goals);
-
+    const searchProvider = new SearchViewProvider(context.extensionUri);
+    context.subscriptions.push(window.registerWebviewViewProvider(SearchViewProvider.viewType, searchProvider));
 
     const displayGoals = commands.registerTextEditorCommand('coq.displayGoals', (editor) => {
 		GoalPanel.render(editor, context.extensionUri);

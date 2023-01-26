@@ -50,27 +50,14 @@
           "title": "Coq Sidebar",
           "icon": "./assets/vscoq_logo.svg"
         }
-      ],
-      "panel": [
-        {
-          "id": "coq-goals",
-          "title": "Goals",
-          "icon": "./assets/logo.png"
-        }
       ]
     },
-    "viewsWelcome": [
-        {
-            "view": "coq-sidebar", 
-            "contents": "Welcome to Coq !",
-            "when": "true"
-        }
-    ],
     "views": {
         "coq-sidebar": [
             {
-                "id": "test-sidebar", 
-                "name": "Testing activity bar view"
+                "type": "webview",
+                "id": "coq.search", 
+                "name": "Search Coq"
             }
         ]
     },
