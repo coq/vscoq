@@ -69,7 +69,10 @@ const app = () => {
     };
 
     const copyNameToClipboard = (name: string) => {
-
+        vscode.postMessage({
+            command: "copySearchResult",
+            text: name
+        });
     };
     
 

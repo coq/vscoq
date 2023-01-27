@@ -12,7 +12,7 @@ import Client from './client';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { SearchCoqResponse } from './protocol/types';
+import { SearchCoqResult } from './protocol/types';
 
 
 let client: Client;
@@ -58,7 +58,7 @@ export function activate(context: ExtensionContext) {
             client.handleHighlights(uri, parsedRange, processingRange, processedRange);
 		});
 
-        client.onNotification("vscoq/searchResults", (searchResult: SearchCoqResponse) => {
+        client.onNotification("vscoq/searchResult", (searchResult: SearchCoqResult) => {
             searchProvider.renderSearchResult(searchResult);
         });
 

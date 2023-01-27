@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
-import { SearchCoqHandshake, SearchCoqRequest, SearchCoqResponse} from '../protocol/types';
+import { SearchCoqHandshake, SearchCoqRequest, SearchCoqResult} from '../protocol/types';
 import {
     RequestType,
     VersionedTextDocumentIdentifier,
@@ -51,7 +51,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
 
     }
 
-    public renderSearchResult(searchResult: SearchCoqResponse) {
+    public renderSearchResult(searchResult: SearchCoqResult) {
         this._view?.webview.postMessage({"command": "renderResult", "text": searchResult});
     
     };
@@ -125,7 +125,10 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                     vscode.window.showErrorMessage("Search: " + message.text + " impossible. No active text editor.");
                 }
                 return;
-     
+            case "copySearchResult":
+                vscode.env.clipboard.writeText(message.text);
+                vscode.window.showInformationMessage('Successfuly copied command ' + message.text + ' to clipboard.');
+                return;
         }
       }
     );

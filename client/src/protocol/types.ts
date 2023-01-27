@@ -35,7 +35,7 @@ export interface SearchCoqHandshake {
     ok: boolean;
 }
 
-export interface SearchCoqResponse {
+export interface SearchCoqResult {
     id: string;
     name: string; 
     statement: Position;
