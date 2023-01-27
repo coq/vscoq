@@ -94,7 +94,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
     webview.onDidReceiveMessage(
       (message: any) => {
         const command = message.command;
-        const text = message.text;
+        //const text = message.text;
 
         switch (command) {
             // Add more switch case statements here as more webview message commands

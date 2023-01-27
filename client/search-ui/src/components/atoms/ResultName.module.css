@@ -1,0 +1,4 @@
+.ResultName {
+    font-weight: bold;
+    color: var(--vscode-coq-tacticKeyword);
+}

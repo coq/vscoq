@@ -4,6 +4,7 @@ import "./App.css";
 import { DidChangeWorkspaceFoldersNotification } from 'vscode-languageclient';
 import { PropertyStyleSheetBehavior } from '@microsoft/fast-foundation';
 import SearchField from './components/molecules/SearchField';
+import SearchPage from './components/templates/SearchPage';
 
 type SearchResult = {
     id: string, 
@@ -11,14 +12,28 @@ type SearchResult = {
     statement: string
 };
 
+const defaultResults = [
+        {
+            id: "1",
+            name: "False_rect", 
+            statement: "forall P : Type, False -> P", 
+        },
+        {
+            id: "1",
+            name: "False_ind", 
+            statement: "forall P : Prop, False -> P", 
+        }
+    ];
+
 const app = () => {
     
     const [searchString, setSearchString] = useState("");
-    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+    const [searchResults, setSearchResults] = useState<SearchResult[]>(defaultResults);
 
     const handleMessage = useCallback ((msg: any) => {
         switch (msg.data.command) {
             case 'renderResult':
+                const result = msg.data.txt;
                 setSearchResults(searchResults.concat([msg.data.txt]));
                 break;
             case 'searching': 
@@ -52,14 +67,20 @@ const app = () => {
         }
 
     };
+
+    const copyNameToClipboard = (name: string) => {
+
+    };
     
 
     return (
         <main>
-            <SearchField 
+            <SearchPage
                 value={searchString} 
                 onTextInput={searchFieldInputHandler} 
                 handleSearch={searchFieldEnterHandler} 
+                copyNameHandler={copyNameToClipboard}
+                results={searchResults}
             />
         </main>
     );
