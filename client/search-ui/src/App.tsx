@@ -33,8 +33,8 @@ const app = () => {
     const handleMessage = useCallback ((msg: any) => {
         switch (msg.data.command) {
             case 'renderResult':
-                const result = msg.data.txt;
-                setSearchResults(searchResults.concat([msg.data.txt]));
+                const result = msg.data.text;
+                setSearchResults(searchResults.concat([result]));
                 break;
             case 'searching': 
                 //TODO: Add UI elements to show user the searching state

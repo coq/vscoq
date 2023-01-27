@@ -58,6 +58,7 @@ type lsp_event =
 type event =
  | LspManagerEvent of lsp_event
  | DocumentManagerEvent of string * Dm.DocumentManager.event
+ | Notification of notification
 
 type events = event Sel.event list
 
@@ -86,10 +87,10 @@ let logTrace ~message ~extra =
   mk_notification ~event ~params 
 
 let output_json ?(trace=true) obj =
-  let msg  = Yojson.Basic.pretty_to_string ~std:true obj in
+  let msg  = Yojson.Safe.pretty_to_string ~std:true obj in
   let size = String.length msg in
   let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in
-  (* log @@ "sent: " ^ msg; *)
+  log @@ "sent: " ^ msg;
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
 let logMessage ~lvl ~message =
@@ -240,11 +241,16 @@ let coqtopInterpretToEnd ~id params : (string * Dm.DocumentManager.events) =
 let inject_dm_event uri x : event Sel.event =
   Sel.map (fun e -> DocumentManagerEvent(uri,e)) x
 
+let inject_notification x : event Sel.event =
+  Sel.map (fun x -> Notification(x)) x
+
 let inject_dm_events (uri,l) =
   List.map (inject_dm_event uri) l
 
-let coqtopUpdateProofView ~id params = 
-  log (Yojson.Basic.to_string params);
+let inject_notifications l =
+  List.map inject_notification l
+
+let coqtopUpdateProofView ~id params =
   let open Yojson.Basic.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
@@ -256,6 +262,23 @@ let coqtopUpdateProofView ~id params =
     let result = mk_proofview proofview in
     output_json @@ mk_response ~id ~result 
 
+  let coqtopSearch ~id params =
+    let open Yojson.Basic.Util in
+    let textDocument = params |> member "textDocument" in
+    let uri = textDocument |> member "uri" |> to_string in
+    let loc = params |> member "position" |> parse_loc in
+    let pattern = params |> member "pattern" |> to_string in
+    let search_id = params |> member "id" |> to_string in
+    let st = Hashtbl.find states uri in
+    let notifications = Dm.DocumentManager.search st ~id:search_id loc pattern in
+    let result = `Null in
+    output_json @@ mk_response ~id ~result; notifications
+
+  let coqtopSearchResult ~id name statement =
+    let event = "vscoq/searchResult" in
+    let params = `Assoc [ "id", `String id; "name", `String name; "statement", `String statement ] in
+    output_json @@ mk_notification ~event ~params
+    
 let dispatch_method ~id method_name params : events =
   match method_name with
   | "initialize" -> do_initialize ~id params; []
@@ -271,6 +294,7 @@ let dispatch_method ~id method_name params : events =
   | "vscoq/resetCoq" -> coqtopResetCoq ~id params; []
   | "vscoq/interpretToEnd" -> coqtopInterpretToEnd ~id params |> inject_dm_events
   | "vscoq/updateProofView" -> coqtopUpdateProofView ~id params; []
+  | "vscoq/search" -> coqtopSearch ~id params |> inject_notifications
   | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; []
 
 let handle_lsp_event = function
@@ -289,6 +313,10 @@ let pr_lsp_event = function
   | Request req ->
     Pp.str "Request"
 
+let output_notification = function
+| QueryResultNotification params ->
+  output_json @@ mk_notification ~event:"vscoq/searchResult" ~params:(yojson_of_query_result params)
+
 let handle_event = function
   | LspManagerEvent e -> handle_lsp_event e
   | DocumentManagerEvent (uri, e) ->
@@ -306,11 +334,14 @@ let handle_event = function
       end;
       inject_dm_events (uri, events)
     end
+  | Notification notification ->
+    output_notification notification; [inject_notification Dm.SearchQuery.query_feedback]
 
 let pr_event = function
   | LspManagerEvent e -> pr_lsp_event e
   | DocumentManagerEvent (uri, e) ->
     Dm.DocumentManager.pr_event e
+  | Notification _ -> Pp.str"notif"
 
 let init injections =
   init_state := Some (Vernacstate.freeze_full_state ~marshallable:false, injections)

@@ -234,7 +234,6 @@ let handle_event ev st =
   | ExecutionManagerEvent ev ->
     let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
-
 let get_proof st pos =
   let loc = Document.position_to_loc st.document pos in
   match Document.find_sentence_before st.document loc with
@@ -242,9 +241,23 @@ let get_proof st pos =
   | Some sentence ->
     ExecutionManager.get_proofview st.execution_state sentence.id
 
+  let get_context st pos =
+    let loc = Document.position_to_loc st.document pos in
+    match Document.find_sentence_before st.document loc with
+    | None -> None
+    | Some sentence ->
+      ExecutionManager.get_context st.execution_state sentence.id
+
 let pr_event = function
 | ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
 | ExecutionManagerEvent ev -> ExecutionManager.pr_event ev
+
+let search st ~id pos pattern =
+  match get_context st pos with
+  | None -> [] (* TODO execute? *)
+  | Some (env, evd) ->
+    let searchable = Vernacexpr.(Search [(true, SearchLiteral (SearchString ((Anywhere, false),pattern,None)))]) in
+    SearchQuery.interp_search ~id env evd searchable (Vernacexpr.SearchOutside [])
 
 module Internal = struct
 

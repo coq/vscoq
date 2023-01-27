@@ -31,6 +31,7 @@ stdenv.mkDerivation rec {
     ppx_assert
     ppx_sexp_conv
     sexplib
+    ppx_yojson_conv
   ]);
 
 }

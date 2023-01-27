@@ -414,6 +414,17 @@ let get_proofview st id =
       let open Vernacstate in
       st |> LemmaStack.with_top ~f:Proof.get |> data |> Option.make
 
+let get_context st id =
+  match find_fulfilled_opt id st.of_sentence with
+  | None -> log "Cannot find state for proofview"; None
+  | Some (Error _) -> log "Proofview requested in error state"; None
+  | Some (Success None) -> log "Proofview requested in a remotely checked state"; None
+  | Some (Success (Some { interp = st })) ->
+    Vernacstate.Interp.unfreeze_interp_state st;
+    let env = Global.env () in
+    let evar_map = Evd.from_env env in
+    Some (env, evar_map)
+
 module ProofWorkerProcess = struct
   type options = ProofWorker.options
   let parse_options = ProofWorker.parse_options

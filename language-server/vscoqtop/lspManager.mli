@@ -17,3 +17,5 @@ val handle_event : event -> events
 val pr_event : event -> Pp.t
 
 val init : Coqargs.injection_command list -> unit
+
+val coqtopSearchResult : id:string -> string -> string -> unit

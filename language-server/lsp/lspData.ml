@@ -22,3 +22,12 @@ type diagnostic = {
   message : string;
   severity : (Feedback.level [@sexp.opaque]);
 } [@@deriving sexp]
+
+type query_result =
+  { id : string;
+    name : string;
+    statement : string;
+  } [@@deriving yojson]
+
+type notification =
+  | QueryResultNotification of query_result

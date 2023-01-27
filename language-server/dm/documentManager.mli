@@ -77,6 +77,8 @@ val handle_event : event -> state -> (state option * events)
 
 val pr_event : event -> Pp.t
 
+val search : state -> id:string -> Position.t -> string -> notification Sel.event list
+
 module Internal : sig
 
   val document : state -> Document.document
