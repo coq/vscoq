@@ -1,6 +1,15 @@
 import * as vscode from 'vscode';
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
+import { SearchCoqRequest, SearchCoqResponse} from '../protocol/types';
+import {
+    RequestType,
+    VersionedTextDocumentIdentifier,
+} from 'vscode-languageclient';
+
+import * as crypto from 'crypto';
+
+import Client from '../client';
 
 export default class SearchViewProvider implements vscode.WebviewViewProvider {
 
@@ -9,7 +18,8 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView; 
 
     constructor(
-        private _extensionUri: vscode.Uri
+        private _extensionUri: vscode.Uri,
+        private _client: Client
     ){ }
 
     dispose(): void {
@@ -37,10 +47,27 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
             
         // Set an event listener to listen for messages passed from the webview context
-        this._setWebviewMessageListener(webviewView.webview);
+        this._setWebviewMessageListener(webviewView.webview, this._client);
 
     }
-    
+
+    public setWebviewMessageListener(client: Client) {
+        this._view?.webview.onDidReceiveMessage(
+            (message: any) => {
+              const command = message.command;
+              const text = message.text;
+      
+              switch (command) {
+                  // Add more switch case statements here as more webview message commands
+                  // are created within the webview context (i.e. inside media/main.js)
+                  case "coqSearch":
+                      vscode.window.showInformationMessage(text);
+                      return;
+           
+              }
+            }
+          );
+    }
 
     private _getHtmlForWebview(webview: vscode.Webview) {
         // The CSS file from the React build output
@@ -76,7 +103,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
    * @param webview A reference to the extension webview
    * @param context A reference to the extension context
    */
-  private _setWebviewMessageListener(webview: vscode.Webview) {
+  private _setWebviewMessageListener(webview: vscode.Webview, client: Client) {
     webview.onDidReceiveMessage(
       (message: any) => {
         const command = message.command;
@@ -86,7 +113,30 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
             // Add more switch case statements here as more webview message commands
             // are created within the webview context (i.e. inside media/main.js)
             case "coqSearch":
-                vscode.window.showInformationMessage(text);
+                const uri = vscode.window.activeTextEditor?.document.uri;
+                const version = vscode.window.activeTextEditor?.document.version;
+                const position = vscode.window.activeTextEditor?.selection.active;
+
+                if(version && uri && position) {
+                    
+                    const req = new RequestType<SearchCoqRequest, SearchCoqResponse, void>("vscoq/search");
+                    const textDocument = VersionedTextDocumentIdentifier.create(
+                        uri.toString(),
+                        version
+                      );
+                    const id = crypto.randomUUID();
+                    const pattern = message.text;
+                    const params: SearchCoqRequest = {id, textDocument, pattern, position};
+                    client.sendRequest(req, params).then(
+                        (searchResult: SearchCoqResponse) => {
+                            webview.postMessage({"command": "renderResults", "text": searchResult});
+                        }
+                    );
+
+                }
+                else {
+                    vscode.window.showErrorMessage("Search: " + message.text + " impossible. No active text editor.");
+                }
                 return;
      
         }

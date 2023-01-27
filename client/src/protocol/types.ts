@@ -22,3 +22,16 @@ export interface UpdateProofViewResponse {
     shelvedGoals: Goal[];
     givenUpGoals: Goal[];
 }
+
+export interface SearchCoqRequest {
+    id: string;
+    textDocument: VersionedTextDocumentIdentifier;
+    pattern: string; 
+    position: Position;
+}
+
+export interface SearchCoqResponse {
+    id: string;
+    name: string; 
+    statement: Position;
+}

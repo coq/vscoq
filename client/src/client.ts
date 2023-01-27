@@ -25,6 +25,10 @@ export default class Client extends LanguageClient {
 		this._channel.appendLine("vscoq initialised");
 	}
 
+    dispose(): void {
+
+    };
+
     public handleHighlights(uri: String, parsedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
         const editors = this.getDocumentEditors(uri);
 /* 

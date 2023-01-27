@@ -20,16 +20,6 @@ export function activate(context: ExtensionContext) {
 
 	const config = workspace.getConfiguration('vscoq');
 
-    const searchProvider = new SearchViewProvider(context.extensionUri);
-    context.subscriptions.push(window.registerWebviewViewProvider(SearchViewProvider.viewType, searchProvider));
-
-    const displayGoals = commands.registerTextEditorCommand('coq.displayGoals', (editor) => {
-		GoalPanel.render(editor, context.extensionUri);
-	});
-
-
-	context.subscriptions.push(displayGoals);
-
 	let serverOptions: ServerOptions = {
 		/*
 		command: "perf",
@@ -55,6 +45,9 @@ export function activate(context: ExtensionContext) {
 		client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
             client.handleHighlights(uri, parsedRange, processingRange, processedRange);
 		});
+		client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
+            client.handleHighlights(uri, parsedRange, processingRange, processedRange);
+		});
 
         let goalsHook = window.onDidChangeTextEditorSelection(
             (evt: TextEditorSelectionChangeEvent) => {
@@ -74,8 +67,20 @@ export function activate(context: ExtensionContext) {
 
 	});
 
+
+    //register the search view provider 
+    const searchProvider = new SearchViewProvider(context.extensionUri, client);
+    context.subscriptions.push(window.registerWebviewViewProvider(SearchViewProvider.viewType, searchProvider));
+
+    //register the command opening the goal view
+    const displayGoals = commands.registerTextEditorCommand('coq.displayGoals', (editor) => {
+		GoalPanel.render(editor, context.extensionUri);
+	});
+	context.subscriptions.push(displayGoals);
+
 	// Start the client. This will also launch the server
 	client.start();
+    context.subscriptions.push(client);
 
 }
 
