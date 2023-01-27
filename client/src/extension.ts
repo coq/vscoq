@@ -12,6 +12,7 @@ import Client from './client';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
+import { SearchCoqResponse } from './protocol/types';
 
 
 let client: Client;
@@ -39,15 +40,27 @@ export function activate(context: ExtensionContext) {
 		clientOptions
 	);
 
+    //register the search view provider 
+    const searchProvider = new SearchViewProvider(context.extensionUri, client);
+    context.subscriptions.push(window.registerWebviewViewProvider(SearchViewProvider.viewType, searchProvider));
+
+    //register the command opening the goal view
+    const displayGoals = commands.registerTextEditorCommand('coq.displayGoals', (editor) => {
+		GoalPanel.render(editor, context.extensionUri);
+	});
+	context.subscriptions.push(displayGoals);
+
 	client.onReady()
 	.then(() => {
 		initializeDecorations(context);
-		client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
+		
+        client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
             client.handleHighlights(uri, parsedRange, processingRange, processedRange);
 		});
-		client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
-            client.handleHighlights(uri, parsedRange, processingRange, processedRange);
-		});
+
+        client.onNotification("vscoq/searchResults", (searchResult: SearchCoqResponse) => {
+            searchProvider.renderSearchResult(searchResult);
+        });
 
         let goalsHook = window.onDidChangeTextEditorSelection(
             (evt: TextEditorSelectionChangeEvent) => {
@@ -67,16 +80,6 @@ export function activate(context: ExtensionContext) {
 
 	});
 
-
-    //register the search view provider 
-    const searchProvider = new SearchViewProvider(context.extensionUri, client);
-    context.subscriptions.push(window.registerWebviewViewProvider(SearchViewProvider.viewType, searchProvider));
-
-    //register the command opening the goal view
-    const displayGoals = commands.registerTextEditorCommand('coq.displayGoals', (editor) => {
-		GoalPanel.render(editor, context.extensionUri);
-	});
-	context.subscriptions.push(displayGoals);
 
 	// Start the client. This will also launch the server
 	client.start();

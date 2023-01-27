@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
-import { SearchCoqRequest, SearchCoqResponse} from '../protocol/types';
+import { SearchCoqHandshake, SearchCoqRequest, SearchCoqResponse} from '../protocol/types';
 import {
     RequestType,
     VersionedTextDocumentIdentifier,
@@ -51,23 +51,10 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
 
     }
 
-    public setWebviewMessageListener(client: Client) {
-        this._view?.webview.onDidReceiveMessage(
-            (message: any) => {
-              const command = message.command;
-              const text = message.text;
-      
-              switch (command) {
-                  // Add more switch case statements here as more webview message commands
-                  // are created within the webview context (i.e. inside media/main.js)
-                  case "coqSearch":
-                      vscode.window.showInformationMessage(text);
-                      return;
-           
-              }
-            }
-          );
-    }
+    public renderSearchResult(searchResult: SearchCoqResponse) {
+        this._view?.webview.postMessage({"command": "renderResults", "text": searchResult});
+    
+    };
 
     private _getHtmlForWebview(webview: vscode.Webview) {
         // The CSS file from the React build output
@@ -119,7 +106,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
 
                 if(version && uri && position) {
                     
-                    const req = new RequestType<SearchCoqRequest, SearchCoqResponse, void>("vscoq/search");
+                    const req = new RequestType<SearchCoqRequest, SearchCoqHandshake, void>("vscoq/search");
                     const textDocument = VersionedTextDocumentIdentifier.create(
                         uri.toString(),
                         version
@@ -128,8 +115,8 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                     const pattern = message.text;
                     const params: SearchCoqRequest = {id, textDocument, pattern, position};
                     client.sendRequest(req, params).then(
-                        (searchResult: SearchCoqResponse) => {
-                            webview.postMessage({"command": "renderResults", "text": searchResult});
+                        (handshake: SearchCoqHandshake) => {
+                            webview.postMessage({"command": "searching", "text": handshake});
                         }
                     );
 
