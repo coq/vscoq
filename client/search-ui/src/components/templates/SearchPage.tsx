@@ -12,12 +12,12 @@ type SearchPageProps = {
     copyNameHandler: (name: string) => void,
     value: string, 
     onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
-    handleSearch: KeyboardEventHandler<HTMLInputElement>;
+    searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement>;
 };
 
 const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     
-    const {results, copyNameHandler, value, onTextInput, handleSearch} = props;
+    const {results, copyNameHandler, value, onTextInput, searchFieldKeyPressHandler} = props;
     
     const uniqueIds = results.map(result => result.id).filter((value, index, self) => {
         return self.indexOf(value) === index;
@@ -35,7 +35,7 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
             <SearchField 
                 value={value} 
                 onTextInput={onTextInput} 
-                handleSearch={handleSearch} 
+                onKeyDown={searchFieldKeyPressHandler} 
             />
             {goalSections}
         </>

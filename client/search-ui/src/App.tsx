@@ -15,6 +15,8 @@ type SearchResult = {
 const app = () => {
     
     const [searchString, setSearchString] = useState("");
+    const [searchHistory, setSearchHistory] = useState<string[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
     const handleMessage = useCallback ((msg: any) => {
@@ -42,14 +44,36 @@ const app = () => {
         setSearchString(e.target.value);
     };
 
-    const searchFieldEnterHandler: KeyboardEventHandler<HTMLInputElement> = (e) => {
+    const searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement> = (e) => {
             
         if(e.code === "Enter") {
             
+            setSearchHistory(searchHistory => searchHistory.concat([searchString]));
+
             vscode.postMessage({
                 command: "coqSearch",
                 text: searchString,
             });
+
+        }
+
+        if(e.code === "ArrowUp") {
+
+            if(searchHistory.length > historyIndex + 1) {
+                setSearchString(searchHistory[historyIndex + 1]);
+                setHistoryIndex(historyIndex + 1);
+            }
+
+        }
+
+        if(e.code === "ArrowDown") {
+
+            if(historyIndex > -1) {
+                if(historyIndex > 0) {
+                    setSearchString(searchHistory[historyIndex - 1]);
+                }
+                setHistoryIndex(historyIndex - 1);
+            }
 
         }
 
@@ -68,7 +92,7 @@ const app = () => {
             <SearchPage
                 value={searchString} 
                 onTextInput={searchFieldInputHandler} 
-                handleSearch={searchFieldEnterHandler} 
+                searchFieldKeyPressHandler={searchFieldKeyPressHandler} 
                 copyNameHandler={copyNameToClipboard}
                 results={searchResults}
             />
