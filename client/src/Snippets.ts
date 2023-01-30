@@ -19,7 +19,7 @@ function snippetSentence(item: Snippet) : vscode.CompletionItem {
     return result;
   } else {
     const result = new vscode.CompletionItem(item.label,vscode.CompletionItemKind.Snippet);
-    result.insertText = item.insertText;
+    result.insertText = new vscode.SnippetString(item.insertText);
     result.documentation = item.documentation as string; // vscode needs to provide stricter types in its API...
     return result;
   }
@@ -138,57 +138,57 @@ const optionsSnippets = [
   ].map(snippetSentence);;
 const setOptionsSnippets = [
   ...optionsSnippetsRaw,
-  {label: "Hyps Limit", insertText: "Hyps Limit {{num}}."},
+  {label: "Hyps Limit", insertText: "Hyps Limit ${1:num}."},
   'Bullet Behavior "None"',
   'Bullet Behavior "Strict Subproofs"',
   ].map(snippetSentence);
 
 const printSnippets = [
   "All",
-  {label: "All Dependencies", insertText: "All Dependencies {{qualid}}."},
-  {label: "Assumptions", insertText: "Assumptions {{qualid}}."},
+  {label: "All Dependencies", insertText: "All Dependencies ${1:qualid}."},
+  {label: "Assumptions", insertText: "Assumptions ${1:qualid}."},
   "Canonical Projections",
   "Classes",
-  {label: "Coercion Paths", insertText: "Coercion Paths {{class1}} {{class2}}."},
+  {label: "Coercion Paths", insertText: "Coercion Paths ${1:class1}} ${2:class2}."},
   "Coercions",
   "Extraction Inline",
   "Fields",
   "Grammar constr",
   "Grammar pattern",
   "Graph",
-  {label: "Hint", insertText: "Hint {{ident}}."},
+  {label: "Hint", insertText: "Hint ${1:ident}."},
   "Hint *",
-  {label: "HintDb", insertText: "HintDb {{ident}}."},
-  {label: "Implicit", insertText: "HintDb {{qualid}}."},
+  {label: "HintDb", insertText: "HintDb ${1:ident}."},
+  {label: "Implicit", insertText: "HintDb ${1:qualid}."},
   "Libraries",
   "LoadPath",
-  {label: "Ltac", insertText: "Ltac {{qualid}}."},
+  {label: "Ltac", insertText: "Ltac ${1:qualid}."},
   "ML Modules",
   "ML Path",
-  {label: "Module", insertText: "Module {{ident}}."},
-  {label: "Module Type", insertText: "Module Type {{ident}}."},
-  {label: "Opaque Dependencies", insertText: "Opaque Dependencies {{qualid}}."},
+  {label: "Module", insertText: "Module ${1:ident}."},
+  {label: "Module Type", insertText: "Module Type ${1:ident}."},
+  {label: "Opaque Dependencies", insertText: "Opaque Dependencies ${1:qualid}."},
   "Options",
   "Rings",
-  {label: "Scope", insertText: "Scope {{scope}}."},
+  {label: "Scope", insertText: "Scope ${1:scope}."},
   "Scopes",
-  {label: "Section", insertText: "Section {{ident}}."},
+  {label: "Section", insertText: "Section ${1:ident}."},
   "Sorted Universes",
-  {label: "Sorted Universes (filename)", insertText: "Sorted Universes {{filename}}."},
+  {label: "Sorted Universes (filename)", insertText: "Sorted Universes ${1:filename}."},
   "Strategies",
-  {label: "Strategy", insertText: "Strategy {{qualid}}."},
+  {label: "Strategy", insertText: "Strategy ${1:qualid}."},
   "Table Printing If",
   "Table Printing Let",
   "Tables",
-  {label: "Term", insertText: "Term {{qualid}}."},
-  {label: "Transparent Dependencies", insertText: "Transparent Dependencies {{qualid}}."},
+  {label: "Term", insertText: "Term ${1:qualid}."},
+  {label: "Transparent Dependencies", insertText: "Transparent Dependencies ${1:qualid}."},
   "Universes",
-  {label: "Universes (filename)", insertText: "Universes {{filename}}."},
+  {label: "Universes (filename)", insertText: "Universes ${1:filename}."},
   "Visibility", 
 ].map(snippetSentence);
 
 const showSnippets = [
-  {label: "(num)", insertText: " {{num}}.", documentation: "Displays only the num-th subgoal"}, 
+  {label: "(num)", insertText: " ${1:num}.", documentation: "Displays only the num-th subgoal"}, 
   "Script", 
   "Proof", 
   "Conjecturest", 
@@ -199,19 +199,19 @@ const showSnippets = [
 ].map(snippetSentence);
 
 const hintSnippets = [
-  {label: "(definition)", insertText: " {{definition}}."}, 
-  {label: "Constructors", insertText: "Constructors {{idents …}}."}, 
-  {label: 'Cut', insertText: 'Cut "{{regexp}}".'}, 
-  {label: 'Extern', insertText: 'Extern {{num}} {{optional-pattern}} => {{tactic}}.'}, 
-  {label: 'Immediate', insertText: 'Immediate {{term}}.'}, 
-  {label: 'Mode', insertText: 'Mode {{(+|-)*}} {{qualid}}.'}, 
-  {label: 'Opaque', insertText: 'Opaque {{qualid}}.'}, 
-  {label: 'Resolve', insertText: 'Resolve {{term}}.'}, 
-  {label: 'Rewrite', insertText: 'Rewrite {{terms …}} : {{idents …}}.'}, 
-  {label: 'Rewrite ->', insertText: 'Rewrite -> {{terms …}} : {{idents …}}.'}, 
-  {label: 'Rewrite <-', insertText: 'Rewrite <- {{terms …}} : {{idents …}}.'}, 
-  {label: 'Transparent', insertText: 'Transparent {{qualid}}.'}, 
-  {label: 'Unfold', insertText: 'Unfold {{qualid}}.'}, 
+  {label: "(definition)", insertText: " ${1:definition}."}, 
+  {label: "Constructors", insertText: "Constructors ${1:idents …}."}, 
+  {label: 'Cut', insertText: 'Cut "${1:regexp}".'}, 
+  {label: 'Extern', insertText: 'Extern ${1:num} ${2:optional-pattern} => ${3:tactic}.'}, 
+  {label: 'Immediate', insertText: 'Immediate ${1:term}.'}, 
+  {label: 'Mode', insertText: 'Mode ${1:(+|-)*} ${2:qualid}.'}, 
+  {label: 'Opaque', insertText: 'Opaque ${1:qualid}.'}, 
+  {label: 'Resolve', insertText: 'Resolve ${1:term}.'}, 
+  {label: 'Rewrite', insertText: 'Rewrite ${1:terms …} : ${2:idents …}.'}, 
+  {label: 'Rewrite ->', insertText: 'Rewrite -> ${1:terms …} : ${2:idents …}.'}, 
+  {label: 'Rewrite <-', insertText: 'Rewrite <- ${1:terms …} : ${2:idents …}.'}, 
+  {label: 'Transparent', insertText: 'Transparent ${1:qualid}.'}, 
+  {label: 'Unfold', insertText: 'Unfold ${1:qualid}.'}, 
   'Mode', 
   'Proof', 
   'Conjecturest', 
@@ -231,9 +231,9 @@ const triggerSnippets : TriggerSnippet[] = [
   {label: "Print...", insertText: "Print ", completion: printSnippets},
   {label: "Show...", insertText: "Show ", completion: showSnippets},
   {label: "Hint...", insertText: "Hint ", completion: hintSnippets},
-  {label: "Arguments", insertText: "Arguments {{qualid}} {{possibly_bracketed_idents …}}."},
-  {label: "Local Arguments", insertText: "Local Arguments {{qualid}} {{possibly_bracketed_idents …}}."},
-  {label: "Global Arguments", insertText: "Global Arguments {{qualid}} {{possibly_bracketed_idents …}}."},
+  {label: "Arguments", insertText: "Arguments ${1:qualid} ${2:possibly_bracketed_idents …}."},
+  {label: "Local Arguments", insertText: "Local Arguments ${1:qualid} ${2:possibly_bracketed_idents …}."},
+  {label: "Global Arguments", insertText: "Global Arguments ${1:qualid} ${2:possibly_bracketed_idents …}."},
   ];
 
 let triggerRegexp : RegExp;
@@ -256,7 +256,7 @@ function getTriggerCompletions(prefix: string) {
     })
     .map((trigger) => {
       const item = new vscode.CompletionItem(trigger.label);
-      item.insertText = trigger.insertText;
+      item.insertText = new vscode.SnippetString(trigger.insertText);
       item.detail = trigger.detail as string; // vscode needs to update its API
       if(trigger.completion)
         item.command = {
