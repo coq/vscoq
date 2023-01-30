@@ -12,29 +12,16 @@ type SearchResult = {
     statement: string
 };
 
-const defaultResults = [
-        {
-            id: "1",
-            name: "False_rect", 
-            statement: "forall P : Type, False -> P", 
-        },
-        {
-            id: "1",
-            name: "False_ind", 
-            statement: "forall P : Prop, False -> P", 
-        }
-    ];
-
 const app = () => {
     
     const [searchString, setSearchString] = useState("");
-    const [searchResults, setSearchResults] = useState<SearchResult[]>(defaultResults);
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
     const handleMessage = useCallback ((msg: any) => {
         switch (msg.data.command) {
             case 'renderResult':
                 const result = msg.data.text;
-                setSearchResults(searchResults.concat([result]));
+                setSearchResults(searchResults => searchResults.concat([result]));
                 break;
             case 'searching': 
                 //TODO: Add UI elements to show user the searching state
