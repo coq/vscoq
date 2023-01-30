@@ -139,8 +139,12 @@ let mk_goal sigma g =
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   let min_env = Environ.reset_context env in
   let id = Evar.repr g in
+  let concl = match Evd.evar_body evi with
+  | Evar_empty -> Evd.evar_concl evi
+  | Evar_defined body -> Retyping.get_type_of env sigma body
+  in
   let ccl =
-    pr_letype_env ~goal_concl_style:true env sigma (Evd.evar_concl evi)
+    pr_letype_env ~goal_concl_style:true env sigma concl
   in
   let mk_hyp d (env,l) =
     let d' = CompactedDecl.to_named_context d in
