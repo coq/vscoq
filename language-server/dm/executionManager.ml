@@ -236,7 +236,7 @@ let worker_execute ~doc_id last_step_id ~send_back (vs,events) = function
   | PExec (id,ast,synterp) ->
     let vs = { vs with Vernacstate.synterp } in
     let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
-    let v = if Stateid.equal id last_step_id then purge_state (ensure_proof_over v) else purge_state v in
+    let v = if Stateid.equal id last_step_id then ensure_proof_over v else v in
     send_back (ProofJob.UpdateExecStatus (id,v));
     (vs, events @ ev)
   | _ -> assert false
