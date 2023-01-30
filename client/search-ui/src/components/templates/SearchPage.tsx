@@ -1,43 +1,84 @@
-import React, {FunctionComponent, KeyboardEventHandler} from 'react';
+import React, {FunctionComponent, KeyboardEventHandler, useState} from 'react';
+import {
+    VSCodePanels,
+    VSCodePanelTab,
+    VSCodePanelView,
+    VSCodeButton
+} from '@vscode/webview-ui-toolkit/react';
+import {VscAdd} from 'react-icons/vsc';
 
 import SearchResultSection from '../organisms/SearchResultSection';
 import SearchField from '../molecules/SearchField';
 
+import classes from './SearchPage.module.css';
+
+
 type SearchPageProps = {
-    results:Map<string, 
-                {
-                    id: string;
-                    name: string; 
-                    statement: string;
-                }[]
-    >,
+    tabs: {
+        searchId: string,
+        searchString: string, 
+        results: {
+            id: string, 
+            name: string, 
+            statement: string
+        }[]
+    }[],
     copyNameHandler: (name: string) => void,
     value: string, 
     onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
-    searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement>;
+    searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement>,
+    addTabHandler: () => void,
+    changeTabHandler: (tabIndex: number) => void,
+    currentTab: number;
 };
 
 const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     
-    const {results, copyNameHandler, value, onTextInput, searchFieldKeyPressHandler} = props;
-    
-    const uniqueIds = Array.from(results.keys());
+    const {tabs, copyNameHandler, value, 
+            onTextInput, searchFieldKeyPressHandler,
+            changeTabHandler, addTabHandler, currentTab} = props;
 
-    const goalSections = uniqueIds.map(id => {
-        return <SearchResultSection 
-                    results={results.get(id) || []} 
-                    copyNameHandler={copyNameHandler}
-                />;
+    const panelViews = tabs.map((tab, index) => {
+        return <VSCodePanelView id={"tab-"+index} >
+                    <SearchResultSection 
+                        results={tab.results} 
+                        copyNameHandler={copyNameHandler}
+                    />
+                </VSCodePanelView>;
+    });
+
+    const panelTabs = tabs.length === 1 ? null : tabs.map((tab, index) => {
+        return <VSCodePanelTab 
+                    id={"tab-" + index} 
+                    onClick={
+                        () => changeTabHandler(index)
+                    }
+                >
+                    {"Search " + index}
+                </VSCodePanelTab>;
     });
 
     return (
-        <>
-            <SearchField 
-                value={value} 
-                onTextInput={onTextInput} 
-                onKeyDown={searchFieldKeyPressHandler} 
-            />
-            {goalSections}
+            <>
+                <div className={classes.Header}>
+                    <SearchField 
+                        value={value} 
+                        onTextInput={onTextInput} 
+                        onKeyDown={searchFieldKeyPressHandler} 
+                    />
+                    <VSCodeButton 
+                        className={classes.Button}
+                        appearance={'icon'} 
+                        ariaLabel='Add Tab' 
+                        onClick={() => addTabHandler()}
+                    >
+                        <VscAdd />
+                    </VSCodeButton>
+                </div>
+                <VSCodePanels activeid={'tab-'+currentTab} className={classes.Panels}>
+                    {panelTabs}
+                    {panelViews}
+                </VSCodePanels>
         </>
     );
 };

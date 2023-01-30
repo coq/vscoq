@@ -1,0 +1,15 @@
+.Header {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.Button {
+    margin-left: 6px;
+}
+
+.Panels {
+    width: 100%;
+}

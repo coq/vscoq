@@ -7,8 +7,6 @@ import {
     VersionedTextDocumentIdentifier,
 } from 'vscode-languageclient';
 
-import * as crypto from 'crypto';
-
 import Client from '../client';
 
 export default class SearchViewProvider implements vscode.WebviewViewProvider {
@@ -38,10 +36,9 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
 		webviewView.webview.options = {
 			// Allow scripts in the webview
 			enableScripts: true,
-
 			localResourceRoots: [
 				this._extensionUri
-			]
+			],
 		};
 
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
@@ -111,7 +108,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                         uri.toString(),
                         version
                       );
-                    const id = crypto.randomUUID();
+                    const id = message.id;
                     const pattern = message.text;
                     const params: SearchCoqRequest = {id, textDocument, pattern, position};
                     client.sendRequest(req, params).then(
