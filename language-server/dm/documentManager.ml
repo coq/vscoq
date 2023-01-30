@@ -256,7 +256,14 @@ let search st ~id pos pattern =
   match get_context st pos with
   | None -> [] (* TODO execute? *)
   | Some (env, evd) ->
-    let searchable = Vernacexpr.(Search [(true, SearchLiteral (SearchString ((Anywhere, false),pattern,None)))]) in
+    let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
+    let loc = Document.position_to_loc st.document pos in
+    let st = match Document.find_sentence_before st.document loc with
+    | None -> st.init_vs.Vernacstate.synterp.parsing
+    | Some { synterp_state } -> synterp_state.Vernacstate.Synterp.parsing
+    in
+    let query = Vernacstate.Parser.parse st G_vernac.search_query pa in
+    let searchable = Vernacexpr.(Search [query]) in
     SearchQuery.interp_search ~id env evd searchable (Vernacexpr.SearchOutside [])
 
 module Internal = struct
