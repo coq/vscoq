@@ -1,10 +1,11 @@
 import React, {useState, useCallback, useEffect, KeyboardEventHandler, ChangeEventHandler, ChangeEvent} from 'react';
 import { vscode } from "./utilities/vscode";
-import "./App.css";
 import { DidChangeWorkspaceFoldersNotification } from 'vscode-languageclient';
 import { PropertyStyleSheetBehavior } from '@microsoft/fast-foundation';
-import SearchField from './components/molecules/SearchField';
+import { v4 as uuid } from 'uuid';
+
 import SearchPage from './components/templates/SearchPage';
+import "./App.css";
 
 type SearchResult = {
     id: string, 
@@ -17,13 +18,25 @@ const app = () => {
     const [searchString, setSearchString] = useState("");
     const [searchHistory, setSearchHistory] = useState<string[]>([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
-    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+    const [searchResults, setSearchResults] = useState<Map<string, SearchResult[]>>(new Map([[uuid(), []]]));
 
     const handleMessage = useCallback ((msg: any) => {
         switch (msg.data.command) {
             case 'renderResult':
                 const result = msg.data.text;
-                setSearchResults(searchResults => searchResults.concat([result]));
+                setSearchResults(searchResults => {
+                        
+                    const newResults = new Map(searchResults);
+                    //Typescript enforces we handle 'undefined' case
+                    const oldSearchResult = searchResults.get(result.id) || [];
+                    
+                    newResults.set(
+                        result.id, 
+                        oldSearchResult.concat(result)
+                    );
+    
+                    return newResults;
+                });
                 break;
             case 'searching': 
                 //TODO: Add UI elements to show user the searching state

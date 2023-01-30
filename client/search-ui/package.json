@@ -12,7 +12,8 @@
     "@vscode/webview-ui-toolkit": "^1.2.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-icons": "^4.7.1"
+    "react-icons": "^4.7.1",
+    "uuidv4": "^6.2.13"
   },
   "devDependencies": {
     "@types/react": "^17.0.33",

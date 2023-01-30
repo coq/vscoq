@@ -4,11 +4,13 @@ import SearchResultSection from '../organisms/SearchResultSection';
 import SearchField from '../molecules/SearchField';
 
 type SearchPageProps = {
-    results: {
-        id: string;
-        name: string; 
-        statement: string;
-    }[],
+    results:Map<string, 
+                {
+                    id: string;
+                    name: string; 
+                    statement: string;
+                }[]
+    >,
     copyNameHandler: (name: string) => void,
     value: string, 
     onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
@@ -19,13 +21,11 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     
     const {results, copyNameHandler, value, onTextInput, searchFieldKeyPressHandler} = props;
     
-    const uniqueIds = results.map(result => result.id).filter((value, index, self) => {
-        return self.indexOf(value) === index;
-    });
+    const uniqueIds = Array.from(results.keys());
 
     const goalSections = uniqueIds.map(id => {
         return <SearchResultSection 
-                    results={results.filter(result => result.id === id)} 
+                    results={results.get(id) || []} 
                     copyNameHandler={copyNameHandler}
                 />;
     });
