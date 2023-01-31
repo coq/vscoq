@@ -19,10 +19,10 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     
     const {goals, collapseGoalHandler} = props;
 
-    const goalCollapsibles = goals.map(goal => {
+    const goalCollapsibles = goals.map((goal, index) => {
         
         return (
-            <CollapsibleGoalBlock goal={goal} isOpen={goal.isOpen} collapseHandler={collapseGoalHandler}/>
+            <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} isOpen={goal.isOpen} collapseHandler={collapseGoalHandler}/>
         );
     });
 

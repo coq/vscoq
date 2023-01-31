@@ -16,7 +16,7 @@ type GoalBlockProps = {
             identifiers: string[],
             type: string, 
         }[]
-    },
+    }
 };
 
 const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {
@@ -27,7 +27,7 @@ const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {
         <div className={classes.Block}>
             <HypothesesBlock hypotheses={goal.hypotheses}/>
             <Separator />
-            <Goal goalId={goal.id} goal={goal.goal}/>
+            <Goal goal={goal.goal}/>
         </div>
     );
 };

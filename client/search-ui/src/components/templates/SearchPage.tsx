@@ -57,6 +57,7 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                 >
                     {"Search " + index}
                     <VSCodeButton 
+                        className={classes.SmallButton}
                         appearance={'icon'} 
                         ariaLabel='Add Tab' 
                         onClick={() => deleteTabHandler(index)}
@@ -67,8 +68,8 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     });
 
     return (
-            <>
-                <div className={classes.Header}>
+            <div className={classes.Page}>
+                <div className={classes.PageHeader}>
                     <SearchField 
                         value={value} 
                         onTextInput={onTextInput} 
@@ -87,7 +88,7 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                     {panelTabs}
                     {panelViews}
                 </VSCodePanels>
-        </>
+            </div>
     );
 };
 

@@ -16,12 +16,13 @@ type CollapsibleGoalBlockProps = {
         }[]
     },
     collapseHandler: (id: string) => void, 
-    isOpen: boolean;
+    isOpen: boolean,
+    goalIndex: number
 };
 
 const collapsibleGoalBlock: FunctionComponent<CollapsibleGoalBlockProps> = (props) => {
     
-    const {goal, isOpen, collapseHandler} = props;
+    const {goal, goalIndex, isOpen, collapseHandler} = props;
     
     const panelClasses = [classes.Panel]; 
     if(!isOpen) {
@@ -33,7 +34,7 @@ const collapsibleGoalBlock: FunctionComponent<CollapsibleGoalBlockProps> = (prop
 
             {/* The header with title and button */}
             <div className={classes.Header}>
-                <span className={isOpen ? classes.Demphasize : ''}>{"Goal " + goal.id}</span>
+                <span className={isOpen ? classes.Demphasize : ''}>{"Goal " + goalIndex}</span>
                 <VSCodeButton appearance={'icon'} ariaLabel='Collapse' onClick={() => collapseHandler(goal.id)}>
                     <VscChevronDown className={isOpen ? [classes.Rotated, classes.Demphasize].join(' ') : ''} />
                 </VSCodeButton>
