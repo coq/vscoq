@@ -5,7 +5,7 @@ import {
     VSCodePanelView,
     VSCodeButton
 } from '@vscode/webview-ui-toolkit/react';
-import {VscAdd} from 'react-icons/vsc';
+import {VscAdd, VscChromeClose} from 'react-icons/vsc';
 
 import SearchResultSection from '../organisms/SearchResultSection';
 import SearchField from '../molecules/SearchField';
@@ -28,6 +28,7 @@ type SearchPageProps = {
     onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
     searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement>,
     addTabHandler: () => void,
+    deleteTabHandler: (tabIndex: number) => void,
     changeTabHandler: (tabIndex: number) => void,
     currentTab: number;
 };
@@ -36,7 +37,7 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     
     const {tabs, copyNameHandler, value, 
             onTextInput, searchFieldKeyPressHandler,
-            changeTabHandler, addTabHandler, currentTab} = props;
+            changeTabHandler, addTabHandler, deleteTabHandler, currentTab} = props;
 
     const panelViews = tabs.map((tab, index) => {
         return <VSCodePanelView id={"tab-"+index} >
@@ -55,6 +56,13 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                     }
                 >
                     {"Search " + index}
+                    <VSCodeButton 
+                        appearance={'icon'} 
+                        ariaLabel='Add Tab' 
+                        onClick={() => deleteTabHandler(index)}
+                    >
+                        <VscChromeClose />
+                    </VSCodeButton>
                 </VSCodePanelTab>;
     });
 

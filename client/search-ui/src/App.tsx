@@ -1,12 +1,12 @@
 import React, {useState, useCallback, useEffect, KeyboardEventHandler, ChangeEventHandler, useRef} from 'react';
-import { vscode } from "./utilities/vscode";
 import { DidChangeWorkspaceFoldersNotification, StarNotificationHandler } from 'vscode-languageclient';
 import { PropertyStyleSheetBehavior } from '@microsoft/fast-foundation';
 import { v4 as uuid } from 'uuid';
 
 import SearchPage from './components/templates/SearchPage';
 import "./App.css";
-import resultStatement from './components/atoms/ResultStatement';
+
+import { vscode } from "./utilities/vscode";
 
 type SearchResult = {
     id: string, 
@@ -42,6 +42,8 @@ const app = () => {
     const [searchTabs, setSearchTabs] = useState<SearchTab[]>([defaultTab]);
     const [currentTab, setCurrentTab] = useState(0);
     const firstUpdate = useRef(true);
+    //this ref will allow us to update the current tab index only when the number of tabs has changed !
+    const numTabs = useRef(1); 
 
     const handleMessage = useCallback ((msg: any) => {
         switch (msg.data.command) {
@@ -73,10 +75,20 @@ const app = () => {
     }, [handleMessage]);
                     
     useEffect(() => {
-        console.log('ref', firstUpdate.current);
         if(firstUpdate.current) {
             firstUpdate.current = false; 
             return;
+        }
+        //check if the num of tabs has changed
+        if(numTabs.current < searchTabs.length) {
+            changeTabHandler(searchTabs.length - 1);
+            numTabs.current = searchTabs.length;
+        }
+        if(numTabs.current > searchTabs.length) {
+            if(currentTab > searchTabs.length - 1) {
+                changeTabHandler(searchTabs.length - 1);
+            }
+            numTabs.current = searchTabs.length;
         }
         saveState();
     }, [searchTabs]);
@@ -159,12 +171,18 @@ const app = () => {
 
     const addSearchTabHandler = () => {
         setSearchTabs(searchTabs => {
-            const newSearchTabs = searchTabs.concat([{searchId: uuid(), searchString: "", results: []}]);
-            return newSearchTabs;
+            return searchTabs.concat([{searchId: uuid(), searchString: "", results: []}]);
+        });
+    };
+
+    const deleteSearchTabHandler = (tabIndex: number) => {
+        setSearchTabs(searchTabs => {
+            return searchTabs.filter((tab, index) => index !== tabIndex);
         });
     };
     
     const changeTabHandler = (tabIndex: number) => {
+        setSearchString(searchTabs[tabIndex].searchString);
         setCurrentTab(tabIndex);
     };
 
@@ -178,6 +196,7 @@ const app = () => {
                 tabs={searchTabs}
                 addTabHandler={addSearchTabHandler}
                 changeTabHandler={changeTabHandler}
+                deleteTabHandler={deleteSearchTabHandler}
                 currentTab={currentTab}
             />
         </main>
