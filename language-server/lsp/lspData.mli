@@ -20,3 +20,7 @@ type query_result =
 
 type notification =
   | QueryResultNotification of query_result
+
+module Error : sig
+  val requestFailed : int
+end

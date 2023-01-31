@@ -5,6 +5,9 @@ module CompactedDecl = Context.Compacted.Declaration
 
 let mk_notification ~event ~params = `Assoc ["jsonrpc", `String "2.0"; "method", `String event; "params", params]
 let mk_response ~id ~result = `Assoc ["jsonrpc", `String "2.0"; "id", `Int id; "result", result]
+let mk_error_response ~id ~code ~message =
+  let error = `Assoc ["code", `Int code; "message", `String message] in
+  `Assoc ["jsonrpc", `String "2.0"; "id", `Int id; "error", error]
 
 let mk_loc Position.{ line; char } =
   `Assoc [

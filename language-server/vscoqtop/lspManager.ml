@@ -270,9 +270,15 @@ let coqtopUpdateProofView ~id params =
     let pattern = params |> member "pattern" |> to_string in
     let search_id = params |> member "id" |> to_string in
     let st = Hashtbl.find states uri in
-    let notifications = Dm.DocumentManager.search st ~id:search_id loc pattern in
-    let result = `Null in
-    output_json @@ mk_response ~id ~result; notifications
+    try
+      let notifications = Dm.DocumentManager.search st ~id:search_id loc pattern in
+      let result = `Null in
+      output_json @@ mk_response ~id ~result; notifications
+    with e ->
+      let e, info = Exninfo.capture e in
+      let code = Lsp.LspData.Error.requestFailed in
+      let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
+      output_json @@ mk_error_response ~id ~code ~message; []
 
   let coqtopSearchResult ~id name statement =
     let event = "vscoq/searchResult" in

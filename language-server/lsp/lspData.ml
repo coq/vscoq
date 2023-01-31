@@ -31,3 +31,7 @@ type query_result =
 
 type notification =
   | QueryResultNotification of query_result
+
+module Error = struct
+  let requestFailed = -32803
+end
