@@ -19,6 +19,8 @@ open Lsp.LspData
 type state
 
 type event
+val pp_event : Format.formatter -> event -> unit
+
 type events = event Sel.event list
 
 val init : Vernacstate.t -> opts:Coqargs.injection_command list -> uri:string -> text:string -> state * events

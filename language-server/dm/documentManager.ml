@@ -34,6 +34,9 @@ type event =
       todo : ExecutionManager.prepared_task list;
     }
   | ExecutionManagerEvent of ExecutionManager.event
+let pp_event fmt = function
+  | ExecuteToLoc { loc; todo; _ } -> Stdlib.Format.fprintf fmt "ExecuteToLoc %d (%d tasks)" loc (List.length todo)
+  | ExecutionManagerEvent _ -> Stdlib.Format.fprintf fmt "ExecutionManagerEvent"
 
 let inject_em_event x = Sel.map (fun e -> ExecutionManagerEvent e) x
 let inject_em_events events = List.map inject_em_event events
@@ -114,7 +117,7 @@ let reset { uri; opts; init_vs; document } =
   let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
   { uri; opts; init_vs; document; execution_state; observe_loc = None }
 
-let interpret_to_loc state loc : (state * events) =
+let interpret_to_loc state loc : (state * event Sel.event list) =
     let invalid_ids, document = Document.validate_document state.document in
     let execution_state =
       List.fold_left (fun st id ->

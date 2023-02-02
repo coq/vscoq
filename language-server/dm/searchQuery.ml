@@ -11,6 +11,7 @@ let query_results_queue = Queue.create ()
 
 let query_feedback : notification Sel.event =
   Sel.on_queue query_results_queue (fun x -> QueryResultNotification x)
+  |> Sel.uncancellable
 
 let global_module qid =
   try Nametab.full_name_module qid

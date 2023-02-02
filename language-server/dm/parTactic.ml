@@ -93,31 +93,32 @@ let interp_par ~pstate ~info ast ~abstract ~with_end_tac : Declare.Proof.t =
        Queue.push (job_id,job) queue;
        TacticWorker.worker_available ~jobs:queue ~fork_action:worker_solve_one_goal, job_id
         ) 0) in
-  let rec wait ready evs =
-    log @@ "waiting for events: " ^ string_of_int @@ List.length evs;
-    let more_ready, waiting = Sel.wait evs in
-    let updates, more_waiting_l = List.split (List.map TacticWorker.handle_event more_ready) in
-    let rec do_updates acc = function
-      | [] ->
-          let events = List.concat (waiting :: more_waiting_l) in
-          if events = [] then (log @@ "done waiting for tactic workers"; acc)
-          else wait acc events
-      | None :: updates -> do_updates acc updates
-      | Some(TacticJob.UpdateSolution(ev,TacticJob.Solved(c,u))) :: updates ->
+  let rec wait acc evs =
+    log @@ "waiting for events: " ^ string_of_int @@ Sel.size evs;
+    let more_ready, evs = Sel.pop_opt evs in
+    match more_ready with
+    | None ->
+        if Sel.nothing_left_to_do evs then (log @@ "done waiting for tactic workers"; acc)
+        else wait acc evs (* should be assert false *)
+    | Some ev ->
+      let result, more_events = TacticWorker.handle_event ev in
+      let evs = Sel.enqueue evs more_events in
+      match result with
+      | None -> wait acc evs
+      | Some(TacticJob.UpdateSolution(ev,TacticJob.Solved(c,u))) ->
           log @@ "got solution for evar " ^ Pp.string_of_ppcmds @@ Evar.print ev;
-          do_updates ((ev,(c,u)) :: acc) updates
-      | Some(TacticJob.AppendFeedback _) :: updates ->
+          wait acc evs
+      | Some(TacticJob.AppendFeedback _) ->
           log @@ "got feedback";
-          do_updates acc updates
-      | Some(TacticJob.UpdateSolution(ev,TacticJob.NoProgress)) :: updates ->
+          wait acc evs
+      | Some(TacticJob.UpdateSolution(ev,TacticJob.NoProgress)) ->
           log @@ "got no progress for " ^ Pp.string_of_ppcmds @@ Evar.print ev;
-          do_updates acc updates
-      | Some(TacticJob.UpdateSolution(ev,TacticJob.Error err)) :: updates ->
+          wait acc evs
+      | Some(TacticJob.UpdateSolution(ev,TacticJob.Error err)) ->
           log @@ "got error for " ^ Pp.string_of_ppcmds @@ Evar.print ev;
           List.iter DelegationManager.cancel_job job_ids;
           CErrors.user_err err in
-    do_updates ready updates in
-  let results = wait [] events in
+  let results = wait [] Sel.(enqueue empty events) in
   Declare.Proof.map pstate ~f:(fun p ->
     let p,_,() = Proof.run_tactic (Global.env()) (assign_tac ~abstract results) p in
     p)

@@ -74,7 +74,10 @@ let lsp : event Sel.event =
       end
     | Error exn ->
         log @@ ("failed to read message: " ^ Printexc.to_string exn);
-        exit 0)
+        LspManagerEvent (Request None))
+  |> fst
+  |> Sel.name "lsp"
+  |> Sel.make_recurring
 
 let logTrace ~message ~extra =
   let event = "$/logTrace" in
@@ -341,7 +344,7 @@ let handle_lsp_event = function
       let params = req |> member "params" in
       log @@ "ui request: " ^ method_name;
       let more_events = dispatch_method ~id method_name params in
-      more_events @ [lsp]
+      more_events
 
 let pr_lsp_event = function
   | Request req ->

@@ -68,7 +68,7 @@ jobs:
       run: opam install ./language-server/vscoq-language-server.opam --deps-only --with-doc --with-test
 
     - name: Install vscoq-language-server
-      run: opam install ./language-server/vscoq-language-server.opam
+      run: opam install ./language-server/vscoq-language-server.opam --with-test
 
     - run: |
         eval $(opam env)

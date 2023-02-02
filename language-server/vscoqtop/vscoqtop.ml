@@ -17,15 +17,18 @@ let log msg = top_debug Pp.(fun () ->
 
 let loop injections =
   LspManager.init injections;
-  let rec loop (events : LspManager.events) =
+  let rec loop (todo : LspManager.event Sel.todo) =
     log @@ "looking for next step";
     flush_all ();
-    let (ready, remaining) = Sel.wait events in
-    let nremaining = List.length remaining in
-    log @@ "Main loop events ready: " ^ Pp.string_of_ppcmds Pp.(prlist_with_sep spc LspManager.pr_event ready) ^ " , " ^ string_of_int nremaining ^ " events waiting";
-    loop (remaining @ CList.map_append LspManager.handle_event ready)
+    let ready, todo = Sel.pop todo in
+    let nremaining = Sel.size todo in
+    log @@ "Main loop event ready: " ^ Pp.string_of_ppcmds (LspManager.pr_event ready) ^ " , " ^ string_of_int nremaining ^ " events waiting";
+    let new_events = LspManager.handle_event ready in
+    let todo = Sel.enqueue todo new_events in
+    loop todo
   in
-  try loop [LspManager.lsp]
+  let todo = Sel.enqueue Sel.empty [LspManager.lsp] in
+  try loop todo
   with exn ->
     let info = Exninfo.capture exn in
     Feedback.msg_debug @@ Pp.str "==========================================================";
