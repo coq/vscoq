@@ -200,7 +200,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Constructors|Resolve|Rewrite|Ltac|Implicit(\s+Types)?|Set|Unset|Remove\s+Printing|Arguments|Tactic\s+Notation|Notation|Infix|Reserved\s+Notation|Section|Module\s+Type|Module|End|Check|Eval|Search|Universe|Coercions?|Generalizable\s+All|Generalizable\s+Variable?|Existing\s+Instance|Existing\s+Class|Canonical|About|Locate|Collection|Typeclasses|Opaque|Transparent|Add|Remove|Test|Pwd|Cd|Reset|Back|Strategy|SearchAbout|SearchHead|SearchPattern|SearchRewrite|Create\s+HintDb)\b</string>
+            <string>\b(Constructors|Resolve|Rewrite|Ltac|Implicit(\s+Types)?|Set|Unset|Remove\s+Printing|Arguments|Tactic\s+Notation|Notation|Infix|Reserved\s+Notation|Section|Module\s+Type|Module|End|Check|Eval|Search|Universe|Coercions?|Generalizable\s+All|Generalizable\s+Variable?|Existing\s+Instance|Existing\s+Class|Canonical|About|Locate|Collection|Typeclasses|Opaque|Transparent|Remove|Test|Pwd|Cd|Reset|Back|Strategy|SearchAbout|SearchHead|SearchPattern|SearchRewrite|Create\s+HintDb)\b</string>
             <key>comment</key>
             <string>Vernacular keywords</string>
             <key>name</key>
@@ -221,6 +221,15 @@
             <string>\b(Print(\s+((All(\s+Dependencies)?)|Assumptions|(Canonical\s+Projections)|Classes|(Coercion\s+Paths)|Coercions|(Custom\s+Grammar)|(Extraction\s+Blacklist)|(Extraction\s+Inline)|(Firstorder\s+Solver)|(Grammar\s+constr)|(Grammar\s+pattern)|(Grammar\s+tactic)|Graph|Hint|HintDb|Implicit|Instances|Libraries|LoadPath|(Ltac(\s+Signatures)?)|(ML\s+Modules)|(ML\s+Path)|Module|(Module\s+Type)|(Opaque\s+Dependencies)|Options|(Rewrite\s+HintDb)|Scope|Scopes|Strategy|Tables?|Term|(Transparent\s+Dependencies)|Universes|(Universes\s+Subgraph)|Visibility)))\b</string>
             <key>comment</key>
             <string>Vernacular Print commands</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Add(\s+(Field|LoadPath|ML\s+Path|Morphism|Parametric\s+Morphism|Parametric\s+Relation|Rec\s+LoadPath|Relation|Ring|Setoid|Zify)))\b</string>
+            <key>comment</key>
+            <string>Vernacular Add commands</string>
             <key>name</key>
             <string>keyword.source.coq</string>
         </dict>
