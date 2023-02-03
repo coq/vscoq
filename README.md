@@ -3,8 +3,8 @@
 [![Code of Conduct][conduct-shield]][conduct-link]
 [![Zulip][zulip-shield]][zulip-link]
 
-[action-shield]: https://github.com/coq-community/vscoq/workflows/ci.yml/badge.svg?branch=vscoq2
-[action-link]: https://github.com/coq/coq/actions?query=workflow:ci
+[action-shield]: https://github.com/coq-community/vscoq/actions/workflows/ci.yml/badge.svg?branch=vscoq2
+[action-link]: https://github.com/coq-community/vscoq/actions?query=workflow:ci
 
 [contributing-shield]: https://img.shields.io/badge/contributions-welcome-%23f7931e.svg
 [contributing-link]: https://github.com/coq-community/manifesto/blob/master/CONTRIBUTING.md
