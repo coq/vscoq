@@ -145,7 +145,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b((Show\s+)?Obligation\s+Tactic|Obligations\s+of|Obligation|Next\s+Obligation(\s+of)?|Solve\s+Obligations(\s+of)?|Solve\s+All\s+Obligations|Admit\s+Obligations(\s+of)?|Instance)\b</string>
+            <string>\b(Obligation\s+Tactic|Obligations\s+of|Obligation|Next\s+Obligation(\s+of)?|Solve\s+Obligations(\s+of)?|Solve\s+All\s+Obligations|Admit\s+Obligations(\s+of)?|Instance)\b</string>
             <key>comment</key>
             <string>Obligations</string>
             <key>captures</key>
@@ -200,7 +200,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Constructors|Resolve|Rewrite|Ltac|Implicit(\s+Types)?|Set|Unset|Remove\s+Printing|Arguments|Tactic\s+Notation|Notation|Infix|Reserved\s+Notation|Section|Module\s+Type|Module|End|Check|Eval|Search|Universe|Coercions?|Generalizable\s+All|Generalizable\s+Variable?|Existing\s+Instance|Existing\s+Class|Canonical|About|Locate|Collection|Typeclasses|Opaque|Transparent|Add|Remove|Test|Pwd|Cd|Reset|Back|Strategy|SearchAbout|SearchHead|SearchPattern|SearchRewrite)\b</string>
+            <string>\b(Constructors|Resolve|Rewrite|Ltac|Implicit(\s+Types)?|Set|Unset|Remove\s+Printing|Arguments|Tactic\s+Notation|Notation|Infix|Reserved\s+Notation|Section|Module\s+Type|Module|End|Check|Eval|Search|Universe|Coercions?|Generalizable\s+All|Generalizable\s+Variable?|Existing\s+Instance|Existing\s+Class|Canonical|About|Locate|Collection|Typeclasses|Opaque|Transparent|Add|Remove|Test|Pwd|Cd|Reset|Back|Strategy|SearchAbout|SearchHead|SearchPattern|SearchRewrite|Create\s+HintDb)\b</string>
             <key>comment</key>
             <string>Vernacular keywords</string>
             <key>name</key>
@@ -227,7 +227,16 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Proof|Qed|Defined|Save|Abort(\s+All)?|Undo(\s+To)?|Restart|Focus|Unfocus|Unfocused|Show\s+Proof|Show\s+Existentials|Show|Unshelve)\b</string>
+            <string>\b(Show(\s+(Conjectures|Existentials|Intros?|Ltac\s+Profile|Obligation\s+Tactic|Proof|Script|Universes)))\b</string>
+            <key>comment</key>
+            <string>Vernacular Show commands</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Proof|Qed|Defined|Save|Abort(\s+All)?|Undo(\s+To)?|Restart|Focus|Unfocus|Unfocused|Unshelve)\b</string>
             <key>comment</key>
             <string>Proof keywords</string>
             <key>name</key>
