@@ -36,7 +36,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(From|Require|Import|Export|Local|Global|Include)\b</string>
+            <string>\b(From|Require|Import|Export|Local|Global|Include|Load)\b</string>
             <key>comment</key>
             <string>Vernacular import keywords</string>
             <key>name</key>
@@ -99,7 +99,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Context)\b\s*`?\s*(\(|\{)?\s*((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <string>\b(Context)\b\s*`?\s*(\(|\{|\[)?\s*!?\s*((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
             <key>comment</key>
             <string>Context</string>
             <key>captures</key>
