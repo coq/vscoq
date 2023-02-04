@@ -188,14 +188,14 @@ const printSnippets = [
 ].map(snippetSentence);
 
 const showSnippets = [
-  {label: "(num)", insertText: "${1:num}.", documentation: "Displays only the num-th subgoal"}, 
-  "Script", 
-  "Proof", 
-  "Conjecturest", 
-  "Intro", 
-  "Intros", 
-  "Existentials", 
-  "Universes", 
+  {label: "(num)", insertText: "${1:num}.", documentation: "Displays only the num-th subgoal"},
+  "Conjecturest",
+  "Existentials",
+  "Intro",
+  "Intros",
+  "Proof",
+  "Script",
+  "Universes",
 ].map(snippetSentence);
 
 const hintSnippets = [
