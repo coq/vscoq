@@ -149,7 +149,7 @@ const printSnippets = [
   {label: "Assumptions", insertText: "Assumptions ${1:qualid}."},
   "Canonical Projections",
   "Classes",
-  {label: "Coercion Paths", insertText: "Coercion Paths ${1:class1}} ${2:class2}."},
+  {label: "Coercion Paths", insertText: "Coercion Paths ${1:class1} ${2:class2}."},
   "Coercions",
   "Extraction Inline",
   "Fields",
@@ -188,7 +188,7 @@ const printSnippets = [
 ].map(snippetSentence);
 
 const showSnippets = [
-  {label: "(num)", insertText: " ${1:num}.", documentation: "Displays only the num-th subgoal"}, 
+  {label: "(num)", insertText: "${1:num}.", documentation: "Displays only the num-th subgoal"}, 
   "Script", 
   "Proof", 
   "Conjecturest", 
@@ -199,7 +199,7 @@ const showSnippets = [
 ].map(snippetSentence);
 
 const hintSnippets = [
-  {label: "(definition)", insertText: " ${1:definition}."}, 
+  {label: "(definition)", insertText: "${1:definition}."}, 
   {label: "Constructors", insertText: "Constructors ${1:idents …}."}, 
   {label: 'Cut', insertText: 'Cut "${1:regexp}".'}, 
   {label: 'Extern', insertText: 'Extern ${1:num} ${2:optional-pattern} => ${3:tactic}.'}, 
