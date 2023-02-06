@@ -2,51 +2,6 @@ open LspData
 open Printer
 module CompactedDecl = Context.Compacted.Declaration
 
-
-let mk_notification ~event ~params = `Assoc ["jsonrpc", `String "2.0"; "method", `String event; "params", params]
-let mk_response ~id ~result = `Assoc ["jsonrpc", `String "2.0"; "id", `Int id; "result", result]
-let mk_error_response ~id ~code ~message =
-  let error = `Assoc ["code", `Int code; "message", `String message] in
-  `Assoc ["jsonrpc", `String "2.0"; "id", `Int id; "error", error]
-
-let mk_loc Position.{ line; char } =
-  `Assoc [
-    "line", `Int line;
-    "character", `Int char;
-  ]
-
-let mk_range Range.{ start; stop } =
-  `Assoc [
-    "start", mk_loc start;
-    "end", mk_loc stop;
-  ]
-
-let mk_diagnostics uri diagnostics = 
-  let mk_severity lvl =
-    let open Feedback in
-    `Int (match lvl with
-    | Error -> 1
-    | Warning -> 2
-    | Notice -> 3
-    | Info -> 3
-    | Debug -> 3
-    )
-  in
-  let mk_diagnostic d =
-    `Assoc [
-      "range", mk_range d.range;
-      "severity", mk_severity d.severity;
-      "message", `String d.message;
-    ]
-  in
-  let diagnostics = List.map mk_diagnostic diagnostics in
-  let params = `Assoc [
-    "uri", `String uri;
-    "diagnostics", `List diagnostics;
-  ]
-in 
-mk_notification ~event:"textDocument/publishDiagnostics" ~params
-
 let mk_goal sigma g =
   let evi = Evd.find sigma g in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
@@ -81,7 +36,6 @@ let mk_goal sigma g =
     "hypotheses", `List (List.rev hyps);
     "goal", `String (Pp.string_of_ppcmds ccl)
   ]
-
 
   let mk_proofview Proof.{ goals; sigma; _ } =
     let goals = List.map (mk_goal sigma) goals in

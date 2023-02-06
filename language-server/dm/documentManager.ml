@@ -83,7 +83,7 @@ let make_diagnostic doc id oloc message severity =
     | Some loc ->
       Document.range_of_coq_loc doc loc
   in
-  { range; message; severity }
+  Diagnostic.{ range; message; severity }
 
 let diagnostics st =
   let parse_errors = Document.parse_errors st.document in

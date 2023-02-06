@@ -12,28 +12,9 @@
     used by the VsCoq extension. *)
 
 open Printer
+open Lsp.JsonRpc
 open Lsp.LspEncode
 open Lsp.LspData
-
-module TraceValue = struct
-  type t =
-    | Off
-    | Messages
-    | Verbose
-
-  let of_string = function
-    | "messages" -> Messages
-    | "verbose" -> Verbose
-    | "off" -> Off
-    | _ -> raise (Invalid_argument "TraceValue.parse")
-
-  let to_string = function
-    | Off -> "off"
-    | Messages -> "messages"
-    | Verbose -> "verbose"
-end
-
-let trace_value = ref TraceValue.Off
 
 module CompactedDecl = Context.Compacted.Declaration
 
@@ -50,10 +31,10 @@ let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 let log msg = lsp_debug Pp.(fun () ->
   str @@ Format.asprintf "       [%d] %s" (Unix.getpid ()) msg)
 
-(*let string_field name obj = Yojson.Basic.to_string (List.assoc name obj)*)
+(*let string_field name obj = Yojson.Safe.to_string (List.assoc name obj)*)
 
 type lsp_event = 
-  | Request of Yojson.Basic.t option
+  | Request of Yojson.Safe.t option
 
 type event =
  | LspManagerEvent of lsp_event
@@ -67,7 +48,7 @@ let lsp : event Sel.event =
     | Ok buff ->
       begin
         log "UI req ready";
-        try LspManagerEvent (Request (Some (Yojson.Basic.from_string (Bytes.to_string buff))))
+        try LspManagerEvent (Request (Some (Yojson.Safe.from_string (Bytes.to_string buff))))
         with exn ->
           log @@ "failed to decode json";
           LspManagerEvent (Request None)
@@ -80,16 +61,6 @@ let lsp : event Sel.event =
   |> Sel.name "lsp"
   |> Sel.make_recurring
 
-let logTrace ~message ~extra =
-  let event = "$/logTrace" in
-  let params =
-      match (!trace_value, extra) with
-      | Verbose, Some extra ->
-        `Assoc [ ("message", `String message); ("verbose", `String extra) ]
-      | _, _ -> `Assoc [ ("message", `String message) ]
-  in
-  mk_notification ~event ~params 
-
 let output_json ?(trace=true) obj =
   let msg  = Yojson.Safe.pretty_to_string ~std:true obj in
   let size = String.length msg in
@@ -97,54 +68,55 @@ let output_json ?(trace=true) obj =
   log @@ "sent: " ^ msg;
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
-let logMessage ~lvl ~message =
-  let event = "window/logMessage" in
-  let params = `Assoc [ "type", `String lvl; "message", `String message ] in
-  output_json @@ mk_notification ~event ~params
-
 let do_initialize ~id params =
-  let open Yojson.Basic.Util in
-  let trace = params |> member "trace" |> to_string in
+  let open Yojson.Safe.Util in
   let capabilities = `Assoc [
     "textDocumentSync", `Int 2 (* Incremental *)
   ]
   in
-  let result = `Assoc ["capabilities", capabilities] in
-  trace_value := TraceValue.of_string trace;
-  output_json @@ mk_response ~id ~result
+  let result = Ok (`Assoc ["capabilities", capabilities]) in
+  output_json Response.(yojson_of_t {id; result})
 
 let do_shutdown ~id params =
-  let open Yojson.Basic.Util in
-  let result = `Null in
-  output_json @@ mk_response ~id ~result
+  let open Yojson.Safe.Util in
+  let result = Ok `Null in
+  output_json Response.(yojson_of_t {id; result})
 
 let do_exit ~id params =
   exit 0
 
 let parse_loc json =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let line = json |> member "line" |> to_int in
-  let char = json |> member "character" |> to_int in
-  Position.{ line ; char }
+  let character = json |> member "character" |> to_int in
+  Position.{ line ; character }
 
 let publish_diagnostics uri doc =
-  output_json @@ mk_diagnostics uri @@ Dm.DocumentManager.diagnostics doc
+  let diagnostics = List.map Diagnostic.yojson_of_t @@ Dm.DocumentManager.diagnostics doc in
+  let params = `Assoc [
+    "uri", `String uri;
+    "diagnostics", `List diagnostics;
+  ]
+  in
+  let method_ = "textDocument/publishDiagnostics" in
+  output_json @@ Notification.(yojson_of_t { method_; params })
 
 let send_highlights uri doc =
   let { Dm.DocumentManager.parsed; checked; checked_by_delegate; legacy_highlight } =
     Dm.DocumentManager.executed_ranges doc in
-  let parsed = List.map mk_range parsed in
-  let checked = List.map mk_range checked in
+  let parsed = List.map Range.yojson_of_t parsed in
+  let checked = List.map Range.yojson_of_t checked in
   (* let checked_by_delegate = List.map mk_range checked_by_delegate in *)
-  let legacy_highlight = List.map mk_range legacy_highlight in
-    let params = `Assoc [
+  let legacy_highlight = List.map Range.yojson_of_t legacy_highlight in
+  let params = `Assoc [
     "uri", `String uri;
     "parsedRange", `List parsed;
     "processingRange", `List checked;
     "processedRange", `List legacy_highlight;
   ]
   in
-  output_json @@ mk_notification ~event:"vscoq/updateHighlights" ~params
+  let method_ = "vscoq/updateHighlights" in
+  output_json @@ Notification.(yojson_of_t { method_; params })
 
 
 let update_view uri st =
@@ -152,7 +124,7 @@ let update_view uri st =
   publish_diagnostics uri st
 
 let textDocumentDidOpen params =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let text = textDocument |> member "text" |> to_string in
@@ -165,16 +137,14 @@ let textDocumentDidOpen params =
   uri, events@events'
 
 let textDocumentDidChange params =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let contentChanges = params |> member "contentChanges" |> to_list in
   let read_edit edit =
     let text = edit |> member "text" |> to_string in
-    let range = edit |> member "range" in
-    let start = range |> member "start" |> parse_loc in
-    let stop = range |> member "end" |> parse_loc in
-    Range.{ start; stop }, text
+    let range = Range.t_of_yojson (edit |> member "range") in
+    range, text
   in
   let textEdits = List.map read_edit contentChanges in
   let st = Hashtbl.find states uri in
@@ -185,7 +155,7 @@ let textDocumentDidChange params =
   uri, events
 
 let textDocumentDidSave params =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
@@ -198,7 +168,7 @@ let progress_hook uri () =
   update_view uri st
 
 let coqtopInterpretToPoint ~id params : (string * Dm.DocumentManager.events) =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let uri = params |> member "uri" |> to_string in
   let loc = params |> member "location" |> parse_loc in
   let st = Hashtbl.find states uri in
@@ -208,7 +178,7 @@ let coqtopInterpretToPoint ~id params : (string * Dm.DocumentManager.events) =
   (uri, events)
 
 let coqtopStepBackward ~id params : (string * Dm.DocumentManager.events) =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
@@ -217,7 +187,7 @@ let coqtopStepBackward ~id params : (string * Dm.DocumentManager.events) =
   (uri,events)
 
 let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
@@ -226,7 +196,7 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
   (uri,events)
 
 let coqtopResetCoq ~id params =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let st = Dm.DocumentManager.reset st in
@@ -234,7 +204,7 @@ let coqtopResetCoq ~id params =
   update_view uri st
 
 let coqtopInterpretToEnd ~id params : (string * Dm.DocumentManager.events) =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let uri = params |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_end st in
@@ -255,7 +225,7 @@ let inject_notifications l =
   List.map inject_notification l
 
 let coqtopUpdateProofView ~id params =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let loc = params |> member "position" |> parse_loc in
@@ -263,11 +233,11 @@ let coqtopUpdateProofView ~id params =
   match Dm.DocumentManager.get_proof st loc with
   | None -> ()
   | Some proofview ->
-    let result = mk_proofview proofview in
-    output_json @@ mk_response ~id ~result 
+    let result = Ok (mk_proofview proofview) in
+    output_json @@ Response.(yojson_of_t { id; result })
 
 let coqtopAbout ~id params =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let loc = params |> member "position" |> parse_loc in(* 
@@ -278,10 +248,11 @@ let coqtopAbout ~id params =
   match Dm.DocumentManager.about st loc ~goal ~pattern with
   | Error _ -> ()
   | Ok str ->
-    output_json @@ mk_response ~id ~result:(`String str)
+    let result = Ok (`String str) in
+    output_json @@ Response.(yojson_of_t { id; result })
 
 let coqtopCheck ~id params =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let loc = params |> member "position" |> parse_loc in
@@ -289,11 +260,11 @@ let coqtopCheck ~id params =
   match Dm.DocumentManager.get_proof st loc with
   | None -> ()
   | Some proofview ->
-    let result = mk_proofview proofview in
-    output_json @@ mk_response ~id ~result 
+    let result = Ok (mk_proofview proofview) in
+    output_json @@ Response.(yojson_of_t { id; result })
 
   let coqtopSearch ~id params =
-    let open Yojson.Basic.Util in
+    let open Yojson.Safe.Util in
     let textDocument = params |> member "textDocument" in
     let uri = textDocument |> member "uri" |> to_string in
     let loc = params |> member "position" |> parse_loc in
@@ -302,19 +273,20 @@ let coqtopCheck ~id params =
     let st = Hashtbl.find states uri in
     try
       let notifications = Dm.DocumentManager.search st ~id:search_id loc pattern in
-      let result = `Null in
-      output_json @@ mk_response ~id ~result; notifications
+      let result = Ok `Null in
+      output_json @@ Response.(yojson_of_t {id; result}); notifications
     with e ->
       let e, info = Exninfo.capture e in
       let code = Lsp.LspData.Error.requestFailed in
       let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
-      output_json @@ mk_error_response ~id ~code ~message; []
+      let error = Response.Error.{ code; message } in
+      output_json @@ Response.(yojson_of_t { id; result = Error error}); []
 
   let coqtopSearchResult ~id name statement =
-    let event = "vscoq/searchResult" in
+    let method_ = "vscoq/searchResult" in
     let params = `Assoc [ "id", `String id; "name", `String name; "statement", `String statement ] in
-    output_json @@ mk_notification ~event ~params
-
+    output_json @@ Notification.(yojson_of_t {method_; params})
+    
 let dispatch_method ~id method_name params : events =
   match method_name with
   | "initialize" -> do_initialize ~id params; []
@@ -339,7 +311,7 @@ let handle_lsp_event = function
   | Request None ->
       []
   | Request (Some req) ->
-      let open Yojson.Basic.Util in
+      let open Yojson.Safe.Util in
       let id = Option.default 0 (req |> member "id" |> to_int_option) in
       let method_name = req |> member "method" |> to_string in
       let params = req |> member "params" in
@@ -353,7 +325,8 @@ let pr_lsp_event = function
 
 let output_notification = function
 | QueryResultNotification params ->
-  output_json @@ mk_notification ~event:"vscoq/searchResult" ~params:(yojson_of_query_result params)
+  let method_ = "vscoq/searchResult" in
+  output_json @@ Notification.(yojson_of_t { method_; params = yojson_of_query_result params })
 
 let handle_event = function
   | LspManagerEvent e -> handle_lsp_event e

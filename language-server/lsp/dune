@@ -1,7 +1,6 @@
 (library
  (name lsp)
  (public_name vscoq-language-server.lsp)
- (modules lspData lspEncode)
  (libraries sexplib yojson coq-core.sysinit)
  (preprocess
    (pps ppx_sexp_conv ppx_yojson_conv)))

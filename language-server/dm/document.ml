@@ -29,9 +29,9 @@ let top_edit_position edits =
 let bottom_edit_position edits =
   match edits with
   | [] -> assert false
-  | (Range.{ stop },_) :: edits ->
-    List.fold_left (fun max (Range.{ stop },_) ->
-    if Position.compare stop max > 0 then stop else max) stop edits
+  | (Range.{ end_ },_) :: edits ->
+    List.fold_left (fun max (Range.{ end_ },_) ->
+    if Position.compare end_ max > 0 then end_ else max) end_ edits
 
 module RawDoc : sig
 
@@ -67,10 +67,10 @@ end = struct
   let position_of_loc raw loc =
     let i = ref 0 in
     while (!i < Array.length raw.lines && raw.lines.(!i) <= loc) do incr(i) done;
-    Position.{ line = !i - 1; char = loc - raw.lines.(!i - 1) }
+    Position.{ line = !i - 1; character = loc - raw.lines.(!i - 1) }
 
-  let loc_of_position raw Position.{ line; char } =
-    raw.lines.(line) + char
+  let loc_of_position raw Position.{ line; character } =
+    raw.lines.(line) + character
 
   let end_loc raw =
     String.length raw.text
@@ -78,14 +78,14 @@ end = struct
   let range_of_loc raw loc =
     let open Range in
     { start = position_of_loc raw loc.Loc.bp;
-      stop = position_of_loc raw loc.Loc.ep;
+      end_ = position_of_loc raw loc.Loc.ep;
     }
 
   type edit = Range.t * string
 
-  let apply_text_edit raw (Range.{start; stop}, editText) =
+  let apply_text_edit raw (Range.{start; end_}, editText) =
     let start = loc_of_position raw start in
-    let stop = loc_of_position raw stop in
+    let stop = loc_of_position raw end_ in
     let before = String.sub raw.text 0 start in
     let after = String.sub raw.text stop (String.length raw.text - stop) in
     let new_text = before ^ editText ^ after in (* FIXME avoid concatenation *)
@@ -206,8 +206,8 @@ end = struct
 
   let range_of_sentence raw sentence =
     let start = RawDoc.position_of_loc raw sentence.start in
-    let stop = RawDoc.position_of_loc raw sentence.stop in
-    Range.{ start; stop }
+    let end_ = RawDoc.position_of_loc raw sentence.stop in
+    Range.{ start; end_ }
 
   let range_of_id raw parsed id =
     match SM.find_opt id parsed.sentences_by_id with
@@ -575,7 +575,7 @@ let create_document text =
     }
 
 let apply_text_edit document edit =
-  let loc = RawDoc.loc_of_position document.raw_doc (fst edit).Range.stop in
+  let loc = RawDoc.loc_of_position document.raw_doc (fst edit).Range.end_ in
   let raw_doc, offset = RawDoc.apply_text_edit document.raw_doc edit in
   log @@ "Edit offset " ^ string_of_int offset;
   let parsed_doc = ParsedDoc.shift_sentences document.parsed_doc loc offset in
