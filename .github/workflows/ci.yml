@@ -39,9 +39,7 @@ jobs:
     - uses: cachix/install-nix-action@v18
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run: nix-shell --run "cd language-server/coq && make -j2 world"
-    - run: nix-shell --run "cd language-server && dune build"
-
+    - run: nix build '.?submodules=1'
 
   build-language-server-opam:
     strategy:
