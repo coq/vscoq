@@ -3,6 +3,7 @@ import {Position, Range} from 'vscode-languageserver';
 
 // 'sticky' flag is not yet supported :()
 const lineEndingRE = /([^\r\n]*)(\r\n|\r|\n)?/;
+const lineEndingRE1 = /([^\r\n]*)((\r\n)*|\r|\n)?/;
 
 export interface RangeDelta {
   start: Position;
@@ -223,16 +224,17 @@ export function positionAtRelativeCNL(start: Position, text: string, offset: num
   let currentOffset = 0;  // offset into text we are current at; <= `offset`
   let lineOffset = start.character;
   while(true) {
-    const match = lineEndingRE.exec(text.substring(currentOffset));
+    const match = lineEndingRE1.exec(text.substring(currentOffset));
     // match[0] -- characters plus newline
     // match[1] -- characters up to newline
     // match[2] -- newline (\n, \r, or \r\n)
+    const value = match[0].length - match[1].length;
     if(!match || match[0].length === 0 || match[1].length >= offset)
       return Position.create(line, lineOffset + offset)
     currentOffset+= match[0].length;
-    offset -= match[1].length + (match[2]===undefined ? 0 : 1);
+    offset -= match[1].length + (Math.floor(value / 2)  + 1);
     lineOffset = 0;
-    ++line;
+    line += Math.floor((value + 1) / 2);
   }
 }
 
