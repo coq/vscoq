@@ -36,7 +36,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(From|Require|Import|Export|Local|Global|Include)\b</string>
+            <string>\b(From|Require|Import|Export|Local|Global|Include|Load|Dependency)\b</string>
             <key>comment</key>
             <string>Vernacular import keywords</string>
             <key>name</key>
@@ -99,7 +99,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Context)\b\s*`?\s*(\(|\{)?\s*((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <string>\b(Context)\b\s*`?\s*(\(|\{|\[)?\s*!?\s*((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
             <key>comment</key>
             <string>Context</string>
             <key>captures</key>
@@ -120,7 +120,7 @@
 
         <dict>
             <key>match</key>
-            <string>(\b(?:Program|Local)\s+)?\b(Definition|Fixpoint|CoFixpoint|Function|Example|Let(?:\s+Fixpoint|\s+CoFixpoint)?|Instance)\s+((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
+            <string>(\b(?:Program)\s+)?\b(Definition|Fixpoint|CoFixpoint|Function|Example|Let(?:\s+Fixpoint|\s+CoFixpoint)?|Instance|Primitive|SubClass)\s+((\p{L}|[_\u00A0])(\p{L}|[0-9_\u00A0'])*)</string>
             <key>comment</key>
             <string>Definitions</string>
             <key>captures</key>
@@ -145,7 +145,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b((Show\s+)?Obligation\s+Tactic|Obligations\s+of|Obligation|Next\s+Obligation(\s+of)?|Solve\s+Obligations(\s+of)?|Solve\s+All\s+Obligations|Admit\s+Obligations(\s+of)?|Instance)\b</string>
+            <string>\b(Obligation\s+Tactic|Obligations\s+of|Obligations?|Next\s+Obligation(\s+of)?|Solve\s+Obligations(\s+of)?|Solve\s+All\s+Obligations|Admit\s+Obligations(\s+of)?|Instance)\b</string>
             <key>comment</key>
             <string>Obligations</string>
             <key>captures</key>
@@ -200,7 +200,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Hint|Constructors|Resolve|Rewrite|Ltac|Implicit(\s+Types)?|Set|Unset|Remove\s+Printing|Arguments|Tactic\s+Notation|Notation|Infix|Reserved\s+Notation|Section|Module\s+Type|Module|End|Check|Print|Eval|Search|Universe|Coercions?|Generalizable\s+All|Generalizable\s+Variable?|Existing\s+Instance|Existing\s+Class|Canonical|About|Locate|Collection|Typeclasses\s+(Opaque|Transparent))\b</string>
+            <string>\b(Constructors|Resolve|Rewrite|Ltac|Implicit(\s+Types?)?|Set|Unset|Remove\s+Printing|Arguments|Tactic\s+Notation|(String\s+|Number\s+)?Notation|Infix|Reserved\s+Infix|Reserved\s+Notation|Section|Module\s+Type|Module|End|Check|Eval|Search|Universe|(Identity\s+)?Coercions?|Generalizable\s+All|Generalizable\s+Variable?|Existing\s+Instances?|Existing\s+Class|Canonical|About|Collection|Typeclasses|Opaque|Transparent|Test|Pwd|Cd|Back|BackTo|Strategy|SearchAbout|SearchHead|SearchPattern|SearchRewrite|Create\s+HintDb|Comments|Compute|Combined\s+Scheme|Constraint|Preterm|Prenex\s+Implicits|Optimize\s+Heap|Optimize\s+Proof|Inspect|Guarded)\b</string>
             <key>comment</key>
             <string>Vernacular keywords</string>
             <key>name</key>
@@ -209,7 +209,88 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Proof|Qed|Defined|Save|Abort(\s+All)?|Undo(\s+To)?|Restart|Focus|Unfocus|Unfocused|Show\s+Proof|Show\s+Existentials|Show|Unshelve)\b</string>
+            <string>\b(Hint(\s+(Constants|Constructors|Cut|Extern|Immediate|Mode|Opaque|Resolve|Rewrite|Transparent|Unfold|Variables|(View\s+for\s+(apply|move))))?)\b</string>
+            <key>comment</key>
+            <string>Vernacular Hint commands</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Print(\s+(All(\s+Dependencies)?|Assumptions|Canonical\s+Projections|Classes|Coercion\s+Paths|Coercions|Custom\s+Grammar|Debug\s+GC|Extraction\s+Blacklist|Extraction\s+Inline|Firstorder\s+Solver|Grammar|Graph|Hint|HintDb|Implicit|Instances|Libraries|LoadPath|Ltac(\s+Signatures)?|ML\s+Modules|ML\s+Path|Module(\s+Type)?|Notation|Opaque\s+Dependencies|Options|Rewrite\s+HintDb|Rings|Scope|Scopes|Strategy|Section|Strategies|Tables?|Term|Transparent\s+Dependencies|Typing\s+Flags|Universes|Universes\s+Subgraph|Visibility))?)\b</string>
+            <key>comment</key>
+            <string>Vernacular Print commands</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Add(\s+(Field|LoadPath|ML\s+Path|Morphism|Parametric\s+Morphism|Parametric\s+Relation|Rec\s+LoadPath|Relation|Ring|Setoid|Zify))?)\b</string>
+            <key>comment</key>
+            <string>Vernacular Add commands</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Ltac2(\s+(Eval|External|Notation|Set|Type))?)\b</string>
+            <key>comment</key>
+            <string>Vernacular Ltac2 commands</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Remove(\s+(Hints|LoadPath))?)\b</string>
+            <key>comment</key>
+            <string>Vernacular Remove commands</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Reset(\s+(Extraction\s+Blacklist|Extraction\s+Inline|Initial|Ltac\s+Profile))?)\b</string>
+            <key>comment</key>
+            <string>Vernacular Reset commands</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Locate(\s+(File|Library|Ltac|Module|Term))?)\b</string>
+            <key>comment</key>
+            <string>Vernacular Locate commands</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Declare\s+(Custom\s+Entry|Instance|Left\s+Step|Module|ML\s+Module|Morphism|Reduction|Right\s+Step|Scope))\b</string>
+            <key>comment</key>
+            <string>Vernacular Declare commands</string>
+            <key>name</key>
+            <string>keyword.control.import.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Show(\s+(Conjectures|Existentials|Goal|Intros?|Lia\s+Profile|Ltac\s+Profile|Match|Obligation\s+Tactic|Proof|Script|Universes|Zify))?)\b</string>
+            <key>comment</key>
+            <string>Vernacular Show commands</string>
+            <key>name</key>
+            <string>keyword.source.coq</string>
+        </dict>
+
+        <dict>
+            <key>match</key>
+            <string>\b(Proof|Qed|Defined|Save|Abort(\s+All)?|Undo(\s+To)?|Restart|Focus|Unfocus|Unfocused|Unshelve)\b</string>
             <key>comment</key>
             <string>Proof keywords</string>
             <key>name</key>
@@ -218,7 +299,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(Quit|Drop|Time|Redirect|Timeout|Fail)\b</string>
+            <string>\b(Quit|Drop|Time|Redirect|Timeout|Fail|Succeed)\b</string>
             <key>comment</key>
             <string>Vernacular Debug keywords</string>
             <key>name</key>
@@ -281,7 +362,7 @@
 
         <dict>
             <key>match</key>
-            <string>\b(intro|intros|revert|induction|destruct|auto|eauto|tauto|eassumption|apply|eapply|assumption|constructor|econstructor|reflexivity|inversion|injection|assert|split|esplit|omega|fold|unfold|specialize|rewrite|erewrite|change|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|set|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy|unshelve|pattern|transitivity|etransitivity|f_equal|exfalso|replace|abstract|cycle|swap|revgoals|shelve|unshelve)\b</string>
+            <string>\b(intro|intros|revert|induction|destruct|auto|eauto|tauto|eassumption|apply|eapply|assumption|constructor|econstructor|reflexivity|inversion|injection|assert|split|esplit|omega|fold|unfold|specialize|rewrite|erewrite|change|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|set|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy|unshelve|pattern|transitivity|etransitivity|f_equal|exfalso|replace|abstract|cycle|swap|revgoals|shelve|unshelve|typeclasses\s+eauto)\b</string>
             <key>comment</key>
             <string>Ltac builtins</string>
             <key>name</key>
