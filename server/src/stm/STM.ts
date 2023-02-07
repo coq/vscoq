@@ -16,6 +16,7 @@ import * as server from '../server';
 import {AnnotatedText} from '../util/AnnotatedText'
 import * as text from '../util/AnnotatedText'
 import {GoalsCache} from './GoalsCache';
+import * as semver from 'semver';
 
 import {Settings} from '../protocol';
 export {StateStatus} from './State';
@@ -802,11 +803,19 @@ private routeId = 1;
    */
   private async handleCallFailure(error: coqtop.CallFailure, command: {range: Range, text: string}) : Promise<proto.FailValue> {
     let errorRange : Range = undefined;
-    if(error.range)
-      errorRange = vscode.Range.create(
-        textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.start)
-      , textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.stop)
-      );
+    if(error.range) {
+      const version = this.coqtop.getVersion();
+      let start : Position;
+      let end : Position;
+      if (semver.satisfies(version, ">= 8.15")) {
+        start = textUtil.positionAtRelative(command.range.start, command.text, error.range.start)
+        end = textUtil.positionAtRelative(command.range.start, command.text, error.range.stop)
+      } else {
+        start = textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.start)
+        end = textUtil.positionAtRelativeCNL(command.range.start, command.text, error.range.stop)
+      }
+      errorRange = vscode.Range.create(start, end);
+    }
 
     const diffError = errorParsing.parseError(error.message);
     const prettyError = server.project.getPrettifySymbols().prettify(diffError)
