@@ -8,7 +8,7 @@ bug-reports: "https://github.com/coq-community/vscoq/issues"
 dev-repo: "git+https://github.com/coq-community/vscoq"
 
 build: [ make "world" ]
-install: [ "dune" "install" "-p" "sel,vscoq-language-server" ]
+install: [ "dune" "install" "-p" "vscoq-language-server" ]
 depends: [
   "yojson"
   "ocamlfind"
