@@ -63,6 +63,7 @@ let _ =
       fst @@ Coqargs.parse_args ~usage:vscoqtop_specific_usage ~init:Coqargs.default args in
   let opts, () = Coqinit.parse_arguments ~usage:vscoqtop_specific_usage ~initial_args ~parse_extra:(fun x -> (), x) () in
   let injections = Coqinit.init_runtime opts in
+  Safe_typing.allow_delayed_constants := true;
   Flags.quiet := true;
   Sys.(set_signal sigint Signal_ignore);
   Exninfo.record_backtrace true;
