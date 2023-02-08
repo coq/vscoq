@@ -3,7 +3,9 @@
 
   outputs = { self, nixpkgs }: {
 
-    defaultPackage.x86_64-linux =
+    packages.default = self.packages.x86_64-linux.vscoq-language-server;
+
+    packages.x86_64-linux.vscoq-language-server =
       # Notice the reference to nixpkgs here.
       with import nixpkgs { system = "x86_64-linux"; };
       ocamlPackages.buildDunePackage {
@@ -34,6 +36,20 @@
           ppx_yojson_conv
         ]);
       };
+
+    packages.x86_64-linux.vscoq-client =
+      with import nixpkgs { system = "x86_64-linux"; };
+      stdenv.mkDerivation rec {
+
+        name = "vscoq-client";
+        src = ./client;
+
+        buildInputs = [
+          nodejs
+          yarn
+        ];
+
+    };
 
   };
 }
