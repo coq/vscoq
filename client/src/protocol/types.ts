@@ -40,5 +40,5 @@ export interface SearchCoqHandshake {
 export interface SearchCoqResult {
     id: string;
     name: string; 
-    statement: Position;
+    statement: string;
 }
