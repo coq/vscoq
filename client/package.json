@@ -4,7 +4,7 @@
   "description": "VsCoq is an extension for Visual Studio Code with support for the Coq Proof Assistant",
   "version": "2.0.0",
   "engines": {
-    "vscode": "^1.73.0"
+    "vscode": "^1.74.0"
   },
   "dependencies": {
     "vscode-languageclient": "^7.0.0"
@@ -365,10 +365,11 @@
   },
   "scripts": {
     "install:all": "yarn install && cd goal-view-ui && yarn install && cd ../search-ui && yarn install",
-    "start:goalview": "cd goal-view-ui && yarn run start",
-    "build:goalview": "cd goal-view-ui && yarn run build",
-    "start:searchview": "cd search-ui && yarn run start",
-    "build:searchview": "cd search-ui && yarn run build",
+    "build:all": "cd goal-view-ui && yarn run build && cd ../search-ui && yarn run build",
+    "start:goal-view-ui": "cd goal-view-ui && yarn run start",
+    "build:goal-view-ui": "cd goal-view-ui && yarn run build",
+    "start:search-ui": "cd search-ui && yarn run start",
+    "build:search-ui": "cd search-ui && yarn run build",
     "vscode:prepublish": "yarn run package",
     "compile": "webpack",
     "watch": "webpack --watch",
