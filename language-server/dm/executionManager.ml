@@ -242,9 +242,17 @@ let worker_execute ~doc_id last_step_id ~send_back (vs,events) = function
   | _ -> assert false
 
 let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; last_proof_step_id; _ } ~send_back =
-  let _ = List.fold_left (worker_execute ~doc_id last_proof_step_id ~send_back) (vs,[]) tasks in
-  flush_all ();
-  exit 0
+  try
+    let _ = List.fold_left (worker_execute ~doc_id last_proof_step_id ~send_back) (vs,[]) tasks in
+    flush_all ();
+    exit 0
+  with e ->
+    let e, info = Exninfo.capture e in
+    let message = CErrors.iprint_no_report (e, info) in
+    Feedback.msg_debug @@ Pp.str "======================= worker ===========================";
+    Feedback.msg_debug message;
+    Feedback.msg_debug @@ Pp.str "==========================================================";
+    exit 1
 
 let execute ~doc_id st (vs, events, interrupted) task =
   if interrupted then begin

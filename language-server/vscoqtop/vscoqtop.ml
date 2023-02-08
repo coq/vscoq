@@ -28,16 +28,9 @@ let loop injections =
   try loop [LspManager.lsp]
   with exn ->
     let info = Exninfo.capture exn in
-    log "";
-    log "";
-    log "";
-    log @@ "==========================================================";
-    log @@ Pp.string_of_ppcmds @@ CErrors.iprint_no_report info;
-    log @@ "==========================================================";
-    log "";
-    log "";
-    log "";
-    log ""
+    Feedback.msg_debug @@ Pp.str "==========================================================";
+    Feedback.msg_debug @@ CErrors.iprint_no_report info;
+    Feedback.msg_debug @@ Pp.str "==========================================================";
 ;;
 
 let vscoqtop_specific_usage = {
