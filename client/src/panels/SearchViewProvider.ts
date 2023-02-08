@@ -113,7 +113,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                     const params: SearchCoqRequest = {id, textDocument, pattern, position};
                     client.sendRequest(req, params).then(
                         (handshake: SearchCoqHandshake) => {
-                            webview.postMessage({"command": "searching", "text": handshake});
+                            webview.postMessage({"command": "launchedSearch", "text": handshake});
                         }
                     );
 

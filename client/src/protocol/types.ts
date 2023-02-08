@@ -32,7 +32,9 @@ export interface SearchCoqRequest {
 
 export interface SearchCoqHandshake {
     id: string;
-    ok: boolean;
+    result?: boolean;
+    error?: any;
+
 }
 
 export interface SearchCoqResult {

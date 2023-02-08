@@ -54,6 +54,7 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                     onClick={
                         () => changeTabHandler(index)
                     }
+                    aria-selected={index === currentTab}
                 >
                     {"Search " + index}
                     <VSCodeButton 
@@ -84,7 +85,7 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                         <VscAdd />
                     </VSCodeButton>
                 </div>
-                <VSCodePanels activeid={'tab-'+currentTab} className={classes.Panels}>
+                <VSCodePanels className={classes.Panels}>
                     {panelTabs}
                     {panelViews}
                 </VSCodePanels>

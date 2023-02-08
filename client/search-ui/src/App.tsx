@@ -46,9 +46,9 @@ const app = () => {
     const numTabs = useRef(1); 
 
     const handleMessage = useCallback ((msg: any) => {
+        const result = msg.data.text;
         switch (msg.data.command) {
             case 'renderResult':
-                const result = msg.data.text;
                 setSearchTabs(searchTabs => {
                     
                     const newTabs = searchTabs.map(tab => {
@@ -61,8 +61,9 @@ const app = () => {
                     return newTabs;
                 });
                 break;
-            case 'searching': 
+            case 'launchedSearch': 
                 //TODO: Add UI elements to show user the searching state
+                console.log("result", msg.data);
                 break;
         }
       }, []);
@@ -75,6 +76,7 @@ const app = () => {
     }, [handleMessage]);
                     
     useEffect(() => {
+        
         if(firstUpdate.current) {
             firstUpdate.current = false; 
             return;
@@ -84,14 +86,17 @@ const app = () => {
             changeTabHandler(searchTabs.length - 1);
             numTabs.current = searchTabs.length;
         }
-        if(numTabs.current > searchTabs.length) {
+        else if(numTabs.current > searchTabs.length) {
             if(currentTab > searchTabs.length - 1) {
                 changeTabHandler(searchTabs.length - 1);
             }
             numTabs.current = searchTabs.length;
         }
-        saveState();
-    }, [searchTabs]);
+        else {
+            saveState();
+        }
+        
+    }, [searchTabs, currentTab]);
     
     //this will only run on initial render
     useEffect(() => {
@@ -125,7 +130,7 @@ const app = () => {
             setSearchTabs(searchTabs => {
                 const newTabs = searchTabs.map((tab, index) => {
                     if(index === currentTab) {
-                        return {...tab, searchId: searchId, results: []};
+                        return {...tab, searchId: searchId, searchString, results: []};
                     }
                     return tab;
                 });
