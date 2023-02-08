@@ -1,5 +1,8 @@
 on:
-  [push, pull_request]
+  push:
+    branches: [ vscoq2 ]
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build-extension:
