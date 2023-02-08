@@ -1,5 +1,5 @@
 import { integer, VersionedTextDocumentIdentifier } from "vscode-languageclient";
-import { Position } from "vscode";
+import { CompletionItemLabel, Position } from "vscode";
 
 export interface Hypothesis {
     identifiers: string[];
@@ -15,6 +15,21 @@ export interface Goal {
 export interface UpdateProofViewRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;
+}
+
+export interface CompletionItemCoqRequest {
+    textDocument: VersionedTextDocumentIdentifier;
+    position: Position;
+}
+
+export interface CompletionItemCoq {
+    label: string;
+    typeString: string;
+    path: string;
+}
+
+export interface CompletionItemCoqResponse {
+    completionItems : CompletionItemCoq[]
 }
 
 export interface UpdateProofViewResponse {

@@ -225,6 +225,31 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
   update_view uri st;
   (uri,events)
 
+  let make_label (item : Dm.CompletionItem.completion_item) = 
+    let (label, typ, path) = Dm.CompletionItem.pp_completion_item item in
+    `Assoc [
+      "label", `String label;
+      "typeString", `String typ;
+      "path", `String path;
+    ]
+  
+  let completionDebugInfo labels = 
+    `Assoc [
+        "completionItems", `List (List.map make_label labels)
+      ]
+  
+  let coqtopGetCompletionItems ~id params =
+    let open Yojson.Basic.Util in
+    let textDocument = params |> member "textDocument" in
+    let uri = textDocument |> member "uri" |> to_string in
+    let loc = params |> member "position" |> parse_loc in
+    let st = Hashtbl.find states uri in
+    match Dm.DocumentManager.get_lemmas st loc with
+    | None -> () (* TODO: We should probably give something as output here as something likely failed *)
+    | Some lemmas -> 
+      let result = completionDebugInfo (lemmas) in
+      output_json @@ mk_response ~id ~result
+
 let coqtopResetCoq ~id params =
   let open Yojson.Basic.Util in
   let uri = params |> member "uri" |> to_string in
@@ -330,6 +355,7 @@ let dispatch_method ~id method_name params : events =
   | "vscoq/resetCoq" -> coqtopResetCoq ~id params; []
   | "vscoq/interpretToEnd" -> coqtopInterpretToEnd ~id params |> inject_dm_events
   | "vscoq/updateProofView" -> coqtopUpdateProofView ~id params; []
+  | "vscoq/getCompletionItems" -> coqtopGetCompletionItems ~id params; []
   | "vscoq/search" -> coqtopSearch ~id params |> inject_notifications
   | "vscoq/about" -> coqtopAbout ~id params; []
   | "vscoq/check" -> coqtopCheck ~id params; []

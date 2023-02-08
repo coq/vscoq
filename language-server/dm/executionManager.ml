@@ -16,6 +16,9 @@ let debug_em = CDebug.create ~name:"vscoq.executionManager" ()
 let log msg = debug_em Pp.(fun () ->
   str @@ Format.asprintf " [%d] %s" (Unix.getpid ()) msg)
 
+let error_log msg = 
+  Printf.eprintf "%s\n" msg
+
 type execution_status = DelegationManager.execution_status =
   | Success of Vernacstate.t option
   | Error of string Loc.located * Vernacstate.t option (* State to use for resiliency *)
@@ -421,6 +424,17 @@ let get_proofview st id =
       let open Declare in
       let open Vernacstate in
       st |> LemmaStack.with_top ~f:Proof.get |> data |> Option.make
+
+let get_lemmas ((env : Environ.env), (sigma : Evd.evar_map)) =
+  let open CompletionItem in
+  let results = ref [] in
+  (* GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit *)
+  let display ref kind env c =
+    results := mk_completion_item sigma ref kind env c :: results.contents;
+  in
+  Search.generic_search env display;
+  results.contents
+
 
 let get_context st id =
   match find_fulfilled_opt id st.of_sentence with

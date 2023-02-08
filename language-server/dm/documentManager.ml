@@ -252,6 +252,12 @@ let get_proof st pos =
     | Some sentence ->
       ExecutionManager.get_context st.execution_state sentence.id
 
+let get_lemmas st pos =
+  match get_context st pos with
+  | None -> None
+  | Some context -> 
+    Some (ExecutionManager.get_lemmas context)
+
 let pr_event = function
 | ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
 | ExecutionManagerEvent ev -> ExecutionManager.pr_event ev
