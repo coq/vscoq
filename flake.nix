@@ -3,7 +3,7 @@
 
   outputs = { self, nixpkgs }: {
 
-    packages.default = self.packages.x86_64-linux.vscoq-language-server;
+    packages.x86_64-linux.default = self.packages.x86_64-linux.vscoq-language-server;
 
     packages.x86_64-linux.vscoq-language-server =
       # Notice the reference to nixpkgs here.

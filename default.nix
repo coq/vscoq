@@ -4,4 +4,4 @@
     sha256 = "0jm6nzb83wa6ai17ly9fzpqc40wg1viib8klq8lby54agpl213w5"; }
 ) {
   src =  ./.;
-}).defaultNix.packages.default
+}).defaultNix.packages.x86_64-linux.default
