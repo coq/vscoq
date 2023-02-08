@@ -3,6 +3,7 @@ import {workspace, window, commands, ExtensionContext,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
   TextEditor,
+  languages,
 } from 'vscode';
 
 import {
@@ -12,6 +13,7 @@ import {
 
 import Client from './client';
 import {initializeDecorations} from './Decorations';
+import LemmaCompletionProvider from './completion/LemmaCompletionProvider';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
 import { SearchCoqResult } from './protocol/types';
@@ -87,6 +89,8 @@ export function activate(context: ExtensionContext) {
         client.onNotification("vscoq/searchResult", (searchResult: SearchCoqResult) => {
             searchProvider.renderSearchResult(searchResult);
         });
+
+		languages.registerCompletionItemProvider([{ language: 'coq' }], new LemmaCompletionProvider(client));
 
         let goalsHook = window.onDidChangeTextEditorSelection(
             (evt: TextEditorSelectionChangeEvent) => {
