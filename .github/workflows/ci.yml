@@ -40,6 +40,7 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - run: nix build '.?submodules=1'
+    - run: nix-shell --run "cd language-server && make world"
 
   build-language-server-opam:
     strategy:
