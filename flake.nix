@@ -28,7 +28,6 @@
           yojson
           zarith
           findlib
-          ocaml-lsp
           ppx_inline_test
           ppx_assert
           ppx_sexp_conv
@@ -50,6 +49,16 @@
         ];
 
     };
+
+    devShells.x86_64-linux.default =
+      with import nixpkgs { system = "x86_64-linux"; };
+      mkShell {
+        buildInputs =
+          self.packages.x86_64-linux.vscoq-language-server.buildInputs
+          ++ (with ocamlPackages; [
+            ocaml-lsp
+          ]);
+      };
 
   };
 }
