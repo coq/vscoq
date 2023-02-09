@@ -17,12 +17,14 @@ type SearchResult = {
 type SearchTab = {
     searchId: string, 
     searchString: string, 
-    results: SearchResult[]
+    type: string, 
+    results: SearchResult[],
 };
 
 const defaultTab = {
     searchId: uuid(), 
     searchString: "", 
+    type: "Search",
     results: []
 };
 
@@ -49,7 +51,20 @@ const app = () => {
     const handleMessage = useCallback ((msg: any) => {
         const result = msg.data.text;
         switch (msg.data.command) {
+            case 'aboutResponse':
+                setSearchTabs(searchTabs => { 
+                    const newTabs = searchTabs.map(tab => {
+                        if(tab.searchId === msg.data.id) {
+                            return {...tab, results: [{id: "", name: "", statement: result}]};
+                        }
+                        return tab;
+                    });
+    
+                    return newTabs;
+                });
+                break;
             case 'renderResult':
+                console.log("Search result", result);
                 setSearchTabs(searchTabs => {
                     
                     const newTabs = searchTabs.map(tab => {
@@ -104,6 +119,11 @@ const app = () => {
         restoreState();
     }, []);
 
+
+    const queryTypeSelectHandler: ChangeEventHandler<HTMLInputElement> = (e) => {
+        setQueryType(e.target.value);
+    };
+
     const searchFieldInputHandler: ChangeEventHandler<HTMLInputElement> = (e) => {
         setSearchString(e.target.value);
     };
@@ -140,9 +160,10 @@ const app = () => {
             });
 
             vscode.postMessage({
-                command: "coqSearch",
+                command: "coqQuery",
                 text: searchString,
                 id: searchId,
+                type: queryType,
             });
 
         }
@@ -178,7 +199,7 @@ const app = () => {
 
     const addSearchTabHandler = () => {
         setSearchTabs(searchTabs => {
-            return searchTabs.concat([{searchId: uuid(), searchString: "", results: []}]);
+            return searchTabs.concat([{searchId: uuid(), searchString: "", results: [], type: queryType}]);
         });
     };
 
@@ -205,6 +226,7 @@ const app = () => {
                 changeTabHandler={changeTabHandler}
                 deleteTabHandler={deleteSearchTabHandler}
                 currentTab={currentTab}
+                queryTypeSelectHandler={queryTypeSelectHandler}
             />
         </main>
     );

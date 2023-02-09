@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
-import { SearchCoqHandshake, SearchCoqRequest, SearchCoqResult} from '../protocol/types';
+import { AboutCoqRequest, AboutCoqResponse, SearchCoqHandshake, SearchCoqRequest, SearchCoqResult} from '../protocol/types';
 import {
     RequestType,
     VersionedTextDocumentIdentifier,
@@ -90,42 +90,60 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
   private _setWebviewMessageListener(webview: vscode.Webview, client: Client) {
     webview.onDidReceiveMessage(
       (message: any) => {
+        const uri = vscode.window.activeTextEditor?.document.uri;
+        const version = vscode.window.activeTextEditor?.document.version;
+        const position = vscode.window.activeTextEditor?.selection.active;
         const command = message.command;
         //const text = message.text;
 
         switch (command) {
             // Add more switch case statements here as more webview message commands
             // are created within the webview context (i.e. inside media/main.js)
-            case "coqSearch":
-                const uri = vscode.window.activeTextEditor?.document.uri;
-                const version = vscode.window.activeTextEditor?.document.version;
-                const position = vscode.window.activeTextEditor?.selection.active;
+            case "coqQuery":
 
                 if(version && uri && position) {
                     
-                    const req = new RequestType<SearchCoqRequest, SearchCoqHandshake, void>("vscoq/search");
+                    const id = message.id;
+                    const pattern = message.text;
+                    const type = message.type;
                     const textDocument = VersionedTextDocumentIdentifier.create(
                         uri.toString(),
                         version
                       );
-                    const id = message.id;
-                    const pattern = message.text;
-                    const params: SearchCoqRequest = {id, textDocument, pattern, position};
-                    client.sendRequest(req, params).then(
-                        (handshake: SearchCoqHandshake) => {
-                            webview.postMessage({"command": "launchedSearch", "text": handshake});
-                        }
-                    );
+
+                    if(type === "Search") {  
+                        const params: SearchCoqRequest = {id, textDocument, pattern, position};
+                        const req = new RequestType<SearchCoqRequest, SearchCoqHandshake, void>("vscoq/search");
+                        client.sendRequest(req, params).then(
+                            (handshake: SearchCoqHandshake) => {
+                                webview.postMessage({"command": "launchedSearch", "text": handshake});
+                            }
+                        );
+                    }
+
+                    if(type === "About") {
+                        const params: AboutCoqRequest = {textDocument, pattern, position};
+                        const req = new RequestType<AboutCoqRequest, AboutCoqResponse, void>("vscoq/about");
+                            
+                        client.sendRequest(req, params).then(
+                            (result: AboutCoqResponse) => {
+                                webview.postMessage({"command": "aboutResponse", "text": result, "id": id});
+                            }
+                        );
+                    }
 
                 }
                 else {
                     vscode.window.showErrorMessage("Search: " + message.text + " impossible. No active text editor.");
                 }
                 return;
+
             case "copySearchResult":
                 vscode.env.clipboard.writeText(message.text);
                 vscode.window.showInformationMessage('Successfuly copied command ' + message.text + ' to clipboard.');
                 return;
+
+
         }
       }
     );

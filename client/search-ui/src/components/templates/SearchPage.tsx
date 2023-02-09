@@ -27,6 +27,7 @@ type SearchPageProps = {
     }[],
     copyNameHandler: (name: string) => void,
     value: string, 
+    queryTypeSelectHandler: (e: any) => void;
     onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
     searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement>,
     addTabHandler: () => void,
@@ -39,7 +40,10 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     
     const {tabs, copyNameHandler, value, 
             onTextInput, searchFieldKeyPressHandler,
-            changeTabHandler, addTabHandler, deleteTabHandler, currentTab} = props;
+            changeTabHandler, addTabHandler, 
+            deleteTabHandler, currentTab,
+            queryTypeSelectHandler
+        } = props;
 
     const panelViews = tabs.map((tab, index) => {
         return <VSCodePanelView id={"tab-"+index} >
@@ -79,7 +83,7 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                         onKeyDown={searchFieldKeyPressHandler} 
                     />
 
-                    <VSCodeDropdown className={classes.Dropdown} onChange={(event) => {console.log(event); }}>
+                    <VSCodeDropdown className={classes.Dropdown} onChange={(e) => queryTypeSelectHandler(e) }>
                         <VSCodeOption>Search</VSCodeOption>
                         <VSCodeOption>Check</VSCodeOption>
                         <VSCodeOption>About</VSCodeOption>

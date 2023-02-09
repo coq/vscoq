@@ -42,3 +42,15 @@ export interface SearchCoqResult {
     name: string; 
     statement: string;
 }
+
+export interface AboutCoqRequest {
+    textDocument: VersionedTextDocumentIdentifier;
+    pattern: string; 
+    position: Position;
+    goalIndex?: number;
+}
+
+export interface AboutCoqResponse {
+    result: string;
+    error?: string;
+}
