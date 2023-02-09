@@ -19,8 +19,7 @@ jobs:
         node-version: 16.x
     - run: |
         cd client
-        yarn install
-        yarn compile
+        yarn run package
 
   build-language-server:
     strategy:

@@ -40,7 +40,7 @@
       {
         "language": "coq",
         "scopeName": "source.coq",
-        "path": "./syntax/coq.tmLanguage"
+        "path": "./syntax/coq.json"
       }
     ],
     "viewsContainers": {
@@ -61,45 +61,82 @@
             }
         ]
     },
-    "configuration": {
-      "type": "object",
-      "title": "Coq configuration",
-      "properties": {
-        "vscoq.trace.server": {
-            "scope": "window",
-            "type": "string",
-            "enum": [
-              "off",
-              "messages",
-              "verbose"
-            ],
-            "default": "messages",
-            "description": "Traces the communication between VS Code and the language server."
+    "configuration": [
+        {
+            "title": "Coq configuration",
+            "type": "object",
+            "properties": {
+                "vscoq.trace.server": {
+                    "scope": "window",
+                    "type": "string",
+                    "enum": [
+                        "off",
+                        "messages",
+                        "verbose"
+                    ],
+                    "default": "messages",
+                    "description": "Traces the communication between VS Code and the language server."
+                },
+                "vscoq.path": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to vscoqtop."
+                },
+                "vscoq.args": {
+                    "type": "array",
+                    "default": [
+                        "-bt"
+                    ],
+                    "description": "vscoqtop arguments"
+                }
+            }
         },
-        "vscoq.path": {
-          "type": "string",
-          "default": "",
-          "description": "Path to vscoqtop."
+        {
+            "title": "Goal and Info view panel",
+            "type": "object",
+            "properties": {
+                "vscoq.goals.display": {
+                    "scope": "window",
+                    "type": "string",
+                    "enum": [
+                        "Tabs",
+                        "List"
+                    ],
+                    "default": "List",
+                    "description": "Determines wether multiple goals should be displayed in different tabs or as a list of collapsible items."
+                }
+            }
         },
-        "vscoq.args": {
-          "type": "array",
-          "default": [
-            "-bt"
-          ],
-          "description": "vscoqtop arguments"
-        },
-        "vscoq.goals.display": {
-            "scope": "window",
-            "type": "string",
-            "enum": [
-              "Tabs",
-              "List"
-            ],
-            "default": "List",
-            "description": "Determins wether multiple goals should be displayed in different tabs or as a list of collapsible items."
+        {
+            "title": "Proof checking", 
+            "type": "object",
+            "properties": {
+                "vscoq.proof.delegation": {
+                    "scope": "window",
+                    "type": "string",
+                    "enum": [
+                        "None",
+                        "Skip", 
+                        "Delegate"
+                    ],
+                    "enumItemLabels": [
+                        "No delegation (all proofs are checked on after the other)",
+                        "Skip the proofs which are out of focus. This requires a continuous checking to be off",
+                        "Delegate proofs"
+                    ],
+                    "default": "None",
+                    "description": "Determines which delegation strategy should be used by the server."
+                },
+                "vscoq.proof.workers": {
+                    "scope": "window", 
+                    "type": "number",
+                    "default": "1",
+                    "description": "Amount of workers assigned to proofs in delegation mode"
+                }
+
+            }
         }
-      }
-    },
+    ],
     "commands": [
       {
           "command": "coq.displayGoals", 
@@ -373,7 +410,7 @@
     "vscode:prepublish": "yarn run package",
     "compile": "webpack",
     "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
+    "package": "yarn run install:all && yarn run build:all && webpack --mode production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
