@@ -1,9 +1,5 @@
 import React, {useState, useCallback, useEffect} from 'react';
-import { vscode } from "./utilities/vscode";
-import { VSCodeButton } from "@vscode/webview-ui-toolkit/react";
 import "./App.css";
-import { DidChangeWorkspaceFoldersNotification } from 'vscode-languageclient';
-import { PropertyStyleSheetBehavior } from '@microsoft/fast-foundation';
 
 import GoalPage from './components/templates/GoalPage';
 
@@ -22,6 +18,7 @@ type Goal = {
 const app = () => {
 
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [isInProof, setIsInProof] = useState(false);
   const [goalDisplaySetting, setGoalDisplaySetting] = useState<string>("List");
 
   const handleMessage = useCallback ((msg: any) => {
@@ -29,7 +26,8 @@ const app = () => {
       case 'initAppSettings':
         setGoalDisplaySetting(msg.data.text);
         break;
-      case 'renderProofView':          
+      case 'renderProofView':
+        setIsInProof(msg.data.text.isInProof);
         setGoals(msg.data.text.goals.map((goal: Goal, index: number) => {
             return {...goal, isOpen: index === 0, displayId: index+1 };
         }));
@@ -57,7 +55,7 @@ const app = () => {
 
   return (
     <main>
-        <GoalPage goals={goals} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting} />
+        <GoalPage goals={goals} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting} isInProof={isInProof} />
     </main>
   );
 };

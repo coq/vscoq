@@ -18,19 +18,24 @@ type GoalPageProps = {
     }[], 
     collapseGoalHandler: (id: string) => void,
     displaySetting: string;
+    isInProof: boolean;
 };
 
 const goalPage: FunctionComponent<GoalPageProps> = (props) => {
 
-    const {goals, displaySetting, collapseGoalHandler} = props;
+    const {goals, displaySetting, collapseGoalHandler, isInProof} = props;
     
     const goalSection = displaySetting === 'Tabs' ? 
         <GoalTabSection goals={goals} /> :
         <GoalCollapsibleSection goals={goals} collapseGoalHandler={collapseGoalHandler} />;
 
+    const goalsOrEmpty = isInProof
+        ? (goals.length > 0 ? goalSection : "No more subgoals")
+        : "Not in proof";
+
     return (
         <div className={classes.Page}>
-            {goalSection}
+            {goalsOrEmpty}
         </div>
     );
 };

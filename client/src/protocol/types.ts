@@ -18,6 +18,7 @@ export interface UpdateProofViewRequest {
 }
 
 export interface UpdateProofViewResponse {
+    isInProof: boolean;
     goals: Goal[];
     shelvedGoals: Goal[];
     givenUpGoals: Goal[];

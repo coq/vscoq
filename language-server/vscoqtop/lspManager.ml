@@ -248,7 +248,15 @@ let coqtopUpdateProofView ~id params =
   let loc = params |> member "position" |> parse_loc in
   let st = Hashtbl.find states uri in
   match Dm.DocumentManager.get_proof st loc with
-  | None -> ()
+  (* Send an "empty" response to notify about not being in a proof *)
+  (* TODO: Selectively updates based on prior state (should not alert when already not in proof) *)
+  | None -> let result = `Assoc [
+      "type", `String "proof-view";
+      "goals", `List [];
+      "shelvedGoals", `List [];
+      "givenUpGoals", `List [];
+      "isInProof", `Bool false
+    ] in output_json @@ mk_response ~id ~result
   | Some proofview ->
     let result = Ok (mk_proofview proofview) in
     output_json @@ Response.(yojson_of_t { id; result })
