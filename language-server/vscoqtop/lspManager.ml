@@ -262,6 +262,32 @@ let coqtopUpdateProofView ~id params =
     let result = mk_proofview proofview in
     output_json @@ mk_response ~id ~result 
 
+let coqtopAbout ~id params =
+  let open Yojson.Basic.Util in
+  let textDocument = params |> member "textDocument" in
+  let uri = textDocument |> member "uri" |> to_string in
+  let loc = params |> member "position" |> parse_loc in(* 
+  let goalIndex = params |> member "goalIndex" in *)
+  let pattern = params |> member "pattern" |> to_string in 
+  let st = Hashtbl.find states uri in
+  let goal = None in (*TODO*)
+  match Dm.DocumentManager.about st loc ~goal ~pattern with
+  | Error _ -> ()
+  | Ok str ->
+    output_json @@ mk_response ~id ~result:(`String str)
+
+let coqtopCheck ~id params =
+  let open Yojson.Basic.Util in
+  let textDocument = params |> member "textDocument" in
+  let uri = textDocument |> member "uri" |> to_string in
+  let loc = params |> member "position" |> parse_loc in
+  let st = Hashtbl.find states uri in
+  match Dm.DocumentManager.get_proof st loc with
+  | None -> ()
+  | Some proofview ->
+    let result = mk_proofview proofview in
+    output_json @@ mk_response ~id ~result 
+
   let coqtopSearch ~id params =
     let open Yojson.Basic.Util in
     let textDocument = params |> member "textDocument" in
@@ -284,7 +310,7 @@ let coqtopUpdateProofView ~id params =
     let event = "vscoq/searchResult" in
     let params = `Assoc [ "id", `String id; "name", `String name; "statement", `String statement ] in
     output_json @@ mk_notification ~event ~params
-    
+
 let dispatch_method ~id method_name params : events =
   match method_name with
   | "initialize" -> do_initialize ~id params; []
@@ -301,6 +327,8 @@ let dispatch_method ~id method_name params : events =
   | "vscoq/interpretToEnd" -> coqtopInterpretToEnd ~id params |> inject_dm_events
   | "vscoq/updateProofView" -> coqtopUpdateProofView ~id params; []
   | "vscoq/search" -> coqtopSearch ~id params |> inject_notifications
+  | "vscoq/about" -> coqtopAbout ~id params; []
+  | "vscoq/check" -> coqtopCheck ~id params; []
   | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; []
 
 let handle_lsp_event = function

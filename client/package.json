@@ -57,7 +57,7 @@
             {
                 "type": "webview",
                 "id": "coq.search", 
-                "name": "Search"
+                "name": "Query"
             }
         ]
     },

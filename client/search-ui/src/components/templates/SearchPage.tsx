@@ -1,9 +1,11 @@
-import React, {FunctionComponent, KeyboardEventHandler, useState} from 'react';
+import React, {FunctionComponent, KeyboardEventHandler} from 'react';
 import {
     VSCodePanels,
     VSCodePanelTab,
     VSCodePanelView,
-    VSCodeButton
+    VSCodeButton,
+    VSCodeDropdown,
+    VSCodeOption
 } from '@vscode/webview-ui-toolkit/react';
 import {VscAdd, VscChromeClose} from 'react-icons/vsc';
 
@@ -76,6 +78,13 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                         onTextInput={onTextInput} 
                         onKeyDown={searchFieldKeyPressHandler} 
                     />
+
+                    <VSCodeDropdown className={classes.Dropdown} onChange={(event) => {console.log(event); }}>
+                        <VSCodeOption>Search</VSCodeOption>
+                        <VSCodeOption>Check</VSCodeOption>
+                        <VSCodeOption>About</VSCodeOption>
+                    </VSCodeDropdown>
+
                     <VSCodeButton 
                         className={classes.Button}
                         appearance={'icon'} 

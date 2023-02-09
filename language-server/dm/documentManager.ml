@@ -234,6 +234,7 @@ let handle_event ev st =
   | ExecutionManagerEvent ev ->
     let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
+
 let get_proof st pos =
   let loc = Document.position_to_loc st.document pos in
   match Document.find_sentence_before st.document loc with
@@ -252,17 +253,32 @@ let pr_event = function
 | ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
 | ExecutionManagerEvent ev -> ExecutionManager.pr_event ev
 
+let parse_entry st pos entry pattern =
+  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
+  let loc = Document.position_to_loc st.document pos in
+  let st = match Document.find_sentence_before st.document loc with
+  | None -> st.init_vs.Vernacstate.synterp.parsing
+  | Some { synterp_state } -> synterp_state.Vernacstate.Synterp.parsing
+  in
+  Vernacstate.Parser.parse st entry pa
+
+let about st pos ~goal ~pattern =
+  match get_context st pos with 
+  | None -> Error ("No context found") (*TODO execute *)
+  | Some (env, sigma) ->
+    let ref_or_by_not = parse_entry st pos (Pcoq.Prim.smart_global) pattern in
+    let udecl = None (* TODO? *) in
+    try
+      Ok (Pp.string_of_ppcmds @@ Prettyp.print_about env sigma ref_or_by_not udecl)
+    with e ->
+      let e, info = Exninfo.capture e in
+      Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
+
 let search st ~id pos pattern =
   match get_context st pos with
   | None -> [] (* TODO execute? *)
   | Some (env, evd) ->
-    let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
-    let loc = Document.position_to_loc st.document pos in
-    let st = match Document.find_sentence_before st.document loc with
-    | None -> st.init_vs.Vernacstate.synterp.parsing
-    | Some { synterp_state } -> synterp_state.Vernacstate.Synterp.parsing
-    in
-    let query = Vernacstate.Parser.parse st G_vernac.search_query pa in
+    let query = parse_entry st pos (G_vernac.search_query) pattern in
     let searchable = Vernacexpr.(Search [query]) in
     SearchQuery.interp_search ~id env evd searchable (Vernacexpr.SearchOutside [])
 

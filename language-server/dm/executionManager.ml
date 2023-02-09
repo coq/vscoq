@@ -424,9 +424,9 @@ let get_proofview st id =
 
 let get_context st id =
   match find_fulfilled_opt id st.of_sentence with
-  | None -> log "Cannot find state for proofview"; None
-  | Some (Error _) -> log "Proofview requested in error state"; None
-  | Some (Success None) -> log "Proofview requested in a remotely checked state"; None
+  | None -> log "Cannot find state for get_context"; None
+  | Some (Error _) -> log "Context requested in error state"; None
+  | Some (Success None) -> log "Context requested in a remotely checked state"; None
   | Some (Success (Some { interp = st })) ->
     Vernacstate.Interp.unfreeze_interp_state st;
     let env = Global.env () in

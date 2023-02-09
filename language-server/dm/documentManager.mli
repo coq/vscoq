@@ -79,6 +79,12 @@ val pr_event : event -> Pp.t
 
 val search : state -> id:string -> Position.t -> string -> notification Sel.event list
 
+val about : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
+
+(*
+val check : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
+*)
+
 module Internal : sig
 
   val document : state -> Document.document

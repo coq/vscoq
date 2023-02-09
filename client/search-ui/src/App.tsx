@@ -41,6 +41,7 @@ const app = () => {
     const [historyIndex, setHistoryIndex] = useState(-1);
     const [searchTabs, setSearchTabs] = useState<SearchTab[]>([defaultTab]);
     const [currentTab, setCurrentTab] = useState(0);
+    const [queryType, setQueryType] = useState('Search');
     const firstUpdate = useRef(true);
     //this ref will allow us to update the current tab index only when the number of tabs has changed !
     const numTabs = useRef(1); 
@@ -108,7 +109,7 @@ const app = () => {
     };
 
     const saveState = () => {
-        vscode.setState({searchString, searchHistory, historyIndex, searchTabs, currentTab});
+        vscode.setState({searchString, searchHistory, historyIndex, searchTabs, currentTab, queryType});
     };
 
     const restoreState = () => {
@@ -118,6 +119,7 @@ const app = () => {
         setHistoryIndex(state.historyIndex);
         setSearchString(state.searchString);
         setCurrentTab(state.currentTab);
+        setQueryType(state.queryType);
     };
 
     const searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement> = (e) => {
