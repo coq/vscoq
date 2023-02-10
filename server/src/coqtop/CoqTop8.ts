@@ -1,5 +1,6 @@
 'use strict';
 
+import Uri from 'vscode-uri'
 import * as net from 'net';
 import * as path from 'path';
 import * as vscode from 'vscode-languageserver';
@@ -210,10 +211,20 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     return path.join(this.settings.binPath.trim(), this.settings.coqidetopExe);
   }
 
+  private get scriptPath() {
+    // TODO: rename scriptFile to scriptUri everywhere.
+    let uri = Uri.parse(this.scriptFile)
+    if (uri.scheme == "file")
+      return uri.fsPath;
+    else
+      return undefined
+  }
+
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
     var topfile : string[] = [];
-    if (semver.satisfies(this.coqtopVersion, ">= 8.10")) {
-      topfile = ['-topfile', this.scriptFile];
+    var scriptPath = this.scriptPath;
+    if (semver.satisfies(this.coqtopVersion, ">= 8.10") && scriptPath !== undefined) {
+      topfile = ['-topfile', scriptPath];
     }
     if (semver.satisfies(this.coqtopVersion, ">= 8.9")) {
       var coqtopModule = this.coqidetopBin;
