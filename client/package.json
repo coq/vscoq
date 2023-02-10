@@ -3,6 +3,7 @@
   "displayName": "VsCoq",
   "description": "VsCoq is an extension for Visual Studio Code with support for the Coq Proof Assistant",
   "version": "2.0.0",
+  "publisher": "coq-community",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -53,96 +54,95 @@
       ]
     },
     "views": {
-        "coq-sidebar": [
-            {
-                "type": "webview",
-                "id": "coq.search", 
-                "name": "Query"
-            }
-        ]
+      "coq-sidebar": [
+        {
+          "type": "webview",
+          "id": "coq.search",
+          "name": "Query"
+        }
+      ]
     },
     "configuration": [
-        {
-            "title": "Coq configuration",
-            "type": "object",
-            "properties": {
-                "vscoq.trace.server": {
-                    "scope": "window",
-                    "type": "string",
-                    "enum": [
-                        "off",
-                        "messages",
-                        "verbose"
-                    ],
-                    "default": "messages",
-                    "description": "Traces the communication between VS Code and the language server."
-                },
-                "vscoq.path": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Path to vscoqtop."
-                },
-                "vscoq.args": {
-                    "type": "array",
-                    "default": [
-                        "-bt"
-                    ],
-                    "description": "vscoqtop arguments"
-                }
-            }
-        },
-        {
-            "title": "Goal and Info view panel",
-            "type": "object",
-            "properties": {
-                "vscoq.goals.display": {
-                    "scope": "window",
-                    "type": "string",
-                    "enum": [
-                        "Tabs",
-                        "List"
-                    ],
-                    "default": "List",
-                    "description": "Determines wether multiple goals should be displayed in different tabs or as a list of collapsible items."
-                }
-            }
-        },
-        {
-            "title": "Proof checking", 
-            "type": "object",
-            "properties": {
-                "vscoq.proof.delegation": {
-                    "scope": "window",
-                    "type": "string",
-                    "enum": [
-                        "None",
-                        "Skip", 
-                        "Delegate"
-                    ],
-                    "enumItemLabels": [
-                        "No delegation (all proofs are checked on after the other)",
-                        "Skip the proofs which are out of focus. This requires a continuous checking to be off",
-                        "Delegate proofs"
-                    ],
-                    "default": "None",
-                    "description": "Determines which delegation strategy should be used by the server."
-                },
-                "vscoq.proof.workers": {
-                    "scope": "window", 
-                    "type": "number",
-                    "default": "1",
-                    "description": "Amount of workers assigned to proofs in delegation mode"
-                }
-
-            }
+      {
+        "title": "Coq configuration",
+        "type": "object",
+        "properties": {
+          "vscoq.trace.server": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "off",
+              "messages",
+              "verbose"
+            ],
+            "default": "messages",
+            "description": "Traces the communication between VS Code and the language server."
+          },
+          "vscoq.path": {
+            "type": "string",
+            "default": "",
+            "description": "Path to vscoqtop."
+          },
+          "vscoq.args": {
+            "type": "array",
+            "default": [
+              "-bt"
+            ],
+            "description": "vscoqtop arguments"
+          }
         }
+      },
+      {
+        "title": "Goal and Info view panel",
+        "type": "object",
+        "properties": {
+          "vscoq.goals.display": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "Tabs",
+              "List"
+            ],
+            "default": "List",
+            "description": "Determines wether multiple goals should be displayed in different tabs or as a list of collapsible items."
+          }
+        }
+      },
+      {
+        "title": "Proof checking",
+        "type": "object",
+        "properties": {
+          "vscoq.proof.delegation": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "None",
+              "Skip",
+              "Delegate"
+            ],
+            "enumItemLabels": [
+              "No delegation (all proofs are checked on after the other)",
+              "Skip the proofs which are out of focus. This requires a continuous checking to be off",
+              "Delegate proofs"
+            ],
+            "default": "None",
+            "description": "Determines which delegation strategy should be used by the server."
+          },
+          "vscoq.proof.workers": {
+            "scope": "window",
+            "type": "number",
+            "default": "1",
+            "description": "Amount of workers assigned to proofs in delegation mode"
+          }
+        }
+      }
     ],
     "commands": [
       {
-          "command": "coq.displayGoals", 
-          "category": "Coq", 
-          "title": "Display Goals",
-          "description": "Displays the goal view"
+        "command": "coq.displayGoals", 
+        "category": "Coq", 
+        "title": "Display Goals",
+        "description": "Displays the goal view"
       },
       {
         "command": "coq.searchCursor", 
@@ -427,7 +427,8 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "wdio": "wdio run ./wdio.conf.ts"
   },
   "devDependencies": {
     "@types/glob": "^8.0.0",
@@ -437,11 +438,19 @@
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
     "@vscode/test-electron": "^2.2.0",
+    "@wdio/cli": "^8.3.5",
+    "@wdio/local-runner": "^8.3.5",
+    "@wdio/mocha-framework": "^8.3.0",
+    "@wdio/spec-reporter": "^8.3.0",
+    "chromedriver": "^110.0.0",
     "eslint": "^8.28.0",
     "glob": "^8.0.3",
     "mocha": "^10.1.0",
     "ts-loader": "^9.4.1",
-    "typescript": "^4.9.3",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.5",
+    "wdio-chromedriver-service": "^8.0.1",
+    "wdio-vscode-service": "^5.0.0",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.0"
   }
