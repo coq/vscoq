@@ -74,6 +74,7 @@ The recommended way to install VsCoq is via the [Visual Studio Marketplace](http
 * `"coqtop.args": []` -- an array of strings specifying additional command line arguments for coqtop
 * `"coqtop.loadCoqProject": true` -- set to `false` to ignore <span>_CoqProject</span>
 * `"coqtop.coqProjectRoot": "."` -- where to expect the <span>_CoqProject</span> relative to the workspace root
+* `"coqtop.useDune": false` -- set to `true` to use `dune coq top` instead of parsing settings from `_CoqProject`.
 
 ## Install a local version
 

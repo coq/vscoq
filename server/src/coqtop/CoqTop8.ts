@@ -223,13 +223,14 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
     var topfile : string[] = [];
     var scriptPath = this.scriptPath;
-    if (semver.satisfies(this.coqtopVersion, ">= 8.10") && scriptPath !== undefined) {
+    if (semver.satisfies(this.coqtopVersion, ">= 8.10") && !this.settings.useDune && scriptPath != undefined) {
+      // Dune computes this internally, so we skip it.
       topfile = ['-topfile', scriptPath];
     }
     if (semver.satisfies(this.coqtopVersion, ">= 8.9")) {
       var coqtopModule = this.coqidetopBin;
       // var coqtopModule = 'cmd';
-      var args = [
+      var coqArgs = [
         // '/D /C', this.coqPath + '/coqtop.exe',
         '-main-channel', mainAddr,
         '-control-channel', controlAddr,
@@ -240,7 +241,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     } else {
       var coqtopModule = this.coqtopBin;
       // var coqtopModule = 'cmd';
-      var args = [
+      var coqArgs = [
         // '/D /C', this.coqPath + '/coqtop.exe',
         '-main-channel', mainAddr,
         '-control-channel', controlAddr,
@@ -249,8 +250,18 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
         ...this.settings.args
         ];
     }
-    this.console.log('exec: ' + coqtopModule + ' ' + args.join(' '));
-    return spawn(coqtopModule, args, {detached: false, cwd: this.projectRoot});
+
+    if (this.settings.useDune && scriptPath === undefined) {
+      throw new CoqtopSpawnError("", "File was not saved to local file system");
+    }
+
+    const [binary, args] = this.settings.useDune ?
+      [this.settings.dunePath, ["coq", "top", "--toplevel=" + coqtopModule,
+        scriptPath, "--", ...coqArgs]] :
+      [coqtopModule, coqArgs]
+
+    this.console.log('exec: ' + binary + ' ' + args.join(' '));
+    return spawn(binary, args, { detached: false, cwd: this.projectRoot });
   }
 
   public /* override */ async coqInterrupt() : Promise<boolean> {

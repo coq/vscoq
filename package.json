@@ -60,6 +60,11 @@
       "type": "object",
       "title": "Coq configuration",
       "properties": {
+        "coqtop.dunePath": {
+          "type": "string",
+          "default": "dune",
+          "markdownDescription": "Full path to dune binary (`dune` included)."
+        },
         "coqtop.binPath": {
           "type": "string",
           "default": "",
@@ -88,6 +93,10 @@
           ],
           "default": "open-script",
           "markdownDescription": "When to start an instance of coqtop: when a Coq script is opened (`open-script`) or else when the user begins interaction (`interaction`; default)."
+        },
+        "coqtop.useDune": {
+          "type": "boolean",
+          "markdownDescription": "(Experimental) Use `dune coq top` to run `coqidetop`."
         },
         "coq.loadCoqProject": {
           "type": "boolean",

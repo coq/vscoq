@@ -45,6 +45,8 @@ describe("Coqtop 8.6", function() {
     coqidetopExe: "coqidetop.opt",
     args: [],
     startOn: "open-script",
+    dunePath: "",
+    useDune: false
   }
 
   let dummyConsole: RemoteConsole = {
