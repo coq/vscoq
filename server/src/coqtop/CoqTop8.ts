@@ -1,5 +1,6 @@
 'use strict';
 
+import { URI } from 'vscode-uri'
 import * as net from 'net';
 import * as path from 'path';
 import * as vscode from 'vscode-languageserver';
@@ -24,7 +25,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private coqtopProc : ChildProcess = null;
   private readyToListen: Thenable<void>[];
   private settings : CoqTopSettings;
-  private scriptFile : string;
+  private scriptUri : string;
   private projectRoot: string;
   private coqtopVersion : semver.SemVer;
   private sockets : net.Socket[] = [];
@@ -32,7 +33,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   constructor(settings : CoqTopSettings, scriptFile: string, projectRoot: string, console: vscode.RemoteConsole) {
     super(console);
     this.settings = settings;
-    this.scriptFile = scriptFile;
+    this.scriptUri = scriptFile;
     this.projectRoot = projectRoot;
     this.mainChannelServer = net.createServer();
     this.mainChannelServer2 = net.createServer();
@@ -210,10 +211,19 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     return path.join(this.settings.binPath.trim(), this.settings.coqidetopExe);
   }
 
+  private get scriptPath() {
+    let uri = URI.parse(this.scriptUri)
+    if (uri.scheme == "file")
+      return uri.fsPath;
+    else
+      return undefined
+  }
+
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
     var topfile : string[] = [];
-    if (semver.satisfies(this.coqtopVersion, ">= 8.10")) {
-      topfile = ['-topfile', this.scriptFile];
+    var scriptPath = this.scriptPath;
+    if (semver.satisfies(this.coqtopVersion, ">= 8.10") && scriptPath !== undefined) {
+      topfile = ['-topfile', scriptPath];
     }
     if (semver.satisfies(this.coqtopVersion, ">= 8.9")) {
       var coqtopModule = this.coqidetopBin;
