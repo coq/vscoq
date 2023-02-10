@@ -102,6 +102,21 @@ let %test_unit "sel.wait.recurring.starvation" =
   [%test_eq: bool] (only_recurring_events todo) false;
 ;;
 
+(* recurring tasks do not inflate the todo *)
+let %test_unit "sel.wait.recurring.inflation" =
+  let e1 = now 1 |> set_priority 1 |> make_recurring in
+  let e2 = now 2 |> set_priority 2 |> make_recurring in
+  let todo = enqueue empty [e1;e2] in
+  let _, todo = pop_opt todo in
+  let _, todo = pop_opt todo in
+  let _, todo = pop_opt todo in
+  let _, todo = pop_opt todo in
+  let _, todo = pop_opt todo in
+  let _, todo = pop_opt todo in
+  let _, todo = pop_opt todo in
+  [%test_eq: int] (size todo) 2;
+;;
+
 (* bytes n waits until n bytes are read *)
 let %test_unit "sel.event.bytes" =
   let read, write = pipe () in
