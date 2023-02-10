@@ -79,6 +79,9 @@ let master_feeder = install_feedback (fun x -> Queue.push x master_feedback_queu
 
 let local_feedback : (sentence_id * (Feedback.level * Loc.t option * Pp.t)) Sel.event =
   Sel.on_queue master_feedback_queue (fun x -> x)
+  |> Sel.uncancellable
+  |> Sel.name "workers_feedback"
+  |> Sel.make_recurring
 
 module MakeWorker (Job : Job) = struct
 
@@ -116,16 +119,19 @@ let () = for _i = 0 to Job.pool_size do Queue.push () pool done
 let worker_available ~jobs ~fork_action : delegation Sel.event =
   Sel.on_queues jobs pool (fun (job_id, job) () ->
     WorkerStart (job_id,job,fork_action,Job.binary_name))
+  |> Sel.uncancellable
 
 (* When a worker is spawn, we enqueue this event, since eventually it will die *)
 let worker_ends pid : delegation Sel.event =
   Sel.on_death_of ~pid (fun reason -> WorkerEnd(pid,reason))
+  |> Sel.uncancellable
 
 (* When a worker is spawn, we enqueue this event, since eventually will make progress *)
 let worker_progress link : delegation Sel.event =
   Sel.on_ocaml_value link.read_from (function
     | Error e -> WorkerIOError e
     | Ok update_request -> WorkerProgress { link; update_request; })
+  |> Sel.uncancellable
 
 (* ************ spawning *************************************************** *)
 
@@ -266,12 +272,11 @@ let setup_plumbing port =
     let write_to = chan in
     let link = { read_from; write_to } in
     (* Unix.read_value does not exist, we use Sel *)
-    match Sel.wait [Sel.on_ocaml_value read_from (fun x -> x)] with
-    | [Ok (job : Job.t)], _ -> (write_value link, job)
-    | [Error exn], _ ->
+    match Sel.(pop (enqueue empty [Sel.on_ocaml_value read_from (fun x -> x) |> Sel.uncancellable])) with
+    | Ok (job : Job.t), _ -> (write_value link, job)
+    | Error exn, _ ->
       log_worker @@ "error receiving job: " ^ Printexc.to_string exn;
       exit 1
-    | _ -> assert false
   with Unix.Unix_error(code,syscall,param) ->
     log_worker @@ Printf.sprintf "error starting: %s: %s: %s" syscall param (Unix.error_message code);
     exit 1

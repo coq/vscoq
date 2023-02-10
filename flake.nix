@@ -31,6 +31,7 @@
           ppx_inline_test
           ppx_assert
           ppx_sexp_conv
+          ppx_deriving
           sexplib
           ppx_yojson_conv
         ]);

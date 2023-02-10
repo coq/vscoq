@@ -162,7 +162,7 @@ let handle_feedback id fb state =
 let handle_event event state =
   match event with
   | LocalFeedback (id,fb) ->
-      Some (handle_feedback id fb state), [local_feedback]
+      Some (handle_feedback id fb state), []
   | ProofWorkerEvent event ->
       let update, events = ProofWorker.handle_event event in
       let state =
