@@ -238,16 +238,43 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
         "completionItems", `List (List.map make_label labels)
       ]
   
+  let mk_hyp sigma d (env,l) =
+    let d' = CompactedDecl.to_named_context d in
+    let env' = List.fold_right Environ.push_named d' env in
+    let ids, typ = match d with
+    | CompactedDecl.LocalAssum (ids, typ) -> ids, typ
+    | CompactedDecl.LocalDef (ids,c,typ) -> ids, typ
+    in
+    let ids' = List.map (fun id -> `String (Names.Id.to_string id.Context.binder_name)) ids in
+    let typ' = pr_ltype_env env sigma typ in
+      let hyps = ids' |> List.map (fun id -> `Assoc [
+        "label", id;
+        "typeString", `String (Pp.string_of_ppcmds typ')
+      ]) in
+      (env', hyps @ l)
+
+  let mk_hyps sigma goal =
+    let evi = Evd.find sigma goal in
+    let env = Evd.evar_filtered_env (Global.env ()) evi in
+    let min_env = Environ.reset_context env in
+    let (_env, hyps) =
+      Context.Compacted.fold (mk_hyp sigma)
+        (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
+    hyps
+
   let coqtopGetCompletionItems ~id params =
     let open Yojson.Basic.Util in
     let textDocument = params |> member "textDocument" in
     let uri = textDocument |> member "uri" |> to_string in
     let loc = params |> member "position" |> parse_loc in
     let st = Hashtbl.find states uri in
-    match Dm.DocumentManager.get_lemmas st loc with
-    | None -> () (* TODO: We should probably give something as output here as something likely failed *)
-    | Some lemmas -> 
-      let result = completionDebugInfo (lemmas) in
+    let hypotheses =
+      Dm.DocumentManager.get_proof st loc
+      |> Option.map (fun Proof.{ goals; sigma; _ } -> Option.cata (mk_hyps sigma) [] (List.nth_opt goals 0)) in
+    let lemmas = Dm.DocumentManager.get_lemmas st loc |> Option.map (List.map make_label) in
+    let result = `Assoc ["completionItems", `List ([hypotheses; lemmas]
+      |> List.map (Option.default [])
+      |> List.flatten)] in
       output_json @@ mk_response ~id ~result
 
 let coqtopResetCoq ~id params =
