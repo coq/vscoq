@@ -89,6 +89,11 @@
                         "-bt"
                     ],
                     "description": "vscoqtop arguments"
+                },
+                "vscoq.coqlib.path" : {
+                  "type" : "string",
+                  "default" : "",
+                  "description": "Path to coqlib"
                 }
             }
         },

@@ -17,6 +17,7 @@ import LemmaCompletionProvider from './completion/LemmaCompletionProvider';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
 import { SearchCoqResult } from './protocol/types';
+import DecProvider from './DecProvider';
 
 
 let client: Client;
@@ -25,13 +26,19 @@ export function activate(context: ExtensionContext) {
 
 	const config = workspace.getConfiguration('vscoq');
 
+	let args : string[] = config.args;
+
+	if (config.coqlib.path) {
+		args = args.concat(["-coqlib", config.coqlib.path]);
+	}
+
 	let serverOptions: ServerOptions = {
 		/*
 		command: "perf",
 		args: ["record","--call-graph=dwarf", "--", config.path].concat(config.args)
 		*/
 		command: config.path,
-		args: config.args
+		args: args
 	};
 
 	let clientOptions: LanguageClientOptions = {
@@ -91,6 +98,8 @@ export function activate(context: ExtensionContext) {
         });
 
 		languages.registerCompletionItemProvider([{ language: 'coq' }], new LemmaCompletionProvider(client));
+
+		languages.registerDeclarationProvider([{ language: 'coq' }], new DecProvider(client, config.coqlib.path));
 
         let goalsHook = window.onDidChangeTextEditorSelection(
             (evt: TextEditorSelectionChangeEvent) => {
