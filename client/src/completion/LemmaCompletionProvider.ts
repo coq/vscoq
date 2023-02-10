@@ -13,13 +13,16 @@ export default class LemmaCompletionProvider implements CompletionItemProvider<C
 
     async provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): Promise<CompletionItem[] | CompletionList<CompletionItem>> {
         let items = await this.sendCompletionItemsRequest(document.uri, document.version, position);
-        return items.map(item => ({
-            label: item.label, 
-            documentation: new MarkdownString()
-                .appendCodeblock(`${item.label}: ${item.typeString}`, "coq")
-                .appendText(`Path: ${item.path}`),
-            kind: CompletionItemKind.Function
-        }) satisfies CompletionItem );
+        return items.map(item => {
+            const documentation = new MarkdownString()
+                .appendCodeblock(`${item.label}: ${item.typeString}`, "coq");
+            if (item.path) { documentation.appendText(`Path: ${item.path}`); }
+            return ({
+                label: item.label,
+                documentation,
+                kind: CompletionItemKind.Function,
+            }) satisfies CompletionItem;
+        } );
     }
 
     async resolveCompletionItem?(item: CompletionItem, token: CancellationToken): Promise<CompletionItem> {

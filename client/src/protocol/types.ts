@@ -25,7 +25,7 @@ export interface CompletionItemCoqRequest {
 export interface CompletionItemCoq {
     label: string;
     typeString: string;
-    path: string;
+    path?: string;
 }
 
 export interface CompletionItemCoqResponse {
