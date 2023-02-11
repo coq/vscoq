@@ -227,29 +227,24 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
       // Dune computes this internally, so we skip it.
       topfile = ['-topfile', scriptPath];
     }
-    if (semver.satisfies(this.coqtopVersion, ">= 8.9")) {
-      var coqtopModule = this.coqidetopBin;
-      // var coqtopModule = 'cmd';
-      var coqArgs = [
-        // '/D /C', this.coqPath + '/coqtop.exe',
-        '-main-channel', mainAddr,
-        '-control-channel', controlAddr,
-        '-async-proofs', 'on',
-        ...this.settings.args,
-        ...topfile
-      ];
-    } else {
-      var coqtopModule = this.coqtopBin;
-      // var coqtopModule = 'cmd';
-      var coqArgs = [
-        // '/D /C', this.coqPath + '/coqtop.exe',
-        '-main-channel', mainAddr,
-        '-control-channel', controlAddr,
-        '-ideslave',
-        '-async-proofs', 'on',
-        ...this.settings.args
-        ];
-    }
+    const [coqtopModule, coqArgs] =
+      semver.satisfies(this.coqtopVersion, ">= 8.9") ?
+        [this.coqidetopBin, [
+          // '/D /C', this.coqPath + '/coqtop.exe',
+          '-main-channel', mainAddr,
+          '-control-channel', controlAddr,
+          '-async-proofs', 'on',
+          ...this.settings.args,
+          ...topfile
+        ]] :
+        [this.coqtopBin, [
+          // '/D /C', this.coqPath + '/coqtop.exe',
+          '-main-channel', mainAddr,
+          '-control-channel', controlAddr,
+          '-ideslave',
+          '-async-proofs', 'on',
+          ...this.settings.args
+        ]]
 
     if (this.settings.useDune && scriptPath === undefined) {
       throw new CoqtopSpawnError("", "File was not saved to local file system");
