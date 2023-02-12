@@ -15,7 +15,7 @@ type completion_item = {
 let mk_completion_item sigma ref kind env (c : constr) : completion_item = 
   {
     ref = ref;
-    path = (path_of_global ref);
+    path = path_of_global ref;
     typ = c;
     env = env;
     sigma = sigma;
@@ -24,6 +24,6 @@ let mk_completion_item sigma ref kind env (c : constr) : completion_item =
 let pp_completion_item (item : completion_item) : (string * string * string) =
   let pr = pr_global item.ref in
   let name = Pp.string_of_ppcmds pr in
-  let path = string_of_path (path_of_global item.ref) in
+  let path = string_of_path item.path in
   let typ = Pp.string_of_ppcmds (pr_ltype_env item.env item.sigma item.typ) in
   (name, typ, path)
