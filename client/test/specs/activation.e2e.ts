@@ -1,4 +1,4 @@
-before('should load extension and open problems view', async () => {
+before('should load extension and open problems view', async function () {
     this.timeout(180000);
     const workbench = await browser.getWorkbench();
     const bottomBar = await workbench.getBottomBar();
