@@ -1,4 +1,5 @@
 import * as path from "path";
+import { mkdirp } from 'fs-extra';
 
 before('should load extension and open problems view', async function () {
     this.timeout(180000);
@@ -27,13 +28,14 @@ describe('VsCoq 2', () => {
         const workbench = await browser.getWorkbench();
         const bottomBar = workbench.getBottomBar();
         const problemsView = await bottomBar.openProblemsView();
+        mkdirp(path.join(__dirname, "screenshots"));
         await browser.saveScreenshot(
-            path.join(__dirname, "screenshots", "before-wait.png")
-        )
+            path.join(__dirname, "../../screenshots", "before-wait.png")
+        );
         await browser.waitUntil(async () => {
             const countBadge = await problemsView.getCountBadge();
             return (await countBadge.isExisting());
         }, { timeout: 30000 });
         expect(await (await problemsView.getCountBadge()).getText()).toBe('1');
     });
-})
+});

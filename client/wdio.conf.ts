@@ -1,6 +1,6 @@
 import type { Options } from '@wdio/types'
 import * as path from 'path';
-import { mkdirp } from 'fs-extra'
+import { mkdirp } from 'fs-extra';
 
 export const config: Options.Testrunner = {
     //
@@ -86,11 +86,11 @@ export const config: Options.Testrunner = {
 
         await browser.saveScreenshot(
             path.join(__dirname, "screenshots", `${test.parent} - ${test.title}.png`)
-        )
+        );
     },
     before: async function () {
         mkdirp(path.join(__dirname, "screenshots"));
-        await browser.setWindowSize(1600, 1200)
+        await browser.setWindowSize(1600, 1200);
     },
     //
     // ===================
