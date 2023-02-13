@@ -143,6 +143,18 @@
           "category": "Coq", 
           "title": "Display Goals",
           "description": "Displays the goal view"
+      },
+      {
+        "command": "coq.searchCursor", 
+        "category": "Coq", 
+        "title": "Search on cursor",
+        "description": "Launches a search query for the word under the cursor"
+      },
+      {
+        "command": "coq.aboutCursor", 
+        "category": "Coq", 
+        "title": "About on cursor",
+        "description": "Launches an about query for the word under the cursor"
       }
     ],
     "colors": [

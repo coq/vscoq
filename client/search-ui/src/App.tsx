@@ -5,6 +5,7 @@ import SearchPage from './components/templates/SearchPage';
 import "./App.css";
 
 import { vscode } from "./utilities/vscode";
+import { breadcrumbTemplate } from '@microsoft/fast-foundation';
 
 type QueryResult = {
     id: string, 
@@ -45,6 +46,7 @@ const app = () => {
     const [queryType, setQueryType] = useState('Search');
     const firstUpdate = useRef(true);
     const restoringState = useRef(false);
+    const immediateQuery = useRef(false);
     //this ref will allow us to update the current tab index only when the number of tabs has changed !
     const numTabs = useRef(1); 
 
@@ -78,6 +80,13 @@ const app = () => {
                 break;
             case 'launchedSearch': 
                 //TODO: Add UI elements to show user the searching state
+                break;
+            case 'query':
+                setSearchTabs(searchTabs => {
+                    const results: QueryResult[] = [];
+                    immediateQuery.current = true;
+                    return [{searchId: uuid(), searchString: msg.data.text, results: results, type: msg.data.type}].concat(searchTabs);
+                });
                 break;
         }
       }, []);
@@ -120,6 +129,14 @@ const app = () => {
             return;
         }
 
+        //Handle the cases when a query is launched from an editor
+        if(immediateQuery.current) {
+            immediateQuery.current = false;
+            console.log("QUERY IS LAUNCHED");
+            launchQuery();
+            return;
+        }
+
         //in any other situation just save the state
         saveState();
         
@@ -155,30 +172,34 @@ const app = () => {
         setQueryType(state.queryType);
     };
 
+    const launchQuery = () => {
+            
+        setSearchHistory(searchHistory => [searchString].concat(searchHistory));
+            
+        const searchId = uuid();
+        setSearchTabs(searchTabs => {
+            const newTabs = searchTabs.map((tab, index) => {
+                if(index === currentTab) {
+                    return {...tab, searchId: searchId, searchString, results: [], type: queryType};
+                }
+                return tab;
+            });
+            return newTabs;
+        });
+
+        vscode.postMessage({
+            command: "coqQuery",
+            text: searchString,
+            id: searchId,
+            type: queryType,
+        });
+
+    };
+
     const searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement> = (e) => {
             
         if(e.code === "Enter") {
-            
-            setSearchHistory(searchHistory => [searchString].concat(searchHistory));
-            
-            const searchId = uuid();
-            setSearchTabs(searchTabs => {
-                const newTabs = searchTabs.map((tab, index) => {
-                    if(index === currentTab) {
-                        return {...tab, searchId: searchId, searchString, results: [], type: queryType};
-                    }
-                    return tab;
-                });
-                return newTabs;
-            });
-
-            vscode.postMessage({
-                command: "coqQuery",
-                text: searchString,
-                id: searchId,
-                type: queryType,
-            });
-
+            launchQuery();
         }
 
         if(e.code === "ArrowUp") {

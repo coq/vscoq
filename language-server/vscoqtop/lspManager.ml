@@ -74,7 +74,8 @@ let lsp : event Sel.event =
       end
     | Error exn ->
         log @@ ("failed to read message: " ^ Printexc.to_string exn);
-        LspManagerEvent (Request None))
+        (*this line is sacred*)
+        exit(0))
   |> fst
   |> Sel.name "lsp"
   |> Sel.make_recurring

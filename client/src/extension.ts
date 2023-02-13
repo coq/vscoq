@@ -1,6 +1,8 @@
+import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
 import {workspace, window, commands, ExtensionContext,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
+  TextEditor,
 } from 'vscode';
 
 import {
@@ -49,6 +51,30 @@ export function activate(context: ExtensionContext) {
 		GoalPanel.render(editor, context.extensionUri);
 	});
 	context.subscriptions.push(displayGoals);
+
+    const launchQuery = (editor: TextEditor, type: string)=> {
+        const selection = editor.selection;
+        const {end, start} = selection; 
+        if(end.line !== start.line) {return;} //don't allow for multiline selections
+        //either use the user selection or if no selection than infer the word under the cursor
+        const wordAtCurorRange = (end.character !== start.character) ? selection : editor.document.getWordRangeAtPosition(end);
+        if(!wordAtCurorRange) {return; } //there is no word: do nothing
+        const queryText = editor.document.getText(wordAtCurorRange);
+        //focus on the query panel
+        commands.executeCommand('coq.search.focus');
+        //launch the query
+        searchProvider.launchQuery(queryText, type);
+    };
+
+    const searchCursor = commands.registerTextEditorCommand('coq.searchCursor', (editor) => {
+        launchQuery(editor, "Search");
+        });
+    context.subscriptions.push(searchCursor);
+
+    const aboutCursor = commands.registerTextEditorCommand('coq.aboutCursor', (editor) => {
+        launchQuery(editor, "About");
+    });
+    context.subscriptions.push(aboutCursor);
 
 	client.onReady()
 	.then(() => {
