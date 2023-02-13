@@ -28,3 +28,7 @@
 .Panels {
     width: 100%;
 }
+
+.HiddenTab {
+    display: none;
+}

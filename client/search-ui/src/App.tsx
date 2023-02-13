@@ -1,6 +1,4 @@
 import React, {useState, useCallback, useEffect, KeyboardEventHandler, ChangeEventHandler, useRef} from 'react';
-import { DidChangeWorkspaceFoldersNotification, StarNotificationHandler } from 'vscode-languageclient';
-import { PropertyStyleSheetBehavior } from '@microsoft/fast-foundation';
 import { v4 as uuid } from 'uuid';
 
 import SearchPage from './components/templates/SearchPage';
@@ -8,8 +6,9 @@ import "./App.css";
 
 import { vscode } from "./utilities/vscode";
 
-type SearchResult = {
+type QueryResult = {
     id: string, 
+    type: string,
     name: string,
     statement: string
 };
@@ -18,7 +17,7 @@ type SearchTab = {
     searchId: string, 
     searchString: string, 
     type: string, 
-    results: SearchResult[],
+    results: QueryResult[],
 };
 
 const defaultTab = {
@@ -45,6 +44,7 @@ const app = () => {
     const [currentTab, setCurrentTab] = useState(0);
     const [queryType, setQueryType] = useState('Search');
     const firstUpdate = useRef(true);
+    const restoringState = useRef(false);
     //this ref will allow us to update the current tab index only when the number of tabs has changed !
     const numTabs = useRef(1); 
 
@@ -55,7 +55,7 @@ const app = () => {
                 setSearchTabs(searchTabs => { 
                     const newTabs = searchTabs.map(tab => {
                         if(tab.searchId === msg.data.id) {
-                            return {...tab, results: [{id: "", name: "", statement: result}]};
+                            return {...tab, results: [{id: "", name: "", statement: result, type: "About"}]};
                         }
                         return tab;
                     });
@@ -63,13 +63,12 @@ const app = () => {
                     return newTabs;
                 });
                 break;
-            case 'renderResult':
-                console.log("Search result", result);
+            case 'searchResponse':
                 setSearchTabs(searchTabs => {
                     
                     const newTabs = searchTabs.map(tab => {
                         if(tab.searchId === result.id) {
-                            return {...tab, results: tab.results.concat([result])};
+                            return {...tab, results: tab.results.concat([{...result, type: "Search"}])};
                         }
                         return tab;
                     });
@@ -79,7 +78,6 @@ const app = () => {
                 break;
             case 'launchedSearch': 
                 //TODO: Add UI elements to show user the searching state
-                console.log("result", msg.data);
                 break;
         }
       }, []);
@@ -92,30 +90,45 @@ const app = () => {
     }, [handleMessage]);
                     
     useEffect(() => {
-        
+
+        //Avoid use effect on first page load
         if(firstUpdate.current) {
             firstUpdate.current = false; 
             return;
         }
-        //check if the num of tabs has changed
+
+        //Avoid use effect when restoring a previous state
+        if(restoringState.current) {
+            restoringState.current = false; 
+            numTabs.current = searchTabs.length;
+            return;
+        }
+
+        //Did we add a tab ?
         if(numTabs.current < searchTabs.length) {
-            changeTabHandler(searchTabs.length - 1);
             numTabs.current = searchTabs.length;
+            changeTabHandler(0);
+            return;
         }
-        else if(numTabs.current > searchTabs.length) {
+
+        //Did we remove a tab ?
+        if(numTabs.current > searchTabs.length) {
+            numTabs.current = searchTabs.length;
             if(currentTab > searchTabs.length - 1) {
-                changeTabHandler(searchTabs.length - 1);
+                changeTabHandler(0); 
             }
-            numTabs.current = searchTabs.length;
+            return;
         }
-        else {
-            saveState();
-        }
+
+        //in any other situation just save the state
+        saveState();
         
     }, [searchTabs, currentTab]);
     
     //this will only run on initial render
     useEffect(() => {
+        //This is to avoid unecessary useEffect hook calls
+        restoringState.current = true;
         restoreState();
     }, []);
 
@@ -152,7 +165,7 @@ const app = () => {
             setSearchTabs(searchTabs => {
                 const newTabs = searchTabs.map((tab, index) => {
                     if(index === currentTab) {
-                        return {...tab, searchId: searchId, searchString, results: []};
+                        return {...tab, searchId: searchId, searchString, results: [], type: queryType};
                     }
                     return tab;
                 });
@@ -199,7 +212,9 @@ const app = () => {
 
     const addSearchTabHandler = () => {
         setSearchTabs(searchTabs => {
-            return searchTabs.concat([{searchId: uuid(), searchString: "", results: [], type: queryType}]);
+            //return searchTabs.concat([{searchId: uuid(), searchString: "", results: [], type: queryType}]);
+            const results: QueryResult[] = [];
+            return [{searchId: uuid(), searchString: "", results: results, type: queryType}].concat(searchTabs);
         });
     };
 
@@ -211,6 +226,7 @@ const app = () => {
     
     const changeTabHandler = (tabIndex: number) => {
         setSearchString(searchTabs[tabIndex].searchString);
+        setQueryType(searchTabs[tabIndex].type);
         setCurrentTab(tabIndex);
     };
 
@@ -227,6 +243,7 @@ const app = () => {
                 deleteTabHandler={deleteSearchTabHandler}
                 currentTab={currentTab}
                 queryTypeSelectHandler={queryTypeSelectHandler}
+                selectedType={queryType}
             />
         </main>
     );

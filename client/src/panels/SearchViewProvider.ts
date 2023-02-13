@@ -49,8 +49,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
     }
 
     public renderSearchResult(searchResult: SearchCoqResult) {
-        this._view?.webview.postMessage({"command": "renderResult", "text": searchResult});
-    
+        this._view?.webview.postMessage({"command": "searchResponse", "text": searchResult});
     };
 
     private _getHtmlForWebview(webview: vscode.Webview) {

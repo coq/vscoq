@@ -9,8 +9,9 @@ import {
 } from '@vscode/webview-ui-toolkit/react';
 import {VscAdd, VscChromeClose} from 'react-icons/vsc';
 
-import SearchResultSection from '../organisms/SearchResultSection';
+import ResultSection from '../organisms/ResultSection';
 import SearchField from '../molecules/SearchField';
+import Dropdown from '../molecules/Dropdown';
 
 import classes from './SearchPage.module.css';
 
@@ -22,7 +23,8 @@ type SearchPageProps = {
         results: {
             id: string, 
             name: string, 
-            statement: string
+            statement: string,
+            type: string,
         }[]
     }[],
     copyNameHandler: (name: string) => void,
@@ -34,6 +36,7 @@ type SearchPageProps = {
     deleteTabHandler: (tabIndex: number) => void,
     changeTabHandler: (tabIndex: number) => void,
     currentTab: number;
+    selectedType: string;
 };
 
 const searchPage: FunctionComponent<SearchPageProps> = (props) => {
@@ -42,27 +45,28 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
             onTextInput, searchFieldKeyPressHandler,
             changeTabHandler, addTabHandler, 
             deleteTabHandler, currentTab,
-            queryTypeSelectHandler
+            queryTypeSelectHandler, selectedType
         } = props;
 
     const panelViews = tabs.map((tab, index) => {
-        return <VSCodePanelView id={"tab-"+index} >
-                    <SearchResultSection 
+        return <VSCodePanelView id={"view-"+index} >
+                    <ResultSection 
                         results={tab.results} 
                         copyNameHandler={copyNameHandler}
                     />
                 </VSCodePanelView>;
     });
 
-    const panelTabs = tabs.length === 1 ? null : tabs.map((tab, index) => {
+    const panelTabs = tabs.map((tab, index) => {
         return <VSCodePanelTab 
                     id={"tab-" + index} 
                     onClick={
                         () => changeTabHandler(index)
                     }
+                    className={tabs.length > 1 ? "" : classes.HiddenTab} //hide the tabs if there is only one
                     aria-selected={index === currentTab}
                 >
-                    {"Search " + index}
+                    {"Query " + (tabs.length - index)}
                     <VSCodeButton 
                         className={classes.SmallButton}
                         appearance={'icon'} 
@@ -82,12 +86,13 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                         onTextInput={onTextInput} 
                         onKeyDown={searchFieldKeyPressHandler} 
                     />
-
-                    <VSCodeDropdown className={classes.Dropdown} onChange={(e) => queryTypeSelectHandler(e) }>
-                        <VSCodeOption>Search</VSCodeOption>
-                        <VSCodeOption>Check</VSCodeOption>
-                        <VSCodeOption>About</VSCodeOption>
-                    </VSCodeDropdown>
+                    
+                    <Dropdown 
+                        classes={[classes.Dropdown]} 
+                        selectedValue={selectedType} 
+                        options={['Search', 'Check', 'About']} 
+                        onChange={queryTypeSelectHandler}
+                    />
 
                     <VSCodeButton 
                         className={classes.Button}
@@ -98,7 +103,7 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                         <VscAdd />
                     </VSCodeButton>
                 </div>
-                <VSCodePanels className={classes.Panels}>
+                <VSCodePanels className={classes.Panels} activeid={'tab-'+currentTab}>
                     {panelTabs}
                     {panelViews}
                 </VSCodePanels>
