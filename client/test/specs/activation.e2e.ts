@@ -9,15 +9,15 @@ describe('VsCoq 2', () => {
         const workbench = await browser.getWorkbench()
         const bottomBar = workbench.getBottomBar()
         const problemsView = await bottomBar.openProblemsView()
+	let badgeText = ""
         await browser.waitUntil(async () => {
             const countBadge = await problemsView.getCountBadge()
             if (!countBadge) {
                 return false
             }
-            const badgeText = await countBadge.getText()
+            badgeText = await countBadge.getText()
             return (badgeText != "")
         }, { timeout: 30000 })
-        expect(await (countBadge.getText())
-            .toBe('1')
+        expect(badgeText).toBe('1')
     })
 })
