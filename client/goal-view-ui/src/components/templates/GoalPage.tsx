@@ -29,9 +29,12 @@ const goalPage: FunctionComponent<GoalPageProps> = (props) => {
         <GoalTabSection goals={goals} /> :
         <GoalCollapsibleSection goals={goals} collapseGoalHandler={collapseGoalHandler} />;
 
-    const goalsOrEmpty = isInProof
-        ? (goals.length > 0 ? goalSection : "No more subgoals")
-        : "Not in proof";
+
+    const goalsOrEmpty = !isInProof
+        ? "Not in proof"
+        : goals.length === 0
+            ? "No more subgoals"
+            : goalSection;
 
     return (
         <div className={classes.Page}>

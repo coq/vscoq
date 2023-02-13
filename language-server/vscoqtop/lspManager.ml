@@ -249,7 +249,6 @@ let coqtopUpdateProofView ~id params =
   let st = Hashtbl.find states uri in
   match Dm.DocumentManager.get_proof st loc with
   (* Send an "empty" response to notify about not being in a proof *)
-  (* TODO: Selectively updates based on prior state (should not alert when already not in proof) *)
   | None -> let result = `Assoc [
       "type", `String "proof-view";
       "goals", `List [];
