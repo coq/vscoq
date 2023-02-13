@@ -7,7 +7,7 @@ describe('VsCoq 2', () => {
 
     it('should get error feedback from language server', async () => {
         const workbench = await browser.getWorkbench()
-        const bottomBar = workbench.getBottomBar()
+        const bottomBar = await workbench.getBottomBar().wait()
         const problemsView = await bottomBar.openProblemsView()
         await browser.waitUntil(async () => {
             const countBadge = await problemsView.getCountBadge()
