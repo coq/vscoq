@@ -1,3 +1,5 @@
+import * as path from "path";
+
 before('should load extension and open problems view', async function () {
     this.timeout(180000);
     const workbench = await browser.getWorkbench();
@@ -25,6 +27,9 @@ describe('VsCoq 2', () => {
         const workbench = await browser.getWorkbench();
         const bottomBar = workbench.getBottomBar();
         const problemsView = await bottomBar.openProblemsView();
+        await browser.saveScreenshot(
+            path.join(__dirname, "screenshots", "before-wait.png")
+        )
         await browser.waitUntil(async () => {
             const countBadge = await problemsView.getCountBadge();
             return (await countBadge.isExisting());
