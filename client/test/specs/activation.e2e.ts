@@ -11,7 +11,7 @@ describe('VsCoq 2', () => {
         const problemsView = await bottomBar.openProblemsView()
         await browser.waitUntil(async () => {
             const countBadge = await problemsView.getCountBadge()
-            return (countBadge && await countBadge.isExisting())
+            return (await countBadge.isExisting())
         }, { timeout: 30000 })
         expect(await (await problemsView.getCountBadge()).getText()).toBe('1')
     })
