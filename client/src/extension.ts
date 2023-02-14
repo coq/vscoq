@@ -99,7 +99,7 @@ export function activate(context: ExtensionContext) {
 
 		languages.registerCompletionItemProvider([{ language: 'coq' }], new LemmaCompletionProvider(client));
 
-		languages.registerDeclarationProvider([{ language: 'coq' }], new DecProvider(client, config.coqlib.path));
+		languages.registerDeclarationProvider([{ language: 'coq' }], new DecProvider(client));
 
         let goalsHook = window.onDidChangeTextEditorSelection(
             (evt: TextEditorSelectionChangeEvent) => {

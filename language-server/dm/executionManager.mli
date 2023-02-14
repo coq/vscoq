@@ -10,6 +10,7 @@
 
 open Types
 open CompletionItem
+open Lsp.LspData
 
 (** The event manager is in charge of the actual event of tasks (as
     defined by the scheduler), caching event states and invalidating
@@ -28,6 +29,7 @@ val is_remotely_executed : state -> sentence_id -> bool
 val get_proofview : state -> sentence_id -> Proof.data option
 val get_context : state -> sentence_id -> (Environ.env * Evd.evar_map) option
 val get_lemmas : (Environ.env * Evd.evar_map) -> completion_item list
+val get_location : (Environ.env * Evd.evar_map) -> string -> (string * Range.t option) option
 
 (** Events for the main loop *)
 type event type events = event Sel.event list
