@@ -1,13 +1,18 @@
 {
   description = "VsCoq 2, a language server for Coq based on LSP";
 
-  outputs = { self, nixpkgs }: {
+  inputs.flake-utils.url = "github:numtide/flake-utils";
 
-    packages.x86_64-linux.default = self.packages.x86_64-linux.vscoq-language-server;
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+  
+   rec {
 
-    packages.x86_64-linux.vscoq-language-server =
+    packages.default = self.packages.${system}.vscoq-language-server;
+
+    packages.vscoq-language-server =
       # Notice the reference to nixpkgs here.
-      with import nixpkgs { system = "x86_64-linux"; };
+      with import nixpkgs { inherit system; };
       ocamlPackages.buildDunePackage {
         duneVersion = "3";
         pname = "vscoq-language-server";
@@ -37,8 +42,8 @@
         ]);
       };
 
-    packages.x86_64-linux.vscoq-client =
-      with import nixpkgs { system = "x86_64-linux"; };
+    packages.vscoq-client =
+      with import nixpkgs { inherit system; };
       stdenv.mkDerivation rec {
 
         name = "vscoq-client";
@@ -51,15 +56,15 @@
 
     };
 
-    devShells.x86_64-linux.default =
-      with import nixpkgs { system = "x86_64-linux"; };
+    devShells.default =
+      with import nixpkgs { inherit system; };
       mkShell {
         buildInputs =
-          self.packages.x86_64-linux.vscoq-language-server.buildInputs
+          self.packages.${system}.vscoq-language-server.buildInputs
           ++ (with ocamlPackages; [
             ocaml-lsp
           ]);
       };
 
-  };
+  });
 }
