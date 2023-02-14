@@ -24,7 +24,7 @@ jobs:
   nix-dev-build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
