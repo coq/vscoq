@@ -37,15 +37,28 @@ type sentence_state =
   | Done of DelegationManager.execution_status
   | Delegated of DelegationManager.job_id * (DelegationManager.execution_status -> unit) option
 
+type delegation_mode =
+  | CheckProofsInMaster
+  | SkipProofs
+  | DelegateProofsToWorkers of { number_of_workers : int }
+
+type options = {
+  delegation_mode : delegation_mode;
+}
+let default_options = { delegation_mode = CheckProofsInMaster }
+
 type state = {
   initial : Vernacstate.t;
   of_sentence : (sentence_state * feedback_message list) SM.t;
+  options : options;
 }
 
 let init vernac_state = {
   initial = vernac_state;
   of_sentence = SM.empty;
+  options = default_options;
 }
+let set_options st options = { st with options }
 
 type prepared_task =
   | PSkip of sentence_id
@@ -194,7 +207,7 @@ let find_fulfilled_opt x m =
 
 let jobs : (DelegationManager.job_id * ProofJob.t) Queue.t = Queue.create ()
 
-let remotize doc id =
+let prepare_sentence doc id =
   match Document.get_sentence doc id with
   | None -> PSkip id
   | Some sentence ->
@@ -203,15 +216,23 @@ let remotize doc id =
     | Document.ParseError _ -> PSkip id
     end
 
-let prepare_task doc task : prepared_task =
+let prepare_task delegation_mode doc task : prepared_task list =
   match task with
-  | Skip id -> PSkip id
-  | Exec(id,ast,synterp_st) -> PExec(id,ast,synterp_st)
+  | Skip id -> [PSkip id]
+  | Exec(id,ast,synterp_st) -> [PExec(id,ast,synterp_st)]
+  | Query(id,ast,synterp_st) -> [PQuery(id,ast,synterp_st)]
   | OpaqueProof { terminator_id; opener_id; tasks_ids } ->
-     let tasks = List.map (remotize doc) tasks_ids in
-     let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
-     PDelegate {terminator_id; opener_id; last_step_id; tasks}
-  | Query(id,ast,synterp_st) -> PQuery(id,ast,synterp_st)
+      match delegation_mode with
+      | DelegateProofsToWorkers _ ->
+          let tasks = List.map (prepare_sentence doc) tasks_ids in
+          let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
+          [PDelegate {terminator_id; opener_id; last_step_id; tasks}]
+      | CheckProofsInMaster ->
+          List.map (prepare_sentence doc) (tasks_ids @ [terminator_id])
+      | SkipProofs ->
+          let tasks = [] in
+          let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
+          [PDelegate {terminator_id; opener_id; last_step_id; tasks}]
 
 let id_of_prepared_task = function
   | PSkip id -> id
@@ -346,7 +367,7 @@ let build_tasks_for doc st id =
     end
   in
   let vs, tasks = build_tasks id [] in
-  vs, List.map (prepare_task doc) tasks
+  vs, List.concat_map (prepare_task st.options.delegation_mode doc) tasks
 
 let errors st =
   List.fold_left (fun acc (id, (p,_)) ->
