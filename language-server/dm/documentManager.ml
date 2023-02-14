@@ -258,6 +258,12 @@ let get_lemmas st pos =
   | Some context -> 
     Some (ExecutionManager.get_lemmas context)
 
+let get_location st pos requestedDeclaration =
+  match get_context st pos with
+  | None -> None
+  | Some context -> 
+    Option.map (fun (path, range) -> path, None) (ExecutionManager.get_location context requestedDeclaration)
+
 let pr_event = function
 | ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
 | ExecutionManagerEvent ev -> ExecutionManager.pr_event ev

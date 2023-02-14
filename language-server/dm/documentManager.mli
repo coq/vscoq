@@ -77,6 +77,8 @@ val get_proof : state -> Position.t -> Proof.data option
 
 val get_lemmas : state -> Position.t -> completion_item list option
 
+val get_location : state -> Position.t -> string -> (string * Range.t option) option
+
 val handle_event : event -> state -> (state option * events)
 (** handles events and returns a new state if it was updated *)
 

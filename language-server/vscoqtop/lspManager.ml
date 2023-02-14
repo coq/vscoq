@@ -127,6 +127,18 @@ let parse_loc json =
   let char = json |> member "character" |> to_int in
   Position.{ line ; char }
 
+let make_loc Position.{ line; char }  = 
+  `Assoc [
+    "line", `Int line;
+    "character", `Int char;
+  ]
+
+let make_range Range.{ start; stop } =
+  `Assoc [
+    "start", make_loc start;
+    "end", make_loc stop;
+  ]
+
 let publish_diagnostics uri doc =
   output_json @@ mk_diagnostics uri @@ Dm.DocumentManager.diagnostics doc
 
@@ -277,6 +289,27 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
       |> List.flatten)] in
       output_json @@ mk_response ~id ~result
 
+let coqtopGetDeclarationLocation ~id params =
+  let open Yojson.Basic.Util in
+  let textDocument = params |> member "textDocument" in
+  let uri = textDocument |> member "uri" |> to_string in
+  let loc = params |> member "position" |> parse_loc in
+  let requestedDeclaration = params |> member "requestedDeclaration" |> to_string in
+  let st = Hashtbl.find states uri in
+  match Dm.DocumentManager.get_location st loc requestedDeclaration with
+  | None -> ()
+  | Some (path, None) ->
+    let result = `Assoc [
+      "path", `String path;
+    ] in
+    output_json @@ mk_response ~id ~result
+  | Some (path, Some range) ->
+    let result = `Assoc [
+      "path", `String path;
+      "range", make_range range;
+    ] in
+    output_json @@ mk_response ~id ~result
+
 let coqtopResetCoq ~id params =
   let open Yojson.Basic.Util in
   let uri = params |> member "uri" |> to_string in
@@ -383,6 +416,7 @@ let dispatch_method ~id method_name params : events =
   | "vscoq/interpretToEnd" -> coqtopInterpretToEnd ~id params |> inject_dm_events
   | "vscoq/updateProofView" -> coqtopUpdateProofView ~id params; []
   | "vscoq/getCompletionItems" -> coqtopGetCompletionItems ~id params; []
+  | "vscoq/declarationLocation" -> coqtopGetDeclarationLocation ~id params; []
   | "vscoq/search" -> coqtopSearch ~id params |> inject_notifications
   | "vscoq/about" -> coqtopAbout ~id params; []
   | "vscoq/check" -> coqtopCheck ~id params; []
