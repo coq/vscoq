@@ -428,9 +428,10 @@
     "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "wdio": "wdio run ./wdio.conf.ts"
+    "wdio": "wdio run ./src/test/wdio.conf.ts"
   },
   "devDependencies": {
+    "@types/fs-extra": "^11.0.1",
     "@types/glob": "^8.0.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",

@@ -44,12 +44,7 @@ jobs:
     - run: nix build '.?submodules=1'
     - run: nix develop .#vscoq-language-server -c bash -c "cd language-server && make world"
     - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
-    - name: Test E2E
-      uses: GabrielBB/xvfb-action@v1
-      with:
-        run: yarn wdio
-        working-directory: ./client
-        options: '-screen 0 1600x1200x24'
+    - run: nix develop .#vscoq-client -c bash -c "yarn run wdio"
     - uses: actions/upload-artifact@v3
       if: failure()
       with:

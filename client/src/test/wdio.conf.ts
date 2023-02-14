@@ -1,6 +1,9 @@
-import type { Options } from '@wdio/types'
-import * as path from 'path';
+import type { Options } from '@wdio/types';
+import url from 'node:url'
 import { mkdirp } from 'fs-extra';
+import path from 'node:path';
+
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 export const config: Options.Testrunner = {
     //
@@ -11,8 +14,9 @@ export const config: Options.Testrunner = {
     runner: 'local',
     autoCompileOpts: {
         tsNodeOpts: {
-            project: './test/tsconfig.json'
-        }
+            project: path.join(__dirname, 'tsconfig.json'),
+            transpileOnly: true
+          }
     },
     
     
@@ -33,7 +37,7 @@ export const config: Options.Testrunner = {
     // will be called from there.
     //
     specs: [
-        './test/specs/**/*.ts'
+        './specs/**/*.ts'
     ],
     // Patterns to exclude.
     exclude: [
@@ -55,7 +59,7 @@ export const config: Options.Testrunner = {
     // and 30 processes will get spawned. The property handles how many capabilities
     // from the same test should run tests.
     //
-    maxInstances: 10,
+    maxInstances: 1,
     //
     // If you have trouble getting all important capabilities together, check out the
     // Sauce Labs platform configurator - a great tool to configure your capabilities:
@@ -66,13 +70,14 @@ export const config: Options.Testrunner = {
         browserVersion: 'stable',
         'wdio:vscodeOptions': {
             // point to the root directory of your project
-            extensionPath: __dirname,
+            extensionPath: path.resolve(__dirname, "..", ".."),
             userSettings: {
-                "vscoq.path": path.join(__dirname, "../language-server/_build/install/default/bin/vscoqtop"),
-                "vscoq.args": ["-coqlib", path.join(__dirname, "../language-server/_build/install/default/lib/coq")]
+		"window.newWindowDimensions": "maximized",
+                "vscoq.path": path.join(__dirname, "../../../language-server/_build/install/default/bin/vscoqtop"),
+                "vscoq.args": ["-coqlib", path.join(__dirname, "../../../language-server/_build/install/default/lib/coq")]
             },
             verboseLogging: true,
-            filePath: path.join(__dirname, "test/fixture/basic.v")
+            filePath: path.join(__dirname, "fixture/basic.v")
         }
     }],
     outputDir: path.join(__dirname, "logs"),
@@ -90,7 +95,7 @@ export const config: Options.Testrunner = {
     },
     before: async function () {
         mkdirp(path.join(__dirname, "screenshots"));
-        await browser.setWindowSize(1600, 1200);
+	await browser.setWindowSize(2560, 1440);
     },
     //
     // ===================
