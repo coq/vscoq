@@ -22,8 +22,8 @@ export default class DecProvider implements DeclarationProvider {
         let word = document.getText(wordRange);
         let items = await this.sendCompletionItemsRequest(document.uri, document.version, position);
         let item = items.find((i) => i.label === word);
-        let pathItems = item?.path.split('.');
-        let filename = item?.path.split('.').at(-1) + ".v";
+        let pathItems = item?.path?.split('.');
+        let filename = item?.path?.split('.').at(-1) + ".v";
         let path = this.coqlibPath + `/theories/` + pathItems?.slice(1, -1).concat([filename]).join("/");
         return new Location(Uri.parse(path), new Position(0, 0));
     }
