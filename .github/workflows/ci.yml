@@ -50,8 +50,8 @@ jobs:
       with:
         name: screenshots
         path: |
-          client/screenshots
-          client/logs
+          client/src/test/screenshots
+          client/src/test/logs
 
   build-language-server-opam:
     strategy:
