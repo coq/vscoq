@@ -21,7 +21,7 @@ jobs:
         cd client
         yarn run package
 
-  build-language-server:
+  nix-dev-build:
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -42,7 +42,8 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - run: nix build '.?submodules=1'
-    - run: nix-shell --run "cd language-server && make world"
+    - run: nix develop .#vscoq-language-server -c bash -c "cd language-server && make world"
+    - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
 
   build-language-server-opam:
     strategy:

@@ -12,11 +12,18 @@ The language server is developed in ocaml and makes it possible to link from the
 
 ### Building
 
+If you have nix installed, you can do a full developer build of the language server by running:
+
+```
+nix build '.?submodules=1'
+nix develop .#vscoq-language-server -c bash -c "cd language-server && make world"
+```
+
 ### Debugging
 
 ## Client 
 
-The client is the VSCode extension in itself. Apart from the usual [VSCode](https://code.visualstudio.com/api) lingo, we develop two web apps that are used within seperate panels in the extension and are specific to Coq, namely the goal-view-ui and the search-view-ui. 
+The client is the VSCode extension in itself. Apart from the usual [VSCode](https://code.visualstudio.com/api) lingo, we develop two web apps that are used within separate panels in the extension and are specific to Coq, namely the goal-view-ui and the search-view-ui.
 
 ### Design pattern for the web apps
 
@@ -37,7 +44,7 @@ You can debug the web apps independently. From the client folder just run `yarn 
 
 Note that both the apps can also be built independently through the `yarn run build:goal-view-ui` or `yarn run build:search-ui` commands. 
 
-To launch the extension in debug mode, assuming you have build the language-server, you can either use a nix-shell to run vscode (`nix-shell --run "code client"`) or handle your own config. 
+To launch the extension in debug mode, assuming you have built the language-server, you can either use a nix dev shell to run vscode (`nix develop .#vscoq-client -c code .`) or handle your own config.
 
 Note that you need to set the path to vscoqtop in the VSCode user settings (just search for vscoq).
 
