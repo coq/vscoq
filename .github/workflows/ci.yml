@@ -44,7 +44,7 @@ jobs:
     - run: nix build '.?submodules=1'
     - run: nix develop .#vscoq-language-server -c bash -c "cd language-server && make world"
     - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
-    - run: nix develop .#vscoq-client -c bash -c "yarn run wdio"
+    - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run wdio"
     - uses: actions/upload-artifact@v3
       if: failure()
       with:
