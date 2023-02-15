@@ -32,7 +32,7 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
-let log msg = lsp_debug Pp.(fun () -> 
+let log msg = lsp_debug Pp.(fun () ->
   str @@ Format.asprintf "       [%d] %s" (Unix.getpid ()) msg)
 
 (*let string_field name obj = Yojson.Safe.to_string (List.assoc name obj)*)
