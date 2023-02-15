@@ -112,7 +112,8 @@ let do_initialize ~id params =
       "completionItem", `Assoc [
         "labelDetailsSupport", `Bool false;
       ]
-    ]
+    ];
+    "declarationProvider", `Bool true;
   ]
   in
   let result = `Assoc ["capabilities", capabilities] in
@@ -300,21 +301,20 @@ let textDocumentDeclaration ~id params =
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let loc = params |> member "position" |> parse_loc in
-  let requestedDeclaration = params |> member "requestedDeclaration" |> to_string in
   let st = Hashtbl.find states uri in
-  match Dm.DocumentManager.get_location st loc requestedDeclaration with
-  | None -> ()
-  | Some (path, None) ->
-    let result = `Assoc [
-      "path", `String path;
-    ] in
-    output_json @@ mk_response ~id ~result
-  | Some (path, Some range) ->
-    let result = `Assoc [
-      "path", `String path;
-      "range", make_range range;
-    ] in
-    output_json @@ mk_response ~id ~result
+  match Dm.DocumentManager.get_declaration_location st loc with
+  | None -> 
+    output_json @@ mk_error_response ~id ~code:(-32603) ~message:"Failed in finding declaration"
+  | Some (path, range) ->
+    let v_file = Str.replace_first (Str.regexp {|\.vo$|}) ".v" path in
+    if Sys.file_exists v_file then
+      let result = `Assoc [
+        "uri", `String v_file;
+        "range", make_range ({ start = { line = 0; char = 0 }; stop = { line = 0; char = 0 } })
+      ] in
+      output_json @@ mk_response ~id ~result
+    else 
+      output_json @@ mk_error_response ~id ~code:(-32603) ~message:("Unable to find .v file at expected location: " ^ v_file)
 
 let coqtopResetCoq ~id params =
   let open Yojson.Basic.Util in
@@ -416,7 +416,7 @@ let dispatch_method ~id method_name params : events =
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
   | "textDocument/completion" -> textDocumentCompletion ~id params; []
-  | "textDocument/declaration2" -> textDocumentDeclaration ~id params; []
+  | "textDocument/declaration" -> textDocumentDeclaration ~id params; []
   | "vscoq/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
   | "vscoq/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events
   | "vscoq/stepForward" -> coqtopStepForward ~id params |> inject_dm_events

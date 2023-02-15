@@ -258,11 +258,14 @@ let get_lemmas st pos =
   | Some context -> 
     Some (ExecutionManager.get_lemmas context)
 
-let get_location st pos requestedDeclaration =
-  match get_context st pos with
+let get_declaration_location st pos =
+  match Document.word_at_position st.document pos with
   | None -> None
-  | Some context -> 
-    Option.map (fun (path, range) -> path, None) (ExecutionManager.get_location context requestedDeclaration)
+  | Some word ->
+    match get_context st pos with
+    | None -> None
+    | Some context -> 
+      Option.map (fun (path, range) -> path, None) (ExecutionManager.get_location context word)
 
 let pr_event = function
 | ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
