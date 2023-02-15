@@ -18,7 +18,7 @@ open Types
 let debug_em = CDebug.create ~name:"vscoq.executionManager" ()
 
 let log msg = debug_em Pp.(fun () ->
-  str @@ Format.asprintf " [%d] %s" (Unix.getpid ()) msg)
+  str @@ Format.asprintf " [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
 
 type execution_status = DelegationManager.execution_status =
   | Success of Vernacstate.t option
