@@ -267,7 +267,7 @@ let textDocumentDeclaration ~id params =
   let st = Hashtbl.find states uri in
   match Dm.DocumentManager.get_declaration_location st loc with
   | None -> 
-    output_json @@ mk_error_response ~id ~code:(-32603) ~message:"Failed in finding declaration"
+    output_json @@ mk_error_response ~id ~code:Error.requestFailed ~message:"Failed in finding declaration"
   | Some (path, rangeOpt) ->
     let v_file = Str.replace_first (Str.regexp {|\.vo$|}) ".v" path in
     let range = Option.default ({ start = { line = 0; char = 0 }; stop = { line = 0; char = 0 } } : Range.t) rangeOpt in
@@ -278,7 +278,7 @@ let textDocumentDeclaration ~id params =
       ] in
       output_json @@ mk_response ~id ~result
     else 
-      output_json @@ mk_error_response ~id ~code:(-32603) ~message:("Unable to find .v file at expected location: " ^ v_file)
+      output_json @@ mk_error_response ~id ~code:Error.requestFailed ~message:("Unable to find .v file at expected location: " ^ v_file)
 
 let coqtopResetCoq ~id params =
   let open Yojson.Basic.Util in
