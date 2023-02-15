@@ -28,7 +28,10 @@ end
 
 module Range = struct
 
-  type t = { start : Position.t; end_ : Position.t; } [@@deriving sexp, yojson]
+  type t = {
+    start : Position.t;
+    end_ : Position.t; [@key "end"]
+  } [@@deriving sexp, yojson]
 
 end 
 
