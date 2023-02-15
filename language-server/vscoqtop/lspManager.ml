@@ -33,7 +33,7 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
 let log msg = lsp_debug Pp.(fun () ->
-  str @@ Format.asprintf "       [%d] %s" (Unix.getpid ()) msg)
+  str @@ Format.asprintf "       [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
 
 (*let string_field name obj = Yojson.Safe.to_string (List.assoc name obj)*)
 
@@ -374,7 +374,7 @@ let handle_event = function
 let pr_event = function
   | LspManagerEvent e -> pr_lsp_event e
   | DocumentManagerEvent (uri, e) ->
-    Dm.DocumentManager.pr_event e
+    Pp.str @@ Format.asprintf "%a" Dm.DocumentManager.pp_event e
   | Notification _ -> Pp.str"notif"
 
 let init injections =
