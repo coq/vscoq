@@ -97,7 +97,7 @@ export function activate(context: ExtensionContext) {
             searchProvider.renderSearchResult(searchResult);
         });
 
-		languages.registerCompletionItemProvider([{ language: 'coq' }], new LemmaCompletionProvider(client));
+		// languages.registerCompletionItemProvider([{ language: 'coq' }], new LemmaCompletionProvider(client));
 
 		languages.registerDeclarationProvider([{ language: 'coq' }], new DecProvider(client));
 
@@ -122,6 +122,7 @@ export function activate(context: ExtensionContext) {
 
 	// Start the client. This will also launch the server
 	client.start();
+
     context.subscriptions.push(client);
 
 }

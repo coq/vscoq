@@ -47,8 +47,9 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
-let log msg = lsp_debug Pp.(fun () ->
-  str @@ Format.asprintf "       [%d] %s" (Unix.getpid ()) msg)
+let log msg = 
+  Printf.eprintf "%s\n" msg;
+  lsp_debug Pp.(fun () -> str @@ Format.asprintf "       [%d] %s" (Unix.getpid ()) msg)
 
 (*let string_field name obj = Yojson.Basic.to_string (List.assoc name obj)*)
 
@@ -106,7 +107,12 @@ let do_initialize ~id params =
   let open Yojson.Basic.Util in
   let trace = params |> member "trace" |> to_string in
   let capabilities = `Assoc [
-    "textDocumentSync", `Int 2 (* Incremental *)
+    "textDocumentSync", `Int 2 (* Incremental *);
+    "completionProvider", `Assoc [
+      "completionItem", `Assoc [
+        "labelDetailsSupport", `Bool false;
+      ]
+    ]
   ]
   in
   let result = `Assoc ["capabilities", capabilities] in
@@ -241,8 +247,8 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
     let (label, typ, path) = Dm.CompletionItem.pp_completion_item item in
     `Assoc [
       "label", `String label;
-      "typeString", `String typ;
-      "path", `String path;
+      "detail", `String typ;
+      "documentation", `String ("Path: " ^ path)
     ]
   
   let completionDebugInfo labels = 
@@ -261,7 +267,7 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
     let typ' = pr_ltype_env env sigma typ in
       let hyps = ids' |> List.map (fun id -> `Assoc [
         "label", id;
-        "typeString", `String (Pp.string_of_ppcmds typ')
+        "detail", `String (Pp.string_of_ppcmds typ')
       ]) in
       (env', hyps @ l)
 
@@ -274,7 +280,7 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
         (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
     hyps
 
-  let coqtopGetCompletionItems ~id params =
+  let textDocumentCompletion ~id params =
     let open Yojson.Basic.Util in
     let textDocument = params |> member "textDocument" in
     let uri = textDocument |> member "uri" |> to_string in
@@ -284,12 +290,12 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
       Dm.DocumentManager.get_proof st loc
       |> Option.map (fun Proof.{ goals; sigma; _ } -> Option.cata (mk_hyps sigma) [] (List.nth_opt goals 0)) in
     let lemmas = Dm.DocumentManager.get_lemmas st loc |> Option.map (List.map make_label) in
-    let result = `Assoc ["completionItems", `List ([hypotheses; lemmas]
+    let result = `List ([hypotheses; lemmas]
       |> List.map (Option.default [])
-      |> List.flatten)] in
+      |> List.flatten) in
       output_json @@ mk_response ~id ~result
 
-let coqtopGetDeclarationLocation ~id params =
+let textDocumentDeclaration ~id params =
   let open Yojson.Basic.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
@@ -409,14 +415,14 @@ let dispatch_method ~id method_name params : events =
   | "textDocument/didOpen" -> textDocumentDidOpen params |> inject_dm_events
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
+  | "textDocument/completion" -> textDocumentCompletion ~id params; []
+  | "textDocument/declaration2" -> textDocumentDeclaration ~id params; []
   | "vscoq/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
   | "vscoq/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events
   | "vscoq/stepForward" -> coqtopStepForward ~id params |> inject_dm_events
   | "vscoq/resetCoq" -> coqtopResetCoq ~id params; []
   | "vscoq/interpretToEnd" -> coqtopInterpretToEnd ~id params |> inject_dm_events
   | "vscoq/updateProofView" -> coqtopUpdateProofView ~id params; []
-  | "vscoq/getCompletionItems" -> coqtopGetCompletionItems ~id params; []
-  | "vscoq/declarationLocation" -> coqtopGetDeclarationLocation ~id params; []
   | "vscoq/search" -> coqtopSearch ~id params |> inject_notifications
   | "vscoq/about" -> coqtopAbout ~id params; []
   | "vscoq/check" -> coqtopCheck ~id params; []
