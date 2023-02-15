@@ -13,11 +13,9 @@ import {
 
 import Client from './client';
 import {initializeDecorations} from './Decorations';
-import LemmaCompletionProvider from './completion/LemmaCompletionProvider';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
 import { SearchCoqResult } from './protocol/types';
-import DecProvider from './DecProvider';
 
 
 let client: Client;
@@ -96,10 +94,6 @@ export function activate(context: ExtensionContext) {
         client.onNotification("vscoq/searchResult", (searchResult: SearchCoqResult) => {
             searchProvider.renderSearchResult(searchResult);
         });
-
-		// languages.registerCompletionItemProvider([{ language: 'coq' }], new LemmaCompletionProvider(client));
-
-		languages.registerDeclarationProvider([{ language: 'coq' }], new DecProvider(client));
 
         let goalsHook = window.onDidChangeTextEditorSelection(
             (evt: TextEditorSelectionChangeEvent) => {
