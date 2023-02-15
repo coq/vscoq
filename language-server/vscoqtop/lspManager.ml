@@ -308,7 +308,16 @@ let coqtopCheck ~id params =
     let method_ = "vscoq/searchResult" in
     let params = `Assoc [ "id", `String id; "name", `String name; "statement", `String statement ] in
     output_json @@ Notification.(yojson_of_t {method_; params})
+
+let vscoqConfiguration params = 
+  let open Yojson.Safe.Util in 
+  let delegation = params |> member "delegation" in 
+  let workers = params |> member "workers" in 
+  let message = to_string params in
+  let lvl = "info" in 
+  ()
     
+
 let dispatch_method ~id method_name params : events =
   match method_name with
   | "initialize" -> do_initialize ~id params; []
@@ -319,6 +328,7 @@ let dispatch_method ~id method_name params : events =
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
   | "textDocument/hover" -> textDocumentHover ~id params; []
+  | "vscoq/configuration" -> vscoqConfiguration params; []
   | "vscoq/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
   | "vscoq/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events
   | "vscoq/stepForward" -> coqtopStepForward ~id params |> inject_dm_events
