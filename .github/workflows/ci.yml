@@ -44,6 +44,10 @@ jobs:
     - run: nix build '.?submodules=1'
     - run: nix develop .#vscoq-language-server -c bash -c "cd language-server && make world"
     - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
+    - run: xvfb-run nix develop .#vscoq-client -c bash -c "cd client && yarn test"
+      if: runner.os == 'Linux'
+    - run: nix develop .#vscoq-client -c bash -c "cd client && yarn test"
+      if: runner.os != 'Linux'
 
   build-language-server-opam:
     strategy:
