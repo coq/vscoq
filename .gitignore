@@ -2,3 +2,5 @@ client/node_modules
 client/dist/
 language-server/_build
 client/yarn-error.log
+client/.vscode-test/
+client/out/
