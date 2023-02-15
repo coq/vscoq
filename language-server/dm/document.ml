@@ -474,13 +474,12 @@ let rec parse_more synterp_state stream raw parsed =
     parse_more synterp_state stream raw parsed
   in
   let start = Stream.count stream in
-  begin try
+  begin
     (* FIXME should we save lexer state? *)
-    let oast = parse_one_sentence stream ~st:synterp_state in
-    let stop = Stream.count stream in
-    begin match oast with
+    match parse_one_sentence stream ~st:synterp_state with
     | None (* EOI *) -> List.rev parsed
     | Some ast ->
+      let stop = Stream.count stream in
       log @@ "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
       let begin_line, begin_char, end_char =
               match ast.loc with
@@ -503,12 +502,10 @@ let rec parse_more synterp_state stream raw parsed =
       let sentence = { ast = ValidAst(ast,classif,tokens); start = begin_char; stop; synterp_state } in
       let parsed = sentence :: parsed in
       parse_more synterp_state stream raw parsed
-    end
-    with
-    | Stream.Error msg as exn ->
+    | exception (Stream.Error msg as exn) ->
       let loc = Loc.get_loc @@ Exninfo.info exn in
       handle_parse_error start (loc,msg)
-    | CLexer.Error.E e as exn -> (* May be more problematic to handle for the diff *)
+    | exception (CLexer.Error.E e as exn) -> (* May be more problematic to handle for the diff *)
       let loc = Loc.get_loc @@ Exninfo.info exn in
       handle_parse_error start (loc,CLexer.Error.to_string e)
   end
