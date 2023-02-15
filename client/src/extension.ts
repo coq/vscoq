@@ -3,7 +3,6 @@ import {workspace, window, commands, ExtensionContext,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
   TextEditor,
-  languages,
 } from 'vscode';
 
 import {
@@ -116,7 +115,6 @@ export function activate(context: ExtensionContext) {
 
 	// Start the client. This will also launch the server
 	client.start();
-
     context.subscriptions.push(client);
 
 }

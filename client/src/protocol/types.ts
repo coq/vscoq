@@ -1,5 +1,5 @@
 import { integer, VersionedTextDocumentIdentifier } from "vscode-languageclient";
-import { Position, Range } from "vscode";
+import { Position } from "vscode";
 
 export interface Hypothesis {
     identifiers: string[];
@@ -15,32 +15,6 @@ export interface Goal {
 export interface UpdateProofViewRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;
-}
-
-export interface CompletionItemCoqRequest {
-    textDocument: VersionedTextDocumentIdentifier;
-    position: Position;
-}
-
-export interface CompletionItemCoq {
-    label: string;
-    typeString: string;
-    path?: string;
-}
-
-export interface CompletionItemCoqResponse {
-    completionItems : CompletionItemCoq[]
-}
-
-export interface DeclarationLocationCoqRequest {
-    textDocument: VersionedTextDocumentIdentifier;
-    position: Position;
-    requestedDeclaration: string;
-}
-
-export interface DeclarationLocationCoqResponse {
-    path: string;
-    range?: Range;
 }
 
 export interface UpdateProofViewResponse {
