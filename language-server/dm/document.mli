@@ -33,6 +33,8 @@ val parse_errors : document -> (sentence_id * (Loc.t option * string)) list
 (** [parse_errors doc] returns the list of sentences which failed to parse
     (see validate_document) together with their error message *)
 
+val word_at_position : document -> Position.t -> string option
+
 type text_edit = Range.t * string
 
 val apply_text_edits : document -> text_edit list -> document

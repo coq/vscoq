@@ -13,11 +13,9 @@ import {
 
 import Client from './client';
 import {initializeDecorations} from './Decorations';
-import LemmaCompletionProvider from './completion/LemmaCompletionProvider';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
 import { SearchCoqResult } from './protocol/types';
-import DecProvider from './DecProvider';
 
 
 let client: Client;
@@ -97,10 +95,6 @@ export function activate(context: ExtensionContext) {
             searchProvider.renderSearchResult(searchResult);
         });
 
-		languages.registerCompletionItemProvider([{ language: 'coq' }], new LemmaCompletionProvider(client));
-
-		languages.registerDeclarationProvider([{ language: 'coq' }], new DecProvider(client));
-
         let goalsHook = window.onDidChangeTextEditorSelection(
             (evt: TextEditorSelectionChangeEvent) => {
 
@@ -122,6 +116,7 @@ export function activate(context: ExtensionContext) {
 
 	// Start the client. This will also launch the server
 	client.start();
+
     context.subscriptions.push(client);
 
 }
