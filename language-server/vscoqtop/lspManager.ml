@@ -305,12 +305,13 @@ let textDocumentDeclaration ~id params =
   match Dm.DocumentManager.get_declaration_location st loc with
   | None -> 
     output_json @@ mk_error_response ~id ~code:(-32603) ~message:"Failed in finding declaration"
-  | Some (path, range) ->
+  | Some (path, rangeOpt) ->
     let v_file = Str.replace_first (Str.regexp {|\.vo$|}) ".v" path in
+    let range = Option.default ({ start = { line = 0; char = 0 }; stop = { line = 0; char = 0 } } : Range.t) rangeOpt in
     if Sys.file_exists v_file then
       let result = `Assoc [
         "uri", `String v_file;
-        "range", make_range ({ start = { line = 0; char = 0 }; stop = { line = 0; char = 0 } })
+        "range", make_range range
       ] in
       output_json @@ mk_response ~id ~result
     else 
