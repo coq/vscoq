@@ -18,7 +18,7 @@ open Types
 let debug_em = CDebug.create ~name:"vscoq.executionManager" ()
 
 let log msg = debug_em Pp.(fun () ->
-  str @@ Format.asprintf " [%d] %s" (Unix.getpid ()) msg)
+  str @@ Format.asprintf " [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
 
 type execution_status = DelegationManager.execution_status =
   | Success of Vernacstate.t option
@@ -356,7 +356,7 @@ let build_tasks_for doc st id =
       log @@ "Error resiliency on state " ^ Stateid.to_string id;
       vs, tasks
     | _ ->
-      log @@ "Non (locally) computed state " ^ Stateid.to_string id;
+      (*log @@ "Non (locally) computed state " ^ Stateid.to_string id;*)
       let (base_id, task) = task_for_sentence (Document.schedule doc) id in
       begin match base_id with
       | None -> (* task should be executed in initial state *)
