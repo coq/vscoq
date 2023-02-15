@@ -64,6 +64,7 @@ let lsp : event Sel.event =
   |> fst
   |> Sel.name "lsp"
   |> Sel.make_recurring
+  |> Sel.set_priority Dm.PriorityManager.lsp_message
 
 let output_json ?(trace=true) obj =
   let msg  = Yojson.Safe.pretty_to_string ~std:true obj in

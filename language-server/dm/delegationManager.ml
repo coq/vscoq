@@ -86,6 +86,7 @@ let local_feedback : (sentence_id * (Feedback.level * Loc.t option * Pp.t)) Sel.
   |> Sel.uncancellable
   |> Sel.name "workers_feedback"
   |> Sel.make_recurring
+  |> Sel.set_priority PriorityManager.feedback
 
 module MakeWorker (Job : Job) = struct
 
