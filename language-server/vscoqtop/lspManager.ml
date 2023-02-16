@@ -101,18 +101,6 @@ let parse_loc json =
   let character = json |> member "character" |> to_int in
   Position.{ line ; character }
 
-let make_loc Position.{ line; char }  = 
-  `Assoc [
-    "line", `Int line;
-    "character", `Int char;
-  ]
-
-let make_range Range.{ start; stop } =
-  `Assoc [
-    "start", make_loc start;
-    "end", make_loc stop;
-  ]
-
 let publish_diagnostics uri doc =
   let diagnostics = List.map Diagnostic.yojson_of_t @@ Dm.DocumentManager.diagnostics doc in
   let params = `Assoc [
@@ -224,35 +212,35 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
     ]
 
   let textDocumentCompletion ~id params =
-    let open Yojson.Basic.Util in
+    let open Yojson.Safe.Util in
     let textDocument = params |> member "textDocument" in
     let uri = textDocument |> member "uri" |> to_string in
     let loc = params |> member "position" |> parse_loc in
     let st = Hashtbl.find states uri in
     let completionItems = Dm.CompletionSuggester.get_completion_items ~id params st loc in
-    let result = `List (completionItems |> List.map make_label) in
-    output_json @@ mk_response ~id ~result
+    let result = Ok (`List (completionItems |> List.map make_label)) in
+    output_json @@ Response.(yojson_of_t { id; result })
 
 let textDocumentDeclaration ~id params =
-  let open Yojson.Basic.Util in
+  let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let loc = params |> member "position" |> parse_loc in
   let st = Hashtbl.find states uri in
   match Dm.DocumentManager.get_declaration_location st loc with
   | None -> 
-    output_json @@ mk_error_response ~id ~code:Error.requestFailed ~message:"Failed in finding declaration"
+    output_json @@ Response.yojson_of_t { id; result = Error { code = Error.requestFailed; message = "Failed in finding declaration" }}
   | Some (path, rangeOpt) ->
     let v_file = Str.replace_first (Str.regexp {|\.vo$|}) ".v" path in
-    let range = Option.default ({ start = { line = 0; char = 0 }; stop = { line = 0; char = 0 } } : Range.t) rangeOpt in
+    let range = Option.default ({ start = { line = 0; character = 0 }; end_ = { line = 0; character = 0 } } : Range.t) rangeOpt in
     if Sys.file_exists v_file then
-      let result = `Assoc [
+      let result = Ok (`Assoc [
         "uri", `String v_file;
-        "range", make_range range
-      ] in
-      output_json @@ mk_response ~id ~result
-    else 
-      output_json @@ mk_error_response ~id ~code:Error.requestFailed ~message:("Unable to find .v file at expected location: " ^ v_file)
+        "range", Range.yojson_of_t range
+      ]) in
+      output_json @@ Response.(yojson_of_t { id; result })
+    else
+      output_json @@ Response.yojson_of_t {id; result = Error { code = Error.requestFailed; message = ("Unable to find .v file at expected location: " ^ v_file) }}
 
 let coqtopResetCoq ~id params =
   let open Yojson.Safe.Util in
