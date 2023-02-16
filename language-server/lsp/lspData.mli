@@ -43,3 +43,18 @@ type notification =
 module Error : sig
   val requestFailed : int
 end
+
+module ServerCapabilities : sig
+
+  type textDocumentSyncKind =
+  | None
+  | Full
+  | Incremental
+  [@@deriving yojson]
+
+  type t = {
+    textDocumentSync : textDocumentSyncKind;
+    hoverProvider : bool;
+  } [@@deriving yojson]
+
+end

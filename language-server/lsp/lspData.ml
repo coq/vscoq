@@ -71,3 +71,29 @@ module Error = struct
   let requestFailed = -32803
 
 end
+
+module ServerCapabilities = struct
+
+  type textDocumentSyncKind =
+  | None
+  | Full
+  | Incremental
+  [@@deriving yojson]
+
+  let yojson_of_textDocumentSyncKind = function
+  | None -> `Int 0
+  | Full -> `Int 1
+  | Incremental -> `Int 2
+
+  let textDocumentSyncKind_of_yojson = function
+  | `Int 0 -> None
+  | `Int 1 -> Full
+  | `Int 2 -> Incremental
+  | _ -> Yojson.json_error "invalid value"
+
+  type t = {
+    textDocumentSync : textDocumentSyncKind;
+    hoverProvider : bool;
+  } [@@deriving yojson]
+
+end
