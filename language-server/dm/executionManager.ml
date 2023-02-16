@@ -45,7 +45,7 @@ type delegation_mode =
 type options = {
   delegation_mode : delegation_mode;
 }
-let default_options = { delegation_mode = SkipProofs }
+let default_options = { delegation_mode = CheckProofsInMaster }
 
 type state = {
   initial : Vernacstate.t;
