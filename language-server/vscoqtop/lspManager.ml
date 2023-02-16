@@ -74,11 +74,11 @@ let output_json ?(trace=true) obj =
 
 let do_initialize ~id params =
   let open Yojson.Safe.Util in
-  let capabilities = `Assoc [
-    "textDocumentSync", `Int 2 (* Incremental *)
-  ]
-  in
-  let result = Ok (`Assoc ["capabilities", capabilities]) in
+  let capabilities = ServerCapabilities.{
+    textDocumentSync = Incremental;
+    hoverProvider = true;
+  } in
+  let result = Ok (`Assoc ["capabilities", ServerCapabilities.yojson_of_t capabilities]) in
   output_json Response.(yojson_of_t {id; result})
 
 let do_shutdown ~id params =
