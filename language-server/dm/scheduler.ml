@@ -197,12 +197,7 @@ let schedule_sentence (id,oast) st schedule =
     in
     SM.update x upd deps
   in
-  (* We say that all previous sentences, in a still open proof or toplevel, impact this one *)
-  let dependencies =
-    let in_scope =
-      List.concat @@ List.map (fun b -> b.proof_sentences) st.proof_blocks@[st.document_scope] in
-    List.fold_left (fun deps x -> add_dep deps x id) schedule.dependencies in_scope
-  in
+  let dependencies = Option.cata (fun x -> add_dep schedule.dependencies x id) schedule.dependencies base in
   (* This new sentence impacts no sentence (yet) *)
   let dependencies = SM.add id Stateid.Set.empty dependencies in
   st, { tasks; dependencies }
