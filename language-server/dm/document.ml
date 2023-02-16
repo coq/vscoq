@@ -49,6 +49,7 @@ module RawDoc : sig
   val end_loc : t -> int
 
   val range_of_loc : t -> Loc.t -> Range.t
+  val word_at_position: t -> Position.t -> string option
 
   val apply_text_edit : t -> text_edit -> t * int
 
@@ -84,7 +85,16 @@ end = struct
     { start = position_of_loc raw loc.Loc.bp;
       end_ = position_of_loc raw loc.Loc.ep;
     }
-
+  let word_at_position raw pos : string option =
+    let r = Str.regexp {|\([a-zA-Z_][a-zA-Z_0-9]*\)|} in
+    let start = ref (loc_of_position raw pos) in
+    let word = ref None in
+    while (Str.string_match r raw.text start.contents) do
+      start := start.contents - 1;
+      word := Some (Str.matched_string raw.text);
+    done;
+    word.contents
+  
   type edit = Range.t * string
 
   let apply_text_edit raw (Range.{start; end_}, editText) =
@@ -621,3 +631,4 @@ let sentences doc = ParsedDoc.sentences doc.parsed_doc
 let sentences_before doc loc = ParsedDoc.sentences_before doc.parsed_doc loc
 
 let text doc = RawDoc.text doc.raw_doc
+let word_at_position doc pos = RawDoc.word_at_position doc.raw_doc pos

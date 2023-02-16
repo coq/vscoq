@@ -58,3 +58,21 @@ module ServerCapabilities : sig
   } [@@deriving yojson]
 
 end
+
+module HoverResponse : sig
+  
+    type t = {
+      value: string
+    } [@@deriving yojson]
+  
+end
+
+
+module Hover : sig
+    
+    type t = {
+      contents: string
+    } [@@deriving yojson]
+  
+end
+  
