@@ -81,8 +81,19 @@ jobs:
 
     - run: |
         eval $(opam env)
-        which vscoqtop
+        echo "vscoqtop=`which vscoqtop`" >> $GITHUB_ENV
         vscoqtop -v
+
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+
+    - run: cd client && yarn run package
+    - run: cd client && xvfb-run yarn test
+      env:
+        VSCOQBIN: ${{ env.vscoqtop }}
+        VSCOQARGS: 
+
 
   dev-setup-opam:
     strategy:
@@ -116,3 +127,10 @@ jobs:
     - run: |
         eval $(opam env)
         cd language-server && dune exec vscoqtop -- -v
+
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+
+    - run: cd client && yarn run install:all && yarn run build:all && yarn run compile
+    - run: cd client && xvfb-run yarn test
