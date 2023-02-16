@@ -22,6 +22,7 @@ type delegation_mode =
 type options = {
   delegation_mode : delegation_mode;
 }
+val default_options : options
 
 (** Execution state, includes the cache *)
 type state

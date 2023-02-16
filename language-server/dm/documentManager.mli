@@ -81,6 +81,8 @@ val search : state -> id:string -> Position.t -> string -> notification Sel.even
 
 val about : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
 
+val set_ExecutionManager_options : state -> ExecutionManager.options -> state
+
 (*
 val check : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
 *)

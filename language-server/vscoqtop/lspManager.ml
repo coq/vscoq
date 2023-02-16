@@ -294,12 +294,19 @@ let coqtopCheck ~id params =
 
 let vscoqConfiguration params = 
   let open Yojson.Safe.Util in 
-  let delegation = params |> member "delegation" in 
-  let workers = params |> member "workers" in 
-  let message = to_string params in
-  let lvl = "info" in 
-  ()
-    
+  let delegation = params |> member "delegation" |> to_string in 
+  let number_of_workers = params |> member "workers" |> to_int in
+  let open Dm.ExecutionManager in
+  let options =
+    match delegation with
+    | "None"     -> { delegation_mode = CheckProofsInMaster }
+    | "Skip"     -> { delegation_mode = SkipProofs }
+    | "Delegate" -> { delegation_mode = DelegateProofsToWorkers { number_of_workers } }
+    | _ ->
+      log @@ "Ignoring call to vscoqConfiguration with unknown delegation: " ^ delegation;
+      default_options in
+  Hashtbl.filter_map_inplace (fun _ st ->
+    Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states
 
 let dispatch_method ~id method_name params : events =
   match method_name with

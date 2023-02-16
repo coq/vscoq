@@ -45,7 +45,7 @@ type delegation_mode =
 type options = {
   delegation_mode : delegation_mode;
 }
-let default_options = { delegation_mode = CheckProofsInMaster }
+let default_options = { delegation_mode = SkipProofs }
 
 type state = {
   initial : Vernacstate.t;
@@ -85,12 +85,11 @@ module ProofJob = struct
   }
   let name = "proof"
   let binary_name = "vscoqtop_proof_worker.opt"
-  let pool_size = 1
+  let initial_pool_size = 1
 
 end
 
 module ProofWorker = DelegationManager.MakeWorker(ProofJob)
-
 
 type event =
   | LocalFeedback of sentence_id * (Feedback.level * Loc.t option * Pp.t)
@@ -149,9 +148,9 @@ let interp_qed_delayed ~state_id ~st =
   let control = [] (* FIXME *) in
   let opaque = Vernacexpr.Opaque in
   let pending = CAst.make @@ Vernacexpr.Proved (opaque, None) in
-  log "calling interp_qed_delayed done";
+  (*log "calling interp_qed_delayed done";*)
   let interp = Vernacinterp.interp_qed_delayed_proof ~proof ~st ~control pending in
-  log "interp_qed_delayed done";
+  (*log "interp_qed_delayed done";*)
   let st = { st with interp } in
   st, success st, assign
 
@@ -230,6 +229,7 @@ let prepare_task delegation_mode doc task : prepared_task list =
       | CheckProofsInMaster ->
           List.map (prepare_sentence doc) (tasks_ids @ [terminator_id])
       | SkipProofs ->
+          log (Printf.sprintf "skipping %d" (List.length tasks_ids));
           let tasks = [] in
           let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
           [PDelegate {terminator_id; opener_id; last_step_id; tasks}]
@@ -330,11 +330,14 @@ let execute ~doc_id st (vs, events, interrupted) task =
                else
                  update_all id (Delegated (job_id,None)) [] st)
                st (List.map id_of_prepared_task tasks) in
-            Queue.push (job_id, job) jobs;
-            let e =
-              ProofWorker.worker_available ~jobs
-                ~fork_action:worker_main in
-            (st, last_vs,events @ [inject_proof_event e] ,false)
+            if tasks = [] then (st, last_vs, events, false)
+            else begin
+              Queue.push (job_id, job) jobs;
+              let e =
+                ProofWorker.worker_available ~jobs
+                  ~fork_action:worker_main in
+              (st, last_vs,events @ [inject_proof_event e] ,false)
+            end
           | _ ->
             (* If executing the proof opener failed, we skip the proof *)
             let st = update st terminator_id (success vs) in
