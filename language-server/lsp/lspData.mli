@@ -56,3 +56,26 @@ module Error : sig
   val requestCancelled : int
   val lspReservedErrorRangeEnd : int
 end
+
+module ServerCapabilities : sig
+
+  type textDocumentSyncKind =
+  | None
+  | Full
+  | Incremental
+  [@@deriving yojson]
+
+  type completionOptions = {
+    triggerCharacters : string list option;
+    allCommitCharacters : string list option;
+    resolveProvider : bool option;
+    completionItemLabelDetailsSupport : bool option;
+  } [@@deriving yojson]
+
+  type t = {
+    textDocumentSync : textDocumentSyncKind;
+    completionProvider : completionOptions;
+    hoverProvider : bool;
+  } [@@deriving yojson]
+
+end
