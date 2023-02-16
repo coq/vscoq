@@ -293,6 +293,43 @@ let hover st pos =
   let opattern = Document.word_at_position st.document pos in
   Option.map (fun pattern -> about st pos ~goal:None ~pattern) opattern
 
+let vernac_check_may_eval sigma env rc =
+  let gc = Constrintern.intern_unknown_if_term_or_type env sigma rc in
+  let sigma, c = Pretyping.understand_tcc env sigma gc in
+  let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
+  Evarconv.check_problems_are_solved env sigma;
+  let sigma = Evd.minimize_universes sigma in
+  let uctx = Evd.universe_context_set sigma in
+  let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma env) in
+  let j =
+    if Evarutil.has_undefined_evars sigma c then
+      Evarutil.j_nf_evar sigma (Retyping.get_judgment_of env sigma c)
+    else
+      let c = EConstr.to_constr sigma c in
+      (* OK to call kernel which does not support evars *)
+      Environ.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
+  in
+  let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma j.Environ.uj_type } in
+  let open Pp in
+  let pp =
+    let evars_of_term c = Evarutil.undefined_evars_of_term sigma c in
+    let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
+    Prettyp.print_judgment env sigma j ++
+    Printer.pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
+  in
+  pp ++ Printer.pr_universe_ctx_set sigma uctx
+
+let check st pos ~goal ~pattern =
+  match get_context st pos with 
+  | None -> Error ("No context found") (*TODO execute *)
+  | Some (env, sigma) ->
+    let rc = parse_entry st pos Pcoq.Constr.lconstr pattern in (* TODO parse contr_expr instead of smart_global *)
+    try
+      Ok (Pp.string_of_ppcmds @@ vernac_check_may_eval sigma env rc)
+    with e ->
+      let e, info = Exninfo.capture e in
+      Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
+
 module Internal = struct
 
   let document st =

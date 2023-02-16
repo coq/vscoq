@@ -135,6 +135,18 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                         );
                     }
 
+
+                    if(type === "Check") {
+                        const params: AboutCoqRequest = {textDocument, pattern, position};
+                        const req = new RequestType<AboutCoqRequest, AboutCoqResponse, void>("vscoq/check");
+                            
+                        client.sendRequest(req, params).then(
+                            (result: AboutCoqResponse) => {
+                                webview.postMessage({"command": "aboutResponse", "text": result, "id": id});
+                            }
+                        );
+                    }
+
                 }
                 else {
                     vscode.window.showErrorMessage("Search: " + message.text + " impossible. No active text editor.");
