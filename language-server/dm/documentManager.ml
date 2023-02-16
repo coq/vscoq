@@ -262,12 +262,6 @@ let get_lemmas st pos =
   | Some context -> 
     Some (ExecutionManager.get_lemmas context)
 
-let get_declaration_location st pos =
-  let (let*) = Option.bind in
-  let* word = Document.word_at_position st.document pos in
-  let* context = get_context st pos in
-  ExecutionManager.get_location context word
-
 let pr_event = function
 | ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
 | ExecutionManagerEvent ev -> ExecutionManager.pr_event ev

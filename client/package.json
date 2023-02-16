@@ -42,7 +42,7 @@
       {
         "language": "coq",
         "scopeName": "source.coq",
-        "path": "./syntax/coq.tmLanguage"
+        "path": "./syntax/coq.tmLanguage.json"
       }
     ],
     "viewsContainers": {
@@ -64,84 +64,34 @@
       ]
     },
     "configuration": [
-        {
-            "title": "Coq configuration",
-            "type": "object",
-            "properties": {
-                "vscoq.trace.server": {
-                    "scope": "window",
-                    "type": "string",
-                    "enum": [
-                        "off",
-                        "messages",
-                        "verbose"
-                    ],
-                    "default": "messages",
-                    "description": "Traces the communication between VS Code and the language server."
-                },
-                "vscoq.path": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Path to vscoqtop."
-                },
-                "vscoq.args": {
-                    "type": "array",
-                    "default": [
-                        "-bt"
-                    ],
-                    "description": "vscoqtop arguments"
-                },
-                "vscoq.coqlib.path" : {
-                  "type" : "string",
-                  "default" : "",
-                  "description": "Path to coqlib"
-                }
-            }
-        },
-        {
-            "title": "Goal and Info view panel",
-            "type": "object",
-            "properties": {
-                "vscoq.goals.display": {
-                    "scope": "window",
-                    "type": "string",
-                    "enum": [
-                        "Tabs",
-                        "List"
-                    ],
-                    "default": "List",
-                    "description": "Determines wether multiple goals should be displayed in different tabs or as a list of collapsible items."
-                }
-            }
-        },
-        {
-          "title": "Proof checking", 
-          "type": "object",
-          "properties": {
-              "vscoq.proof.delegation": {
-                  "scope": "window",
-                  "type": "string",
-                  "enum": [
-                      "None",
-                      "Skip", 
-                      "Delegate"
-                  ],
-                  "enumItemLabels": [
-                      "No delegation (all proofs are checked on after the other)",
-                      "Skip the proofs which are out of focus. This requires a continuous checking to be off",
-                      "Delegate proofs"
-                  ],
-                  "default": "None",
-                  "description": "Determines which delegation strategy should be used by the server."
-              },
-              "vscoq.proof.workers": {
-                  "scope": "window", 
-                  "type": "number",
-                  "default": "1",
-                  "description": "Amount of workers assigned to proofs in delegation mode"
-              }
-
+      {
+        "title": "Coq configuration",
+        "type": "object",
+        "properties": {
+          "vscoq.trace.server": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "off",
+              "messages",
+              "verbose"
+            ],
+            "default": "messages",
+            "description": "Traces the communication between VS Code and the language server."
+          },
+          "vscoq.path": {
+            "type": "string",
+            "default": "",
+            "description": "Path to vscoqtop."
+          },
+          "vscoq.args": {
+            "type": "array",
+            "default": [
+              "-bt"
+            ],
+            "description": "vscoqtop arguments"
           }
+        }
       },
       {
         "title": "Goal and Info view panel",

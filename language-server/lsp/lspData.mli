@@ -42,17 +42,17 @@ type notification =
 
 module Error : sig
   val parseError : int
-	val invalidRequest : int
-	val methodNotFound : int
-	val invalidParams : int
-	val internalError : int
-	val jsonrpcReservedErrorRangeStart : int
-	val serverNotInitialized : int
-	val unknownErrorCode : int
-	val lspReservedErrorRangeStart : int
-	val requestFailed : int
-	val serverCancelled : int
-	val contentModified : int
-	val requestCancelled : int
-	val lspReservedErrorRangeEnd : int
+  val invalidRequest : int
+  val methodNotFound : int
+  val invalidParams : int
+  val internalError : int
+  val jsonrpcReservedErrorRangeStart : int
+  val serverNotInitialized : int
+  val unknownErrorCode : int
+  val lspReservedErrorRangeStart : int
+  val requestFailed : int
+  val serverCancelled : int
+  val contentModified : int
+  val requestCancelled : int
+  val lspReservedErrorRangeEnd : int
 end

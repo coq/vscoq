@@ -23,19 +23,13 @@ export function activate(context: ExtensionContext) {
 
 	const config = workspace.getConfiguration('vscoq');
 
-	let args : string[] = config.args;
-
-	if (config.coqlib.path) {
-		args = args.concat(["-coqlib", config.coqlib.path]);
-	}
-
 	let serverOptions: ServerOptions = {
 		/*
 		command: "perf",
 		args: ["record","--call-graph=dwarf", "--", config.path].concat(config.args)
 		*/
 		command: config.path,
-		args: args
+		args: config.args
 	};
 
 	let clientOptions: LanguageClientOptions = {
