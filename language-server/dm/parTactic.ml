@@ -37,7 +37,7 @@ module TacticJob = struct
     name     : string }
   let name = "tactic"
   let binary_name = "vscoqtop_tactic_worker.opt"
-  let pool_size = 2
+  let initial_pool_size = 2
 
 end
 

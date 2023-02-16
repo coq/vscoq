@@ -22,7 +22,7 @@ let log msg = top_debug Pp.(fun () ->
 let loop injections =
   LspManager.init injections;
   let rec loop (todo : LspManager.event Sel.todo) =
-    log @@ "looking for next step";
+    (*log @@ "looking for next step";*)
     flush_all ();
     let ready, todo = Sel.pop todo in
     let nremaining = Sel.size todo in
