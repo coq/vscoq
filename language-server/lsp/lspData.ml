@@ -98,14 +98,6 @@ module ServerCapabilities = struct
 
 end
 
-module HoverResponse = struct
-  
-  type t = {
-    value: string
-  } [@@deriving yojson]
-
-end
-
 module Hover = struct 
     
   type t = {

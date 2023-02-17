@@ -292,7 +292,7 @@ let search st ~id pos pattern =
 let hover st pos = 
   let opattern = Document.word_at_position st.document pos in
   match opattern with 
-  | None -> Error ("No word under cursor") (*TODO execute *)
+  | None -> Error ("No word under cursor") 
   | Some pattern -> 
     about st pos ~goal:None ~pattern
 

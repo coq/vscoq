@@ -85,6 +85,7 @@ end = struct
     { start = position_of_loc raw loc.Loc.bp;
       end_ = position_of_loc raw loc.Loc.ep;
     }
+    
   let word_at_position raw pos : string option =
     let r = Str.regexp {|\([a-zA-Z_][a-zA-Z_0-9]*\)|} in
     let start = ref (loc_of_position raw pos) in

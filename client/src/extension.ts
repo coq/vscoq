@@ -52,10 +52,6 @@ export function activate(context: ExtensionContext) {
 	});
 	context.subscriptions.push(displayGoals);
 
-    //register the hover provider
-    /* const hoverProvider = new CoqHoverProvider(client);
-    context.subscriptions.push(languages.registerHoverProvider('coq', hoverProvider)); */
-
     const launchQuery = (editor: TextEditor, type: string)=> {
         const selection = editor.selection;
         const {end, start} = selection; 
