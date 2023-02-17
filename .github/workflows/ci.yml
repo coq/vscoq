@@ -89,7 +89,7 @@ jobs:
         node-version: 16
 
     - run: cd client && yarn run package
-    - run: cd client && xvfb-run yarn test
+    - run: eval $(opam env) && cd client && xvfb-run yarn test
       env:
         VSCOQPATH: ${{ env.vscoqtop }}
         VSCOQARGS: "-bt"
