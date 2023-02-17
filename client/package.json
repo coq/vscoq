@@ -54,8 +54,7 @@
         }
       ]
     },
-    "views": {
-      "coq-sidebar": [
+    "views": {https://www.youtube.com/watch?v=0i4dI13GOoE&list=PL1bauNEiHIgy_1NPbArqZU6qgRxoVc96M
         {
           "type": "webview",
           "id": "coq.search",
@@ -415,7 +414,7 @@
   },
   "scripts": {
     "install:all": "yarn install && cd goal-view-ui && yarn install && cd ../search-ui && yarn install",
-    "build:all": "cd goal-view-ui && yarn run build && cd ../search-ui && yarn run build",
+    "build:all": "cd goal-view-ui && yarn run build && cd ../search-ui && yarn run build && cd .. & yarn compile",
     "start:goal-view-ui": "cd goal-view-ui && yarn run start",
     "build:goal-view-ui": "cd goal-view-ui && yarn run build",
     "start:search-ui": "cd search-ui && yarn run start",
