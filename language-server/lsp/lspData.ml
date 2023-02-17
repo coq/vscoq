@@ -35,6 +35,25 @@ module Range = struct
 
 end 
 
+module CompletionItem = struct 
+
+  type t = {
+    label : string;
+    detail : string option [@yojson.option];
+    documentation : string option [@yojson.option];
+  } [@@deriving yojson]
+
+end
+
+module CompletionList = struct 
+
+  type t = {
+    isIncomplete : bool;
+    items : CompletionItem.t list;
+  } [@@deriving yojson]
+  
+end
+
 module Severity = struct
 
   type t = Feedback.level =
@@ -68,7 +87,20 @@ type notification =
 
 module Error = struct
 
+  let parseError = -32700
+  let invalidRequest = -32600
+  let methodNotFound = -32601
+  let invalidParams = -32602
+  let internalError = -32603
+  let jsonrpcReservedErrorRangeStart = -32099
+  let serverNotInitialized = -32002
+  let unknownErrorCode = -32001
+  let lspReservedErrorRangeStart = -32899
   let requestFailed = -32803
+  let serverCancelled = -32802
+  let contentModified = -32801
+  let requestCancelled = -32800
+  let lspReservedErrorRangeEnd = -32800
 
 end
 
@@ -91,8 +123,20 @@ module ServerCapabilities = struct
   | `Int 2 -> Incremental
   | _ -> Yojson.json_error "invalid value"
 
+  type completionItem = {
+    labelDetailsSupport : bool option [@yojson.option];
+  } [@@deriving yojson]
+
+  type completionOptions = {
+    triggerCharacters : string list option [@yojson.option];
+    allCommitCharacters : string list option [@yojson.option];
+    resolveProvider : bool option [@yojson.option];
+    completionItem : completionItem option [@yojson.option];
+  } [@@deriving yojson]
+
   type t = {
     textDocumentSync : textDocumentSyncKind;
+    completionProvider : completionOptions;
     hoverProvider : bool;
   } [@@deriving yojson]
 

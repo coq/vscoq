@@ -456,6 +456,15 @@ let get_proof st id =
 
 let get_proofview st id = Option.map Proof.data (get_proof st id)
 
+let get_lemmas sigma env =
+  let open CompletionItems in
+  let results = ref [] in
+  let display ref kind env c =
+    results := mk_completion_item sigma ref kind env c :: results.contents;
+  in
+  Search.generic_search env display;
+  results.contents
+
 let get_context st id =
   match find_fulfilled_opt id st.of_sentence with
   | None -> log "Cannot find state for get_context"; None

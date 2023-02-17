@@ -1,7 +1,7 @@
 (library
  (name dm)
  (public_name vscoq-language-server.dm)
- (modules delegationManager parTactic documentManager document executionManager scheduler types searchQuery priorityManager)
+ (modules delegationManager parTactic documentManager document executionManager scheduler types searchQuery completionItems completionSuggester priorityManager)
  (flags -rectypes)
  (libraries coq-core.sysinit coq-core.vernac coq-core.parsing sel lsp))
 

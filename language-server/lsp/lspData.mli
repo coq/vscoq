@@ -22,6 +22,23 @@ module Range : sig
   type t = { start : Position.t; end_ : Position.t; } [@@deriving yojson]
 end
 
+module CompletionItem : sig 
+  (* More properties exist, but we only use these currently *)
+  (* See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_completion *)
+  type t = {
+    label : string;
+    detail : string option;
+    documentation : string option;
+  } [@@deriving yojson]
+end
+
+module CompletionList : sig 
+  type t = {
+    isIncomplete : bool;
+    items : CompletionItem.t list;
+  } [@@deriving yojson]
+end
+
 module Severity : sig
 
   type t = Feedback.level =
@@ -54,7 +71,20 @@ type notification =
   | QueryResultNotification of query_result
 
 module Error : sig
+  val parseError : int
+  val invalidRequest : int
+  val methodNotFound : int
+  val invalidParams : int
+  val internalError : int
+  val jsonrpcReservedErrorRangeStart : int
+  val serverNotInitialized : int
+  val unknownErrorCode : int
+  val lspReservedErrorRangeStart : int
   val requestFailed : int
+  val serverCancelled : int
+  val contentModified : int
+  val requestCancelled : int
+  val lspReservedErrorRangeEnd : int
 end
 
 module ServerCapabilities : sig
@@ -65,8 +95,20 @@ module ServerCapabilities : sig
   | Incremental
   [@@deriving yojson]
 
+  type completionItem = {
+    labelDetailsSupport : bool option;
+  } [@@deriving yojson]
+
+  type completionOptions = {
+    triggerCharacters : string list option;
+    allCommitCharacters : string list option;
+    resolveProvider : bool option;
+    completionItem : completionItem option;
+  } [@@deriving yojson]
+
   type t = {
     textDocumentSync : textDocumentSyncKind;
+    completionProvider : completionOptions;
     hoverProvider : bool;
   } [@@deriving yojson]
 

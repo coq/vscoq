@@ -77,6 +77,12 @@ let do_initialize ~id params =
   let open Yojson.Safe.Util in
   let capabilities = ServerCapabilities.{
     textDocumentSync = Incremental;
+    completionProvider = { 
+      resolveProvider = Some false; 
+      triggerCharacters = None; 
+      allCommitCharacters = None; 
+      completionItem = None 
+    };
     hoverProvider = true;
   } in
   let result = Ok (`Assoc ["capabilities", ServerCapabilities.yojson_of_t capabilities]) in
@@ -122,7 +128,6 @@ let send_highlights uri doc =
   in
   let method_ = "vscoq/updateHighlights" in
   output_json @@ Notification.(yojson_of_t { method_; params })
-
 
 let update_view uri st =
   send_highlights uri st;
@@ -214,6 +219,24 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
   Hashtbl.replace states uri st;
   update_view uri st;
   (uri,events)
+  
+  let make_CompletionItem (label, typ, path) : CompletionItem.t = 
+    {
+      label;
+      detail = Some typ;
+      documentation = Some ("Path: " ^ path);
+    } 
+
+  let textDocumentCompletion ~id params =
+    let open Yojson.Safe.Util in
+    let textDocument = params |> member "textDocument" in
+    let uri = textDocument |> member "uri" |> to_string in
+    let loc = params |> member "position" |> parse_loc in
+    let st = Hashtbl.find states uri in
+    let completionItems = Dm.CompletionSuggester.get_completion_items ~id params st loc in
+    let items = List.map make_CompletionItem completionItems in
+    let result = Ok (CompletionList.yojson_of_t {isIncomplete = false; items = items;}) in
+    output_json @@ Response.(yojson_of_t { id; result })
 
 let coqtopResetCoq ~id params =
   let open Yojson.Safe.Util in
@@ -334,6 +357,7 @@ let dispatch_method ~id method_name params : events =
   | "textDocument/didOpen" -> textDocumentDidOpen params |> inject_dm_events
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
+  | "textDocument/completion" -> textDocumentCompletion ~id params; []
   | "textDocument/hover" -> textDocumentHover ~id params; []
   | "vscoq/configuration" -> vscoqConfiguration params; []
   | "vscoq/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events

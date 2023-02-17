@@ -263,6 +263,12 @@ let get_context st pos =
   | Some sentence ->
     ExecutionManager.get_context st.execution_state sentence.id
 
+let get_lemmas st pos =
+  match get_context st pos with
+  | None -> None
+  | Some (sigma, env) -> 
+    Some (ExecutionManager.get_lemmas sigma env)
+
 let parse_entry st pos entry pattern =
   let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
   let loc = Document.position_to_loc st.document pos in
