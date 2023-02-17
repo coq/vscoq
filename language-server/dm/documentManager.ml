@@ -291,10 +291,7 @@ let search st ~id pos pattern =
 
 let hover st pos = 
   let opattern = Document.word_at_position st.document pos in
-  match opattern with 
-  | None -> Error ("No word under cursor") 
-  | Some pattern -> 
-    about st pos ~goal:None ~pattern
+  Option.map (fun pattern -> about st pos ~goal:None ~pattern) opattern
 
 module Internal = struct
 

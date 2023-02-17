@@ -174,10 +174,12 @@ let textDocumentHover ~id params =
   let loc = params |> member "position" |> parse_loc in 
   let st = Hashtbl.find states uri in 
   match Dm.DocumentManager.hover st loc with
-  | Error _ -> ()
-  | Ok contents ->
+  (* Response: result: Hover | null *)
+  | None -> output_json @@ Response.(yojson_of_t { id; result = Ok (`Null) })
+  | Some (Ok contents) ->
     let result = Ok (Hover.(yojson_of_t {contents})) in
     output_json @@ Response.(yojson_of_t { id; result })
+  | _ -> ()
 
 
 let progress_hook uri () =
