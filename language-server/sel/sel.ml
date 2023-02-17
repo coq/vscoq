@@ -361,26 +361,29 @@ type 'a todo = {
 [@@deriving show]
 let empty = { system = []; queue = [] ; tasks = Sorted.nil; ready = Sorted.nil }
 
-let size { system; queue; tasks; ready } =
-  List.(length system + length queue + Sorted.length tasks + Sorted.length ready )
-
-let nothing_left_to_do { system; queue; tasks; ready } =
-  system = [] && queue = [] && tasks = Sorted.nil && ready = Sorted.nil
-
-let only_recurring_events { system; queue; tasks; ready } =
-  List.for_all is_recurring system &&
-  List.for_all is_recurring queue &&
-  Sorted.for_all is_recurring tasks &&
-  ready = Sorted.nil
-
-let not_cancelled { cancelled; _ } = !cancelled = false
-
 let prune_cancelled { system; queue; tasks; ready } =
+  let not_cancelled { cancelled; _ } = !cancelled = false in
   let system = List.filter not_cancelled system in
   let queue  = List.filter not_cancelled queue in
   let tasks  = Sorted.filter not_cancelled tasks in
   let ready  = Sorted.filter not_cancelled ready in
   { system; queue; tasks; ready }
+
+
+let size todo =
+  let { system; queue; tasks; ready } = prune_cancelled todo in
+  List.(length system + length queue + Sorted.length tasks + Sorted.length ready )
+
+let nothing_left_to_do todo =
+  let { system; queue; tasks; ready } = prune_cancelled todo in
+  system = [] && queue = [] && tasks = Sorted.nil && ready = Sorted.nil
+
+let only_recurring_events todo =
+  let { system; queue; tasks; ready } = prune_cancelled todo in
+  List.for_all is_recurring system &&
+  List.for_all is_recurring queue &&
+  Sorted.for_all is_recurring tasks &&
+  ready = Sorted.nil
 
 (* This is blocking wait (modulo a deadline). We check for system events
    (io, process death) or a queue (in case some thread puts a token there). *)
