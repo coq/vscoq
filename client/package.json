@@ -54,7 +54,8 @@
         }
       ]
     },
-    "views": {https://www.youtube.com/watch?v=0i4dI13GOoE&list=PL1bauNEiHIgy_1NPbArqZU6qgRxoVc96M
+    "views": {
+      "coq-sidebar": [
         {
           "type": "webview",
           "id": "coq.search",
