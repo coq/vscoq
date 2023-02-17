@@ -80,8 +80,6 @@ val get_lemmas : state -> Position.t -> completion_item list option
 val handle_event : event -> state -> (state option * events)
 (** handles events and returns a new state if it was updated *)
 
-val pr_event : event -> Pp.t
-
 val search : state -> id:string -> Position.t -> string -> notification Sel.event list
 
 val about : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
@@ -90,6 +88,8 @@ val hover : state -> Position.t -> (string,string) Result.t option
 (** Returns an optional Result:
     if None, the position did not have a word,
     if Some, an Ok/Error result is returned. *)
+
+val set_ExecutionManager_options : state -> ExecutionManager.options -> state
 
 val check : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
 

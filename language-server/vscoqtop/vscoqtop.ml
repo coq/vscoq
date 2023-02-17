@@ -17,12 +17,12 @@
 
 let top_debug = CDebug.create ~name:"vscoq.top" ()
 let log msg = top_debug Pp.(fun () ->
-  str @@ Format.asprintf "              [%d] %s" (Unix.getpid ()) msg)
+  str @@ Format.asprintf "              [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
 
 let loop injections =
   LspManager.init injections;
   let rec loop (todo : LspManager.event Sel.todo) =
-    log @@ "looking for next step";
+    (*log @@ "looking for next step";*)
     flush_all ();
     let ready, todo = Sel.pop todo in
     let nremaining = Sel.size todo in

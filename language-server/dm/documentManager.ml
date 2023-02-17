@@ -16,7 +16,7 @@ open Lsp.LspData
 let debug_dm = CDebug.create ~name:"vscoq.documentManager" ()
 
 let log msg = debug_dm Pp.(fun () ->
-  str @@ Format.asprintf "  [%d] %s" (Unix.getpid ()) msg)
+  str @@ Format.asprintf "  [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
 
   type proof_data = (Proof.data * Position.t) option
 
@@ -29,6 +29,9 @@ type state = {
   observe_loc : int option; (* TODO materialize observed loc and line-by-line execution status *)
 }
 
+let set_ExecutionManager_options st o =
+  { st with execution_state = ExecutionManager.set_options st.execution_state o }
+
 type event =
   | ExecuteToLoc of { (* we split the computation to help interruptibility *)
       loc : int; (* where we go *)
@@ -36,10 +39,13 @@ type event =
         todo, it is not necessarily the state of the last sentence, since it
         may have failed and this is a surrogate used for error resiliancy *)
       todo : ExecutionManager.prepared_task list;
+      started : float; (* time *)
     }
   | ExecutionManagerEvent of ExecutionManager.event
 let pp_event fmt = function
-  | ExecuteToLoc { loc; todo; _ } -> Stdlib.Format.fprintf fmt "ExecuteToLoc %d (%d tasks)" loc (List.length todo)
+  | ExecuteToLoc { loc; todo; started; _ } ->
+      let time = Unix.gettimeofday () -. started in 
+      Stdlib.Format.fprintf fmt "ExecuteToLoc %d (%d tasks left, started %2.3f ago)" loc (List.length todo) time
   | ExecutionManagerEvent _ -> Stdlib.Format.fprintf fmt "ExecutionManagerEvent"
 
 let inject_em_event x = Sel.map (fun e -> ExecutionManagerEvent e) x
@@ -146,7 +152,7 @@ let interpret_to_loc state loc : (state * event Sel.event list) =
         | Some pv -> let pos = Document.position_of_loc state.document stop in Some (pv, pos)
       in
       *)
-        (state, [Sel.now (ExecuteToLoc {loc; vst_for_next_todo; todo})])
+        (state, [Sel.now (ExecuteToLoc {loc; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
 
 (*
 let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc : (state * proof_data * events) Lwt.t =
@@ -225,19 +231,20 @@ let validate_document state =
 
 let handle_event ev st =
   match ev with
-  | ExecuteToLoc { loc; todo = [] } -> (* the vst_for_next_todo is also in st.execution_state *)
-    log "Execute (no tasks)";
+  | ExecuteToLoc { loc; todo = []; started } -> (* the vst_for_next_todo is also in st.execution_state *)
+    let time = Unix.gettimeofday () -. started in 
+    log (Printf.sprintf "ExecuteToLoc %d ends after %2.3f" loc time);
     (* We update the state to trigger a publication of diagnostics *)
     let st, events = interpret_to_loc st loc in
     (Some st, events)
-  | ExecuteToLoc { loc; vst_for_next_todo; todo = task :: todo } ->
-    log "Execute (more tasks)";
+  | ExecuteToLoc { loc; vst_for_next_todo; started; todo = task :: todo } ->
+    (*log "Execute (more tasks)";*)
     let doc_id = Document.id_of_doc st.document in
     let (execution_state,vst_for_next_todo,events,interrupted) =
       ExecutionManager.execute ~doc_id st.execution_state (vst_for_next_todo, [], false) task in
     (* We do not update the state here because we may have received feedback while
        executing *)
-    (Some {st with execution_state}, inject_em_events events @ [Sel.now (ExecuteToLoc{loc; vst_for_next_todo; todo })])
+    (Some {st with execution_state}, inject_em_events events @ [Sel.now (ExecuteToLoc{loc; vst_for_next_todo; todo; started })])
   | ExecutionManagerEvent ev ->
     let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
@@ -259,12 +266,8 @@ let get_context st pos =
 let get_lemmas st pos =
   match get_context st pos with
   | None -> None
-  | Some context -> 
-    Some (ExecutionManager.get_lemmas context)
-
-let pr_event = function
-| ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
-| ExecutionManagerEvent ev -> ExecutionManager.pr_event ev
+  | Some (sigma, env) -> 
+    Some (ExecutionManager.get_lemmas sigma env)
 
 let parse_entry st pos entry pattern =
   let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in

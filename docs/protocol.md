@@ -4,6 +4,21 @@ vscoq uses the [language server protocol](https://microsoft.github.io/language-s
 
 We implement a few custom verbs that we detail here. 
 
+## Configuration 
+
+We wend the configuration items needed by the server by using `vscoq/configuration`
+
+```typescript
+interface Configuration {
+    //Delegation mode 
+    delegate: string
+    //Number of workers if relevant
+    workers: int
+    //Proof checking mode
+    coqMode: string
+}
+```
+
 ## Highlights
 
 For providing highlights which reflect the current internal state of coq, we provide "vscoq/updateHighlights" which returns an object containing 

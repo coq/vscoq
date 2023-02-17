@@ -33,7 +33,7 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
 let log msg = lsp_debug Pp.(fun () ->
-  str @@ Format.asprintf "       [%d] %s" (Unix.getpid ()) msg)
+  str @@ Format.asprintf "       [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
 
 (*let string_field name obj = Yojson.Safe.to_string (List.assoc name obj)*)
 
@@ -64,6 +64,7 @@ let lsp : event Sel.event =
   |> fst
   |> Sel.name "lsp"
   |> Sel.make_recurring
+  |> Sel.set_priority Dm.PriorityManager.lsp_message
 
 let output_json ?(trace=true) obj =
   let msg  = Yojson.Safe.pretty_to_string ~std:true obj in
@@ -330,7 +331,23 @@ let coqtopCheck ~id params =
     let method_ = "vscoq/searchResult" in
     let params = `Assoc [ "id", `String id; "name", `String name; "statement", `String statement ] in
     output_json @@ Notification.(yojson_of_t {method_; params})
-    
+
+let vscoqConfiguration params = 
+  let open Yojson.Safe.Util in 
+  let delegation = params |> member "delegation" |> to_string in 
+  let number_of_workers = params |> member "workers" |> to_int in
+  let open Dm.ExecutionManager in
+  let options =
+    match delegation with
+    | "None"     -> { delegation_mode = CheckProofsInMaster }
+    | "Skip"     -> { delegation_mode = SkipProofs }
+    | "Delegate" -> { delegation_mode = DelegateProofsToWorkers { number_of_workers } }
+    | _ ->
+      log @@ "Ignoring call to vscoqConfiguration with unknown delegation: " ^ delegation;
+      default_options in
+  Hashtbl.filter_map_inplace (fun _ st ->
+    Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states
+
 let dispatch_method ~id method_name params : events =
   match method_name with
   | "initialize" -> do_initialize ~id params; []
@@ -342,6 +359,7 @@ let dispatch_method ~id method_name params : events =
   | "textDocument/didSave" -> textDocumentDidSave params; []
   | "textDocument/completion" -> textDocumentCompletion ~id params; []
   | "textDocument/hover" -> textDocumentHover ~id params; []
+  | "vscoq/configuration" -> vscoqConfiguration params; []
   | "vscoq/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
   | "vscoq/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events
   | "vscoq/stepForward" -> coqtopStepForward ~id params |> inject_dm_events
@@ -397,7 +415,7 @@ let handle_event = function
 let pr_event = function
   | LspManagerEvent e -> pr_lsp_event e
   | DocumentManagerEvent (uri, e) ->
-    Dm.DocumentManager.pr_event e
+    Pp.str @@ Format.asprintf "%a" Dm.DocumentManager.pp_event e
   | Notification _ -> Pp.str"notif"
 
 let init injections =

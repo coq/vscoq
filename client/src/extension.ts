@@ -11,6 +11,7 @@ import {
 } from 'vscode-languageclient/node';
 
 import Client from './client';
+import { sendConfiguration, updateServerOnConfigurationChange } from './configuration';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
@@ -79,6 +80,9 @@ export function activate(context: ExtensionContext) {
 	client.onReady()
 	.then(() => {
 		initializeDecorations(context);
+        //send the initial config message
+        sendConfiguration(context, client);
+        context.subscriptions.push(workspace.onDidChangeConfiguration(event => updateServerOnConfigurationChange(event, context, client)));
 		
         client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
             client.handleHighlights(uri, parsedRange, processingRange, processedRange);
