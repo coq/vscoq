@@ -17,12 +17,14 @@ async function main() {
 		const storagePath = await tmp.dir();
 		const userDataDir = path.join(storagePath.path, 'settings');
         const userSettingsPath = path.join(userDataDir, 'User');
-        const userSettings = {
-			"vscoq.path": path.resolve(__dirname, "../../../language-server/_build/install/default/bin/vscoqtop"),
-			"vscoq.args": ["-coqlib",path.resolve(__dirname, "../../../language-server/_build/install/default/lib/coq")],
-        };
 
-		console.log(path.resolve(__dirname, "../../../language-server/_build/install/default/bin/vscoqtop"));
+		const vscoqPath = process.env.VSCOQPATH || path.resolve(__dirname, "../../../language-server/_build/install/default/bin/vscoqtop");
+		const vscoqArgs = process.env.VSCOQARGS?.split(' ') || ["-coqlib",path.resolve(__dirname, "../../../language-server/_build/install/default/lib/coq")];
+
+        const userSettings = {
+			"vscoq.path": vscoqPath,
+			"vscoq.args": vscoqArgs,
+        };
 
 		await fs.mkdir(userSettingsPath, { recursive: true });
         await fs.writeFile(
