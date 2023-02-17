@@ -80,7 +80,7 @@ let do_initialize ~id params =
       resolveProvider = Some false; 
       triggerCharacters = None; 
       allCommitCharacters = None; 
-      completionItemLabelDetailsSupport = None 
+      completionItem = None 
     };
     hoverProvider = true;
   } in

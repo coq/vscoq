@@ -104,11 +104,15 @@ module ServerCapabilities = struct
   | `Int 2 -> Incremental
   | _ -> Yojson.json_error "invalid value"
 
+  type completionItem = {
+    labelDetailsSupport : bool option [@yojson.option];
+  } [@@deriving yojson]
+
   type completionOptions = {
-    triggerCharacters : string list option;
-    allCommitCharacters : string list option;
-    resolveProvider : bool option;
-    completionItemLabelDetailsSupport : bool option;
+    triggerCharacters : string list option [@yojson.option];
+    allCommitCharacters : string list option [@yojson.option];
+    resolveProvider : bool option [@yojson.option];
+    completionItem : completionItem option [@yojson.option];
   } [@@deriving yojson]
 
   type t = {

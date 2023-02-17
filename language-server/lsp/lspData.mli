@@ -65,11 +65,15 @@ module ServerCapabilities : sig
   | Incremental
   [@@deriving yojson]
 
+  type completionItem = {
+    labelDetailsSupport : bool option [@yojson.option];
+  } [@@deriving yojson]
+
   type completionOptions = {
     triggerCharacters : string list option;
     allCommitCharacters : string list option;
     resolveProvider : bool option;
-    completionItemLabelDetailsSupport : bool option;
+    completionItem : completionItem option;
   } [@@deriving yojson]
 
   type t = {
