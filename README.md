@@ -38,6 +38,9 @@ not yet released nor published on the VsCode marketplace.
 * Asynchronous proof checking
 * Syntax highlighting
 * Dedicated panel for queries and their history
+
+![](gif/coq-search-panel-small.gif)
+
 * Supports \_CoqProject
 
 ## Requirements
