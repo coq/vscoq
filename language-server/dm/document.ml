@@ -474,13 +474,12 @@ let rec parse_more synterp_state stream raw parsed =
     parse_more synterp_state stream raw parsed
   in
   let start = Stream.count stream in
-  begin try
+  begin
     (* FIXME should we save lexer state? *)
-    let oast = parse_one_sentence stream ~st:synterp_state in
-    let stop = Stream.count stream in
-    begin match oast with
+    match parse_one_sentence stream ~st:synterp_state with
     | None (* EOI *) -> List.rev parsed
     | Some ast ->
+      let stop = Stream.count stream in
       log @@ "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
       let begin_line, begin_char, end_char =
               match ast.loc with
@@ -491,24 +490,29 @@ let rec parse_more synterp_state stream raw parsed =
       let sstr = Stream.of_string str in
       let lex = CLexer.Lexer.tok_func sstr in
       let tokens = stream_tok 0 [] lex begin_line begin_char in
-      let parsing_eff, entry = Synterp.synterp ~atts:ast.CAst.v.attrs ast.CAst.v.expr in
-      let classif = Vernac_classifier.classify_vernac ast in
-      let ast = CAst.make ?loc:(ast.CAst.loc) Vernacexpr.{
-        control = ast.CAst.v.control;
-        attrs = ast.CAst.v.attrs;
-        expr = entry;
-      }
-      in
-      let synterp_state = Vernacstate.Synterp.freeze ~marshallable:false in
-      let sentence = { ast = ValidAst(ast,classif,tokens); start = begin_char; stop; synterp_state } in
-      let parsed = sentence :: parsed in
-      parse_more synterp_state stream raw parsed
-    end
-    with
-    | Stream.Error msg as exn ->
+      begin
+        match Synterp.synterp ~atts:ast.CAst.v.attrs ast.CAst.v.expr with
+        | parsing_eff, entry ->
+          let classif = Vernac_classifier.classify_vernac ast in
+          let ast = CAst.make ?loc:(ast.CAst.loc) Vernacexpr.{
+            control = ast.CAst.v.control;
+            attrs = ast.CAst.v.attrs;
+            expr = entry;
+          }
+          in
+          let synterp_state = Vernacstate.Synterp.freeze ~marshallable:false in
+          let sentence = { ast = ValidAst(ast,classif,tokens); start = begin_char; stop; synterp_state } in
+          let parsed = sentence :: parsed in
+          parse_more synterp_state stream raw parsed
+        | exception exn ->
+          let e, info = Exninfo.capture exn in
+          let loc = Loc.get_loc @@ info in
+          handle_parse_error start (loc,Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
+        end
+    | exception (Stream.Error msg as exn) ->
       let loc = Loc.get_loc @@ Exninfo.info exn in
       handle_parse_error start (loc,msg)
-    | CLexer.Error.E e as exn -> (* May be more problematic to handle for the diff *)
+    | exception (CLexer.Error.E e as exn) -> (* May be more problematic to handle for the diff *)
       let loc = Loc.get_loc @@ Exninfo.info exn in
       handle_parse_error start (loc,CLexer.Error.to_string e)
   end

@@ -33,7 +33,7 @@ module type Job = sig
   val binary_name : string
 
   (** Max number of workers for this kind job *)
-  val pool_size : int
+  val initial_pool_size : int
 
   type update_request
 
@@ -51,36 +51,42 @@ val cancel_job : job_id -> unit
 (** If the job fails to start, the error is reported on this sentence *)
 val mk_job_id : sentence_id -> job_id
 
-module MakeWorker (Job : Job) : sig
+module type Worker = sig
+   type job_t
+   type job_update_request
 
-(** Event for the main loop *)
-type delegation
-val pr_event : delegation -> Pp.t
-type events = delegation Sel.event list
+   val resize_pool : int -> unit
 
-(** handling an event may require an update to a sentence in the exec state,
-    e.g. when a feedback is received *)
-val handle_event : delegation -> (Job.update_request option * events)
-
-(* When a worker is available and the [jobs] queue can be popped the
-   event becomes ready; in turn the event triggers the action:
-   - if we can fork, job is passed to fork_action
-   - otherwise Job.binary_name is spawn and the job sent to it *)
-val worker_available :
-  jobs:((job_id * Job.t) Queue.t) ->
-  fork_action:(Job.t -> send_back:(Job.update_request -> unit) -> unit) ->
-  delegation Sel.event
-
-(* for worker toplevels *)
-type options
-val parse_options : string list -> options * string list
-(* the sentence ids of the remote_mapping being delegated *)
-val setup_plumbing : options -> ((Job.update_request -> unit) * Job.t)
-
-(* CDebug aware print *)
-val log : string -> unit
-
+   (** Event for the main loop *)
+   type delegation
+   val pr_event : delegation -> Pp.t
+   type events = delegation Sel.event list
+   
+   (** handling an event may require an update to a sentence in the exec state,
+       e.g. when a feedback is received *)
+   val handle_event : delegation -> (job_update_request option * events)
+   
+   (* When a worker is available and the [jobs] queue can be popped the
+      event becomes ready; in turn the event triggers the action:
+      - if we can fork, job is passed to fork_action
+      - otherwise Job.binary_name is spawn and the job sent to it *)
+   val worker_available :
+     jobs:((job_id * Sel.cancellation_handle * job_t) Queue.t) ->
+     fork_action:(job_t -> send_back:(job_update_request -> unit) -> unit) ->
+     delegation Sel.event * Sel.cancellation_handle
+   
+   (* for worker toplevels *)
+   type options
+   val parse_options : string list -> options * string list
+   (* the sentence ids of the remote_mapping being delegated *)
+   val setup_plumbing : options -> ((job_update_request -> unit) * job_t)
+   
+   (* CDebug aware print *)
+   val log : string -> unit
+   
 end
+
+module MakeWorker (Job : Job) : Worker with type job_t = Job.t and type job_update_request = Job.update_request
 
 (* To be put in in the initial set of events in order to receive locally
    feedback which generate remotely *)

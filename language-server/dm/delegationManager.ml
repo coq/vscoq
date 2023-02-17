@@ -48,7 +48,7 @@ module type Job = sig
   type t
   val name : string
   val binary_name : string
-  val pool_size : int
+  val initial_pool_size : int
   type update_request
   val appendFeedback : sentence_id -> (Feedback.level * Loc.t option * Pp.t) -> update_request
 end
@@ -86,9 +86,46 @@ let local_feedback : (sentence_id * (Feedback.level * Loc.t option * Pp.t)) Sel.
   |> Sel.uncancellable
   |> Sel.name "workers_feedback"
   |> Sel.make_recurring
+  |> Sel.set_priority PriorityManager.feedback
+
+module type Worker = sig
+  type job_t
+  type job_update_request
+
+  val resize_pool : int -> unit
+
+  (** Event for the main loop *)
+  type delegation
+  val pr_event : delegation -> Pp.t
+  type events = delegation Sel.event list
+  
+  (** handling an event may require an update to a sentence in the exec state,
+      e.g. when a feedback is received *)
+  val handle_event : delegation -> (job_update_request option * events)
+  
+  (* When a worker is available and the [jobs] queue can be popped the
+      event becomes ready; in turn the event triggers the action:
+      - if we can fork, job is passed to fork_action
+      - otherwise Job.binary_name is spawn and the job sent to it *)
+  val worker_available :
+    jobs:((job_id * Sel.cancellation_handle * job_t) Queue.t) ->
+    fork_action:(job_t -> send_back:(job_update_request -> unit) -> unit) ->
+    delegation Sel.event * Sel.cancellation_handle
+  
+  (* for worker toplevels *)
+  type options
+  val parse_options : string list -> options * string list
+  (* the sentence ids of the remote_mapping being delegated *)
+  val setup_plumbing : options -> ((job_update_request -> unit) * job_t)
+  
+  (* CDebug aware print *)
+  val log : string -> unit
+    
+end
 
 module MakeWorker (Job : Job) = struct
-
+type job_t = Job.t
+type job_update_request = Job.update_request
 let debug_worker = CDebug.create ~name:("vscoq.Worker." ^ Job.name) ()
 
 let log_worker msg = debug_worker Pp.(fun () ->
@@ -117,13 +154,25 @@ type role = Master | Worker of link
 
 (* The pool is just a queue of tokens *)
 let pool = Queue.create ()
-let () = for _i = 0 to Job.pool_size do Queue.push () pool done
+let () =
+  assert(Job.initial_pool_size >= 1);
+  for _i = 0 to Job.initial_pool_size do Queue.push () pool done
+let current_pool_size = ref Job.initial_pool_size
+let resize_pool new_pool_size =
+  assert(new_pool_size >= 1);
+  let delta = !current_pool_size - new_pool_size in
+  current_pool_size := new_pool_size;
+  (* We add tokens if needed *)
+  if delta < 0 then for _i = 1 to abs(delta) do Queue.push () pool done;
+  (* We remove tokens if needed, the ones currently in use are not added back.
+     See handling of WorkerEnd and WorkerIOError *)
+  if delta > 0 then for _i = 1 to abs(delta) do ignore(Queue.take_opt pool) done
+;;
 
 (* In order to create a job we enqueue this event *)
-let worker_available ~jobs ~fork_action : delegation Sel.event =
-  Sel.on_queues jobs pool (fun (job_id, job) () ->
+let worker_available ~jobs ~fork_action : delegation Sel.event * Sel.cancellation_handle =
+  Sel.on_queues jobs pool (fun (job_id, _, job) () ->
     WorkerStart (job_id,job,fork_action,Job.binary_name))
-  |> Sel.uncancellable
 
 (* When a worker is spawn, we enqueue this event, since eventually it will die *)
 let worker_ends pid : delegation Sel.event =
@@ -231,10 +280,13 @@ let create_process_worker procname (_,job_id) job =
 let handle_event = function
   | WorkerIOError e ->
      log @@ "worker IO Error: " ^ Printexc.to_string e;
+     if Queue.length pool < !current_pool_size then
+      Queue.push () pool;
      (None, [])
   | WorkerEnd (pid, _status) ->
       log @@ Printf.sprintf "worker %d went on holidays" pid;
-      Queue.push () pool;
+      if Queue.length pool < !current_pool_size then
+        Queue.push () pool;
       (None,[])
   | WorkerProgress { link; update_request } ->
       log "worker progress";

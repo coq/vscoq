@@ -18,7 +18,7 @@ open Types
 let debug_em = CDebug.create ~name:"vscoq.executionManager" ()
 
 let log msg = debug_em Pp.(fun () ->
-  str @@ Format.asprintf " [%d] %s" (Unix.getpid ()) msg)
+  str @@ Format.asprintf " [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
 
 type execution_status = DelegationManager.execution_status =
   | Success of Vernacstate.t option
@@ -37,15 +37,28 @@ type sentence_state =
   | Done of DelegationManager.execution_status
   | Delegated of DelegationManager.job_id * (DelegationManager.execution_status -> unit) option
 
+type delegation_mode =
+  | CheckProofsInMaster
+  | SkipProofs
+  | DelegateProofsToWorkers of { number_of_workers : int }
+
+type options = {
+  delegation_mode : delegation_mode;
+}
+let default_options = { delegation_mode = CheckProofsInMaster }
+
 type state = {
   initial : Vernacstate.t;
   of_sentence : (sentence_state * feedback_message list) SM.t;
+  options : options;
 }
 
 let init vernac_state = {
   initial = vernac_state;
   of_sentence = SM.empty;
+  options = default_options;
 }
+let set_options st options = { st with options }
 
 type prepared_task =
   | PSkip of sentence_id
@@ -72,12 +85,11 @@ module ProofJob = struct
   }
   let name = "proof"
   let binary_name = "vscoqtop_proof_worker.opt"
-  let pool_size = 1
+  let initial_pool_size = 1
 
 end
 
 module ProofWorker = DelegationManager.MakeWorker(ProofJob)
-
 
 type event =
   | LocalFeedback of sentence_id * (Feedback.level * Loc.t option * Pp.t)
@@ -136,9 +148,9 @@ let interp_qed_delayed ~state_id ~st =
   let control = [] (* FIXME *) in
   let opaque = Vernacexpr.Opaque in
   let pending = CAst.make @@ Vernacexpr.Proved (opaque, None) in
-  log "calling interp_qed_delayed done";
+  (*log "calling interp_qed_delayed done";*)
   let interp = Vernacinterp.interp_qed_delayed_proof ~proof ~st ~control pending in
-  log "interp_qed_delayed done";
+  (*log "interp_qed_delayed done";*)
   let st = { st with interp } in
   st, success st, assign
 
@@ -192,9 +204,9 @@ let find_fulfilled_opt x m =
     | Delegated _ -> None
   with Not_found -> None
 
-let jobs : (DelegationManager.job_id * ProofJob.t) Queue.t = Queue.create ()
+let jobs : (DelegationManager.job_id * Sel.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
 
-let remotize doc id =
+let prepare_sentence doc id =
   match Document.get_sentence doc id with
   | None -> PSkip id
   | Some sentence ->
@@ -203,15 +215,24 @@ let remotize doc id =
     | Document.ParseError _ -> PSkip id
     end
 
-let prepare_task doc task : prepared_task =
+let prepare_task delegation_mode doc task : prepared_task list =
   match task with
-  | Skip id -> PSkip id
-  | Exec(id,ast,synterp_st) -> PExec(id,ast,synterp_st)
+  | Skip id -> [PSkip id]
+  | Exec(id,ast,synterp_st) -> [PExec(id,ast,synterp_st)]
+  | Query(id,ast,synterp_st) -> [PQuery(id,ast,synterp_st)]
   | OpaqueProof { terminator_id; opener_id; tasks_ids } ->
-     let tasks = List.map (remotize doc) tasks_ids in
-     let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
-     PDelegate {terminator_id; opener_id; last_step_id; tasks}
-  | Query(id,ast,synterp_st) -> PQuery(id,ast,synterp_st)
+      match delegation_mode with
+      | DelegateProofsToWorkers _ ->
+          let tasks = List.map (prepare_sentence doc) tasks_ids in
+          let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
+          [PDelegate {terminator_id; opener_id; last_step_id; tasks}]
+      | CheckProofsInMaster ->
+          List.map (prepare_sentence doc) (tasks_ids @ [terminator_id])
+      | SkipProofs ->
+          log (Printf.sprintf "skipping %d" (List.length tasks_ids));
+          let tasks = [] in
+          let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
+          [PDelegate {terminator_id; opener_id; last_step_id; tasks}]
 
 let id_of_prepared_task = function
   | PSkip id -> id
@@ -241,7 +262,7 @@ let worker_execute ~doc_id last_step_id ~send_back (vs,events) = function
     let vs = { vs with Vernacstate.synterp } in
     let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
     let v = if Stateid.equal id last_step_id then ensure_proof_over v else v in
-    send_back (ProofJob.UpdateExecStatus (id,v));
+    send_back (ProofJob.UpdateExecStatus (id,purge_state v));
     (vs, events @ ev)
   | _ -> assert false
 
@@ -309,11 +330,14 @@ let execute ~doc_id st (vs, events, interrupted) task =
                else
                  update_all id (Delegated (job_id,None)) [] st)
                st (List.map id_of_prepared_task tasks) in
-            Queue.push (job_id, job) jobs;
-            let e =
-              ProofWorker.worker_available ~jobs
-                ~fork_action:worker_main in
-            (st, last_vs,events @ [inject_proof_event e] ,false)
+            if tasks = [] then (st, last_vs, events, false)
+            else begin
+              let e, cancellation =
+                ProofWorker.worker_available ~jobs
+                  ~fork_action:worker_main in
+              Queue.push (job_id, cancellation, job) jobs;
+              (st, last_vs,events @ [inject_proof_event e] ,false)
+            end
           | _ ->
             (* If executing the proof opener failed, we skip the proof *)
             let st = update st terminator_id (success vs) in
@@ -346,7 +370,7 @@ let build_tasks_for doc st id =
     end
   in
   let vs, tasks = build_tasks id [] in
-  vs, List.map (prepare_task doc) tasks
+  vs, List.concat_map (prepare_task st.options.delegation_mode doc) tasks
 
 let errors st =
   List.fold_left (fun acc (id, (p,_)) ->
@@ -404,8 +428,13 @@ let rec invalidate schedule id st =
   let old_jobs = Queue.copy jobs in
   let removed = ref [] in
   Queue.clear jobs;
-  Queue.iter (fun ((_, { ProofJob.terminator_id; tasks }) as job) ->
-    if terminator_id != id then Queue.push job jobs else removed := tasks :: !removed) old_jobs;
+  Queue.iter (fun ((_, cancellation, { ProofJob.terminator_id; tasks }) as job) ->
+    if terminator_id != id then
+      Queue.push job jobs
+    else begin
+      Sel.cancel cancellation;
+      removed := tasks :: !removed
+    end) old_jobs;
   let of_sentence = List.fold_left invalidate1 of_sentence
     List.(concat (map (fun tasks -> map id_of_prepared_task tasks) !removed)) in
   if of_sentence == st.of_sentence then st else
