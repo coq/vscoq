@@ -252,11 +252,6 @@ let advance_system ~ready_fds _ = function
       with Unix.Unix_error _ as e -> mkReadInProgress fd (rest (Error e))
       end
 
-(* TODO: find a better way to not duplicate recurring tasks *)
-let advance_task ready _min_prio key x =
-  if List.exists (fun x -> x.cancelled == key) ready then No x
-  else Yes x
-
 let rec map_filter f = function
   | [] -> []
   | x :: xs ->
@@ -310,17 +305,15 @@ end = struct
     | Nil
     | Cons of 'a * int * ('a * int) L.t
 
-  [@@deriving show]
-
   let nil = []
 
   let length = List.length
 
   let on_fst f = (); fun (x,_) -> f x
 
-  let rec filter f l = List.filter (on_fst f) l
+  let filter f l = List.filter (on_fst f) l
 
-  let rec for_all f l = List.for_all (on_fst f) l
+  let for_all f l = List.for_all (on_fst f) l
 
   let min = function [] -> max_int | (_,p) :: _ -> p
 
