@@ -53,6 +53,20 @@ const app = () => {
     const handleMessage = useCallback ((msg: any) => {
         const result = msg.data.text;
         switch (msg.data.command) {
+
+            case 'checkResponse':
+                setSearchTabs(searchTabs => { 
+                    const newTabs = searchTabs.map(tab => {
+                        if(tab.searchId === msg.data.id) {
+                            return {...tab, results: [{id: "", name: "", statement: result, type: "Check"}]};
+                        }
+                        return tab;
+                    });
+    
+                    return newTabs;
+                });
+                break;
+
             case 'aboutResponse':
                 setSearchTabs(searchTabs => { 
                     const newTabs = searchTabs.map(tab => {
@@ -65,6 +79,7 @@ const app = () => {
                     return newTabs;
                 });
                 break;
+
             case 'searchResponse':
                 setSearchTabs(searchTabs => {
                     
@@ -78,9 +93,11 @@ const app = () => {
                     return newTabs;
                 });
                 break;
+
             case 'launchedSearch': 
                 //TODO: Add UI elements to show user the searching state
                 break;
+
             case 'query':
                 setSearchTabs(searchTabs => {
                     const results: QueryResult[] = [];
@@ -132,7 +149,6 @@ const app = () => {
         //Handle the cases when a query is launched from an editor
         if(immediateQuery.current) {
             immediateQuery.current = false;
-            console.log("QUERY IS LAUNCHED");
             launchQuery();
             return;
         }
