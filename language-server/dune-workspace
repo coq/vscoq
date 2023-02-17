@@ -1,6 +1,4 @@
 (lang dune 2.5)
 (env
   (dev
-    (flags (:standard -warn-error -A)))
-  (fatalwarnings
-    (flags (:standard -w -9 -w -32 -w -27 -w -6 -w -37 -warn-error +A))))
+    (flags (:standard -warn-error -A))))
