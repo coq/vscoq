@@ -249,12 +249,12 @@ let get_proof st pos =
   | Some sentence ->
     ExecutionManager.get_proofview st.execution_state sentence.id
 
-  let get_context st pos =
-    let loc = Document.position_to_loc st.document pos in
-    match Document.find_sentence_before st.document loc with
-    | None -> None
-    | Some sentence ->
-      ExecutionManager.get_context st.execution_state sentence.id
+let get_context st pos =
+  let loc = Document.position_to_loc st.document pos in
+  match Document.find_sentence_before st.document loc with
+  | None -> None
+  | Some sentence ->
+    ExecutionManager.get_context st.execution_state sentence.id
 
 let pr_event = function
 | ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
@@ -272,7 +272,7 @@ let parse_entry st pos entry pattern =
 let about st pos ~goal ~pattern =
   match get_context st pos with 
   | None -> Error ("No context found") (*TODO execute *)
-  | Some (env, sigma) ->
+  | Some (sigma, env) ->
     let ref_or_by_not = parse_entry st pos (Pcoq.Prim.smart_global) pattern in
     let udecl = None (* TODO? *) in
     try
@@ -284,48 +284,23 @@ let about st pos ~goal ~pattern =
 let search st ~id pos pattern =
   match get_context st pos with
   | None -> [] (* TODO execute? *)
-  | Some (env, evd) ->
+  | Some (sigma, env) ->
     let query = parse_entry st pos (G_vernac.search_query) pattern in
     let searchable = Vernacexpr.(Search [query]) in
-    SearchQuery.interp_search ~id env evd searchable (Vernacexpr.SearchOutside [])
+    SearchQuery.interp_search ~id env sigma searchable (Vernacexpr.SearchOutside [])
 
 let hover st pos = 
   let opattern = Document.word_at_position st.document pos in
   Option.map (fun pattern -> about st pos ~goal:None ~pattern) opattern
 
-let vernac_check_may_eval sigma env rc =
-  let gc = Constrintern.intern_unknown_if_term_or_type env sigma rc in
-  let sigma, c = Pretyping.understand_tcc env sigma gc in
-  let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
-  Evarconv.check_problems_are_solved env sigma;
-  let sigma = Evd.minimize_universes sigma in
-  let uctx = Evd.universe_context_set sigma in
-  let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma env) in
-  let j =
-    if Evarutil.has_undefined_evars sigma c then
-      Evarutil.j_nf_evar sigma (Retyping.get_judgment_of env sigma c)
-    else
-      let c = EConstr.to_constr sigma c in
-      (* OK to call kernel which does not support evars *)
-      Environ.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
-  in
-  let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma j.Environ.uj_type } in
-  let open Pp in
-  let pp =
-    let evars_of_term c = Evarutil.undefined_evars_of_term sigma c in
-    let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
-    Prettyp.print_judgment env sigma j ++
-    Printer.pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
-  in
-  pp ++ Printer.pr_universe_ctx_set sigma uctx
-
 let check st pos ~goal ~pattern =
   match get_context st pos with 
   | None -> Error ("No context found") (*TODO execute *)
-  | Some (env, sigma) ->
+  | Some (sigma,env) ->
     let rc = parse_entry st pos Pcoq.Constr.lconstr pattern in
     try
-      Ok (Pp.string_of_ppcmds @@ vernac_check_may_eval sigma env rc)
+      let redexpr = None in
+      Ok (Pp.string_of_ppcmds @@ Vernacentries.check_may_eval sigma env redexpr rc)
     with e ->
       let e, info = Exninfo.capture e in
       Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
