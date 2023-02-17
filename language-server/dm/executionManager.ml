@@ -204,7 +204,7 @@ let find_fulfilled_opt x m =
     | Delegated _ -> None
   with Not_found -> None
 
-let jobs : (DelegationManager.job_id * ProofJob.t) Queue.t = Queue.create ()
+let jobs : (DelegationManager.job_id * Sel.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
 
 let prepare_sentence doc id =
   match Document.get_sentence doc id with
@@ -332,10 +332,10 @@ let execute ~doc_id st (vs, events, interrupted) task =
                st (List.map id_of_prepared_task tasks) in
             if tasks = [] then (st, last_vs, events, false)
             else begin
-              Queue.push (job_id, job) jobs;
-              let e =
+              let e, cancellation =
                 ProofWorker.worker_available ~jobs
                   ~fork_action:worker_main in
+              Queue.push (job_id, cancellation, job) jobs;
               (st, last_vs,events @ [inject_proof_event e] ,false)
             end
           | _ ->
@@ -428,8 +428,13 @@ let rec invalidate schedule id st =
   let old_jobs = Queue.copy jobs in
   let removed = ref [] in
   Queue.clear jobs;
-  Queue.iter (fun ((_, { ProofJob.terminator_id; tasks }) as job) ->
-    if terminator_id != id then Queue.push job jobs else removed := tasks :: !removed) old_jobs;
+  Queue.iter (fun ((_, cancellation, { ProofJob.terminator_id; tasks }) as job) ->
+    if terminator_id != id then
+      Queue.push job jobs
+    else begin
+      Sel.cancel cancellation;
+      removed := tasks :: !removed
+    end) old_jobs;
   let of_sentence = List.fold_left invalidate1 of_sentence
     List.(concat (map (fun tasks -> map id_of_prepared_task tasks) !removed)) in
   if of_sentence == st.of_sentence then st else

@@ -103,9 +103,11 @@ let interp_par ~pstate ~info ast ~abstract ~with_end_tac : Declare.Proof.t =
      (Proof.data p).Proof.goals |> CList.map_i (fun goalno goal ->
        let job = { TacticJob.state; ast; goalno = goalno + 1; goal; name = string_of_int (Evar.repr goal)} in
        let job_id = DelegationManager.mk_job_id !feedback_id in
-       Queue.push (job_id,job) queue;
-       TacticWorker.worker_available ~jobs:queue ~fork_action:worker_solve_one_goal, job_id
-        ) 0) in
+       let e, cancellation =
+         TacticWorker.worker_available ~jobs:queue ~fork_action:worker_solve_one_goal in
+       Queue.push (job_id, cancellation, job) queue;
+        e, job_id
+      ) 0) in
   let rec wait acc evs =
     log @@ "waiting for events: " ^ string_of_int @@ Sel.size evs;
     let more_ready, evs = Sel.pop_opt evs in

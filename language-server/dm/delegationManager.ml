@@ -108,9 +108,9 @@ module type Worker = sig
       - if we can fork, job is passed to fork_action
       - otherwise Job.binary_name is spawn and the job sent to it *)
   val worker_available :
-    jobs:((job_id * job_t) Queue.t) ->
+    jobs:((job_id * Sel.cancellation_handle * job_t) Queue.t) ->
     fork_action:(job_t -> send_back:(job_update_request -> unit) -> unit) ->
-    delegation Sel.event
+    delegation Sel.event * Sel.cancellation_handle
   
   (* for worker toplevels *)
   type options
@@ -170,10 +170,9 @@ let resize_pool new_pool_size =
 ;;
 
 (* In order to create a job we enqueue this event *)
-let worker_available ~jobs ~fork_action : delegation Sel.event =
-  Sel.on_queues jobs pool (fun (job_id, job) () ->
+let worker_available ~jobs ~fork_action : delegation Sel.event * Sel.cancellation_handle =
+  Sel.on_queues jobs pool (fun (job_id, _, job) () ->
     WorkerStart (job_id,job,fork_action,Job.binary_name))
-  |> Sel.uncancellable
 
 (* When a worker is spawn, we enqueue this event, since eventually it will die *)
 let worker_ends pid : delegation Sel.event =

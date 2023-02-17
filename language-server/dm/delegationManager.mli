@@ -71,9 +71,9 @@ module type Worker = sig
       - if we can fork, job is passed to fork_action
       - otherwise Job.binary_name is spawn and the job sent to it *)
    val worker_available :
-     jobs:((job_id * job_t) Queue.t) ->
+     jobs:((job_id * Sel.cancellation_handle * job_t) Queue.t) ->
      fork_action:(job_t -> send_back:(job_update_request -> unit) -> unit) ->
-     delegation Sel.event
+     delegation Sel.event * Sel.cancellation_handle
    
    (* for worker toplevels *)
    type options
