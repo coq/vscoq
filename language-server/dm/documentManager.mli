@@ -10,7 +10,7 @@
 
 open Types
 open Lsp.LspData
-open CompletionItem
+open CompletionItems
 
 (** The document manager holds the view that Coq has of the currently open
     states. It makes it easy for IDEs to handle text edits, navigate

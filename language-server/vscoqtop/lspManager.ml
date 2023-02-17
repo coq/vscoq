@@ -217,12 +217,12 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
   update_view uri st;
   (uri,events)
   
-  let make_label (label, typ, path) = 
-    `Assoc [
-      "label", `String label;
-      "detail", `String typ;
-      "documentation", `String ("Path: " ^ path)
-    ]
+  let make_CompletionItem (label, typ, path) : CompletionItem.t = 
+    {
+      label;
+      detail = Some typ;
+      documentation = Some ("Path: " ^ path);
+    } 
 
   let textDocumentCompletion ~id params =
     let open Yojson.Safe.Util in
@@ -231,7 +231,8 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
     let loc = params |> member "position" |> parse_loc in
     let st = Hashtbl.find states uri in
     let completionItems = Dm.CompletionSuggester.get_completion_items ~id params st loc in
-    let result = Ok (`List (completionItems |> List.map make_label)) in
+    let items = List.map make_CompletionItem completionItems in
+    let result = Ok (CompletionList.yojson_of_t {isIncomplete = false; items = items;}) in
     output_json @@ Response.(yojson_of_t { id; result })
 
 let coqtopResetCoq ~id params =

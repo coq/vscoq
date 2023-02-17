@@ -427,7 +427,7 @@ let get_proofview st id =
       st |> LemmaStack.with_top ~f:Proof.get |> data |> Option.make
 
 let get_lemmas ((env : Environ.env), (sigma : Evd.evar_map)) =
-  let open CompletionItem in
+  let open CompletionItems in
   let results = ref [] in
   let display ref kind env c =
     results := mk_completion_item sigma ref kind env c :: results.contents;

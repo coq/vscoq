@@ -30,7 +30,7 @@ let get_completion_items ~id params st loc =
   let open Yojson.Basic.Util in
   let hypotheses = get_hyps st loc in
   let lemmasOption = DocumentManager.get_lemmas st loc in
-  let lemmas = lemmasOption |> Option.map (List.map CompletionItem.pp_completion_item) in
+  let lemmas = lemmasOption |> Option.map (List.map CompletionItems.pp_completion_item) in
   [hypotheses; lemmas] 
   |> List.map (Option.default [])
   |> List.flatten

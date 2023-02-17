@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Types
-open CompletionItem
+open CompletionItems
 open Lsp.LspData
 
 (** The event manager is in charge of the actual event of tasks (as

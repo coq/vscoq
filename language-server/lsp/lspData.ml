@@ -35,6 +35,25 @@ module Range = struct
 
 end 
 
+module CompletionItem = struct 
+
+  type t = {
+    label : string;
+    detail : string option [@yojson.option];
+    documentation : string option [@yojson.option];
+  } [@@deriving yojson]
+
+end
+
+module CompletionList = struct 
+
+  type t = {
+    isIncomplete : bool;
+    items : CompletionItem.t list;
+  } [@@deriving yojson]
+  
+end
+
 module Severity = struct
 
   type t = Feedback.level =
