@@ -81,4 +81,5 @@ val range_of_coq_loc : document -> Loc.t -> Range.t
 
 val position_of_loc : document -> int -> Position.t
 val position_to_loc : document -> Position.t -> int
+val word_at_position: document -> Position.t -> string option
 
