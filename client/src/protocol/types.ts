@@ -50,7 +50,13 @@ export interface AboutCoqRequest {
     goalIndex?: number;
 }
 
-export interface AboutCoqResponse {
-    result: string;
-    error?: string;
-}
+export type AboutCoqResponse = string;
+
+export interface CheckCoqRequest {
+    textDocument: VersionedTextDocumentIdentifier;
+    pattern: string; 
+    position: Position;
+    goalIndex?: number;
+};
+
+export type CheckCoqResponse = string; 

@@ -2,6 +2,7 @@ import React, {FunctionComponent} from 'react';
 
 import SearchResult from '../molecules/SearchResult';
 import AboutResult from '../molecules/AboutResult';
+import CheckResult from '../molecules/CheckResult';
 
 import classes from './ResultSection.module.css';
 
@@ -34,6 +35,12 @@ const searchResultSection: FunctionComponent<SearchResultSectionProps> = (props)
         if(result.type === "About") {
 
             return <AboutResult  statement={result.statement} />;
+
+        }
+
+        if(result.type === "Check") {
+
+            return <CheckResult  statement={result.statement} />;
 
         }
 

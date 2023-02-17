@@ -88,9 +88,8 @@ val hover : state -> Position.t -> (string,string) Result.t option
     if None, the position did not have a word,
     if Some, an Ok/Error result is returned. *)
 
-(*
 val check : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
-*)
+
 
 module Internal : sig
 
