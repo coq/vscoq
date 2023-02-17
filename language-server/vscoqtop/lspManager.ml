@@ -249,13 +249,13 @@ let coqtopUpdateProofView ~id params =
   let st = Hashtbl.find states uri in
   match Dm.DocumentManager.get_proof st loc with
   (* Send an "empty" response to notify about not being in a proof *)
-  | None -> let result = `Assoc [
+  | None -> let result = Ok (`Assoc [
       "type", `String "proof-view";
       "goals", `List [];
       "shelvedGoals", `List [];
       "givenUpGoals", `List [];
       "isInProof", `Bool false
-    ] in output_json @@ mk_response ~id ~result
+    ]) in output_json @@ Response.(yojson_of_t { id; result })
   | Some proofview ->
     let result = Ok (mk_proofview proofview) in
     output_json @@ Response.(yojson_of_t { id; result })
