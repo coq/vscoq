@@ -23,15 +23,17 @@ const app = () => {
 
   const handleMessage = useCallback ((msg: any) => {
     switch (msg.data.command) {
-      case 'initAppSettings':
-        setGoalDisplaySetting(msg.data.text);
-        break;
-      case 'renderProofView':
-        setIsInProof(msg.data.text.isInProof);
-        setGoals(msg.data.text.goals.map((goal: Goal, index: number) => {
-            return {...goal, isOpen: index === 0, displayId: index+1 };
-        }));
-        break;
+        case 'initAppSettings':
+            setGoalDisplaySetting(msg.data.text);
+            break;
+        case 'renderProofView':
+            setIsInProof(true);
+            setGoals(msg.data.text.goals.map((goal: Goal, index: number) => {
+                return {...goal, isOpen: index === 0, displayId: index+1 };
+            }));
+            break;
+        case 'noProofView': 
+            setIsInProof(false);
     }
   }, []);
 

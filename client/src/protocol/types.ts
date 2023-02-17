@@ -1,6 +1,8 @@
 import { integer, VersionedTextDocumentIdentifier } from "vscode-languageclient";
 import { Position } from "vscode";
 
+type Nullable<T> = T | null;
+
 export interface Hypothesis {
     identifiers: string[];
     type: string;
@@ -17,12 +19,13 @@ export interface UpdateProofViewRequest {
     position: Position;
 }
 
-export interface UpdateProofViewResponse {
-    isInProof: boolean;
+interface UpdateProofViewResponseType {
     goals: Goal[];
     shelvedGoals: Goal[];
     givenUpGoals: Goal[];
 }
+
+export type UpdateProofViewResponse = Nullable<UpdateProofViewResponseType>;
 
 export interface SearchCoqRequest {
     id: string;

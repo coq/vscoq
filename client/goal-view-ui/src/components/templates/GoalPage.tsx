@@ -1,7 +1,9 @@
 import React, {FunctionComponent} from 'react'; 
 
-import GoalTabSection from '../organisms/GoalTabs';
-import GoalCollapsibleSection from '../organisms/GoalCollapsibles';
+import GoalSection from '../organisms/GoalSection';
+import EmptyState from '../atoms/EmptyState';
+import { VscDebugPause } from 'react-icons/vsc';
+
 
 import classes from './GoalPage.module.css';
 
@@ -25,17 +27,10 @@ const goalPage: FunctionComponent<GoalPageProps> = (props) => {
 
     const {goals, displaySetting, collapseGoalHandler, isInProof} = props;
     
-    const goalSection = displaySetting === 'Tabs' ? 
-        <GoalTabSection goals={goals} /> :
-        <GoalCollapsibleSection goals={goals} collapseGoalHandler={collapseGoalHandler} />;
-
-
-    const goalsOrEmpty = !isInProof
-        ? "Not in proof"
-        : goals.length === 0
-            ? "No more subgoals"
-            : goalSection;
-
+    const goalsOrEmpty = !isInProof 
+        ? <EmptyState message="Not in proof mode" />
+        : <GoalSection goals={goals} collapseGoalHandler={collapseGoalHandler} displaySetting={displaySetting} />;
+    
     return (
         <div className={classes.Page}>
             {goalsOrEmpty}

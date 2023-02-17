@@ -119,8 +119,12 @@ export default class GoalPanel {
     );
     const params: UpdateProofViewRequest = { textDocument, position };
     client.sendRequest(req, params).then(
-      (goals : UpdateProofViewResponse) => {
-        GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "renderProofView", "text": goals });
+      (response : UpdateProofViewResponse) => {
+        if(response) {
+            GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "renderProofView", "text": response });
+        } else {
+            GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "noProofView"});
+        }
       }
     );
   }
