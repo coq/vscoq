@@ -323,7 +323,7 @@ let check st pos ~goal ~pattern =
   match get_context st pos with 
   | None -> Error ("No context found") (*TODO execute *)
   | Some (env, sigma) ->
-    let rc = parse_entry st pos Pcoq.Constr.lconstr pattern in (* TODO parse contr_expr instead of smart_global *)
+    let rc = parse_entry st pos Pcoq.Constr.lconstr pattern in
     try
       Ok (Pp.string_of_ppcmds @@ vernac_check_may_eval sigma env rc)
     with e ->
