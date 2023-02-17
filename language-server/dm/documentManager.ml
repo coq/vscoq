@@ -256,6 +256,12 @@ let get_proof st pos =
     | Some sentence ->
       ExecutionManager.get_context st.execution_state sentence.id
 
+let declaration st pos =
+  let (let*) = Option.bind in
+  let* word = Document.word_at_position st.document pos in
+  let* context = get_context st pos in
+  ExecutionManager.get_declaration context word
+
 let pr_event = function
 | ExecuteToLoc _ -> Pp.str "ExecuteToLoc"
 | ExecutionManagerEvent ev -> ExecutionManager.pr_event ev

@@ -85,6 +85,8 @@ val about : state -> Position.t -> goal:(int option)  -> pattern:string -> (stri
 
 val hover : state -> Position.t -> (string,string) Result.t
 
+val declaration : state -> Position.t -> (string * Range.t option) option
+
 (*
 val check : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
 *)

@@ -437,6 +437,20 @@ let get_context st id =
     let evar_map = Evd.from_env env in
     Some (env, evar_map)
 
+let get_declaration ((env : Environ.env), (sigma : Evd.evar_map)) requestedDeclaration =
+  let open Printer in
+  let open Loadpath in
+  let open Libnames in
+  let open Nametab in
+  let result = ref (None) in
+  let display ref kind env c =
+    let name = (Pp.string_of_ppcmds (pr_global ref)) in
+    if Option.is_empty result.contents && name = requestedDeclaration then
+      result := try Some (try_locate_absolute_library (dirpath_of_global ref)) with e -> None;
+  in
+  Search.generic_search env display;
+  Option.map (fun path -> path, None) result.contents
+
 module ProofWorkerProcess = struct
   type options = ProofWorker.options
   let parse_options = ProofWorker.parse_options

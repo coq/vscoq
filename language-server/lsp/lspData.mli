@@ -55,6 +55,7 @@ module ServerCapabilities : sig
   type t = {
     textDocumentSync : textDocumentSyncKind;
     hoverProvider : bool;
+    declarationProvider : bool;
   } [@@deriving yojson]
 
 end

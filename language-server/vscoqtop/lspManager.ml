@@ -77,6 +77,7 @@ let do_initialize ~id params =
   let capabilities = ServerCapabilities.{
     textDocumentSync = Incremental;
     hoverProvider = true;
+    declarationProvider = true;
   } in
   let result = Ok (`Assoc ["capabilities", ServerCapabilities.yojson_of_t capabilities]) in
   output_json Response.(yojson_of_t {id; result})
@@ -179,6 +180,35 @@ let textDocumentHover ~id params =
     let result = Ok (Hover.(yojson_of_t {contents})) in
     output_json @@ Response.(yojson_of_t { id; result })
 
+let textDocumentDeclaration ~id params =
+  let open Yojson.Safe.Util in
+  let textDocument = params |> member "textDocument" in
+  let uri = textDocument |> member "uri" |> to_string in
+  let loc = params |> member "position" |> parse_loc in
+  let st = Hashtbl.find states uri in
+  match Dm.DocumentManager.declaration st loc with
+  | None -> 
+    output_json @@ Response.yojson_of_t { 
+      id; 
+      result = Error { code = Error.requestFailed; message = "Failed in finding declaration" }
+    }
+  | Some (path, rangeOpt) ->
+    let v_file = Str.replace_first (Str.regexp {|\.vo$|}) ".v" path in
+    let range = Option.default ({ 
+      start = { line = 0; character = 0 }; 
+      end_ = { line = 0; character = 0 } 
+    } : Range.t) rangeOpt in
+    if Sys.file_exists v_file then
+      let result = Ok (`Assoc [
+        "uri", `String v_file;
+        "range", Range.yojson_of_t range
+      ]) in
+      output_json @@ Response.(yojson_of_t { id; result })
+    else
+      output_json @@ Response.yojson_of_t {
+        id; 
+        result = Error { code = Error.requestFailed; message = ("Unable to find .v file at expected location: " ^ v_file) }
+      }    
 
 let progress_hook uri () =
   let st = Hashtbl.find states uri in
@@ -314,6 +344,7 @@ let dispatch_method ~id method_name params : events =
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
   | "textDocument/hover" -> textDocumentHover ~id params; []
+  | "textDocument/declaration" -> textDocumentDeclaration ~id params; []
   | "vscoq/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
   | "vscoq/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events
   | "vscoq/stepForward" -> coqtopStepForward ~id params |> inject_dm_events

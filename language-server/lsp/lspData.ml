@@ -94,6 +94,7 @@ module ServerCapabilities = struct
   type t = {
     textDocumentSync : textDocumentSyncKind;
     hoverProvider : bool;
+    declarationProvider: bool;
   } [@@deriving yojson]
 
 end
