@@ -1,7 +1,15 @@
 import * as vscode from 'vscode';
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
-import { AboutCoqRequest, AboutCoqResponse, SearchCoqHandshake, SearchCoqRequest, SearchCoqResult} from '../protocol/types';
+import { 
+    AboutCoqRequest, 
+    AboutCoqResponse, 
+    SearchCoqHandshake, 
+    SearchCoqRequest, 
+    SearchCoqResult,
+    CheckCoqRequest,
+    CheckCoqResponse
+} from '../protocol/types';
 import {
     RequestType,
     VersionedTextDocumentIdentifier,
@@ -131,6 +139,18 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                         client.sendRequest(req, params).then(
                             (result: AboutCoqResponse) => {
                                 webview.postMessage({"command": "aboutResponse", "text": result, "id": id});
+                            }
+                        );
+                    }
+
+
+                    if(type === "Check") {
+                        const params: CheckCoqRequest = {textDocument, pattern, position};
+                        const req = new RequestType<CheckCoqRequest, CheckCoqResponse, void>("vscoq/check");
+                            
+                        client.sendRequest(req, params).then(
+                            (result: CheckCoqResponse) => {
+                                webview.postMessage({"command": "checkResponse", "text": result, "id": id});
                             }
                         );
                     }

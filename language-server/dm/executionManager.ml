@@ -412,19 +412,20 @@ let rec invalidate schedule id st =
   let deps = Scheduler.dependents schedule id in
   Stateid.Set.fold (invalidate schedule) deps { st with of_sentence }
 
-let get_proofview st id =
+let get_proof st id =
   match find_fulfilled_opt id st.of_sentence with
-  | None -> log "Cannot find state for proofview"; None
-  | Some (Error _) -> log "Proofview requested in error state"; None
-  | Some (Success None) -> log "Proofview requested in a remotely checked state"; None
-  | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = None; _ } })) -> log "Proofview requested in a state with no proof"; None
+  | None -> log "Cannot find state for proof"; None
+  | Some (Error _) -> log "Proof requested in error state"; None
+  | Some (Success None) -> log "Proof requested in a remotely checked state"; None
+  | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = None; _ } })) -> log "Proof requested in a state with no proof"; None
   | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = Some st; _ } })) ->
-      log "Proofview is there";
-      (* nicely designed API: Proof is both a file and a deprecated module *)
+      log "Proof is there";
       let open Proof in
       let open Declare in
       let open Vernacstate in
-      st |> LemmaStack.with_top ~f:Proof.get |> data |> Option.make
+      st |> LemmaStack.with_top ~f:Proof.get |> Option.make
+
+let get_proofview st id = Option.map Proof.data (get_proof st id)
 
 let get_lemmas ((env : Environ.env), (sigma : Evd.evar_map)) =
   let open CompletionItems in
@@ -440,11 +441,16 @@ let get_context st id =
   | None -> log "Cannot find state for get_context"; None
   | Some (Error _) -> log "Context requested in error state"; None
   | Some (Success None) -> log "Context requested in a remotely checked state"; None
+  | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = Some st; _ } })) ->
+    let open Proof in
+    let open Declare in
+    let open Vernacstate in
+    st |> LemmaStack.with_top ~f:Proof.get_current_context |> Option.make
   | Some (Success (Some { interp = st })) ->
     Vernacstate.Interp.unfreeze_interp_state st;
     let env = Global.env () in
-    let evar_map = Evd.from_env env in
-    Some (env, evar_map)
+    let sigma = Evd.from_env env in
+    Some (sigma, env)
 
 module ProofWorkerProcess = struct
   type options = ProofWorker.options

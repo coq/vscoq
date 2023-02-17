@@ -179,10 +179,12 @@ let textDocumentHover ~id params =
   let loc = params |> member "position" |> parse_loc in 
   let st = Hashtbl.find states uri in 
   match Dm.DocumentManager.hover st loc with
-  | Error _ -> ()
-  | Ok contents ->
+  (* Response: result: Hover | null *)
+  | None -> output_json @@ Response.(yojson_of_t { id; result = Ok (`Null) })
+  | Some (Ok contents) ->
     let result = Ok (Hover.(yojson_of_t {contents})) in
     output_json @@ Response.(yojson_of_t { id; result })
+  | _ -> ()
 
 
 let progress_hook uri () =
@@ -296,11 +298,13 @@ let coqtopCheck ~id params =
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let loc = params |> member "position" |> parse_loc in
+  let pattern = params |> member "pattern" |> to_string in 
   let st = Hashtbl.find states uri in
-  match Dm.DocumentManager.get_proof st loc with
-  | None -> ()
-  | Some proofview ->
-    let result = Ok (mk_proofview proofview) in
+  let goal = None in (*TODO*)
+  match Dm.DocumentManager.check st loc ~goal ~pattern with
+  | Error _ -> ()
+  | Ok str ->
+    let result = Ok (`String str) in
     output_json @@ Response.(yojson_of_t { id; result })
 
   let coqtopSearch ~id params =

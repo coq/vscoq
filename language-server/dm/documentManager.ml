@@ -249,12 +249,12 @@ let get_proof st pos =
   | Some sentence ->
     ExecutionManager.get_proofview st.execution_state sentence.id
 
-  let get_context st pos =
-    let loc = Document.position_to_loc st.document pos in
-    match Document.find_sentence_before st.document loc with
-    | None -> None
-    | Some sentence ->
-      ExecutionManager.get_context st.execution_state sentence.id
+let get_context st pos =
+  let loc = Document.position_to_loc st.document pos in
+  match Document.find_sentence_before st.document loc with
+  | None -> None
+  | Some sentence ->
+    ExecutionManager.get_context st.execution_state sentence.id
 
 let get_lemmas st pos =
   match get_context st pos with
@@ -278,7 +278,7 @@ let parse_entry st pos entry pattern =
 let about st pos ~goal ~pattern =
   match get_context st pos with 
   | None -> Error ("No context found") (*TODO execute *)
-  | Some (env, sigma) ->
+  | Some (sigma, env) ->
     let ref_or_by_not = parse_entry st pos (Pcoq.Prim.smart_global) pattern in
     let udecl = None (* TODO? *) in
     try
@@ -290,17 +290,26 @@ let about st pos ~goal ~pattern =
 let search st ~id pos pattern =
   match get_context st pos with
   | None -> [] (* TODO execute? *)
-  | Some (env, evd) ->
+  | Some (sigma, env) ->
     let query = parse_entry st pos (G_vernac.search_query) pattern in
     let searchable = Vernacexpr.(Search [query]) in
-    SearchQuery.interp_search ~id env evd searchable (Vernacexpr.SearchOutside [])
+    SearchQuery.interp_search ~id env sigma searchable (Vernacexpr.SearchOutside [])
 
 let hover st pos = 
   let opattern = Document.word_at_position st.document pos in
-  match opattern with 
-  | None -> Error ("No word under cursor") 
-  | Some pattern -> 
-    about st pos ~goal:None ~pattern
+  Option.map (fun pattern -> about st pos ~goal:None ~pattern) opattern
+
+let check st pos ~goal ~pattern =
+  match get_context st pos with 
+  | None -> Error ("No context found") (*TODO execute *)
+  | Some (sigma,env) ->
+    let rc = parse_entry st pos Pcoq.Constr.lconstr pattern in
+    try
+      let redexpr = None in
+      Ok (Pp.string_of_ppcmds @@ Vernacentries.check_may_eval sigma env redexpr rc)
+    with e ->
+      let e, info = Exninfo.capture e in
+      Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
 
 module Internal = struct
 

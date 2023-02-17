@@ -7,9 +7,13 @@ homepage: "https://github.com/coq-community/vscoq"
 bug-reports: "https://github.com/coq-community/vscoq/issues"
 dev-repo: "git+https://github.com/coq-community/vscoq"
 
-build: [ make "world" ]
-install: [ "dune" "install" "-p" "vscoq-language-server" ]
+build: [
+  [ "sed" "-e" "/vendored_dirs coq/d" "-ibak" "dune" ]
+  [ "dune" "build" "-p" "vscoq-language-server" "--display=short"] 
+]
 depends: [
+  "coq-core" {= "8.17.0+vscoq" & !with-test}
+  "coq-stdlib" {= "8.17.0+vscoq" & !with-test}
   "yojson"
   "ocamlfind"
   "ppx_inline_test"
