@@ -111,17 +111,6 @@ module ServerCapabilities = struct
     completionItemLabelDetailsSupport : bool option;
   } [@@deriving yojson]
 
-  let yojson_of_completionOptions options =
-    let aux k f o = Option.map f o |> function | None -> [] | Some x -> [k, x] in
-    `Assoc (List.flatten [
-      aux "triggerCharacters" (yojson_of_list yojson_of_string) options.triggerCharacters; 
-      aux "allCommitCharacters" (yojson_of_list yojson_of_string) options.allCommitCharacters; 
-      aux "resolveProvider" yojson_of_bool options.resolveProvider;
-      aux "completionItem" (fun detailsSupport ->  `Assoc [
-          "labelDetailsSupport", `Bool detailsSupport
-        ]) options.completionItemLabelDetailsSupport;
-    ])
-    
   type t = {
     textDocumentSync : textDocumentSyncKind;
     completionProvider : completionOptions;
