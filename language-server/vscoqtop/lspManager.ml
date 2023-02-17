@@ -172,6 +172,19 @@ let textDocumentDidSave params =
   Hashtbl.replace states uri st;
   update_view uri st
 
+let textDocumentHover ~id params = 
+  let open Yojson.Safe.Util in
+  let textDocument = params |> member "textDocument" in
+  let uri = textDocument |> member "uri" |> to_string in
+  let loc = params |> member "position" |> parse_loc in 
+  let st = Hashtbl.find states uri in 
+  match Dm.DocumentManager.hover st loc with
+  | Error _ -> ()
+  | Ok contents ->
+    let result = Ok (Hover.(yojson_of_t {contents})) in
+    output_json @@ Response.(yojson_of_t { id; result })
+
+
 let progress_hook uri () =
   let st = Hashtbl.find states uri in
   update_view uri st
@@ -323,6 +336,7 @@ let dispatch_method ~id method_name params : events =
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
   | "textDocument/completion" -> textDocumentCompletion ~id params; []
+  | "textDocument/hover" -> textDocumentHover ~id params; []
   | "vscoq/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
   | "vscoq/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events
   | "vscoq/stepForward" -> coqtopStepForward ~id params |> inject_dm_events

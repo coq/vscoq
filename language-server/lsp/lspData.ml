@@ -130,10 +130,10 @@ module ServerCapabilities = struct
 
 end
 
-(*
-"completionProvider", `Assoc [
-      "completionItem", `Assoc [
-        "labelDetailsSupport", `Bool false;
-      ]
-    ];   
-*)
+module Hover = struct 
+    
+  type t = {
+    contents: string
+  } [@@deriving yojson]
+
+end

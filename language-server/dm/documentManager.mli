@@ -86,6 +86,8 @@ val search : state -> id:string -> Position.t -> string -> notification Sel.even
 
 val about : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
 
+val hover : state -> Position.t -> (string,string) Result.t
+
 (*
 val check : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
 *)
