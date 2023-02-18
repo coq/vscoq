@@ -53,5 +53,5 @@ not yet released nor published on the VsCode marketplace.
 Unless mentioned otherwise, files in this repository are [distributed under the MIT License](LICENSE).
 
 The files `client/syntax/coq.tmLanguage` and `client/coq.configuration.json` are
-also distributed under the MIT License but Copyright (c) Christian J. Bell and
+also distributed under the MIT License, Copyright (c) Christian J. Bell and
 contributors.
