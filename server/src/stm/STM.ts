@@ -550,6 +550,7 @@ export class CoqStateMachine {
     if(!endCommand)
       return;
     try {
+      this.currentCoqOptions.printingWidth = columns;
       this.coqtop.coqResizeWindow(columns);
     } catch(error) {
       this.console.warn("error resizing window: " + error.toString())
