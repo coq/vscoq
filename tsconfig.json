@@ -9,11 +9,11 @@
     "sourceMap": true,
   },
   "exclude": [
-		"node_modules"
-	],
+    "node_modules"
+  ],
   "references": [
-		{ "path": "./client" },
+    { "path": "./client" },
     { "path": "./html_views" },
-		{ "path": "./server" }
-	]
+    { "path": "./server" }
+  ]
 }

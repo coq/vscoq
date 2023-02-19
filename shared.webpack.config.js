@@ -13,10 +13,10 @@ module.exports =
     /** @type WebpackConfig */
   const defaultConfig = {
     mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
-		target: 'node', // extensions run in a node context
-		//node: {
-		//	__dirname: false // leave the __dirname-behaviour intact
-		//},
+    target: 'node', // extensions run in a node context
+    //node: {
+    //	__dirname: false // leave the __dirname-behaviour intact
+    //},
     module: {
       rules: [{
         test: /\.ts$/,
@@ -33,10 +33,10 @@ module.exports =
         }]
       }]
     },
-		resolve: {
-			mainFields: ['module', 'main'],
-			extensions: ['.ts', '.js'] // support ts-files and js-files
-		}, 
+    resolve: {
+      mainFields: ['module', 'main'],
+      extensions: ['.ts', '.js'] // support ts-files and js-files
+    }, 
     output: {
       filename: '[name].js',
       path: path.resolve(__dirname, "out"),
