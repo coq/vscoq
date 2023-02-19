@@ -1,6 +1,13 @@
 {
-  "extends": "../tsconfig",
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "module": "commonjs",
+    "target": "es6",
+    "outDir": "out",
+    "tsBuildInfoFile": "out/tsconfig.tsBuildInfoFile",
+    "rootDir": "src",
+    "lib": ["es6", "dom"],
+    "sourceMap": true,
     "composite": true,
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": true,

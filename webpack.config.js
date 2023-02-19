@@ -1,48 +1,10 @@
-const path = require("path");
-const webpack = require("webpack");
-const CopyPlugin = require("copy-webpack-plugin");
+//@ts-check
 
-module.exports = {
-  name: "webview",
-  mode: "development",
-  entry: {
-    goals: path.resolve(__dirname, "html_views/src/goals/goals.ts"),
-    ltacprof: path.resolve(__dirname, "html_views/src/ltacprof/ltacprof.ts")
-  },
-  module: {
-    rules: [
-      {
-        test: /\.ts/,
-        use: "ts-loader",
-        exclude: /node_modules/
-      }
-    ]
-  },
-  resolve: {
-    extensions: [".ts", ".js"]
-  },
-  output: {
-    path: path.resolve(__dirname, "out/html_views")
-  },
-  plugins: [
-    new webpack.ProvidePlugin({
-      jQuery: "jquery",
-      $: "jquery",
-      jquery: "jquery"
-    }),
-    new CopyPlugin({patterns: [
-      {
-        from: "html_views/src/**/*.html",
-        to: path.resolve(__dirname, "out", "html_views","[name][ext]")
-      },
-      {
-        from: "html_views/src/**/*.css",
-        to: path.resolve(__dirname, "out", "html_views","[name][ext]")
-      },
-      {
-        from: "client/images/*.svg",
-        to: path.resolve(__dirname, "out", "images","[name][ext]")
-      }
-    ]})
-  ]
-};
+'use strict';
+
+const client = require('./webpack.client.config.js');
+const html_views = require('./webpack.html_views.config.js');
+const server = require('./webpack.server.config.js');
+
+
+module.exports = [client,html_views,server];

@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "downlevelIteration": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true
+  }
+}
