@@ -10,13 +10,19 @@ webpack.*.config.js
 .vscode/**
 node_modules
 tsconfig.tsbuildinfo
-
+dev/**
+.mailmap
+CoqProtocol.md
+default.nix
+Makefile
+images/logo.svg
 
 # The client is partially web packed. So only ship extension.js
 client/test/**
 client/src/**
 client/out/**
 !client/out/extension.js
+!client/out/extension.js.LICENSE.txt
 
 # The html_views are partially web packed.
 html_views/src
@@ -25,3 +31,4 @@ html_views/typing
 # The server is web packed. So only ship server.js
 server/**
 !server/out/server.js
+!server/out/server.js.LICENSE.txt
