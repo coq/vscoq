@@ -244,7 +244,13 @@ export class SentenceCollection implements vscode.TextDocument {
     let prefix : string;
     if(sent < 0) {
       const offset = this.offsetAt(pos);
-      prefix = this.documentText.substring(0,offset);
+      const lastSentence = this.sentences[this.sentences.length-1];
+      if (lastSentence.isBefore(pos)) {
+        const lastEnd = this.offsetAt(lastSentence.getRange().end);
+        prefix = this.documentText.substring(lastEnd, offset);
+      } else {
+        prefix = this.documentText.substring(0,offset);
+      }
     } else if(this.sentences[sent].contains(pos)) {
       range = this.sentences[sent].getRange();
       text = this.sentences[sent].getText();
