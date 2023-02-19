@@ -23,9 +23,9 @@
     "theorem prover",
     "proof assistant"
   ],
-  "readme": "https://github.com/coq-community/vscoq/blob/master/README.md",
+  "readme": "https://github.com/coq-community/vscoq/blob/vscoq1/README.md",
   "bugs": "https://github.com/coq-community/vscoq/issues",
-  "homepage": "https://github.com/coq-community/vscoq/blob/master/README.md",
+  "homepage": "https://github.com/coq-community/vscoq/blob/vscoq1/README.md",
   "activationEvents": [
     "onLanguage:coq"
   ],
