@@ -1,11 +1,9 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
     "outDir": "out",
     "tsBuildInfoFile": "out/tsconfig.tsBuildInfoFile",
     "rootDir": "src",
-    "forceConsistentCasingInFileNames": true,
     "noImplicitAny": true,
     "noImplicitReturns": true
   },

@@ -824,14 +824,10 @@
   "main": "./client/out/extension",
   "scripts": {
     "vscode:prepublish": "npm run package",
-    "package": "webpack --mode production --config webpack.config.js",
-    "package:dev": "webpack --mode development --config webpack.config.js",
-    "compile": "webpack --mode none --config webpack.config.js",
-    "compile:client": "webpack --mode none --config webpack.client.config.js",
-    "compile:html_views": "webpack --mode none --config ./webpack.html_views.config.js",
-    "compile:server": "webpack --mode none --config ./webpack.server.config.js",
-    "watch": "webpack --watch --mode none --config webpack.config.js",
-    "clean": "rimraf client/out && rimraf html_views/out && rimraf server/out"
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "package:dev": "webpack --mode development",
+    "compile": "webpack",
+    "watch": "webpack --watch"
   },
   "repository": {
     "type": "git",
@@ -849,7 +845,6 @@
     "@types/ws": "^7.4.6",
     "jquery": "^3.5.0",
     "merge-options": "^3.0.4",
-    "rimraf": "^3.0.2",
     "ts-loader": "^9.2.6",
     "typescript": "^3.7.5",
     "vsce": "^2.14.0",
