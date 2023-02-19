@@ -72,7 +72,8 @@ let worker_solve_one_goal { TacticJob.state; ast; goalno; goal; name } ~send_bac
     let pstate = Declare.Proof.map pstate ~f:(Proof.focus focus_cond () goalno) in
     let pstate = ComTactic.solve ~pstate Goal_select.SelectAll ~info:None ast ~with_end_tac:false in
     let { Proof.sigma } = Declare.Proof.fold pstate ~f:Proof.data in
-    match Evd.(evar_body (find sigma goal)) with
+    let EvarInfo evi = Evd.find sigma goal in
+    match Evd.(evar_body evi) with
     | Evd.Evar_empty ->
         log @@ "no progress on goal " ^ pr_goal goal;
         send_back (TacticJob.UpdateSolution (goal,TacticJob.NoProgress))

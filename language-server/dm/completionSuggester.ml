@@ -15,7 +15,7 @@ let mk_hyp sigma d (env,l) =
 
 let get_hyps st loc =
   let mk_hyps sigma goal =
-    let evi = Evd.find sigma goal in
+    let EvarInfo evi = Evd.find sigma goal in
     let env = Evd.evar_filtered_env (Global.env ()) evi in
     let min_env = Environ.reset_context env in
     let (_env, hyps) =
