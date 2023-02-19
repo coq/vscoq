@@ -2,6 +2,7 @@
   "compilerOptions": {
     "downlevelIteration": true,
     "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+    "moduleResolution": "node"
   }
 }
