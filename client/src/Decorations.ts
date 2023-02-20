@@ -31,8 +31,10 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
         processed: create({
             overviewRulerColor: '#20b2aa', 
             overviewRulerLane: vscode.OverviewRulerLane.Left,
-            light: config.checkMode === "Manual" ? {backgroundColor: 'rgba(0,150,0,0.2)'} : undefined,
-            dark: config.checkMode === "Continuous" ? {backgroundColor: 'rgba(0,150,0,0.2)'} : undefined,
+            light: {backgroundColor: 'rgba(0,150,0,0.2)'},
+            dark: {backgroundColor: 'rgba(0,150,0,0.2)'},/* 
+            light: config.checkMode === 0 ? {backgroundColor: 'rgba(0,150,0,0.2)'} : undefined,
+            dark: config.checkMode === 0 ? {backgroundColor: 'rgba(0,150,0,0.2)'} : undefined, */
         }),
   };
 }

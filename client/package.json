@@ -115,12 +115,16 @@
         "properties": {
           "vscoq.proof.mode": {
             "scope": "window",
-            "type": "string",
+            "type": "number",
             "enum": [
-              "Manual",
-              "Continuous"
+              0,
+              1
             ],
-            "default": "Continuous",
+            "enumItemLabels": [
+                "Manual",
+                "Continuous"
+            ],
+            "default": 0,
             "description": "Configures the proof checking mode for Coq."
           },
           "vscoq.proof.delegation": {

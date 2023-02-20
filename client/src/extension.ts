@@ -74,7 +74,7 @@ export function activate(context: ExtensionContext) {
         const version = editor.document.version; 
         const textDocument = VersionedTextDocumentIdentifier.create(uri.toString(), version);
         const position = editor.selection.active;
-        client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, location: position});
+        client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position});
     };
 
     const searchCursor = commands.registerTextEditorCommand('coq.searchCursor', (editor) => {
