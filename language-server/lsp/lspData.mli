@@ -162,4 +162,13 @@ module Settings : sig
 
   
 end
+module CheckMode : sig
+
+  type t =
+  | Continuous 
+  | Manual
+  [@@deriving yojson]
+
+end
+
   

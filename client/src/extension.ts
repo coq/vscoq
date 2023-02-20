@@ -8,6 +8,7 @@ import {workspace, window, commands, ExtensionContext,
 import {
   LanguageClientOptions,
   ServerOptions,
+  VersionedTextDocumentIdentifier,
 } from 'vscode-languageclient/node';
 
 import Client from './client';
@@ -67,6 +68,15 @@ export function activate(context: ExtensionContext) {
         searchProvider.launchQuery(queryText, type);
     };
 
+        
+    const sendInterpretToPoint = (editor: TextEditor,  client: Client) => {
+        const uri = editor.document.uri; 
+        const version = editor.document.version; 
+        const textDocument = VersionedTextDocumentIdentifier.create(uri.toString(), version);
+        const position = editor.selection.active;
+        client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, location: position});
+    };
+
     const searchCursor = commands.registerTextEditorCommand('coq.searchCursor', (editor) => {
         launchQuery(editor, "search");
         });
@@ -76,6 +86,11 @@ export function activate(context: ExtensionContext) {
         launchQuery(editor, "about");
     });
     context.subscriptions.push(aboutCursor);
+
+    const interpretToPoint = commands.registerTextEditorCommand('coq.interpretToPoint', (editor) => {
+        sendInterpretToPoint(editor, client);
+    });
+    context.subscriptions.push(interpretToPoint);
 
 	client.onReady()
 	.then(() => {

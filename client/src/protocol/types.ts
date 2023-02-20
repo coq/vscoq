@@ -64,3 +64,8 @@ export interface CheckCoqRequest {
 };
 
 export type CheckCoqResponse = string; 
+
+export interface InterpretToPointRequest {
+    textDocument: VersionedTextDocumentIdentifier;
+    position: Position;
+};

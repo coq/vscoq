@@ -166,6 +166,12 @@
         "category": "Coq",
         "title": "About on cursor",
         "description": "Launches an about query for the word under the cursor"
+      },
+      {
+        "command": "coq.interpretToPoint",
+        "category": "Coq", 
+        "title": "Interpret file to point", 
+        "description": "Interprets the current coq file until the given point"
       }
     ],
     "colors": [

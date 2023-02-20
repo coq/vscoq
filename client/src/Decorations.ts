@@ -10,24 +10,30 @@ interface Decorations {
 export let decorations : Decorations;
 
 export function initializeDecorations(context: vscode.ExtensionContext) {
-  function create(style : vscode.DecorationRenderOptions) {
-    const result = vscode.window.createTextEditorDecorationType(style);
-    context.subscriptions.push(result);
-    return result;
-  }
-  decorations = {
-    parsed: create({
-      overviewRulerColor: 'cyan', 
-      overviewRulerLane: vscode.OverviewRulerLane.Right,
-    }),
-    processing: create({
-      overviewRulerColor: 'blue', 
-      overviewRulerLane: vscode.OverviewRulerLane.Center,
-    }),
-    processed: create({
-      overviewRulerColor: '#20b2aa', 
-      overviewRulerLane: vscode.OverviewRulerLane.Left,
-    }),
+  
+    function create(style : vscode.DecorationRenderOptions) {
+        const result = vscode.window.createTextEditorDecorationType(style);
+        context.subscriptions.push(result);
+        return result;
+    }
+
+    const config = vscode.workspace.getConfiguration('vscoq.proof');
+
+    decorations = {
+        parsed: create({
+            overviewRulerColor: 'cyan', 
+            overviewRulerLane: vscode.OverviewRulerLane.Right,
+        }),
+        processing: create({
+            overviewRulerColor: 'blue', 
+            overviewRulerLane: vscode.OverviewRulerLane.Center,
+        }),
+        processed: create({
+            overviewRulerColor: '#20b2aa', 
+            overviewRulerLane: vscode.OverviewRulerLane.Left,
+            light: config.checkMode === "Manual" ? {backgroundColor: 'rgba(0,150,0,0.2)'} : undefined,
+            dark: config.checkMode === "Continuous" ? {backgroundColor: 'rgba(0,150,0,0.2)'} : undefined,
+        }),
   };
 }
 

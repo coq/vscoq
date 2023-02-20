@@ -200,3 +200,11 @@ module Settings = struct
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end
+module CheckMode = struct
+
+  type t =
+  | Continuous 
+  | Manual
+  [@@deriving yojson]
+
+end

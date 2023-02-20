@@ -30,6 +30,8 @@ let get_init_state () =
 
 let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
+let check_mode = ref CheckMode.Continuous
+
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
 let conf_request_id = 3456736879
@@ -154,7 +156,12 @@ let textDocumentDidOpen params =
   let vst, opts = get_init_state () in
   let st, events = Dm.DocumentManager.init vst ~opts ~uri ~text in
   let st = Dm.DocumentManager.validate_document st in
-  let (st, events') = Dm.DocumentManager.interpret_to_end st in
+  let (st, events') = 
+    if !check_mode = CheckMode.Continuous then 
+      Dm.DocumentManager.interpret_to_end st 
+    else 
+      (st, [])
+  in
   Hashtbl.add states uri st;
   update_view uri st;
   uri, events@events'
@@ -172,7 +179,12 @@ let textDocumentDidChange params =
   let textEdits = List.map read_edit contentChanges in
   let st = Hashtbl.find states uri in
   let st = Dm.DocumentManager.apply_text_edits st textEdits in
-  let (st, events) = Dm.DocumentManager.interpret_to_end st in
+  let (st, events) = 
+    if !check_mode = CheckMode.Continuous then 
+      Dm.DocumentManager.interpret_to_end st 
+    else 
+      (st, [])
+  in
   Hashtbl.replace states uri st;
   update_view uri st;
   uri, events
@@ -207,8 +219,9 @@ let progress_hook uri () =
 
 let coqtopInterpretToPoint ~id params : (string * Dm.DocumentManager.events) =
   let open Yojson.Safe.Util in
-  let uri = params |> member "uri" |> to_string in
-  let loc = params |> member "location" |> parse_loc in
+  let textDocument = params |> member "textDocument" in 
+  let uri = textDocument |> member "uri" |> to_string in
+  let loc = params |> member "position" |> parse_loc in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_position st loc in
   Hashtbl.replace states uri st;
