@@ -2,32 +2,21 @@ import React, {FunctionComponent} from 'react';
 
 import GoalSection from '../organisms/GoalSection';
 import EmptyState from '../atoms/EmptyState';
-import { VscDebugPause } from 'react-icons/vsc';
-
+import { GoalArrayOrNull } from '../../types';
 
 import classes from './GoalPage.module.css';
 
 type GoalPageProps = {
-    goals: {
-        id: string,
-        goal: string, 
-        hypotheses: {
-            identifiers: string[],
-            type: string
-        }[],
-        isOpen: boolean,
-        displayId: number
-    }[], 
+    goals: GoalArrayOrNull, 
     collapseGoalHandler: (id: string) => void,
     displaySetting: string;
-    isInProof: boolean;
 };
 
 const goalPage: FunctionComponent<GoalPageProps> = (props) => {
 
-    const {goals, displaySetting, collapseGoalHandler, isInProof} = props;
+    const {goals, displaySetting, collapseGoalHandler} = props;
     
-    const goalsOrEmpty = !isInProof 
+    const goalsOrEmpty = (goals === null) 
         ? <EmptyState message="Not in proof mode" />
         : <GoalSection goals={goals} collapseGoalHandler={collapseGoalHandler} displaySetting={displaySetting} />;
     
