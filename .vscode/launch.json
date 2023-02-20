@@ -8,20 +8,20 @@
 			"name": "Launch Client",
 			"runtimeExecutable": "${execPath}",
 			"args": ["--extensionDevelopmentPath=${workspaceRoot}"],
-			"outFiles": ["${workspaceRoot}/out/client/**/*.js"],
-			"preLaunchTask": {
-				"type": "npm",
-				"script": "compile"
-			}
+			"outFiles": ["${workspaceRoot}/client/out/**/*.js"],
+			"sourceMaps": true,
+			"preLaunchTask": "npm: watch" //The new vscode window still needs to be reloaded after changes (Ctrl+Shift+F5 in the debugger)
 		},
 		{
 			"type": "node",
 			"request": "attach",
 			"protocol": "inspector",
+			"address": "localhost",
 			"name": "Attach to Server",
 			"port": 6009,
 			"restart": true,
-			"outFiles": ["${workspaceRoot}/out/server/**/*.js"]
+			"sourceMaps": true,
+			"outFiles": ["${workspaceRoot}/server/out/**/*.js"]
         }
 	],
 	"compounds": [

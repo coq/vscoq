@@ -1,9 +1,9 @@
 {
-  "extends": "../tsconfig",
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
-    "outDir": "../out/html_views",
-    "forceConsistentCasingInFileNames": true,
+    "outDir": "out",
+    "tsBuildInfoFile": "out/tsconfig.tsBuildInfoFile",
+    "rootDir": "src",
     "noImplicitAny": true,
     "noImplicitReturns": true
   },

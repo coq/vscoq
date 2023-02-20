@@ -203,11 +203,11 @@ function updateResults() {
     });
     $('#local-column').on("click",(ev:JQueryEventObject) => {
       if(ev.target === $('#local-column').get(0))
-        $('#local-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#local-unit').change()
+        ($('#local-unit option:selected').prop('selected',false) as any).cycleNext().prop('selected', true); $('#local-unit').change()
     });
     $('#total-column').on("click",(ev:JQueryEventObject) => {
       if(ev.target === $('#total-column').get(0))
-        $('#total-unit option:selected').prop('selected',false).cycleNext().prop('selected', true); $('#total-unit').change()
+        ($('#total-unit option:selected').prop('selected',false) as any).cycleNext().prop('selected', true); $('#total-unit').change()
     });
   }
   loadResultsTable(currentResults, tbody);

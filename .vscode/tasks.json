@@ -3,14 +3,24 @@
 	"tasks": [
 		{
 			"type": "npm",
-			"script": "compile",
+			"script": "watch",
+			"promptOnClose": true,
+			"isBackground": true,
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			},
-			"problemMatcher": [
-				"$tsc"
-			]
+			"presentation": {
+				"reveal": "never",
+				"panel": "dedicated"
+			},
+			"problemMatcher": "$ts-webpack-watch",
+		},
+		{
+			"type": "npm",
+			"script": "compile",
+			"group":  "build",
+			"problemMatcher": "$ts-webpack-watch",
 		},
 	]
 }

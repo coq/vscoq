@@ -47,9 +47,7 @@ type ProofViewProtocol = GoalUpdate | SettingsUpdate;
 const VIEW_PATH = "html_views";
 
 function proofViewFile(file: string = "") {
-  return vscode.Uri.file(
-    extensionContext.asAbsolutePath(path.join("out", VIEW_PATH, file))
-  );
+  return vscode.Uri.file(extensionContext.asAbsolutePath(path.join(VIEW_PATH, 'static', file)));
 }
 
 function proofViewHtmlPath() {
@@ -156,12 +154,14 @@ export class HtmlCoqView implements view.CoqView {
       });
 
       const doc = await vscode.workspace.openTextDocument(this.coqViewUri);
-      vscode.window.showTextDocument(vscode.window.activeTextEditor?.document);
+      const activeDoc = vscode.window.activeTextEditor?.document;
+      if (activeDoc)
+        vscode.window.showTextDocument(activeDoc);
 
       const csspath = path.join(
         extensionContext.extensionPath,
-        "out",
         VIEW_PATH,
+        "static",
         "proof-view.css"
       );
       const csspathAsVscodeResource = this.panel.webview.asWebviewUri(
@@ -170,8 +170,8 @@ export class HtmlCoqView implements view.CoqView {
 
       const jspath = path.join(
         extensionContext.extensionPath,
-        "out",
         VIEW_PATH,
+        "out",
         "goals.js"
       );
       const jspathAsVscodeResource = this.panel.webview.asWebviewUri(

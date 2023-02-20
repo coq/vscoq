@@ -59,7 +59,7 @@ export class CoqProject {
      this.ready.event = new Promise<{}>((resolve) => {
        this.ready.signal = () => {
          this.ready = {event: Promise.resolve<{}>({}), signal: ()=>{} };
-         resolve()
+         resolve({});
         };
      });
   }

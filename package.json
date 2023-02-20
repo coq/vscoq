@@ -821,12 +821,13 @@
       }
     ]
   },
-  "main": "./out/client/src/extension",
+  "main": "./client/out/extension",
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "webpack && tsc -b",
-    "watch": "tsc -b -w",
-    "test": "node ./node_modules/vscode/bin/test"
+    "vscode:prepublish": "npm run package",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "package:dev": "webpack --mode development",
+    "compile": "webpack",
+    "watch": "webpack --watch"
   },
   "repository": {
     "type": "git",
@@ -836,15 +837,15 @@
     "@types/diff": "^4.0.2",
     "@types/jquery": "^3.5.0",
     "@types/mocha": "^5.2.7",
+    "@types/mustache": "^4.1.2",
     "@types/node": "^17.0.4",
     "@types/sax": "^1.2.4",
     "@types/semver": "^7.1.1",
     "@types/vscode": "^1.38.0",
     "@types/ws": "^7.4.6",
-    "copy-webpack-plugin": "^10.2.0",
     "jquery": "^3.5.0",
+    "merge-options": "^3.0.4",
     "ts-loader": "^9.2.6",
-    "ts-prune": "^0.10.3",
     "typescript": "^3.7.5",
     "vsce": "^2.14.0",
     "webpack": "^5.65.0",
