@@ -113,6 +113,16 @@
         "title": "Proof checking",
         "type": "object",
         "properties": {
+          "vscoq.proof.mode": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "Manual",
+              "Continuous"
+            ],
+            "default": "Continuous",
+            "description": "Configures the proof checking mode for Coq."
+          },
           "vscoq.proof.delegation": {
             "scope": "window",
             "type": "string",
