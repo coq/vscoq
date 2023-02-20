@@ -33,7 +33,7 @@ async function main() {
             'utf-8'
         );
 
-		const launchArgs = [path.resolve(__dirname, '../../testFixture/basic.v'), "--disable-extensions", "--user-data-dir=" + userDataDir];
+		const launchArgs = [path.resolve(__dirname, '../../testFixture'), "--disable-extensions", "--user-data-dir=" + userDataDir];
 
 		// Download VS Code, unzip it and run the integration test
 		await runTests({ extensionDevelopmentPath, extensionTestsPath, launchArgs });
