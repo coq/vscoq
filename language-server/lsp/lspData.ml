@@ -208,12 +208,12 @@ module CheckMode = struct
   [@@deriving yojson]
     
   let yojson_of_t = function
-  | Continuous -> `Int 0
-  | Manual -> `Int 1
+  | Manual -> `Int 0
+  | Continuous -> `Int 1
 
   let t_of_yojson = function
-  | `Int 0 -> Continuous
-  | `Int 1 -> Manual
+  | `Int 0 -> Manual
+  | `Int 1 -> Continuous
   | _ -> Yojson.json_error @@ "invalid value "
 
 end
