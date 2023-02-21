@@ -6,7 +6,7 @@ import {
   ServerOptions
 } from 'vscode-languageclient/node';
 
-import {decorations} from './Decorations';
+import {decorationsManual, decorationsContinuous} from './Decorations';
 
 export default class Client extends LanguageClient {
 
@@ -31,11 +31,18 @@ export default class Client extends LanguageClient {
 
     public handleHighlights(uri: String, parsedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
         const editors = this.getDocumentEditors(uri);
+        
+        const config = vscode.workspace.getConfiguration('vscoq.proof');
 
         editors.map(editor => {/* 
             editor.setDecorations(decorations.parsed, parsedRange);
             editor.setDecorations(decorations.processing, processingRange); */
-            editor.setDecorations(decorations.processed, processedRange);
+            editor.setDecorations(
+                config.mode === 0 
+                ? decorationsManual.processed 
+                : decorationsContinuous.processed, 
+                processedRange
+            );
 
         });
     }

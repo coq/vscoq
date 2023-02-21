@@ -17,12 +17,22 @@ import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
 import { SearchCoqResult } from './protocol/types';
+import { 
+    sendInterpretToPoint,
+    sendInterpretToEnd,
+    sendStepForward,
+    sendStepBackward
+} from './manualChecking';
 
 
 let client: Client;
 
 export function activate(context: ExtensionContext) {
 
+    function registerVscoqTextCommand(command: string, callback: (textEditor: TextEditor, ...args: any[]) => void) {
+        context.subscriptions.push(commands.registerTextEditorCommand('vscoq.' + command, callback));
+    };
+    
 	const config = workspace.getConfiguration('vscoq');
 
 	let serverOptions: ServerOptions = {
@@ -49,7 +59,7 @@ export function activate(context: ExtensionContext) {
     context.subscriptions.push(window.registerWebviewViewProvider(SearchViewProvider.viewType, searchProvider));
 
     //register the command opening the goal view
-    const displayGoals = commands.registerTextEditorCommand('coq.displayGoals', (editor) => {
+    const displayGoals = commands.registerTextEditorCommand('vscoq.displayGoals', (editor) => {
 		GoalPanel.render(editor, context.extensionUri);
 	});
 	context.subscriptions.push(displayGoals);
@@ -63,34 +73,17 @@ export function activate(context: ExtensionContext) {
         if(!wordAtCurorRange) {return; } //there is no word: do nothing
         const queryText = editor.document.getText(wordAtCurorRange);
         //focus on the query panel
-        commands.executeCommand('coq.search.focus');
+        commands.executeCommand('vscoq.search.focus');
         //launch the query
         searchProvider.launchQuery(queryText, type);
     };
 
-        
-    const sendInterpretToPoint = (editor: TextEditor,  client: Client) => {
-        const uri = editor.document.uri; 
-        const version = editor.document.version; 
-        const textDocument = VersionedTextDocumentIdentifier.create(uri.toString(), version);
-        const position = editor.selection.active;
-        client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position});
-    };
-
-    const searchCursor = commands.registerTextEditorCommand('coq.searchCursor', (editor) => {
-        launchQuery(editor, "search");
-        });
-    context.subscriptions.push(searchCursor);
-
-    const aboutCursor = commands.registerTextEditorCommand('coq.aboutCursor', (editor) => {
-        launchQuery(editor, "about");
-    });
-    context.subscriptions.push(aboutCursor);
-
-    const interpretToPoint = commands.registerTextEditorCommand('coq.interpretToPoint', (editor) => {
-        sendInterpretToPoint(editor, client);
-    });
-    context.subscriptions.push(interpretToPoint);
+    registerVscoqTextCommand('searchCursor', (editor) => launchQuery(editor, "Search"));
+    registerVscoqTextCommand('aboutCursor', (editor) => launchQuery(editor, "About"));
+    registerVscoqTextCommand('interpretToPoint', (editor) => sendInterpretToPoint(editor, client));
+    registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
+    registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));
+    registerVscoqTextCommand('stepBackward', (editor) => sendStepBackward(editor, client));
 
 	client.onReady()
 	.then(() => {
@@ -114,7 +107,7 @@ export function activate(context: ExtensionContext) {
 
                 if (evt.kind === TextEditorSelectionChangeKind.Mouse || evt.kind === TextEditorSelectionChangeKind.Keyboard) {
                     
-                    if(!GoalPanel.currentPanel) {commands.executeCommand('coq.displayGoals'); };
+                    if(!GoalPanel.currentPanel) {commands.executeCommand('vscoq.displayGoals'); };
                     
                     GoalPanel.sendProofViewRequest(client, evt.textEditor.document.uri, 
                         evt.textEditor.document.version, evt.textEditor.selection.active);

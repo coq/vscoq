@@ -19,7 +19,7 @@ import Client from '../client';
 
 export default class SearchViewProvider implements vscode.WebviewViewProvider {
 
-    public static readonly viewType = 'coq.search'; 
+    public static readonly viewType = 'vscoq.search'; 
 
     private _view?: vscode.WebviewView; 
 

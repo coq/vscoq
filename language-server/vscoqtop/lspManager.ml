@@ -230,7 +230,8 @@ let coqtopInterpretToPoint ~id params : (string * Dm.DocumentManager.events) =
 
 let coqtopStepBackward ~id params : (string * Dm.DocumentManager.events) =
   let open Yojson.Safe.Util in
-  let uri = params |> member "uri" |> to_string in
+  let textDocument = params |> member "textDocument" in 
+  let uri = textDocument |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
   Hashtbl.replace states uri st;
@@ -239,7 +240,8 @@ let coqtopStepBackward ~id params : (string * Dm.DocumentManager.events) =
 
 let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
   let open Yojson.Safe.Util in
-  let uri = params |> member "uri" |> to_string in
+  let textDocument = params |> member "textDocument" in 
+  let uri = textDocument |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
   Hashtbl.replace states uri st;
@@ -274,7 +276,8 @@ let coqtopResetCoq ~id params =
 
 let coqtopInterpretToEnd ~id params : (string * Dm.DocumentManager.events) =
   let open Yojson.Safe.Util in
-  let uri = params |> member "uri" |> to_string in
+  let textDocument = params |> member "textDocument" in 
+  let uri = textDocument |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_end st in
   Hashtbl.replace states uri st;
