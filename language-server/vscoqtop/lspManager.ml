@@ -273,11 +273,13 @@ let coqtopUpdateProofView ~id params =
   let uri = textDocument |> member "uri" |> to_string in
   let loc = params |> member "position" |> parse_loc in
   let st = Hashtbl.find states uri in
-  match Dm.DocumentManager.get_proof st loc with
-  | None -> ()
+  let result = match Dm.DocumentManager.get_proof st loc with
+  | None -> 
+    Ok (`Null) 
   | Some proofview ->
-    let result = Ok (mk_proofview proofview) in
-    output_json @@ Response.(yojson_of_t { id; result })
+    Ok (mk_proofview proofview) 
+  in
+  output_json @@ Response.(yojson_of_t { id; result })
 
 let coqtopAbout ~id params =
   let open Yojson.Safe.Util in

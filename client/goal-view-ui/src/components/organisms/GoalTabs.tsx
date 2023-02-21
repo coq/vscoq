@@ -4,8 +4,10 @@ import {
     VSCodePanelTab,
     VSCodePanelView 
 } from '@vscode/webview-ui-toolkit/react';
+import { VscPass } from 'react-icons/vsc';
 
 import GoalBlock from '../molecules/GoalBlock';
+import EmptyState from '../atoms/EmptyState';
 
 type GoalSectionProps = {
     goals: {

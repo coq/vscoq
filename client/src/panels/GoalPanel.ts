@@ -27,6 +27,8 @@ export default class GoalPanel {
   public static currentPanel: GoalPanel | undefined;
   private readonly _panel: WebviewPanel;
   private _disposables: Disposable[] = [];
+  private static _channel: any = window.createOutputChannel('vscoq-goal-panel');
+
 
   /**
    * The GoalPanel class private constructor (called only from the render method).
@@ -119,8 +121,8 @@ export default class GoalPanel {
     );
     const params: UpdateProofViewRequest = { textDocument, position };
     client.sendRequest(req, params).then(
-      (goals : UpdateProofViewResponse) => {
-        GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "renderProofView", "text": goals });
+      (response : UpdateProofViewResponse) => {
+        GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "renderProofView", "proofView": response });
       }
     );
   }

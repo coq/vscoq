@@ -1,24 +1,18 @@
 import React, {FunctionComponent, useState} from 'react';
 
 import CollapsibleGoalBlock from '../molecules/CollapsibleGoalBlock';
+import { GoalArray } from '../../types';
 
 type GoalSectionProps = {
-    goals: {
-        id: string,
-        goal: string, 
-        hypotheses: {
-            identifiers: string[],
-            type: string
-        }[],
-        isOpen: boolean
-    }[],
+    goals: GoalArray,
     collapseGoalHandler: (id: string) => void, 
 };
 
 const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     
     const {goals, collapseGoalHandler} = props;
-
+    
+    
     const goalCollapsibles = goals.map((goal, index) => {
         
         return (

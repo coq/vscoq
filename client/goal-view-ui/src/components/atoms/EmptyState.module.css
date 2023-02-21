@@ -1,0 +1,11 @@
+.EmptyStateSection {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.EmptyStateMessage {
+    margin-left: 6px;
+}

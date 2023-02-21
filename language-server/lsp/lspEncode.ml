@@ -58,6 +58,7 @@ let mk_goal sigma g =
     let shelved = List.map (mk_goal sigma) (Evd.shelf sigma) in
     let given_up = List.map (mk_goal sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
     `Assoc [
+      "isInProof", `Bool true;
       "type", `String "proof-view";
       "goals", `List goals;
       "shelvedGoals", `List shelved;
