@@ -281,11 +281,12 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
   update_view uri st;
   (uri,events)
   
-  let make_CompletionItem (label, typ, path) : CompletionItem.t = 
+  let make_CompletionItem i (label, typ, path) : CompletionItem.t = 
     {
       label;
       detail = Some typ;
       documentation = Some ("Path: " ^ path);
+      sortText = Some (Printf.sprintf "%5d" i);
     } 
 
   let textDocumentCompletion ~id params =
@@ -295,7 +296,7 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
     let loc = params |> member "position" |> parse_loc in
     let st = Hashtbl.find states uri in
     let completionItems = Dm.CompletionSuggester.get_completion_items ~id params st loc in
-    let items = List.map make_CompletionItem completionItems in
+    let items = List.mapi make_CompletionItem completionItems in
     let result = Ok (CompletionList.yojson_of_t {isIncomplete = false; items = items;}) in
     output_json @@ Response.(yojson_of_t { id; result })
 
