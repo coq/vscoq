@@ -132,7 +132,7 @@
           "vscoq.proof.workers": {
             "scope": "window",
             "type": "number",
-            "default": "1",
+            "default": 1,
             "description": "Amount of workers assigned to proofs in delegation mode"
           }
         }
