@@ -1,5 +1,7 @@
 import React, {FunctionComponent} from 'react';
 
+import { QueryResult, SearchResultType, CheckResultType, AboutResultType  } from '../../types';
+
 import SearchResult from '../molecules/SearchResult';
 import AboutResult from '../molecules/AboutResult';
 import CheckResult from '../molecules/CheckResult';
@@ -7,49 +9,45 @@ import CheckResult from '../molecules/CheckResult';
 import classes from './ResultSection.module.css';
 
 type SearchResultSectionProps = {
-    results: {
-        id: string, 
-        name: string, 
-        statement: string,
-        type: string,
-    }[],
+    result: QueryResult,
     copyNameHandler: (name: string) => void;
 };
 
 const searchResultSection: FunctionComponent<SearchResultSectionProps> = (props) => {
 
-    const {results, copyNameHandler} = props;
+    const {result, copyNameHandler} = props;
 
-    const resultComponents = results.map(result => {
+    let resultComponent = null; 
 
-        if(result.type === "Search") {
+    if(result as SearchResultType[]) {
+
+        resultComponent = (result as SearchResultType[]).map((res) => {
 
             return <SearchResult 
-                        name={result.name} 
-                        statement={result.statement} 
-                        copyNameHandler={copyNameHandler}
-                    />;
+                name={res.name} 
+                statement={res.statement} 
+                copyNameHandler={copyNameHandler}
+            />;
+    
+        });
+    
+    }
 
-        }
+    if(result as CheckResultType) {
+        
+        resultComponent = <CheckResult  statement={result as CheckResultType} />;
 
-        if(result.type === "About") {
+    };
 
-            return <AboutResult  statement={result.statement} />;
-
-        }
-
-        if(result.type === "Check") {
-
-            return <CheckResult  statement={result.statement} />;
-
-        }
-
-        return; 
-    });
+    if(result as AboutResultType) {
+            
+        resultComponent = <AboutResult  statement={result as AboutResultType} />;
+        
+    };
 
     return (
         <div className={classes.ResultSection}>
-            {resultComponents}
+            {resultComponent}
         </div>
     );
 };

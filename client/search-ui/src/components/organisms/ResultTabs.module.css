@@ -1,0 +1,13 @@
+
+.HiddenTab {
+    display: none;
+}
+
+.SmallButton {
+    font-size: 6px;
+    margin-left: 6px;
+}
+
+.Panels {
+    width: 100%;
+}

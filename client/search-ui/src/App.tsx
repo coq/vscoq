@@ -5,93 +5,55 @@ import SearchPage from './components/templates/SearchPage';
 import "./App.css";
 
 import { vscode } from "./utilities/vscode";
-import { breadcrumbTemplate } from '@microsoft/fast-foundation';
+import { useStateCallback } from './utilities/hooks';
 
-type QueryResult = {
-    id: string, 
-    type: string,
-    name: string,
-    statement: string
-};
-
-type SearchTab = {
-    searchId: string, 
-    searchString: string, 
-    type: string, 
-    results: QueryResult[],
-};
+import { 
+    Query, 
+    QueryResult, 
+    QueryTab, 
+    QueryType, 
+    SearchNotification,
+    AboutNotification,
+    CheckNotification,
+} from './types';
 
 const defaultTab = {
-    searchId: uuid(), 
-    searchString: "", 
-    type: "Search",
+    id: uuid(), 
+    pattern: "", 
+    type: QueryType.search,
     results: []
 };
 
 const defaultState = {
-    searchString: "",
-    searchHistory: [],
+    history: [],
     historyIndex: -1, 
-    searchTabs: [defaultTab],
+    tabs: [defaultTab],
     currentTab: 0
 };
 
 const app = () => {
     
-    const [searchString, setSearchString] = useState("");
-    const [searchHistory, setSearchHistory] = useState<string[]>([]);
+    const [history, setHistory] = useState<string[]>([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
-    const [searchTabs, setSearchTabs] = useState<SearchTab[]>([defaultTab]);
-    const [currentTab, setCurrentTab] = useState(0);
-    const [queryType, setQueryType] = useState('Search');
-    const firstUpdate = useRef(true);
+    const [tabs, setTabs] = useStateCallback<QueryTab[]>([defaultTab]);
+    const [currentTab, setCurrentTab] = useStateCallback(0);
     const restoringState = useRef(false);
     const immediateQuery = useRef(false);
-    //this ref will allow us to update the current tab index only when the number of tabs has changed !
-    const numTabs = useRef(1); 
+
 
     const handleMessage = useCallback ((msg: any) => {
-        const result = msg.data.text;
         switch (msg.data.command) {
 
             case 'checkResponse':
-                setSearchTabs(searchTabs => { 
-                    const newTabs = searchTabs.map(tab => {
-                        if(tab.searchId === msg.data.id) {
-                            return {...tab, results: [{id: "", name: "", statement: result, type: "Check"}]};
-                        }
-                        return tab;
-                    });
-    
-                    return newTabs;
-                });
+                handleCheckNotification(msg.data.result);
                 break;
 
             case 'aboutResponse':
-                setSearchTabs(searchTabs => { 
-                    const newTabs = searchTabs.map(tab => {
-                        if(tab.searchId === msg.data.id) {
-                            return {...tab, results: [{id: "", name: "", statement: result, type: "About"}]};
-                        }
-                        return tab;
-                    });
-    
-                    return newTabs;
-                });
+                handleAboutNotification(msg.data.result);
                 break;
 
             case 'searchResponse':
-                setSearchTabs(searchTabs => {
-                    
-                    const newTabs = searchTabs.map(tab => {
-                        if(tab.searchId === result.id) {
-                            return {...tab, results: tab.results.concat([{...result, type: "Search"}])};
-                        }
-                        return tab;
-                    });
-    
-                    return newTabs;
-                });
+                handleSearchNotification(msg.data.result); 
                 break;
 
             case 'launchedSearch': 
@@ -99,11 +61,7 @@ const app = () => {
                 break;
 
             case 'query':
-                setSearchTabs(searchTabs => {
-                    const results: QueryResult[] = [];
-                    immediateQuery.current = true;
-                    return [{searchId: uuid(), searchString: msg.data.text, results: results, type: msg.data.type}].concat(searchTabs);
-                });
+                handleImmediateQueryNotification(msg.data.query);
                 break;
         }
       }, []);
@@ -114,102 +72,119 @@ const app = () => {
             window.removeEventListener("message", handleMessage);
         };
     }, [handleMessage]);
-                    
-    useEffect(() => {
-
-        //Avoid use effect on first page load
-        if(firstUpdate.current) {
-            firstUpdate.current = false; 
-            return;
-        }
-
-        //Avoid use effect when restoring a previous state
-        if(restoringState.current) {
-            restoringState.current = false; 
-            numTabs.current = searchTabs.length;
-            return;
-        }
-
-        //Did we add a tab ?
-        if(numTabs.current < searchTabs.length) {
-            numTabs.current = searchTabs.length;
-            changeTabHandler(0);
-            return;
-        }
-
-        //Did we remove a tab ?
-        if(numTabs.current > searchTabs.length) {
-            numTabs.current = searchTabs.length;
-            if(currentTab > searchTabs.length - 1) {
-                changeTabHandler(0); 
-            }
-            return;
-        }
-
-        //Handle the cases when a query is launched from an editor
-        if(immediateQuery.current) {
-            immediateQuery.current = false;
-            launchQuery();
-            return;
-        }
-
-        //in any other situation just save the state
-        saveState();
-        
-    }, [searchTabs, currentTab]);
-    
+/* 
     //this will only run on initial render
     useEffect(() => {
         //This is to avoid unecessary useEffect hook calls
         restoringState.current = true;
         restoreState();
     }, []);
+     */
 
+    const handleSearchNotification = (notification : SearchNotification) => {
+        
+        setTabs((tabs: QueryTab[]) => {       
 
-    const queryTypeSelectHandler: ChangeEventHandler<HTMLInputElement> = (e) => {
-        setQueryType(e.target.value);
+            const newTabs = tabs.map(tab => {
+                if(tab.id === notification.id) {
+                    //Here this should always be the case since the tab was initialize as a search
+                    if(Array.isArray(tab.results)) {
+                        return {...tab, results: tab.results.concat([{name: notification.name, statement: notification.statement}])};
+                    }
+                    return tab;
+                }
+                return tab;
+            });
+
+            return newTabs;
+        });
     };
 
-    const searchFieldInputHandler: ChangeEventHandler<HTMLInputElement> = (e) => {
-        setSearchString(e.target.value);
+    const handleCheckNotification = (notification : CheckNotification) => {
+        
+        setTabs(tabs => { 
+            const newTabs = tabs.map(tab => {
+                if(tab.id === notification.id) {
+                    return {...tab, results: notification.statement};
+                }
+                return tab;
+            });
+
+            return newTabs;
+        });
+
+    };
+
+    const handleAboutNotification = (notification : AboutNotification) => {
+        
+        setTabs(tabs => { 
+            const newTabs = tabs.map(tab => {
+                if(tab.id === notification.id) {
+                    return {...tab, results: notification.statement};
+                }
+                return tab;
+            });
+
+            return newTabs;
+        });
+
+    };
+
+    const handleImmediateQueryNotification = (notification: Query) => {
+        
+        setTabs(tabs => {
+            const results : QueryResult = notification.type === QueryType.search ?  [] : "";
+            const newTab : QueryTab[] = [{id: uuid(), pattern: notification.pattern, results: results, type: notification.type}];
+            return newTab.concat(tabs);
+        });
     };
 
     const saveState = () => {
-        vscode.setState({searchString, searchHistory, historyIndex, searchTabs, currentTab, queryType});
+        vscode.setState({history, historyIndex, tabs, currentTab});
     };
 
     const restoreState = () => {
         const state: any = vscode.getState() || defaultState;
-        setSearchTabs(state.searchTabs);
-        setSearchHistory(state.searchHistory);
+        setTabs(state.searchTabs);
+        setHistory(state.history);
         setHistoryIndex(state.historyIndex);
-        setSearchString(state.searchString);
         setCurrentTab(state.currentTab);
-        setQueryType(state.queryType);
     };
 
     const launchQuery = () => {
+
+        const {pattern, type} = tabs[currentTab];
             
-        setSearchHistory(searchHistory => [searchString].concat(searchHistory));
+        setHistory(history => [pattern].concat(history));
             
-        const searchId = uuid();
-        setSearchTabs(searchTabs => {
-            const newTabs = searchTabs.map((tab, index) => {
+        const id = uuid();
+        setTabs(tabs => {
+            const newTabs = tabs.map((tab, index) => {
                 if(index === currentTab) {
-                    return {...tab, searchId: searchId, searchString, results: [], type: queryType};
+                    return {...tab, id: id, results: []};
                 }
                 return tab;
             });
             return newTabs;
-        });
+        }, 
+        //after setting the new state we save the current state
+        saveState);
 
         vscode.postMessage({
             command: "coqQuery",
-            text: searchString,
-            id: searchId,
-            type: queryType,
+            text: pattern,
+            id: id,
+            type: type,
         });
 
+    };
+
+    const queryTypeSelectHandler: ChangeEventHandler<HTMLInputElement> = (e) => {
+        updateQueryType(QueryType[e.target.value as keyof typeof QueryType]);
+    };
+
+    const searchFieldInputHandler: ChangeEventHandler<HTMLInputElement> = (e) => {
+        updateQueryString(e.target.value);
     };
 
     const searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement> = (e) => {
@@ -220,8 +195,8 @@ const app = () => {
 
         if(e.code === "ArrowUp") {
             e.preventDefault();
-            if(searchHistory.length > historyIndex + 1) {
-                setSearchString(searchHistory[historyIndex + 1]);
+            if(history.length > historyIndex + 1) {
+                updateQueryString(history[historyIndex + 1]);
                 setHistoryIndex(historyIndex + 1);
             }
 
@@ -231,13 +206,36 @@ const app = () => {
             e.preventDefault();
             if(historyIndex > -1) {
                 if(historyIndex > 0) {
-                    setSearchString(searchHistory[historyIndex - 1]);
+                    updateQueryString(history[historyIndex -1]);
                 }
                 setHistoryIndex(historyIndex - 1);
             }
 
         }
 
+    };
+
+    
+    const updateQueryType = (type: QueryType) => {
+        setTabs(tabs => {
+            return tabs.map((tab, index) => {
+                if(index === currentTab) {
+                    return {...tab, type: type};
+                }
+                return tab;
+            });
+        });
+    };
+
+    const updateQueryString = (pattern: string) => {
+        setTabs(tabs => {
+            return tabs.map((tab, index) => {
+                if(index === currentTab) {
+                    return {...tab, pattern: pattern};
+                }
+                return tab;
+            });
+        });
     };
 
     const copyNameToClipboard = (name: string) => {
@@ -248,39 +246,48 @@ const app = () => {
     };
 
     const addSearchTabHandler = () => {
-        setSearchTabs(searchTabs => {
-            //return searchTabs.concat([{searchId: uuid(), searchString: "", results: [], type: queryType}]);
-            const results: QueryResult[] = [];
-            return [{searchId: uuid(), searchString: "", results: results, type: queryType}].concat(searchTabs);
-        });
+        setTabs(
+            tabs => {
+                const results : QueryResult = [];
+                const newTab : QueryTab[] = [{id: uuid(), pattern: "", results: results, type: QueryType.search}];
+                return newTab.concat(tabs);
+            }, 
+            () => setCurrentTab(0)
+        );
     };
 
     const deleteSearchTabHandler = (tabIndex: number) => {
-        setSearchTabs(searchTabs => {
-            return searchTabs.filter((tab, index) => index !== tabIndex);
-        });
+        setTabs(
+            tabs => {
+                return tabs.filter((tab, index) => index !== tabIndex);
+            },
+            (newTabs) => {
+                if(currentTab > newTabs.length) {
+                    setCurrentTab(newTabs.length - 1, saveState); 
+                }
+                else {
+                    saveState();
+                }
+            }
+        );
     };
     
     const changeTabHandler = (tabIndex: number) => {
-        setSearchString(searchTabs[tabIndex].searchString);
-        setQueryType(searchTabs[tabIndex].type);
-        setCurrentTab(tabIndex);
+        setCurrentTab(tabIndex, saveState);
     };
 
     return (
         <main>
             <SearchPage
-                value={searchString} 
+                tabs={tabs}
+                currentTab={currentTab}
                 onTextInput={searchFieldInputHandler} 
                 searchFieldKeyPressHandler={searchFieldKeyPressHandler} 
                 copyNameHandler={copyNameToClipboard}
-                tabs={searchTabs}
                 addTabHandler={addSearchTabHandler}
                 changeTabHandler={changeTabHandler}
                 deleteTabHandler={deleteSearchTabHandler}
-                currentTab={currentTab}
                 queryTypeSelectHandler={queryTypeSelectHandler}
-                selectedType={queryType}
             />
         </main>
     );
