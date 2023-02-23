@@ -309,7 +309,7 @@ let check st pos ~goal ~pattern =
     let rc = parse_entry st pos Pcoq.Constr.lconstr pattern in
     try
       let redexpr = None in
-      Ok (Pp.string_of_ppcmds @@ Vernacentries.check_may_eval sigma env redexpr rc)
+      Ok (Pp.string_of_ppcmds @@ Vernacentries.check_may_eval env sigma redexpr rc)
     with e ->
       let e, info = Exninfo.capture e in
       Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
