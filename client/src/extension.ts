@@ -104,6 +104,9 @@ export function activate(context: ExtensionContext) {
             (evt: TextEditorSelectionChangeEvent) => {
 
                 if (evt.textEditor.document.languageId !== "coq") { return; };
+                
+                //Don't update on manual mode
+                if(workspace.getConfiguration('vscoq.proof').mode === 0) {return; }
 
                 if (evt.kind === TextEditorSelectionChangeKind.Mouse || evt.kind === TextEditorSelectionChangeKind.Keyboard) {
                     

@@ -121,11 +121,13 @@ export default class GoalPanel {
     );
     const params: UpdateProofViewRequest = { textDocument, position };
     client.sendRequest(req, params).then(
-      (response : UpdateProofViewResponse) => {
-        GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "renderProofView", "proofView": response });
-      }
+      (response : UpdateProofViewResponse) => this.handleProofViewResponse(response)
     );
   }
+
+  public static handleProofViewResponse(response: UpdateProofViewResponse) {
+    GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "renderProofView", "proofView": response });    
+  };
 
   private static _initWebAppSettings() {
     const config = workspace.getConfiguration('vscoq.goals');

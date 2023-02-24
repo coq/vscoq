@@ -148,6 +148,15 @@ let update_view uri st =
   send_highlights uri st;
   publish_diagnostics uri st
 
+let send_proof_view ~id st loc = 
+  let result = match Dm.DocumentManager.get_proof st loc with
+  | None -> 
+    Ok (`Null) 
+  | Some proofview ->
+    Ok (mk_proofview proofview) 
+  in
+  output_json @@ Response.(yojson_of_t { id; result })
+
 let textDocumentDidOpen params =
   let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
@@ -226,6 +235,8 @@ let coqtopInterpretToPoint ~id params : (string * Dm.DocumentManager.events) =
   let (st, events) = Dm.DocumentManager.interpret_to_position st loc in
   Hashtbl.replace states uri st;
   update_view uri st;
+  if !check_mode = CheckMode.Manual then 
+    send_proof_view ~id st loc;
   (uri, events)
 
 let coqtopStepBackward ~id params : (string * Dm.DocumentManager.events) =
@@ -302,13 +313,7 @@ let coqtopUpdateProofView ~id params =
   let uri = textDocument |> member "uri" |> to_string in
   let loc = params |> member "position" |> parse_loc in
   let st = Hashtbl.find states uri in
-  let result = match Dm.DocumentManager.get_proof st loc with
-  | None -> 
-    Ok (`Null) 
-  | Some proofview ->
-    Ok (mk_proofview proofview) 
-  in
-  output_json @@ Response.(yojson_of_t { id; result })
+  send_proof_view ~id st loc
 
 let coqtopAbout ~id params =
   let open Yojson.Safe.Util in
