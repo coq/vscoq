@@ -31,22 +31,25 @@ const resultTabs: FunctionComponent<ResultTabProps> = (props) => {
     } = props;
 
     const panelViews = tabs.map((tab, index) => {
-        return <VSCodePanelView id={"view-"+index} >
+        const id = "view-" + index;
+        return <VSCodePanelView key={id} id={id} >
                     <ResultSection 
-                        result={tab.results} 
+                        result={tab.result} 
                         copyNameHandler={copyNameHandler}
                     />
                 </VSCodePanelView>;
     });
 
     const panelTabs = tabs.map((tab, index) => {
+        const id = "tab-" + index;
         return <VSCodePanelTab 
-                    id={"tab-" + index} 
+                    id={id} 
+                    key={id}
                     onClick={
                         () => changeTabHandler(index)
                     }
                     className={tabs.length > 1 ? "" : classes.HiddenTab} //hide the tabs if there is only one
-                    aria-selected={index === currentTab}
+                    /* aria-selected={index === currentTab} */
                 >
                     {"Query " + (tabs.length - index)}
                     <VSCodeButton 

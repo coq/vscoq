@@ -10,11 +10,11 @@ import ResultTabs from '../organisms/ResultTabs';
 
 import classes from './SearchPage.module.css';
 
-import { QueryTab } from '../../types';
+import { QueryPanelState } from '../../types';
 
 type SearchPageProps = {
-    tabs: QueryTab[],
-    currentTab: number;
+
+    state: QueryPanelState,
     copyNameHandler: (name: string) => void,
     queryTypeSelectHandler: (e: any) => void;
     onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
@@ -27,7 +27,7 @@ type SearchPageProps = {
 const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     
     const {
-        tabs, currentTab, 
+        state, 
         copyNameHandler, 
         onTextInput, searchFieldKeyPressHandler,
         changeTabHandler, addTabHandler, 
@@ -35,6 +35,7 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
         queryTypeSelectHandler
     } = props;
 
+    const {tabs, currentTab} = state;
     const {pattern, type} = tabs[currentTab];
 
     return (

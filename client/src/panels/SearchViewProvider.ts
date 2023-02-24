@@ -139,7 +139,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                             
                         client.sendRequest(req, params).then(
                             (result: AboutCoqResponse) => {
-                                const notification = {"result": result, "id": id};
+                                const notification = {"statement": result, "id": id};
                                 webview.postMessage({"command": "aboutResponse", "result": notification});
                             }
                         );
@@ -152,7 +152,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                             
                         client.sendRequest(req, params).then(
                             (result: CheckCoqResponse) => {
-                                const notification = {"result": result, "id": id};
+                                const notification = {"statement": result, "id": id};
                                 webview.postMessage({"command": "checkResponse", "result": notification});
                             }
                         );

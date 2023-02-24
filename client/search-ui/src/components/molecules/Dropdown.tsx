@@ -22,7 +22,7 @@ const dropdown: FunctionComponent<DropdownProps> = (props) => {
                 options.map((opt, index) => {
                     const label = optionLabels ? optionLabels[index] : opt;
                     return (
-                        <VSCodeOption selected={opt === selectedValue}>{label}</VSCodeOption>
+                        <VSCodeOption key={index} value={opt} selected={opt === selectedValue}>{label}</VSCodeOption>
                     );
                 })
             }

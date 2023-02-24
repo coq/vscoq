@@ -13,17 +13,20 @@ type SearchResultSectionProps = {
     copyNameHandler: (name: string) => void;
 };
 
+type SearchResults = SearchResultType[];
+
 const searchResultSection: FunctionComponent<SearchResultSectionProps> = (props) => {
 
     const {result, copyNameHandler} = props;
 
     let resultComponent = null; 
 
-    if(result as SearchResultType[]) {
+    if(result.type === "search") {
 
-        resultComponent = (result as SearchResultType[]).map((res) => {
+        resultComponent = result.data.map((res, index) => {
 
-            return <SearchResult 
+            return <SearchResult
+                key={index}
                 name={res.name} 
                 statement={res.statement} 
                 copyNameHandler={copyNameHandler}
@@ -33,15 +36,15 @@ const searchResultSection: FunctionComponent<SearchResultSectionProps> = (props)
     
     }
 
-    if(result as CheckResultType) {
+    if(result.type === "check") {
         
-        resultComponent = <CheckResult  statement={result as CheckResultType} />;
+        resultComponent = <CheckResult  statement={result.statement} />;
 
     };
 
-    if(result as AboutResultType) {
+    if(result.type === "about") {
             
-        resultComponent = <AboutResult  statement={result as AboutResultType} />;
+        resultComponent = <AboutResult  statement={result.statement} />;
         
     };
 

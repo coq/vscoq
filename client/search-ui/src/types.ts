@@ -12,20 +12,30 @@ export interface CheckNotification {
     statement: string; 
 };
 
-export interface SearchResultType {
-    name: string; 
-    statement: string;
-};
-export type CheckResultType = string; 
-export type AboutResultType = string; 
-
-export type QueryResult = SearchResultType[] | CheckResultType | AboutResultType | null;
-
 export enum QueryType {
-    search = "Search", 
-    about = "About", 
-    check = "Check"
+    search = "search", 
+    about = "about", 
+    check = "check"
 }
+
+export interface SearchResultType {
+    type: "search";
+
+    data : {
+        name: string; 
+        statement: string;
+    }[]
+};
+export interface CheckResultType {
+    type: "check";
+    statement: string;
+}
+export interface AboutResultType {
+    type: "about"; 
+    statement: string; 
+}
+
+export type QueryResult = SearchResultType | CheckResultType | AboutResultType;
 
 export interface Query {
     pattern: string; 
@@ -36,5 +46,16 @@ export interface QueryTab {
     id: string, 
     pattern: string, 
     type: QueryType, 
-    results: QueryResult,
+    result: QueryResult,
+};
+
+export type QueryPanelState = {
+    currentTab: number;
+    tabs: QueryTab[];
+};
+
+export type VsCodeState = {
+    state?: QueryPanelState,
+    history?: string[],
+    historyIndex?: number, 
 };
