@@ -73,6 +73,16 @@ let output_json ?(trace=true) obj =
   log @@ "sent: " ^ msg;
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
+let send_configuration_request () =
+  let id = 123 in (* FIXME *)
+  let method_ = "workspace/configuration" in
+  let mk_configuration_item section =
+    ConfigurationItem.({ scopeUri = None; section = Some section })
+  in
+  let items = List.map mk_configuration_item ["vscoq.proof.mode"; "vscoq.proof.delegation"] in
+  let params = ConfigurationParams.(yojson_of_t { items }) in
+  output_json Request.(yojson_of_t { id; method_; params })
+
 let do_initialize ~id params =
   let open Yojson.Safe.Util in
   let capabilities = ServerCapabilities.{
@@ -86,7 +96,8 @@ let do_initialize ~id params =
     hoverProvider = true;
   } in
   let result = Ok (`Assoc ["capabilities", ServerCapabilities.yojson_of_t capabilities]) in
-  output_json Response.(yojson_of_t {id; result})
+  output_json Response.(yojson_of_t {id; result});
+  send_configuration_request ()
 
 let do_shutdown ~id params =
   let open Yojson.Safe.Util in
@@ -379,11 +390,18 @@ let handle_lsp_event = function
   | Request (Some req) ->
       let open Yojson.Safe.Util in
       let id = Option.default 0 (req |> member "id" |> to_int_option) in
-      let method_name = req |> member "method" |> to_string in
-      let params = req |> member "params" in
-      log @@ "ui request: " ^ method_name;
-      let more_events = dispatch_method ~id method_name params in
-      more_events
+      let method_name = req |> member "method" |> to_string_option in
+      match method_name with
+      | Some method_ ->
+        let params = req |> member "params" in
+        log @@ "ui request: " ^ method_;
+        let more_events = dispatch_method ~id method_ params in
+        more_events
+      | None ->
+        let result = req |> member "result" in
+        let _error = req |> member "error" in
+        log @@ "got response: " ^ Yojson.Safe.pretty_to_string result;
+        []
 
 let pr_lsp_event = function
   | Request req ->

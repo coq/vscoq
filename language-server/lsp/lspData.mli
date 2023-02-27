@@ -121,4 +121,18 @@ module Hover : sig
     } [@@deriving yojson]
   
 end
-  
+
+module ConfigurationItem : sig
+
+  type t = {
+	  scopeUri: string option;
+	  section: string option;
+  } [@@deriving yojson]
+
+end
+
+module ConfigurationParams : sig
+
+  type t = { items: ConfigurationItem.t list } [@@deriving yojson]
+
+end

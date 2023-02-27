@@ -149,3 +149,18 @@ module Hover = struct
   } [@@deriving yojson]
 
 end
+
+module ConfigurationItem = struct
+
+  type t = {
+	  scopeUri: string option; [@yojson option]
+	  section: string option; [@yojson option]
+  } [@@deriving yojson]
+
+end
+
+module ConfigurationParams = struct
+
+  type t = { items: ConfigurationItem.t list } [@@deriving yojson]
+
+end
