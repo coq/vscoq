@@ -1,4 +1,4 @@
-# LSP
+git s# LSP
 
 vscoq uses the [language server protocol](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/). 
 
@@ -41,7 +41,7 @@ By default, we display the processed lines in the VSCode gutter.
 
 ## Goal view 
 
-For the goal view we provide a request verb "vscoq/updateProofView" and its corresponding response. 
+For the goal view we provide a request verb `vscoq/updateProofView` and its corresponding response. 
 
 ```typescript 
 
@@ -75,7 +75,7 @@ interface UpdateProofViewResponse {
 
 ## Query panel
 
-For the query panel we provide a request verb "vscoq/search" and its corresponding response "vscoq/searchResult". 
+For the query panel we provide a request verb `vscoq/search` and its corresponding response `vscoq/searchResult`. 
 
 ``` typescript
 
@@ -110,5 +110,30 @@ interface SearchCoqResult {
 }
 ```
 
-By default the coq Search command as asynchronous. Therefore it, the language server first sends a handshake either with an OK code, or with an error. It the sends each result one by one through the SearchCoqResult interface. The id corresponds to a uuid given to each search request. 
+By default the coq Search command as asynchronous. Therefore, the language server first sends a handshake either with an OK code, or with an error. It then sends each result one by one through the SearchCoqResult interface. The id corresponds to a uuid given to each search request. 
+
+We also provide the requests for the "check" and "about" queries, with plans to support more in the future. 
+Note that the "check" and about "about" queries are synchronous and do not require a seperate verb for their responses. 
+Verbs: `vscoq/check`, `vscoq/about`.
+
+```typescript
+
+export interface AboutCoqRequest {
+    textDocument: VersionedTextDocumentIdentifier;
+    pattern: string; 
+    position: Position;
+    goalIndex?: number;
+}
+
+export type AboutCoqResponse = string;
+
+export interface CheckCoqRequest {
+    textDocument: VersionedTextDocumentIdentifier;
+    pattern: string; 
+    position: Position;
+    goalIndex?: number;
+};
+
+export type CheckCoqResponse = string; 
+```
 
