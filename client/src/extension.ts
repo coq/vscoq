@@ -68,12 +68,12 @@ export function activate(context: ExtensionContext) {
     };
 
     const searchCursor = commands.registerTextEditorCommand('coq.searchCursor', (editor) => {
-        launchQuery(editor, "Search");
+        launchQuery(editor, "search");
         });
     context.subscriptions.push(searchCursor);
 
     const aboutCursor = commands.registerTextEditorCommand('coq.aboutCursor', (editor) => {
-        launchQuery(editor, "About");
+        launchQuery(editor, "about");
     });
     context.subscriptions.push(aboutCursor);
 

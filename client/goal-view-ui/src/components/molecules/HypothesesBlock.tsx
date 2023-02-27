@@ -15,8 +15,8 @@ const hypothesesBlock: FunctionComponent<HypothesesBlockProps> = (props) => {
 
     const {hypotheses} = props;
 
-    const hypothesesComponents = hypotheses.map(hyp => {
-        return <Hypothesis identifiers={hyp.identifiers} type={hyp.type} />;
+    const hypothesesComponents = hypotheses.map((hyp, index) => {
+        return <Hypothesis key={index} identifiers={hyp.identifiers} type={hyp.type} />;
     });
 
     return (

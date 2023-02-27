@@ -30,15 +30,15 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
         const tabName = "Goal " + (index + 1);
         const tabId = "tab-" + index;
         return (
-        <VSCodePanelTab id={tabId} onClick={() => setActiveId(tabId)}>
+        <VSCodePanelTab id={tabId} key={tabId} onClick={() => setActiveId(tabId)}>
              {tabName} 
         </VSCodePanelTab>);
     });    
     const goalPanelViews = goals.map((goal, index) => {
         
-        const tabId = "tab-" + index;
+        const viewId = "view-" + index;
         return (
-            <VSCodePanelView id={tabId}>
+            <VSCodePanelView id={viewId} key={viewId}>
                 <GoalBlock goal={goal}/>
             </VSCodePanelView>
         );

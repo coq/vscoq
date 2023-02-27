@@ -57,11 +57,12 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
     }
 
     public launchQuery(pattern: string, type: string) {
-        this._view?.webview.postMessage({"command": "query", "text": pattern, "type": type});
+        const query = { "pattern": pattern, "type": type};
+        this._view?.webview.postMessage({"command": "query", "query": query});
     };
 
     public renderSearchResult(searchResult: SearchCoqResult) {
-        this._view?.webview.postMessage({"command": "searchResponse", "text": searchResult});
+        this._view?.webview.postMessage({"command": "searchResponse", "result": searchResult});
     };
 
     private _getHtmlForWebview(webview: vscode.Webview) {
@@ -122,7 +123,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                         version
                       );
 
-                    if(type === "Search") {  
+                    if(type === "search") {  
                         const params: SearchCoqRequest = {id, textDocument, pattern, position};
                         const req = new RequestType<SearchCoqRequest, SearchCoqHandshake, void>("vscoq/search");
                         client.sendRequest(req, params).then(
@@ -132,25 +133,27 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                         );
                     }
 
-                    if(type === "About") {
+                    if(type === "about") {
                         const params: AboutCoqRequest = {textDocument, pattern, position};
                         const req = new RequestType<AboutCoqRequest, AboutCoqResponse, void>("vscoq/about");
                             
                         client.sendRequest(req, params).then(
                             (result: AboutCoqResponse) => {
-                                webview.postMessage({"command": "aboutResponse", "text": result, "id": id});
+                                const notification = {"statement": result, "id": id};
+                                webview.postMessage({"command": "aboutResponse", "result": notification});
                             }
                         );
                     }
 
 
-                    if(type === "Check") {
+                    if(type === "check") {
                         const params: CheckCoqRequest = {textDocument, pattern, position};
                         const req = new RequestType<CheckCoqRequest, CheckCoqResponse, void>("vscoq/check");
                             
                         client.sendRequest(req, params).then(
                             (result: CheckCoqResponse) => {
-                                webview.postMessage({"command": "checkResponse", "text": result, "id": id});
+                                const notification = {"statement": result, "id": id};
+                                webview.postMessage({"command": "checkResponse", "result": notification});
                             }
                         );
                     }

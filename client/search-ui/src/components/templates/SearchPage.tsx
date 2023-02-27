@@ -1,96 +1,57 @@
 import React, {FunctionComponent, KeyboardEventHandler} from 'react';
 import {
-    VSCodePanels,
-    VSCodePanelTab,
-    VSCodePanelView,
-    VSCodeButton,
-    VSCodeDropdown,
-    VSCodeOption
+    VSCodeButton
 } from '@vscode/webview-ui-toolkit/react';
 import {VscAdd, VscChromeClose} from 'react-icons/vsc';
 
-import ResultSection from '../organisms/ResultSection';
 import SearchField from '../molecules/SearchField';
 import Dropdown from '../molecules/Dropdown';
+import ResultTabs from '../organisms/ResultTabs';
 
 import classes from './SearchPage.module.css';
 
+import { QueryPanelState } from '../../types';
 
 type SearchPageProps = {
-    tabs: {
-        searchId: string,
-        searchString: string, 
-        results: {
-            id: string, 
-            name: string, 
-            statement: string,
-            type: string,
-        }[]
-    }[],
+
+    state: QueryPanelState,
     copyNameHandler: (name: string) => void,
-    value: string, 
     queryTypeSelectHandler: (e: any) => void;
     onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
     searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement>,
     addTabHandler: () => void,
     deleteTabHandler: (tabIndex: number) => void,
     changeTabHandler: (tabIndex: number) => void,
-    currentTab: number;
-    selectedType: string;
 };
 
 const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     
-    const {tabs, copyNameHandler, value, 
-            onTextInput, searchFieldKeyPressHandler,
-            changeTabHandler, addTabHandler, 
-            deleteTabHandler, currentTab,
-            queryTypeSelectHandler, selectedType
-        } = props;
+    const {
+        state, 
+        copyNameHandler, 
+        onTextInput, searchFieldKeyPressHandler,
+        changeTabHandler, addTabHandler, 
+        deleteTabHandler,
+        queryTypeSelectHandler
+    } = props;
 
-    const panelViews = tabs.map((tab, index) => {
-        return <VSCodePanelView id={"view-"+index} >
-                    <ResultSection 
-                        results={tab.results} 
-                        copyNameHandler={copyNameHandler}
-                    />
-                </VSCodePanelView>;
-    });
-
-    const panelTabs = tabs.map((tab, index) => {
-        return <VSCodePanelTab 
-                    id={"tab-" + index} 
-                    onClick={
-                        () => changeTabHandler(index)
-                    }
-                    className={tabs.length > 1 ? "" : classes.HiddenTab} //hide the tabs if there is only one
-                    aria-selected={index === currentTab}
-                >
-                    {"Query " + (tabs.length - index)}
-                    <VSCodeButton 
-                        className={classes.SmallButton}
-                        appearance={'icon'} 
-                        ariaLabel='Add Tab' 
-                        onClick={() => deleteTabHandler(index)}
-                    >
-                        <VscChromeClose />
-                    </VSCodeButton>
-                </VSCodePanelTab>;
-    });
+    const {tabs, currentTab} = state;
+    const {pattern, type} = tabs[currentTab];
 
     return (
             <div className={classes.Page}>
                 <div className={classes.PageHeader}>
                     <SearchField 
-                        value={value} 
+                        value={pattern} 
                         onTextInput={onTextInput} 
                         onKeyDown={searchFieldKeyPressHandler} 
                     />
                     
                     <Dropdown 
                         classes={[classes.Dropdown]} 
-                        selectedValue={selectedType} 
-                        options={['Search', 'Check', 'About']} 
+                        selectedValue={type} 
+                        options={['search', 'check', 'about']} 
+                        optionLabels={['Search', 'Check', 'About']} 
                         onChange={queryTypeSelectHandler}
                     />
 
@@ -103,10 +64,14 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                         <VscAdd />
                     </VSCodeButton>
                 </div>
-                <VSCodePanels className={classes.Panels} activeid={'tab-'+currentTab}>
-                    {panelTabs}
-                    {panelViews}
-                </VSCodePanels>
+                <ResultTabs 
+                    tabs={tabs}
+                    currentTab={currentTab}
+                    copyNameHandler={copyNameHandler}
+                    changeTabHandler={changeTabHandler}
+                    deleteTabHandler={deleteTabHandler}
+                    searchFieldKeyPressHandler={searchFieldKeyPressHandler}
+                />
             </div>
     );
 };
