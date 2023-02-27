@@ -27,7 +27,7 @@ contributors.
 **This branch contains the VsCoq 2 language server and extension**. It is a full
 reimplementation (based on a different architecture and design) of a previous
 version of VsCoq, whose original author was @siegebell. See [the VsCoq 1
-branch](https://github.com/coq-community/vscoq/tree/master).
+branch](https://github.com/coq-community/vscoq/tree/master) for the version of VsCoq that is on the Market Place.
 
 ## Status
 VsCoq 2 is under heavy development and not ready for production use yet. It is
