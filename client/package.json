@@ -172,6 +172,12 @@
         "description": "Launches an about query for the word under the cursor"
       },
       {
+        "command": "vscoq.checkCursor",
+        "category": "Coq",
+        "title": "Check on cursor",
+        "description": "Launches a check query for the word under the cursor"
+      },
+      {
         "command": "vscoq.interpretToPoint",
         "category": "Coq", 
         "title": "Interpret file to point", 
@@ -242,6 +248,24 @@
         "mac": "ctrl+alt+end",
         "command": "vscoq.interpretToEnd",
         "when": "resourceScheme==coq-view"
+      },
+      {
+          "key": "ctrl+alt+a",
+          "mac": "cmd+ctrl+a",
+          "command": "vscoq.query.about",
+          "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+          "key": "ctrl+alt+k",
+          "mac": "cmd+ctrl+k",
+          "command": "vscoq.query.search",
+          "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+          "key": "ctrl+alt+c",
+          "mac": "cmd+ctrl+c",
+          "command": "vscoq.query.check",
+          "when": "editorTextFocus && editorLangId == coq"
       }
     ],
     "colors": [
