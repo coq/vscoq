@@ -81,7 +81,7 @@ let send_configuration_request () =
   let mk_configuration_item section =
     ConfigurationItem.({ scopeUri = None; section = Some section })
   in
-  let items = List.map mk_configuration_item ["vscoq.proof.mode"; "vscoq.proof.delegation"] in
+  let items = List.map mk_configuration_item ["vscoq"] in
   let params = ConfigurationParams.(yojson_of_t { items }) in
   output_json Request.(yojson_of_t { id; method_; params })
 
@@ -351,10 +351,10 @@ let do_configuration settings =
   let open Settings in
   let open Dm.ExecutionManager in
   let options =
-    match settings.delegation with
+    match settings.proof.delegation with
     | None     -> { delegation_mode = CheckProofsInMaster }
     | Skip     -> { delegation_mode = SkipProofs }
-    | Delegate -> { delegation_mode = DelegateProofsToWorkers { number_of_workers = Option.get settings.workers } }
+    | Delegate -> { delegation_mode = DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers } }
   in
   Hashtbl.filter_map_inplace (fun _ st ->
     Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states
@@ -395,15 +395,16 @@ let handle_lsp_event = function
         let more_events = dispatch_method ~id method_ params in
         more_events
       | None -> 
+        log @@ "got response: " ^ Yojson.Safe.pretty_to_string req;
         if id = conf_request_id then begin
-          let result = req |> member "result" |> Settings.t_of_yojson in
+          let result = req |> member "result" |> convert_each Settings.t_of_yojson in
           let _error = req |> member "error" in
-          log @@ "got response: " ^ Yojson.Safe.pretty_to_string req;
-          do_configuration result;
-          []
+          match result with
+          | [settings] -> do_configuration settings; []
+          | _ -> log "invalid settings object."; []
         end
       else begin 
-        log @@  "got unkown response: " ^ Yojson.Safe.pretty_to_string req;
+        log "unknown response.";
         []
       end
 

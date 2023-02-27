@@ -172,12 +172,20 @@ module Settings = struct
     | None
     | Skip 
     | Delegate 
-    [@@deriving yojson]
+    [@@deriving yojson] 
   end 
 
+  module Proof = struct
+
+    type t = {
+      delegation: DelegationMode.t;
+      workers: int option;
+    } [@@deriving yojson] [@@yojson.allow_extra_fields]
+  
+  end
+
   type t = {
-    delegation: DelegationMode.t;
-    workers: int option;
-  } [@@deriving yojson]
+    proof: Proof.t;
+  } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end

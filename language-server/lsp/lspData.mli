@@ -146,11 +146,20 @@ module Settings : sig
       | Delegate 
       [@@deriving yojson]
     end 
+
+    module Proof : sig
+  
+      type t = {
+        delegation: DelegationMode.t;
+        workers: int option;
+      } [@@deriving yojson] [@@yojson.allow_extra_fields]
+    
+    end
   
     type t = {
-      delegation: DelegationMode.t;
-      workers: int option;
-    } [@@deriving yojson]
+      proof: Proof.t;
+    } [@@deriving yojson] [@@yojson.allow_extra_fields]
+
   
 end
   
