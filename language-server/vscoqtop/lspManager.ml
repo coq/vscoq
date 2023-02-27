@@ -32,6 +32,8 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
+let conf_request_id = 3456736879
+
 let log msg = lsp_debug Pp.(fun () ->
   str @@ Format.asprintf "       [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
 
@@ -74,7 +76,7 @@ let output_json ?(trace=true) obj =
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
 let send_configuration_request () =
-  let id = 123 in (* FIXME *)
+  let id = conf_request_id in
   let method_ = "workspace/configuration" in
   let mk_configuration_item section =
     ConfigurationItem.({ scopeUri = None; section = Some section })
@@ -345,19 +347,15 @@ let coqtopCheck ~id params =
     let params = `Assoc [ "id", `String id; "name", `String name; "statement", `String statement ] in
     output_json @@ Notification.(yojson_of_t {method_; params})
 
-let vscoqConfiguration params = 
-  let open Yojson.Safe.Util in 
-  let delegation = params |> member "delegation" |> to_string in 
-  let number_of_workers = params |> member "workers" |> to_int in
+let do_configuration settings = 
+  let open Settings in
   let open Dm.ExecutionManager in
   let options =
-    match delegation with
-    | "None"     -> { delegation_mode = CheckProofsInMaster }
-    | "Skip"     -> { delegation_mode = SkipProofs }
-    | "Delegate" -> { delegation_mode = DelegateProofsToWorkers { number_of_workers } }
-    | _ ->
-      log @@ "Ignoring call to vscoqConfiguration with unknown delegation: " ^ delegation;
-      default_options in
+    match settings.delegation with
+    | None     -> { delegation_mode = CheckProofsInMaster }
+    | Skip     -> { delegation_mode = SkipProofs }
+    | Delegate -> { delegation_mode = DelegateProofsToWorkers { number_of_workers = Option.get settings.workers } }
+  in
   Hashtbl.filter_map_inplace (fun _ st ->
     Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states
 
@@ -372,7 +370,6 @@ let dispatch_method ~id method_name params : events =
   | "textDocument/didSave" -> textDocumentDidSave params; []
   | "textDocument/completion" -> textDocumentCompletion ~id params; []
   | "textDocument/hover" -> textDocumentHover ~id params; []
-  | "vscoq/configuration" -> vscoqConfiguration params; []
   | "vscoq/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
   | "vscoq/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events
   | "vscoq/stepForward" -> coqtopStepForward ~id params |> inject_dm_events
@@ -397,11 +394,18 @@ let handle_lsp_event = function
         log @@ "ui request: " ^ method_;
         let more_events = dispatch_method ~id method_ params in
         more_events
-      | None ->
-        let result = req |> member "result" in
-        let _error = req |> member "error" in
-        log @@ "got response: " ^ Yojson.Safe.pretty_to_string result;
+      | None -> 
+        if id = conf_request_id then begin
+          let result = req |> member "result" |> Settings.t_of_yojson in
+          let _error = req |> member "error" in
+          log @@ "got response: " ^ Yojson.Safe.pretty_to_string req;
+          do_configuration result;
+          []
+        end
+      else begin 
+        log @@  "got unkown response: " ^ Yojson.Safe.pretty_to_string req;
         []
+      end
 
 let pr_lsp_event = function
   | Request req ->

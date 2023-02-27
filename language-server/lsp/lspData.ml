@@ -164,3 +164,20 @@ module ConfigurationParams = struct
   type t = { items: ConfigurationItem.t list } [@@deriving yojson]
 
 end
+
+module Settings = struct
+
+  module DelegationMode = struct
+  type t = 
+    | None
+    | Skip 
+    | Delegate 
+    [@@deriving yojson]
+  end 
+
+  type t = {
+    delegation: DelegationMode.t;
+    workers: int option;
+  } [@@deriving yojson]
+
+end

@@ -136,3 +136,21 @@ module ConfigurationParams : sig
   type t = { items: ConfigurationItem.t list } [@@deriving yojson]
 
 end
+
+module Settings : sig
+
+    module DelegationMode : sig
+    type t = 
+      | None
+      | Skip 
+      | Delegate 
+      [@@deriving yojson]
+    end 
+  
+    type t = {
+      delegation: DelegationMode.t;
+      workers: int option;
+    } [@@deriving yojson]
+  
+end
+  
