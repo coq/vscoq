@@ -32,6 +32,8 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
+let conf_request_id = 3456736879
+
 let log msg = lsp_debug Pp.(fun () ->
   str @@ Format.asprintf "       [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
 
@@ -73,6 +75,16 @@ let output_json ?(trace=true) obj =
   log @@ "sent: " ^ msg;
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
+let send_configuration_request () =
+  let id = conf_request_id in
+  let method_ = "workspace/configuration" in
+  let mk_configuration_item section =
+    ConfigurationItem.({ scopeUri = None; section = Some section })
+  in
+  let items = List.map mk_configuration_item ["vscoq"] in
+  let params = ConfigurationParams.(yojson_of_t { items }) in
+  output_json Request.(yojson_of_t { id; method_; params })
+
 let do_initialize ~id params =
   let open Yojson.Safe.Util in
   let capabilities = ServerCapabilities.{
@@ -86,7 +98,8 @@ let do_initialize ~id params =
     hoverProvider = true;
   } in
   let result = Ok (`Assoc ["capabilities", ServerCapabilities.yojson_of_t capabilities]) in
-  output_json Response.(yojson_of_t {id; result})
+  output_json Response.(yojson_of_t {id; result});
+  send_configuration_request ()
 
 let do_shutdown ~id params =
   let open Yojson.Safe.Util in
@@ -334,21 +347,22 @@ let coqtopCheck ~id params =
     let params = `Assoc [ "id", `String id; "name", `String name; "statement", `String statement ] in
     output_json @@ Notification.(yojson_of_t {method_; params})
 
-let vscoqConfiguration params = 
-  let open Yojson.Safe.Util in 
-  let delegation = params |> member "delegation" |> to_string in 
-  let number_of_workers = params |> member "workers" |> to_int in
+let do_configuration settings = 
+  let open Settings in
   let open Dm.ExecutionManager in
   let options =
-    match delegation with
-    | "None"     -> { delegation_mode = CheckProofsInMaster }
-    | "Skip"     -> { delegation_mode = SkipProofs }
-    | "Delegate" -> { delegation_mode = DelegateProofsToWorkers { number_of_workers } }
-    | _ ->
-      log @@ "Ignoring call to vscoqConfiguration with unknown delegation: " ^ delegation;
-      default_options in
+    match settings.proof.delegation with
+    | None     -> { delegation_mode = CheckProofsInMaster }
+    | Skip     -> { delegation_mode = SkipProofs }
+    | Delegate -> { delegation_mode = DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers } }
+  in
   Hashtbl.filter_map_inplace (fun _ st ->
     Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states
+
+let workspaceDidChangeConfiguration params = 
+  let open Yojson.Safe.Util in 
+  let settings = params |> member "settings" |> Settings.t_of_yojson in
+  do_configuration settings
 
 let dispatch_method ~id method_name params : events =
   match method_name with
@@ -356,12 +370,12 @@ let dispatch_method ~id method_name params : events =
   | "initialized" -> []
   | "shutdown" -> do_shutdown ~id params; []
   | "exit" -> do_exit ~id params
+  | "workspace/didChangeConfiguration" -> workspaceDidChangeConfiguration params; []
   | "textDocument/didOpen" -> textDocumentDidOpen params |> inject_dm_events
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
   | "textDocument/completion" -> textDocumentCompletion ~id params; []
   | "textDocument/hover" -> textDocumentHover ~id params; []
-  | "vscoq/configuration" -> vscoqConfiguration params; []
   | "vscoq/interpretToPoint" -> coqtopInterpretToPoint ~id params |> inject_dm_events
   | "vscoq/stepBackward" -> coqtopStepBackward ~id params |> inject_dm_events
   | "vscoq/stepForward" -> coqtopStepForward ~id params |> inject_dm_events
@@ -379,11 +393,26 @@ let handle_lsp_event = function
   | Request (Some req) ->
       let open Yojson.Safe.Util in
       let id = Option.default 0 (req |> member "id" |> to_int_option) in
-      let method_name = req |> member "method" |> to_string in
-      let params = req |> member "params" in
-      log @@ "ui request: " ^ method_name;
-      let more_events = dispatch_method ~id method_name params in
-      more_events
+      let method_name = req |> member "method" |> to_string_option in
+      match method_name with
+      | Some method_ ->
+        let params = req |> member "params" in
+        log @@ "ui request: " ^ method_;
+        let more_events = dispatch_method ~id method_ params in
+        more_events
+      | None -> 
+        log @@ "got response: " ^ Yojson.Safe.pretty_to_string req;
+        if id = conf_request_id then begin
+          let result = req |> member "result" |> convert_each Settings.t_of_yojson in
+          let _error = req |> member "error" in
+          match result with
+          | [settings] -> do_configuration settings; []
+          | _ -> log "invalid settings object."; []
+        end
+      else begin 
+        log "unknown response.";
+        []
+      end
 
 let pr_lsp_event = function
   | Request req ->

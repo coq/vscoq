@@ -110,7 +110,6 @@ module ServerCapabilities = struct
   | None
   | Full
   | Incremental
-  [@@deriving yojson]
 
   let yojson_of_textDocumentSyncKind = function
   | None -> `Int 0
@@ -147,5 +146,57 @@ module Hover = struct
   type t = {
     contents: string
   } [@@deriving yojson]
+
+end
+
+module ConfigurationItem = struct
+
+  type t = {
+	  scopeUri: string option; [@yojson option]
+	  section: string option; [@yojson option]
+  } [@@deriving yojson]
+
+end
+
+module ConfigurationParams = struct
+
+  type t = { items: ConfigurationItem.t list } [@@deriving yojson]
+
+end
+
+module Settings = struct
+
+  module DelegationMode = struct
+
+  type t = 
+    | None
+    | Skip 
+    | Delegate 
+
+  let yojson_of_t = function
+  | None -> `String "None"
+  | Skip -> `String "Skip"
+  | Delegate -> `String "Delegate"
+
+  let t_of_yojson = function
+  | `String "None" -> None
+  | `String "Skip" -> Skip
+  | `String "Delegate" -> Delegate
+  | _ -> Yojson.json_error "invalid value"
+
+  end
+
+  module Proof = struct
+
+    type t = {
+      delegation: DelegationMode.t;
+      workers: int option;
+    } [@@deriving yojson] [@@yojson.allow_extra_fields]
+
+  end
+
+  type t = {
+    proof: Proof.t;
+  } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end

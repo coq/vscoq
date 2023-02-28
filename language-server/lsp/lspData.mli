@@ -121,4 +121,45 @@ module Hover : sig
     } [@@deriving yojson]
   
 end
+
+module ConfigurationItem : sig
+
+  type t = {
+	  scopeUri: string option;
+	  section: string option;
+  } [@@deriving yojson]
+
+end
+
+module ConfigurationParams : sig
+
+  type t = { items: ConfigurationItem.t list } [@@deriving yojson]
+
+end
+
+module Settings : sig
+
+    module DelegationMode : sig
+    type t = 
+      | None
+      | Skip 
+      | Delegate 
+      [@@deriving yojson]
+    end 
+
+    module Proof : sig
+  
+      type t = {
+        delegation: DelegationMode.t;
+        workers: int option;
+      } [@@deriving yojson] [@@yojson.allow_extra_fields]
+    
+    end
+  
+    type t = {
+      proof: Proof.t;
+    } [@@deriving yojson] [@@yojson.allow_extra_fields]
+
+  
+end
   
