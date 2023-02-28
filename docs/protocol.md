@@ -1,4 +1,4 @@
-git s# LSP
+# LSP
 
 vscoq uses the [language server protocol](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/). 
 
@@ -6,16 +6,22 @@ We implement a few custom verbs that we detail here.
 
 ## Configuration 
 
-We wend the configuration items needed by the server by using `vscoq/configuration`
+We handle the `workspace/configuration` and `workspace/didChangeConfiguration` notifications. 
+The settings that get sent to the server are as follows: 
 
 ```typescript
+
+enum DelegationMode {
+    none: "None", 
+    skip: "Skip, 
+    delegate: "Delegate"
+}
+
 interface Configuration {
     //Delegation mode 
-    delegate: string
+    delegate: DelegationMode
     //Number of workers if relevant
     workers: int
-    //Proof checking mode
-    coqMode: string
 }
 ```
 
