@@ -30,7 +30,7 @@ let get_init_state () =
 
 let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
-let check_mode = ref CheckMode.Manual
+let check_mode = ref Settings.Mode.Manual
 
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
@@ -77,6 +77,19 @@ let output_json ?(trace=true) obj =
   log @@ "sent: " ^ msg;
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
+let do_configuration settings = 
+  let open Settings in
+  let open Dm.ExecutionManager in
+  let options =
+    match settings.proof.delegation with
+    | None     -> { delegation_mode = CheckProofsInMaster }
+    | Skip     -> { delegation_mode = SkipProofs }
+    | Delegate -> { delegation_mode = DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers } }
+  in
+  Hashtbl.filter_map_inplace (fun _ st ->
+    Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states;
+  check_mode := settings.proof.mode
+
 let send_configuration_request () =
   let id = conf_request_id in
   let method_ = "workspace/configuration" in
@@ -86,9 +99,12 @@ let send_configuration_request () =
   let items = List.map mk_configuration_item ["vscoq"] in
   let params = ConfigurationParams.(yojson_of_t { items }) in
   output_json Request.(yojson_of_t { id; method_; params })
-
+  
 let do_initialize ~id params =
+  let open Settings in
   let open Yojson.Safe.Util in
+  let settings = params |> member "initializationOptions" |> Settings.t_of_yojson in
+  do_configuration settings;
   let capabilities = ServerCapabilities.{
     textDocumentSync = Incremental;
     completionProvider = { 
@@ -100,8 +116,7 @@ let do_initialize ~id params =
     hoverProvider = true;
   } in
   let result = Ok (`Assoc ["capabilities", ServerCapabilities.yojson_of_t capabilities]) in
-  output_json Response.(yojson_of_t {id; result});
-  send_configuration_request ()
+  output_json Response.(yojson_of_t {id; result})
 
 let do_shutdown ~id params =
   let open Yojson.Safe.Util in
@@ -166,7 +181,7 @@ let textDocumentDidOpen params =
   let st, events = Dm.DocumentManager.init vst ~opts ~uri ~text in
   let st = Dm.DocumentManager.validate_document st in
   let (st, events') = 
-    if !check_mode = CheckMode.Continuous then 
+    if !check_mode = Settings.Mode.Continuous then 
       Dm.DocumentManager.interpret_to_end st 
     else 
       (st, [])
@@ -189,7 +204,7 @@ let textDocumentDidChange params =
   let st = Hashtbl.find states uri in
   let st = Dm.DocumentManager.apply_text_edits st textEdits in
   let (st, events) = 
-    if !check_mode = CheckMode.Continuous then 
+    if !check_mode = Settings.Mode.Continuous then 
       Dm.DocumentManager.interpret_to_end st 
     else 
       (st, [])
@@ -221,7 +236,6 @@ let textDocumentHover ~id params =
     output_json @@ Response.(yojson_of_t { id; result })
   | _ -> ()
 
-
 let progress_hook uri () =
   let st = Hashtbl.find states uri in
   update_view uri st
@@ -235,7 +249,7 @@ let coqtopInterpretToPoint ~id params : (string * Dm.DocumentManager.events) =
   let (st, events) = Dm.DocumentManager.interpret_to_position st loc in
   Hashtbl.replace states uri st;
   update_view uri st;
-  if !check_mode = CheckMode.Manual then 
+  if !check_mode = Settings.Mode.Manual then 
     send_proof_view ~id st loc;
   (uri, events)
 
@@ -367,18 +381,6 @@ let coqtopCheck ~id params =
     let method_ = "vscoq/searchResult" in
     let params = `Assoc [ "id", `String id; "name", `String name; "statement", `String statement ] in
     output_json @@ Notification.(yojson_of_t {method_; params})
-
-let do_configuration settings = 
-  let open Settings in
-  let open Dm.ExecutionManager in
-  let options =
-    match settings.proof.delegation with
-    | None     -> { delegation_mode = CheckProofsInMaster }
-    | Skip     -> { delegation_mode = SkipProofs }
-    | Delegate -> { delegation_mode = DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers } }
-  in
-  Hashtbl.filter_map_inplace (fun _ st ->
-    Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states
 
 let workspaceDidChangeConfiguration params = 
   let open Yojson.Safe.Util in 

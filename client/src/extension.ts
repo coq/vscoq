@@ -1,4 +1,3 @@
-import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
 import {workspace, window, commands, ExtensionContext,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
@@ -8,11 +7,10 @@ import {workspace, window, commands, ExtensionContext,
 import {
   LanguageClientOptions,
   ServerOptions,
-  VersionedTextDocumentIdentifier,
 } from 'vscode-languageclient/node';
 
 import Client from './client';
-import { sendConfiguration, updateServerOnConfigurationChange } from './configuration';
+import { updateServerOnConfigurationChange } from './configuration';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
@@ -46,6 +44,7 @@ export function activate(context: ExtensionContext) {
 
 	let clientOptions: LanguageClientOptions = {
 		documentSelector: [{ scheme: 'file', language: 'coq' }],
+        initializationOptions: config
 	};
 
 	// Create the language client and start the client.

@@ -185,12 +185,31 @@ module Settings = struct
   | _ -> Yojson.json_error "invalid value"
 
   end
+  
+  module Mode = struct
+
+    type t =
+    | Continuous 
+    | Manual
+    [@@deriving yojson]
+      
+    let yojson_of_t = function
+    | Manual -> `Int 0
+    | Continuous -> `Int 1
+  
+    let t_of_yojson = function
+    | `Int 0 -> Manual
+    | `Int 1 -> Continuous
+    | _ -> Yojson.json_error @@ "invalid value "
+  
+  end
 
   module Proof = struct
 
     type t = {
       delegation: DelegationMode.t;
       workers: int option;
+      mode: Mode.t;
     } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
   end
@@ -198,22 +217,5 @@ module Settings = struct
   type t = {
     proof: Proof.t;
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
-
-end
-module CheckMode = struct
-
-  type t =
-  | Continuous 
-  | Manual
-  [@@deriving yojson]
-    
-  let yojson_of_t = function
-  | Manual -> `Int 0
-  | Continuous -> `Int 1
-
-  let t_of_yojson = function
-  | `Int 0 -> Manual
-  | `Int 1 -> Continuous
-  | _ -> Yojson.json_error @@ "invalid value "
 
 end
