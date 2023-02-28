@@ -110,7 +110,6 @@ module ServerCapabilities = struct
   | None
   | Full
   | Incremental
-  [@@deriving yojson]
 
   let yojson_of_textDocumentSyncKind = function
   | None -> `Int 0
@@ -168,12 +167,24 @@ end
 module Settings = struct
 
   module DelegationMode = struct
+
   type t = 
     | None
     | Skip 
     | Delegate 
-    [@@deriving yojson] 
-  end 
+
+  let yojson_of_t = function
+  | None -> `String "None"
+  | Skip -> `String "Skip"
+  | Delegate -> `String "Delegate"
+
+  let t_of_yojson = function
+  | `String "None" -> None
+  | `String "Skip" -> Skip
+  | `String "Delegate" -> Delegate
+  | _ -> Yojson.json_error "invalid value"
+
+  end
 
   module Proof = struct
 
@@ -181,7 +192,7 @@ module Settings = struct
       delegation: DelegationMode.t;
       workers: int option;
     } [@@deriving yojson] [@@yojson.allow_extra_fields]
-  
+
   end
 
   type t = {
