@@ -16,10 +16,7 @@ open Gramlib
 open Types
 open Lsp.LspData
 
-let debug_document = CDebug.create ~name:"vscoq.document" ()
-
-let log msg = debug_document Pp.(fun () ->
-  str @@ Format.asprintf "         [%d] %s" (Unix.getpid ()) msg)
+let Log log = Log.mk_log "document"
 
 type text_edit = Range.t * string
 

@@ -14,10 +14,7 @@
 
 open Types
 
-let debug_scheduler = CDebug.create ~name:"vscoq.scheduler" ()
-
-let log msg = debug_scheduler Pp.(fun () ->
-  str @@ Format.asprintf "        [%d] %s" (Unix.getpid ()) msg)
+let Log log = Log.mk_log "scheduler"
 
 module SM = CMap.Make (Stateid)
 

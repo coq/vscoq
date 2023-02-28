@@ -18,3 +18,10 @@ type sentence_id_set = Stateid.Set.t
 type ast = Synterp.vernac_entry_control
 
 type text_edit = Range.t * string
+
+type link = {
+  write_to :  Unix.file_descr;
+  read_from:  Unix.file_descr;
+}
+
+type 'a log = Log : 'a -> 'a log

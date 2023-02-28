@@ -12,10 +12,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let debug_par = CDebug.create ~name:"vscoq.parTactic" ()
+open Types
 
-let log msg = debug_par Pp.(fun () ->
-  str @@ Format.asprintf "        [%d] %s" (Unix.getpid ()) msg)
+let Log log = Log.mk_log "parTactic"
 
 type sentence_id = Stateid.t
 

@@ -15,10 +15,7 @@
 open Scheduler
 open Types
 
-let debug_em = CDebug.create ~name:"vscoq.executionManager" ()
-
-let log msg = debug_em Pp.(fun () ->
-  str @@ Format.asprintf " [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
+let Log log = Log.mk_log "executionManager"
 
 type execution_status = DelegationManager.execution_status =
   | Success of Vernacstate.t option
@@ -260,6 +257,7 @@ let worker_execute ~doc_id last_step_id ~send_back (vs,events) = function
     (vs, events)
   | PExec (id,ast,synterp) ->
     let vs = { vs with Vernacstate.synterp } in
+    log ("worker interp " ^ Stateid.to_string id);
     let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
     let v = if Stateid.equal id last_step_id then ensure_proof_over v else v in
     send_back (ProofJob.UpdateExecStatus (id,purge_state v));
