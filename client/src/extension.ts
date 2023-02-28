@@ -80,8 +80,8 @@ export function activate(context: ExtensionContext) {
 	client.onReady()
 	.then(() => {
 		initializeDecorations(context);
-        //send the initial config message
-        sendConfiguration(context, client);
+        
+        // I think vscode should handle this automatically, TODO: try again after implemeting client capabilities
         context.subscriptions.push(workspace.onDidChangeConfiguration(event => updateServerOnConfigurationChange(event, context, client)));
 		
         client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {

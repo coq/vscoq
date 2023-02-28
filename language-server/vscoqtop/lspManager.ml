@@ -359,12 +359,18 @@ let do_configuration settings =
   Hashtbl.filter_map_inplace (fun _ st ->
     Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states
 
+let workspaceDidChangeConfiguration params = 
+  let open Yojson.Safe.Util in 
+  let settings = params |> member "settings" |> Settings.t_of_yojson in
+  do_configuration settings
+
 let dispatch_method ~id method_name params : events =
   match method_name with
   | "initialize" -> do_initialize ~id params; []
   | "initialized" -> []
   | "shutdown" -> do_shutdown ~id params; []
   | "exit" -> do_exit ~id params
+  | "workspace/didChangeConfiguration" -> workspaceDidChangeConfiguration params; []
   | "textDocument/didOpen" -> textDocumentDidOpen params |> inject_dm_events
   | "textDocument/didChange" -> textDocumentDidChange params |> inject_dm_events
   | "textDocument/didSave" -> textDocumentDidSave params; []
