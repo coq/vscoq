@@ -46,20 +46,34 @@ let vscoqtop_specific_usage = {
   extra_options = "";
 }
 
+let init_log =
+  (* we put the time to make the file names easy to sort *)
+  try Some (open_out @@ Filename.temp_file (Printf.sprintf "vscoq_init_log.%f." (Unix.gettimeofday())) ".txt")
+  with _ -> None
+
+let init_log str =
+  Option.iter (fun oc ->
+      output_string oc str;
+      output_char oc '\n')
+    init_log
+
 let _ =
   Coqinit.init_ocaml ();
   let initialization_feeder = Feedback.add_feeder (fun fb ->
     match fb.Feedback.contents with
-    | Feedback.Message(_,_,msg) -> Printf.eprintf "%s\n" (Pp.string_of_ppcmds msg)
+    | Feedback.Message(_,_,msg) -> init_log (Printf.sprintf "%s" (Pp.string_of_ppcmds msg))
     | _ -> ()
   ) in
   let initial_args =
-    match CoqProject_file.find_project_file ~from:(Unix.getcwd ()) ~projfile_name:"_CoqProject" with
-    | None -> Coqargs.default
+    let cwd = Unix.getcwd () in
+    match CoqProject_file.find_project_file ~from:cwd ~projfile_name:"_CoqProject" with
+    | None ->
+      init_log (Printf.sprintf "No project file found in %s" cwd);
+      Coqargs.default
     | Some f ->
       let project = CoqProject_file.read_project_file ~warning_fn:(fun _ -> ()) f in
       let args = CoqProject_file.coqtop_args_from_project project in
-      log @@ "Args from project file: " ^ String.concat " " args;
+      init_log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
       fst @@ Coqargs.parse_args ~usage:vscoqtop_specific_usage ~init:Coqargs.default args in
   let opts, () = Coqinit.parse_arguments ~usage:vscoqtop_specific_usage ~initial_args ~parse_extra:(fun x -> (), x) () in
   let injections = Coqinit.init_runtime opts in
