@@ -27,7 +27,12 @@ type state = {
   document : Document.document;
   execution_state : ExecutionManager.state;
   observe_loc : int option; (* TODO materialize observed loc and line-by-line execution status *)
-}
+} 
+
+let state_to_string st = 
+  match st.observe_loc with
+  | None -> Format.asprintf "{%s no_observe_loc}" st.uri
+  | Some loc -> Format.asprintf "{%s %d}" st.uri loc
 
 let set_ExecutionManager_options st o =
   { st with execution_state = ExecutionManager.set_options st.execution_state o }
@@ -196,18 +201,24 @@ let interpret_to_position state pos =
   let loc = Document.position_to_loc state.document pos in
   interpret_to_loc state loc
 
-let interpret_to_previous doc =
-  match doc.observe_loc with
-  | None -> (doc, [])
+let interpret_to_previous st =
+  match st.observe_loc with
+  | None -> (st, [])
   | Some loc ->
-    interpret_to_loc doc (loc-1)
+    match Document.find_sentence_before st.document loc with
+    | None -> (st, [])
+    | Some {id; stop; start } -> 
+      interpret_to_loc st (start-1)
 
-let interpret_to_next doc = (doc, []) (* TODO
-  match doc.executed_loc with
-  | None -> Lwt.return (doc, None, [])
-  | Some stop ->
-    interpret_to_after_loc doc (stop+1)
-    *)
+let interpret_to_next st =  
+  match st.observe_loc with
+  | None -> (st, [])
+  | Some loc ->
+    match Document.find_sentence_after st.document loc with
+    | None -> (st, [])
+    | Some {id; stop; start } -> 
+      interpret_to_loc st (stop)
+   
 
 let interpret_to_end state =
   interpret_to_loc state (Document.end_loc state.document)

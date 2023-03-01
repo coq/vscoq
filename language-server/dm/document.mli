@@ -68,6 +68,9 @@ val find_sentence : document -> int -> sentence option
 val find_sentence_before : document -> int -> sentence option
 (** [find_sentence_before doc loc] finds the last sentence before the loc *)
 
+val find_sentence_after : document -> int -> sentence option
+(** [find_sentence_after doc loc] finds the first sentence after the loc *)
+
 val parsed_loc : document -> int
 (** the last loc of the document which was parsed *)
 
