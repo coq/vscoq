@@ -1,9 +1,16 @@
+## 0.3.8
+* client and server are webpacked (#411 by @4ever2 and @fakusb)
+* fix completion on last line (##409 by @4ever2)
+* preserve printing width on undo (#405 by @4ever2)
+* fix error location for Windows (#363 by @4ever2 and @thery)
+* fix for snippet (#358  #338 by @4ever2)
+* add color to more keywords (#336 by @dlesbre)
 ## 0.3.7
-* add an option to disable "Proof View Diff" (#321 by Blaisorblade)
-* add logo as icon to coq file (#302 by dlesbre)
-* add hover provider (#300 by dlesbre)
-* add color to more keywords (#299 by dlesbre)
-* various improvements and consolidations (by Huỳnh Trần Khanh)
+* add an option to disable "Proof View Diff" (#321 by @Blaisorblade)
+* add logo as icon to coq file (#302 by @dlesbre)
+* add hover provider (#300 by @dlesbre)
+* add color to more keywords (#299 by @dlesbre)
+* various improvements and consolidations (by @Huỳnh Trần Khanh)
 * fixed leaking error message when only shelved goals remain (#268 by fakusb)
 ## 0.3.6
 * compatibility with Coq 8.15 (#264, by @quarkcool and @fakusb)
