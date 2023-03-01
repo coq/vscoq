@@ -35,14 +35,14 @@ export default class Client extends LanguageClient {
         const config = vscode.workspace.getConfiguration('vscoq.proof');
 
         editors.map(editor => {/* 
-            editor.setDecorations(decorations.parsed, parsedRange);
-            editor.setDecorations(decorations.processing, processingRange); */
-            editor.setDecorations(
-                config.mode === 0 
-                ? decorationsManual.processed 
-                : decorationsContinuous.processed, 
-                processedRange
-            );
+            editor.setDecorations(decorations.parsed, parsedRange);*/
+            if(config.mode === 0) {
+                editor.setDecorations(decorationsManual.processing, processingRange); 
+                editor.setDecorations(decorationsManual.processed, processedRange);
+            } else {
+                editor.setDecorations(decorationsContinuous.processing, processingRange); 
+                editor.setDecorations(decorationsContinuous.processed, processedRange);
+            }
 
         });
     }

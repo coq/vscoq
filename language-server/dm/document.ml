@@ -315,7 +315,7 @@ end = struct
     | _ -> None
 
   let find_sentence_after parsed loc = 
-    match LM.find_first_opt (fun k -> loc <= k) parsed.sentences_by_start with
+    match LM.find_first_opt (fun k -> loc <= k) parsed.sentences_by_end with
     | Some (_, sentence) -> Some sentence
     | _ -> None
 

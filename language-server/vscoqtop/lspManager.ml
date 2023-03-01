@@ -249,7 +249,6 @@ let coqtopInterpretToPoint ~id params : (string * Dm.DocumentManager.events) =
   let (st, events) = Dm.DocumentManager.interpret_to_position st loc in
   Hashtbl.replace states uri st;
   update_view uri st;
-  log @@ "New state: " ^ Dm.DocumentManager.state_to_string st;
   if !check_mode = Settings.Mode.Manual then 
     send_proof_view ~id st loc;
   (uri, events)
@@ -262,7 +261,6 @@ let coqtopStepBackward ~id params : (string * Dm.DocumentManager.events) =
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
   Hashtbl.replace states uri st;
   update_view uri st;
-  log @@ "New state: " ^ Dm.DocumentManager.state_to_string st;
   (uri,events)
 
 let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
@@ -273,7 +271,6 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
   Hashtbl.replace states uri st;
   update_view uri st;
-  log @@ "New state: " ^ Dm.DocumentManager.state_to_string st;
   (uri,events)
   
   let make_CompletionItem (label, typ, path) : CompletionItem.t = 
@@ -460,7 +457,7 @@ let handle_event = function
       let (ost, events) = Dm.DocumentManager.handle_event e st in
       begin match ost with
         | None -> ()
-        | Some st->
+        | Some st ->
           Hashtbl.replace states uri st;
           update_view uri st
       end;
