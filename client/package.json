@@ -124,7 +124,7 @@
                 "Manual",
                 "Continuous"
             ],
-            "default": 0,
+            "default": 1,
             "description": "Configures the proof checking mode for Coq."
           },
           "vscoq.proof.delegation": {

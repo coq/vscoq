@@ -12,25 +12,18 @@ async function openTextFile(file : string) {
   await vscode.window.showTextDocument(doc);
 }
 
-//TODO: Find a way to make this conditionnal (couldn't get the vscoq config)
-function interpretToEnd() {
-    vscode.commands.executeCommand('vscoq.interpretToEnd');
-    return sleep(1000);
-}
-
 suite('Should get diagnostics', function () {
 
-	this.timeout(50000);
+	this.timeout(30000);
 
 	test('Diagnoses an undefined ref error', async () => {
 
-		await openTextFile('basic.v');
+        await openTextFile('basic.v');
 
 		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
 		await ext.activate();
-
+        
 		await sleep(10000); // Wait for server initialization
-        await interpretToEnd();
 
 		const allDiagnostics = vscode.languages.getDiagnostics();
 
@@ -51,18 +44,17 @@ suite('Should get diagnostics', function () {
 
 	test('Opens two files and gets feedback', async () => {
 
-		await openTextFile('basic.v');
 
 		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
 		await ext.activate();
 
+        await openTextFile('basic.v');
+
 		await sleep(10000); // Wait for server initialization
-        await interpretToEnd();
 
 		await openTextFile('warn.v');
 
 		await sleep(10000); // Wait for server initialization
-        await interpretToEnd();
 
 		const allDiagnostics = vscode.languages.getDiagnostics();
 
