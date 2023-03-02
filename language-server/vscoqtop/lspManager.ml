@@ -249,8 +249,6 @@ let coqtopInterpretToPoint ~id params : (string * Dm.DocumentManager.events) =
   let (st, events) = Dm.DocumentManager.interpret_to_position st loc in
   Hashtbl.replace states uri st;
   update_view uri st;
-  if !check_mode = Settings.Mode.Manual then 
-    send_proof_view ~id st loc;
   (uri, events)
 
 let coqtopStepBackward ~id params : (string * Dm.DocumentManager.events) =
@@ -325,7 +323,7 @@ let coqtopUpdateProofView ~id params =
   let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
-  let loc = params |> member "position" |> parse_loc in
+  let loc = params |> member "position" |> to_option parse_loc in
   let st = Hashtbl.find states uri in
   send_proof_view ~id st loc
 

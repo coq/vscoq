@@ -16,7 +16,7 @@ export interface Goal {
 
 export interface UpdateProofViewRequest {
     textDocument: VersionedTextDocumentIdentifier;
-    position: Position;
+    position: Nullable<Position>;
 }
 
 interface UpdateProofViewResponseType {

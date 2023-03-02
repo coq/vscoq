@@ -12,47 +12,26 @@ import GoalPanel from './panels/GoalPanel';
 
 import Client from './client';
 import { InterpretToPointRequest, UpdateProofViewResponse } from './protocol/types';
+import { makeInterpretToPointRequestParams, makeVersionedDocumentId } from './utilities/requests';
 
 export const sendInterpretToPoint = (editor: TextEditor,  client: Client) => {
-    const uri = editor.document.uri; 
-    const version = editor.document.version; 
-    const textDocument = VersionedTextDocumentIdentifier.create(uri.toString(), version);
-    const position = editor.selection.active;
-    
     const req = new RequestType<InterpretToPointRequest, UpdateProofViewResponse, void>("vscoq/interpretToPoint");
-    const params: InterpretToPointRequest = {textDocument, position};
-
-    if(!GoalPanel.currentPanel) {commands.executeCommand('vscoq.displayGoals'); };
-
-    client.sendRequest(req, params).then(
-        (response: UpdateProofViewResponse) => {
-            GoalPanel.handleProofViewResponse(response);
-        }
-    );/* 
-    client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position}); */
+    const params = makeInterpretToPointRequestParams(editor);
+    client.sendRequest(req, params);
 };
 
 export const sendInterpretToEnd = (editor: TextEditor,  client: Client) => {
-    const uri = editor.document.uri; 
-    const version = editor.document.version; 
-    const textDocument = VersionedTextDocumentIdentifier.create(uri.toString(), version);
-    if(!GoalPanel.currentPanel) {commands.executeCommand('vscoq.displayGoals'); };
+    const textDocument = makeVersionedDocumentId(editor);
     client.sendNotification("vscoq/interpretToEnd", {textDocument: textDocument});
 };
 
 export const sendStepForward = (editor: TextEditor,  client: Client) => {
-    const uri = editor.document.uri; 
-    const version = editor.document.version; 
-    const textDocument = VersionedTextDocumentIdentifier.create(uri.toString(), version);
-    if(!GoalPanel.currentPanel) {commands.executeCommand('vscoq.displayGoals'); };
+    const textDocument = makeVersionedDocumentId(editor);
     client.sendNotification("vscoq/stepForward", {textDocument: textDocument});
 };
 
 export const sendStepBackward = (editor: TextEditor,  client: Client) => {
-    const uri = editor.document.uri; 
-    const version = editor.document.version; 
-    const textDocument = VersionedTextDocumentIdentifier.create(uri.toString(), version);
-    if(!GoalPanel.currentPanel) {commands.executeCommand('vscoq.displayGoals'); };
+    const textDocument = makeVersionedDocumentId(editor);
     client.sendNotification("vscoq/stepBackward", {textDocument: textDocument});
 };
 

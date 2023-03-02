@@ -23,7 +23,7 @@ let get_hyps st loc =
         (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
     hyps in
 
-  DocumentManager.get_proof st loc
+  DocumentManager.get_proof st (Some loc)
     |> Option.map (fun Proof.{ goals; sigma; _ } -> Option.cata (mk_hyps sigma) [] (List.nth_opt goals 0)) 
  
 let get_completion_items ~id params st loc =

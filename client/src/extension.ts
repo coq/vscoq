@@ -1,12 +1,12 @@
 import {workspace, window, commands, ExtensionContext,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
-  TextEditor,
+  TextEditor, 
 } from 'vscode';
 
 import {
   LanguageClientOptions,
-  ServerOptions,
+  ServerOptions, VersionedTextDocumentIdentifier
 } from 'vscode-languageclient/node';
 
 import Client from './client';
@@ -14,13 +14,14 @@ import { updateServerOnConfigurationChange } from './configuration';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { SearchCoqResult } from './protocol/types';
+import { SearchCoqResult, UpdateProofViewRequest } from './protocol/types';
 import { 
     sendInterpretToPoint,
     sendInterpretToEnd,
     sendStepForward,
     sendStepBackward
 } from './manualChecking';
+import { makeCursorPositionUpdateProofViewRequestParams, makeExecutionUpdateProofViewRequestParams } from './utilities/requests';
 
 
 let client: Client;
@@ -57,12 +58,6 @@ export function activate(context: ExtensionContext) {
     const searchProvider = new SearchViewProvider(context.extensionUri, client);
     context.subscriptions.push(window.registerWebviewViewProvider(SearchViewProvider.viewType, searchProvider));
 
-    //register the command opening the goal view
-    const displayGoals = commands.registerTextEditorCommand('vscoq.displayGoals', (editor) => {
-		GoalPanel.render(editor, context.extensionUri);
-	});
-	context.subscriptions.push(displayGoals);
-
     const launchQuery = (editor: TextEditor, type: string)=> {
         const selection = editor.selection;
         const {end, start} = selection; 
@@ -83,6 +78,10 @@ export function activate(context: ExtensionContext) {
     registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
     registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));
     registerVscoqTextCommand('stepBackward', (editor) => sendStepBackward(editor, client));
+    registerVscoqTextCommand('displayGoals', (editor) => {
+        const reqParams = makeExecutionUpdateProofViewRequestParams(editor);
+        GoalPanel.refreshGoalPanel(context.extensionUri, editor, client, reqParams);
+    });
 
 	client.onReady()
 	.then(() => {
@@ -100,19 +99,10 @@ export function activate(context: ExtensionContext) {
         });
 
         let goalsHook = window.onDidChangeTextEditorSelection(
-            (evt: TextEditorSelectionChangeEvent) => {
-
-                if (evt.textEditor.document.languageId !== "coq") { return; };
-                
-                //Don't update on manual mode
-                if(workspace.getConfiguration('vscoq.proof').mode === 0) {return; }
-
-                if (evt.kind === TextEditorSelectionChangeKind.Mouse || evt.kind === TextEditorSelectionChangeKind.Keyboard) {
-                    
-                    if(!GoalPanel.currentPanel) {commands.executeCommand('vscoq.displayGoals'); };
-                    
-                    GoalPanel.sendProofViewRequest(client, evt.textEditor.document.uri, 
-                        evt.textEditor.document.version, evt.textEditor.selection.active);
+            (evt: TextEditorSelectionChangeEvent) => {                    
+                const reqParams = makeCursorPositionUpdateProofViewRequestParams(evt);
+                if(reqParams !== null) {
+                    GoalPanel.refreshGoalPanel(context.extensionUri, evt.textEditor, client, reqParams);
                 }
             }
         );

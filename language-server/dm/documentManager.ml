@@ -145,13 +145,6 @@ let interpret_to_loc state loc : (state * event Sel.event list) =
       if CList.is_empty todo then
         (state, [])
       else
-      (*
-      let executed_loc = Some stop in
-      let proof_data = match ExecutionManager.get_proofview st id with
-        | None -> None
-        | Some pv -> let pos = Document.position_of_loc state.document stop in Some (pv, pos)
-      in
-      *)
         (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
 
 let interpret_to state id : (state * event Sel.event list) =
@@ -193,7 +186,11 @@ let interpret_to_previous st =
 
 let interpret_to_next st =
   match st.observe_id with
-  | None -> (st, [])
+  | None -> 
+    begin match Document.find_sentence st.document 0 with
+    | None -> (st, []) (*The document is empty*)
+    | Some {id} -> interpret_to st id
+    end
   | Some id ->
     match Document.get_sentence st.document id with
     | None -> (st, []) (* TODO error? *)
@@ -202,8 +199,10 @@ let interpret_to_next st =
       | None -> (st, [])
       | Some {id } -> interpret_to st id
 
-let interpret_to_end state =
-  interpret_to_loc state (Document.end_loc state.document)
+let interpret_to_end st =
+  match Document.get_last_sentence st.document with 
+  | None -> (st, [])
+  | Some {id} -> interpret_to st id
 
 let retract state loc =
   match Option.bind state.observe_id (Document.get_sentence state.document) with
@@ -247,11 +246,14 @@ let handle_event ev st =
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
 
 let get_proof st pos =
-  let loc = Document.position_to_loc st.document pos in
-  match Document.find_sentence_before st.document loc with
-  | None -> None
-  | Some sentence ->
-    ExecutionManager.get_proofview st.execution_state sentence.id
+  let id_of_pos pos =
+    let loc = Document.position_to_loc st.document pos in
+    match Document.find_sentence_before st.document loc with
+    | None -> None
+    | Some { id } -> Some id
+  in
+  let oid = Option.cata id_of_pos st.observe_id pos in
+  Option.bind oid (ExecutionManager.get_proofview st.execution_state)
 
 let get_context st pos =
   let loc = Document.position_to_loc st.document pos in

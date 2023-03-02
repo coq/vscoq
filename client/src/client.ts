@@ -37,10 +37,10 @@ export default class Client extends LanguageClient {
         editors.map(editor => {/* 
             editor.setDecorations(decorations.parsed, parsedRange);*/
             if(config.mode === 0) {
-                editor.setDecorations(decorationsManual.processing, processingRange); 
+                //editor.setDecorations(decorationsManual.processing, processingRange); 
                 editor.setDecorations(decorationsManual.processed, processedRange);
             } else {
-                editor.setDecorations(decorationsContinuous.processing, processingRange); 
+                //editor.setDecorations(decorationsContinuous.processing, processingRange); 
                 editor.setDecorations(decorationsContinuous.processed, processedRange);
             }
 

@@ -1,5 +1,5 @@
 import { Disposable, Webview, WebviewPanel, window, workspace, Uri, ViewColumn, TextEditor, Position } from "vscode";
-import { UpdateProofViewRequest, UpdateProofViewResponse } from '../protocol/types';
+import { UpdateProofViewRequest, UpdateProofViewResponse, } from '../protocol/types';
 import {
   RequestType,
   VersionedTextDocumentIdentifier,
@@ -48,6 +48,9 @@ export default class GoalPanel {
 
     // Set an event listener to listen for messages passed from the webview context
     this._setWebviewMessageListener(this._panel.webview);
+
+    //init the app settings
+    this._initWebAppSettings(this._panel.webview);
   }
 
   /**
@@ -56,7 +59,7 @@ export default class GoalPanel {
    *
    * @param extensionUri The URI of the directory containing the extension.
    */
-  public static render(editor: TextEditor, extensionUri: Uri) {
+  public static render(editor: TextEditor, extensionUri: Uri, callback?: (panel: GoalPanel) => any) {
 
     //Get the correct view column
     let column = editor && editor.viewColumn ? editor.viewColumn + 1 : ViewColumn.Two;
@@ -86,7 +89,9 @@ export default class GoalPanel {
       );
 
       GoalPanel.currentPanel = new GoalPanel(panel, extensionUri);
-      GoalPanel._initWebAppSettings();
+      if(callback) {
+        callback(GoalPanel.currentPanel);
+      }
 
     }
   }
@@ -109,31 +114,37 @@ export default class GoalPanel {
     }
   }
 
+  // /////////////////////////////////////////////////////////////////////////////
+  // Create the goal panel if it doesn't exit and then send request
+  // /////////////////////////////////////////////////////////////////////////////
+  public static refreshGoalPanel(extensionUri: Uri, editor: TextEditor, client: LanguageClient, reqParams: UpdateProofViewRequest) {
+     
+    this._channel.appendLine("Refreshing goal panel");
+    if(!GoalPanel.currentPanel) {
+        GoalPanel.render(editor, extensionUri, (goalPanel) => {
+            this._channel.appendLine("Sending request with position: " + reqParams.position);
+            goalPanel._sendProofViewRequest(client, reqParams);
+        });
+    }
+    else {
+        GoalPanel.currentPanel._sendProofViewRequest(client, reqParams);
+    }
+
+  }
 
   // /////////////////////////////////////////////////////////////////////////////
   // Send a request to the server to update the current goals
   // /////////////////////////////////////////////////////////////////////////////
-  public static sendProofViewRequest(client: LanguageClient, uri: Uri, version: number, position: Position) {
+  private _sendProofViewRequest(client: LanguageClient, params: UpdateProofViewRequest) {
     const req = new RequestType<UpdateProofViewRequest, UpdateProofViewResponse, void>("vscoq/updateProofView");
-    let textDocument = VersionedTextDocumentIdentifier.create(
-      uri.toString(),
-      version
-    );
-    const params: UpdateProofViewRequest = { textDocument, position };
     client.sendRequest(req, params).then(
-      (response : UpdateProofViewResponse) => this.handleProofViewResponse(response)
+      (response : UpdateProofViewResponse) => this._handleProofViewResponse(response)
     );
   }
 
-  public static handleProofViewResponse(response: UpdateProofViewResponse) {
-    GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "renderProofView", "proofView": response });    
+  private _handleProofViewResponse(response: UpdateProofViewResponse) {
+    this._panel.webview.postMessage({ "command": "renderProofView", "proofView": response });    
   };
-
-  private static _initWebAppSettings() {
-    const config = workspace.getConfiguration('vscoq.goals');
-    GoalPanel.currentPanel?._panel.webview.postMessage({ "command": "initAppSettings", "text": config.display });
-  };
-
   
   /**
    * Defines and returns the HTML that should be rendered within the webview panel.
@@ -173,12 +184,17 @@ export default class GoalPanel {
     `;
   }
 
+
+  private _initWebAppSettings(webview: Webview) {
+    const config = workspace.getConfiguration('vscoq.goals');
+    webview.postMessage({ "command": "initAppSettings", "text": config.display });
+  };
+
   /**
    * Sets up an event listener to listen for messages passed from the webview context and
    * executes code based on the message that is recieved.
    *
    * @param webview A reference to the extension webview
-   * @param context A reference to the extension context
    */
   private _setWebviewMessageListener(webview: Webview) {
     webview.onDidReceiveMessage(
@@ -189,10 +205,6 @@ export default class GoalPanel {
         switch (command) {
             // Add more switch case statements here as more webview message commands
             // are created within the webview context (i.e. inside media/main.js)
-            case "coqSearch":
-                window.showInformationMessage(text);
-                return;
-                
         }
       },
       undefined,
