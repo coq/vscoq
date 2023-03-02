@@ -3,12 +3,13 @@
   "displayName": "VsCoq",
   "description": "VsCoq is an extension for Visual Studio Code with support for the Coq Proof Assistant",
   "publisher": "coq-community",
-  "license" : "MIT",
+  "license": "MIT",
   "version": "2.0.0",
   "engines": {
     "vscode": "^1.74.0"
   },
   "dependencies": {
+    "compare-versions": "^6.0.0-rc.1",
     "vscode-languageclient": "^7.0.0"
   },
   "categories": [

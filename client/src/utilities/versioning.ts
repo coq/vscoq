@@ -1,10 +1,7 @@
 import { window, ExtensionContext } from "vscode";
+import { compareVersions } from "compare-versions";
 import Client from "../client";
 
-
-const compatibilityMap = new Map<string, string[]>([
-    ['2.0.0', ['1.0.0']]
-]);
 
 export const checkVersion = (client: Client, context: ExtensionContext) => {
     const extensionVersion = context.extension.packageJSON.version;
@@ -26,10 +23,12 @@ export const checkVersion = (client: Client, context: ExtensionContext) => {
 
 };
 
+//We will add version ranges as we start releasing
 const checkCompat = (clientVersion: string, serverVersion: string|undefined) => {
-    const compatibleVersions = compatibilityMap.get(clientVersion);
-    if(compatibleVersions !== undefined && serverVersion !== undefined) {
-        return (compatibleVersions.includes(serverVersion));
+    if(serverVersion !== undefined) {
+        if(compareVersions(clientVersion, '1.0.0') >= 1) {
+            return compareVersions(serverVersion, '1.0.0') >= 1;
+        }
     }
     return false;
 };
