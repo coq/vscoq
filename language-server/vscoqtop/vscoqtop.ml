@@ -48,7 +48,7 @@ let vscoqtop_specific_usage = {
 
 let init_log =
   (* we put the time to make the file names easy to sort *)
-  try Some (open_out @@ Filename.temp_file (Printf.sprintf "vscoq_init_log.%f." (Unix.gettimeofday())) ".txt")
+  try Some (open_out @@ Filename.temp_file "vscoq_init_log." ".txt")
   with _ -> None
 
 let init_log str =
