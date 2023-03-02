@@ -114,6 +114,24 @@ module ServerCapabilities : sig
 
 end
 
+module ServerInfo : sig
+
+    type t = {
+      name: string; 
+      version: string; 
+    } [@@deriving yojson]
+
+end
+
+module InitializeResult : sig
+  
+  type t = {
+    capabilities: ServerCapabilities.t; 
+    serverInfo: ServerInfo.t;
+  } [@@deriving yojson]
+
+end
+
 module Hover : sig
     
     type t = {

@@ -11,6 +11,7 @@ import {
 
 import Client from './client';
 import { updateServerOnConfigurationChange } from './configuration';
+import { checkVersion } from './utilities/versioning';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
@@ -86,6 +87,9 @@ export function activate(context: ExtensionContext) {
 
 	client.onReady()
 	.then(() => {
+
+        checkVersion(client, context);
+
 		initializeDecorations(context);
         
         // I think vscode should handle this automatically, TODO: try again after implemeting client capabilities

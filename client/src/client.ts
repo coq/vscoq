@@ -29,6 +29,10 @@ export default class Client extends LanguageClient {
 
     };
 
+    public writeToChannel(message: string) {
+        this._channel.appendLine(message);
+    };
+
     public handleHighlights(uri: String, parsedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
         const editors = this.getDocumentEditors(uri);
         
