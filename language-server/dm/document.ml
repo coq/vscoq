@@ -207,14 +207,12 @@ end = struct
   type t = {
     sentences_by_id : sentence SM.t;
     sentences_by_end : sentence LM.t;
-    sentences_by_start : sentence LM.t;
     schedule : Scheduler.schedule;
   }
 
   let empty = {
     sentences_by_id = SM.empty;
     sentences_by_end = LM.empty;
-    sentences_by_start = LM.empty;
     schedule = Scheduler.initial_schedule;
   }
 
@@ -263,7 +261,6 @@ end = struct
     (* FIXME may invalidate scheduler_state_XXX for following sentences -> propagate? *)
     let sentence = { start; stop; ast; id; synterp_state; scheduler_state_before; scheduler_state_after } in
     { sentences_by_end = LM.add stop sentence parsed.sentences_by_end;
-      sentences_by_start = LM.add start sentence parsed.sentences_by_start;
       sentences_by_id = SM.add id sentence parsed.sentences_by_id;
       schedule
     }, scheduler_state_after
@@ -273,21 +270,18 @@ end = struct
     | None -> parsed
     | Some sentence ->
       let sentences_by_id = SM.remove id parsed.sentences_by_id in
-      let sentences_by_start = LM.remove sentence.start parsed.sentences_by_start in
       let sentences_by_end = LM.remove sentence.stop parsed.sentences_by_end in
       (* TODO clean up the schedule and free cached states *)
-      { parsed with sentences_by_id; sentences_by_end; sentences_by_start; }
+      { parsed with sentences_by_id; sentences_by_end; }
 
   let remove_sentences_after parsed loc =
     log @@ "Removing sentences after loc " ^ string_of_int loc;
     let (before,ov,after) = LM.split loc parsed.sentences_by_end in
     let removed = Option.cata (fun v -> LM.add loc v after) after ov in
-    let removed_start = LM.fold (fun _ sentence acc -> Int.Set.add sentence.start acc) removed Int.Set.empty in
     let removed = LM.fold (fun _ sentence acc -> Stateid.Set.add sentence.id acc) removed Stateid.Set.empty in
     let sentences_by_id = Stateid.Set.fold (fun id m -> log @@ "Remove sentence (after) " ^ Stateid.to_string id; SM.remove id m) removed parsed.sentences_by_id in
-    let sentences_by_start = Int.Set.fold (fun start m -> log @@ "Remove sentence (after) " ^ string_of_int start; LM.remove start m) removed_start parsed.sentences_by_start in
     (* TODO clean up the schedule and free cached states *)
-    { parsed with sentences_by_id; sentences_by_end = before; sentences_by_start; }, removed
+    { parsed with sentences_by_id; sentences_by_end = before; }, removed
   
   let sentences parsed =
     List.map snd @@ SM.bindings parsed.sentences_by_id
@@ -402,9 +396,7 @@ end = struct
     let sentences_by_id = SM.add id new_sentence parsed.sentences_by_id in
     let sentences_by_end = LM.remove old_sentence.stop parsed.sentences_by_end in
     let sentences_by_end = LM.add new_sentence.stop new_sentence sentences_by_end in
-    let sentences_by_start = LM.remove old_sentence.start parsed.sentences_by_start in
-    let sentences_by_start = LM.add new_sentence.start new_sentence sentences_by_start in
-    { sentences_by_end; sentences_by_id; sentences_by_start; schedule }, scheduler_state_after
+    { sentences_by_end; sentences_by_id; schedule }, scheduler_state_after
 
 type diff =
   | Deleted of sentence_id list
