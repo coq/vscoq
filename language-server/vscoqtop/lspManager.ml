@@ -36,6 +36,11 @@ let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
 let conf_request_id = 3456736879
 
+let server_info = ServerInfo.{
+  name = "vscoq-language-server";
+  version = "2.0.0";
+} 
+
 let log msg = lsp_debug Pp.(fun () ->
   str @@ Format.asprintf "       [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
 
@@ -115,8 +120,13 @@ let do_initialize ~id params =
     };
     hoverProvider = true;
   } in
-  let result = Ok (`Assoc ["capabilities", ServerCapabilities.yojson_of_t capabilities]) in
-  output_json Response.(yojson_of_t {id; result})
+  let initialize_result = InitializeResult. {
+    capabilities = capabilities; 
+    serverInfo = server_info;
+  } in
+  let result = Ok (InitializeResult.yojson_of_t initialize_result) in
+  output_json Response.(yojson_of_t {id; result});
+  send_configuration_request ()
 
 let do_shutdown ~id params =
   let open Yojson.Safe.Util in

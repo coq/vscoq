@@ -141,6 +141,24 @@ module ServerCapabilities = struct
 
 end
 
+module ServerInfo = struct
+
+    type t = {
+      name: string; 
+      version: string; 
+    } [@@deriving yojson]
+
+end
+
+module InitializeResult = struct
+  
+  type t = {
+    capabilities: ServerCapabilities.t; 
+    serverInfo: ServerInfo.t;
+  } [@@deriving yojson]
+
+end
+
 module Hover = struct 
     
   type t = {
