@@ -1,27 +1,37 @@
-import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
 import {workspace, window, commands, ExtensionContext,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
-  TextEditor,
+  TextEditor, 
 } from 'vscode';
 
 import {
   LanguageClientOptions,
-  ServerOptions,
+  ServerOptions, VersionedTextDocumentIdentifier
 } from 'vscode-languageclient/node';
 
 import Client from './client';
-import { sendConfiguration, updateServerOnConfigurationChange } from './configuration';
+import { updateServerOnConfigurationChange } from './configuration';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { SearchCoqResult } from './protocol/types';
+import { SearchCoqResult, UpdateProofViewRequest } from './protocol/types';
+import { 
+    sendInterpretToPoint,
+    sendInterpretToEnd,
+    sendStepForward,
+    sendStepBackward
+} from './manualChecking';
+import { makeCursorPositionUpdateProofViewRequestParams, makeExecutionUpdateProofViewRequestParams } from './utilities/requests';
 
 
 let client: Client;
 
 export function activate(context: ExtensionContext) {
 
+    function registerVscoqTextCommand(command: string, callback: (textEditor: TextEditor, ...args: any[]) => void) {
+        context.subscriptions.push(commands.registerTextEditorCommand('vscoq.' + command, callback));
+    };
+    
 	const config = workspace.getConfiguration('vscoq');
 
 	let serverOptions: ServerOptions = {
@@ -35,6 +45,7 @@ export function activate(context: ExtensionContext) {
 
 	let clientOptions: LanguageClientOptions = {
 		documentSelector: [{ scheme: 'file', language: 'coq' }],
+        initializationOptions: config
 	};
 
 	// Create the language client and start the client.
@@ -47,12 +58,6 @@ export function activate(context: ExtensionContext) {
     const searchProvider = new SearchViewProvider(context.extensionUri, client);
     context.subscriptions.push(window.registerWebviewViewProvider(SearchViewProvider.viewType, searchProvider));
 
-    //register the command opening the goal view
-    const displayGoals = commands.registerTextEditorCommand('coq.displayGoals', (editor) => {
-		GoalPanel.render(editor, context.extensionUri);
-	});
-	context.subscriptions.push(displayGoals);
-
     const launchQuery = (editor: TextEditor, type: string)=> {
         const selection = editor.selection;
         const {end, start} = selection; 
@@ -62,20 +67,21 @@ export function activate(context: ExtensionContext) {
         if(!wordAtCurorRange) {return; } //there is no word: do nothing
         const queryText = editor.document.getText(wordAtCurorRange);
         //focus on the query panel
-        commands.executeCommand('coq.search.focus');
+        commands.executeCommand('vscoq.search.focus');
         //launch the query
         searchProvider.launchQuery(queryText, type);
     };
 
-    const searchCursor = commands.registerTextEditorCommand('coq.searchCursor', (editor) => {
-        launchQuery(editor, "search");
-        });
-    context.subscriptions.push(searchCursor);
-
-    const aboutCursor = commands.registerTextEditorCommand('coq.aboutCursor', (editor) => {
-        launchQuery(editor, "about");
+    registerVscoqTextCommand('searchCursor', (editor) => launchQuery(editor, "Search"));
+    registerVscoqTextCommand('aboutCursor', (editor) => launchQuery(editor, "About"));
+    registerVscoqTextCommand('interpretToPoint', (editor) => sendInterpretToPoint(editor, client));
+    registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
+    registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));
+    registerVscoqTextCommand('stepBackward', (editor) => sendStepBackward(editor, client));
+    registerVscoqTextCommand('displayGoals', (editor) => {
+        const reqParams = makeExecutionUpdateProofViewRequestParams(editor);
+        GoalPanel.refreshGoalPanel(context.extensionUri, editor, client, reqParams);
     });
-    context.subscriptions.push(aboutCursor);
 
 	client.onReady()
 	.then(() => {
@@ -93,16 +99,10 @@ export function activate(context: ExtensionContext) {
         });
 
         let goalsHook = window.onDidChangeTextEditorSelection(
-            (evt: TextEditorSelectionChangeEvent) => {
-
-                if (evt.textEditor.document.languageId !== "coq") { return; };
-
-                if (evt.kind === TextEditorSelectionChangeKind.Mouse || evt.kind === TextEditorSelectionChangeKind.Keyboard) {
-                    
-                    if(!GoalPanel.currentPanel) {commands.executeCommand('coq.displayGoals'); };
-                    
-                    GoalPanel.sendProofViewRequest(client, evt.textEditor.document.uri, 
-                        evt.textEditor.document.version, evt.textEditor.selection.active);
+            (evt: TextEditorSelectionChangeEvent) => {                    
+                const reqParams = makeCursorPositionUpdateProofViewRequestParams(evt);
+                if(reqParams !== null) {
+                    GoalPanel.refreshGoalPanel(context.extensionUri, evt.textEditor, client, reqParams);
                 }
             }
         );

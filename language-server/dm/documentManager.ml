@@ -26,15 +26,15 @@ type state = {
   opts : Coqargs.injection_command list;
   document : Document.document;
   execution_state : ExecutionManager.state;
-  observe_loc : int option; (* TODO materialize observed loc and line-by-line execution status *)
+  observe_id : Types.sentence_id option; (* TODO materialize observed loc and line-by-line execution status *)
 }
 
 let set_ExecutionManager_options st o =
   { st with execution_state = ExecutionManager.set_options st.execution_state o }
 
 type event =
-  | ExecuteToLoc of { (* we split the computation to help interruptibility *)
-      loc : int; (* where we go *)
+  | Execute of { (* we split the computation to help interruptibility *)
+      id : Types.sentence_id; (* sentence of interest *)
       vst_for_next_todo : Vernacstate.t; (* the state to be used for the next
         todo, it is not necessarily the state of the last sentence, since it
         may have failed and this is a surrogate used for error resiliancy *)
@@ -43,9 +43,9 @@ type event =
     }
   | ExecutionManagerEvent of ExecutionManager.event
 let pp_event fmt = function
-  | ExecuteToLoc { loc; todo; started; _ } ->
+  | Execute { id; todo; started; _ } ->
       let time = Unix.gettimeofday () -. started in 
-      Stdlib.Format.fprintf fmt "ExecuteToLoc %d (%d tasks left, started %2.3f ago)" loc (List.length todo) time
+      Stdlib.Format.fprintf fmt "ExecuteToLoc %d (%d tasks left, started %2.3f ago)" (Stateid.to_int id) (List.length todo) time
   | ExecutionManagerEvent _ -> Stdlib.Format.fprintf fmt "ExecutionManagerEvent"
 
 let inject_em_event x = Sel.map (fun e -> ExecutionManagerEvent e) x
@@ -82,9 +82,9 @@ let executed_ranges doc execution_state loc =
   }
 
 let executed_ranges st =
-  match st.observe_loc with
+  match Option.bind st.observe_id (Document.get_sentence st.document) with
   | None -> executed_ranges st.document st.execution_state (Document.end_loc st.document)
-  | Some loc -> executed_ranges st.document st.execution_state loc
+  | Some { stop } -> executed_ranges st.document st.execution_state stop
 
 let make_diagnostic doc id oloc message severity =
   let range =
@@ -117,7 +117,7 @@ let init init_vs ~opts ~uri ~text =
   let top = Coqargs.(dirpath_of_top (TopPhysical uri)) in
   Coqinit.start_library ~top opts;
   let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
-  { uri; opts; init_vs; document; execution_state; observe_loc = None }, [inject_em_event ExecutionManager.local_feedback]
+  { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event ExecutionManager.local_feedback]
 
 let reset { uri; opts; init_vs; document } =
   let document = Document.create_document (Document.text document) in
@@ -125,7 +125,7 @@ let reset { uri; opts; init_vs; document } =
   let top = Coqargs.(dirpath_of_top (TopPhysical uri)) in
   Coqinit.start_library ~top opts;
   let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
-  { uri; opts; init_vs; document; execution_state; observe_loc = None }
+  { uri; opts; init_vs; document; execution_state; observe_id = None }
 
 let interpret_to_loc state loc : (state * event Sel.event list) =
     let invalid_ids, document = Document.validate_document state.document in
@@ -133,88 +133,85 @@ let interpret_to_loc state loc : (state * event Sel.event list) =
       List.fold_left (fun st id ->
         ExecutionManager.invalidate (Document.schedule state.document) id st
         ) state.execution_state (Stateid.Set.elements invalid_ids) in
-    let state = { state with document; execution_state; observe_loc = Some loc } in
+    let state = { state with document; execution_state } in
     (* We jump to the sentence before the position, otherwise jumping to the
     whitespace at the beginning of a sentence will observe the state after
     executing the sentence, which is unnatural. *)
     match Document.find_sentence_before state.document loc with
     | None -> (* document is empty *) (state, [])
     | Some { id; stop; start } ->
+      let state = { state with observe_id = Some id } in
       let vst_for_next_todo, todo = ExecutionManager.build_tasks_for state.document state.execution_state id in
       if CList.is_empty todo then
-        let state = { state with observe_loc = Some loc } in
         (state, [])
       else
-      (*
-      let executed_loc = Some stop in
-      let proof_data = match ExecutionManager.get_proofview st id with
-        | None -> None
-        | Some pv -> let pos = Document.position_of_loc state.document stop in Some (pv, pos)
-      in
-      *)
-        (state, [Sel.now (ExecuteToLoc {loc; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
+        (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
 
-(*
-let interpret_to_loc ~after ?(progress_hook=fun doc -> Lwt.return ()) state loc : (state * proof_data * events) Lwt.t =
-  log @@ "[DM] Interpreting to loc " ^ string_of_int loc;
-  let rec make_progress state =
-    let open Lwt.Infix in
-    let parsing_state_hook = ExecutionManager.get_parsing_state_after state.execution_state in
-    let invalid_ids, document = validate_document ~parsing_state_hook state.document in
-    Lwt_list.fold_left_s (fun st id ->
-        ExecutionManager.invalidate (Document.schedule state.document) id st) state.execution_state (Stateid.Set.elements invalid_ids) >>= fun execution_state ->
-    let state = { state with document; execution_state } in
-    (*
-    log @@ ParsedDoc.to_string doc.parsed_doc;
-    log @@ Scheduler.string_of_schedule @@ ParsedDoc.schedule doc.parsed_doc;
-    *)
-    (** We jump to the sentence before the position, otherwise jumping to the
-    whitespace at the beginning of a sentence will observe the state after
-    executing the sentence, which is unnatural. *)
-    let find = if after then find_sentence else find_sentence_before in
-    match find state.document loc with
-    | None -> (* document is empty *) Lwt.return (state, None, []) (* FIXME don't we stop here if after=true and document is not fully parsed? *)
-    | Some { id; stop; start } ->
-      let progress_hook () = Lwt.return () in
-      let st, tasks = ExecutionManager.build_tasks_for progress_hook state.document state.execution_state id in
-      log @@ "[DM] Observed " ^ Stateid.to_string id;
-      let state = { state with execution_state = st } in
-      if Document.parsed_loc state.document < loc && Document.more_to_parse state.document then
-        make_progress state
-      else
-      let executed_loc = Some stop in
-      let proof_data = match ExecutionManager.get_proofview st id with
-        | None -> None
-        | Some pv -> let pos = Document.position_of_loc state.document stop in Some (pv, pos)
-      in
-      Lwt.return ({ state with executed_loc }, proof_data, [Execute tasks, executed_loc])
-  in
-  make_progress state
-*)
+let interpret_to state id : (state * event Sel.event list) =
+  let invalid_ids, document = Document.validate_document state.document in
+  let execution_state =
+    List.fold_left (fun st id ->
+      ExecutionManager.invalidate (Document.schedule state.document) id st
+      ) state.execution_state (Stateid.Set.elements invalid_ids) in
+  let state = { state with document; execution_state } in
+  (* We jump to the sentence before the position, otherwise jumping to the
+  whitespace at the beginning of a sentence will observe the state after
+  executing the sentence, which is unnatural. *)
+  match Document.get_sentence state.document id with
+  | None -> (state, []) (* TODO error? *)
+  | Some { id; stop; start } ->
+    let state = { state with observe_id = Some id } in
+    let vst_for_next_todo, todo = ExecutionManager.build_tasks_for state.document state.execution_state id in
+    if CList.is_empty todo then
+      (state, [])
+    else
+      (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
 
-let interpret_to_position state pos =
-  let loc = Document.position_to_loc state.document pos in
-  interpret_to_loc state loc
+let interpret_to_position st pos =
+  let loc = Document.position_to_loc st.document pos in
+  match Document.find_sentence_before st.document loc with
+  | None -> (st, []) (* document is empty *)
+  | Some { id } -> interpret_to st id
 
-let interpret_to_previous doc =
-  match doc.observe_loc with
-  | None -> (doc, [])
-  | Some loc ->
-    interpret_to_loc doc (loc-1)
+let interpret_to_previous st =
+  match st.observe_id with
+  | None -> (st, [])
+  | Some id ->
+    match Document.get_sentence st.document id with
+    | None -> (st, []) (* TODO error? *)
+    | Some { id; stop; start} ->
+      match Document.find_sentence_before st.document start with
+      | None -> (st, [])
+      | Some {id } -> interpret_to st id
 
-let interpret_to_next doc = (doc, []) (* TODO
-  match doc.executed_loc with
-  | None -> Lwt.return (doc, None, [])
-  | Some stop ->
-    interpret_to_after_loc doc (stop+1)
-    *)
+let interpret_to_next st =
+  match st.observe_id with
+  | None -> 
+    begin match Document.find_sentence st.document 0 with
+    | None -> (st, []) (*The document is empty*)
+    | Some {id} -> interpret_to st id
+    end
+  | Some id ->
+    match Document.get_sentence st.document id with
+    | None -> (st, []) (* TODO error? *)
+    | Some { id; stop; start} ->
+      match Document.find_sentence_after st.document (stop+1) with
+      | None -> (st, [])
+      | Some {id } -> interpret_to st id
 
-let interpret_to_end state =
-  interpret_to_loc state (Document.end_loc state.document)
+let interpret_to_end st =
+  match Document.get_last_sentence st.document with 
+  | None -> (st, [])
+  | Some {id} -> interpret_to st id
 
 let retract state loc =
-  let observe_loc = Option.map (fun loc' -> min loc loc') state.observe_loc in
-  { state with observe_loc }
+  match Option.bind state.observe_id (Document.get_sentence state.document) with
+  | None -> state
+  | Some { start } ->
+    if loc < start then
+      let observe_id = Option.map (fun s -> s.Document.id) @@ Document.find_sentence_before state.document loc in
+      { state with observe_id }
+    else state
 
 let apply_text_edits state edits =
   let document = Document.apply_text_edits state.document edits in
@@ -231,30 +228,32 @@ let validate_document state =
 
 let handle_event ev st =
   match ev with
-  | ExecuteToLoc { loc; todo = []; started } -> (* the vst_for_next_todo is also in st.execution_state *)
+  | Execute { id; todo = []; started } -> (* the vst_for_next_todo is also in st.execution_state *)
     let time = Unix.gettimeofday () -. started in 
-    log (Printf.sprintf "ExecuteToLoc %d ends after %2.3f" loc time);
+    log (Printf.sprintf "ExecuteToLoc %d ends after %2.3f" (Stateid.to_int id) time);
     (* We update the state to trigger a publication of diagnostics *)
-    let st, events = interpret_to_loc st loc in
-    (Some st, events)
-  | ExecuteToLoc { loc; vst_for_next_todo; started; todo = task :: todo } ->
+    (Some st, [])
+  | Execute { id; vst_for_next_todo; started; todo = task :: todo } ->
     (*log "Execute (more tasks)";*)
     let doc_id = Document.id_of_doc st.document in
     let (execution_state,vst_for_next_todo,events,interrupted) =
       ExecutionManager.execute ~doc_id st.execution_state (vst_for_next_todo, [], false) task in
     (* We do not update the state here because we may have received feedback while
        executing *)
-    (Some {st with execution_state}, inject_em_events events @ [Sel.now (ExecuteToLoc{loc; vst_for_next_todo; todo; started })])
+    (Some {st with execution_state}, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
   | ExecutionManagerEvent ev ->
     let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
 
 let get_proof st pos =
-  let loc = Document.position_to_loc st.document pos in
-  match Document.find_sentence_before st.document loc with
-  | None -> None
-  | Some sentence ->
-    ExecutionManager.get_proofview st.execution_state sentence.id
+  let id_of_pos pos =
+    let loc = Document.position_to_loc st.document pos in
+    match Document.find_sentence_before st.document loc with
+    | None -> None
+    | Some { id } -> Some id
+  in
+  let oid = Option.cata id_of_pos st.observe_id pos in
+  Option.bind oid (ExecutionManager.get_proofview st.execution_state)
 
 let get_context st pos =
   let loc = Document.position_to_loc st.document pos in

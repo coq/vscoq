@@ -178,6 +178,8 @@ module ParsedDoc : sig
   val get_sentence : t -> sentence_id -> sentence option
   val find_sentence : t -> int -> sentence option
   val find_sentence_before : t -> int -> sentence option
+  val find_sentence_after : t -> int -> sentence option
+  val get_last_sentence : t -> sentence option
   val shift_sentences : t -> int -> int -> t
 
   val previous_sentence : t -> sentence_id -> sentence option
@@ -270,7 +272,7 @@ end = struct
       let sentences_by_id = SM.remove id parsed.sentences_by_id in
       let sentences_by_end = LM.remove sentence.stop parsed.sentences_by_end in
       (* TODO clean up the schedule and free cached states *)
-      { parsed with sentences_by_id; sentences_by_end }
+      { parsed with sentences_by_id; sentences_by_end; }
 
   let remove_sentences_after parsed loc =
     log @@ "Removing sentences after loc " ^ string_of_int loc;
@@ -279,8 +281,8 @@ end = struct
     let removed = LM.fold (fun _ sentence acc -> Stateid.Set.add sentence.id acc) removed Stateid.Set.empty in
     let sentences_by_id = Stateid.Set.fold (fun id m -> log @@ "Remove sentence (after) " ^ Stateid.to_string id; SM.remove id m) removed parsed.sentences_by_id in
     (* TODO clean up the schedule and free cached states *)
-    { parsed with sentences_by_id; sentences_by_end = before}, removed
-
+    { parsed with sentences_by_id; sentences_by_end = before; }, removed
+  
   let sentences parsed =
     List.map snd @@ SM.bindings parsed.sentences_by_id
 
@@ -306,6 +308,14 @@ end = struct
     match LM.find_last_opt (fun k -> k <= loc) parsed.sentences_by_end with
     | Some (_, sentence) -> Some sentence
     | _ -> None
+
+  let find_sentence_after parsed loc = 
+    match LM.find_first_opt (fun k -> loc <= k) parsed.sentences_by_end with
+    | Some (_, sentence) -> Some sentence
+    | _ -> None
+
+  let get_last_sentence parsed = 
+    Option.map snd @@ LM.find_last_opt (fun _ -> true) parsed.sentences_by_end
 
   let state_after_sentence = function
     | Some (stop, { synterp_state; scheduler_state_after; ast; id }) ->
@@ -620,6 +630,8 @@ let apply_text_edits document edits =
 let get_sentence doc id = ParsedDoc.get_sentence doc.parsed_doc id
 let find_sentence doc loc = ParsedDoc.find_sentence doc.parsed_doc loc
 let find_sentence_before doc loc = ParsedDoc.find_sentence_before doc.parsed_doc loc
+let find_sentence_after doc loc = ParsedDoc.find_sentence_after doc.parsed_doc loc
+let get_last_sentence doc = ParsedDoc.get_last_sentence doc.parsed_doc
 
 let parsed_loc doc = doc.parsed_loc
 let schedule doc = ParsedDoc.schedule doc.parsed_doc

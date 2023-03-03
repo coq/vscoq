@@ -16,7 +16,7 @@ export interface Goal {
 
 export interface UpdateProofViewRequest {
     textDocument: VersionedTextDocumentIdentifier;
-    position: Position;
+    position: Nullable<Position>;
 }
 
 interface UpdateProofViewResponseType {
@@ -64,3 +64,8 @@ export interface CheckCoqRequest {
 };
 
 export type CheckCoqResponse = string; 
+
+export interface InterpretToPointRequest {
+    textDocument: VersionedTextDocumentIdentifier;
+    position: Position;
+};

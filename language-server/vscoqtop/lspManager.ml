@@ -30,6 +30,8 @@ let get_init_state () =
 
 let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
+let check_mode = ref Settings.Mode.Continuous
+
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
 let conf_request_id = 3456736879
@@ -75,6 +77,19 @@ let output_json ?(trace=true) obj =
   log @@ "sent: " ^ msg;
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
+let do_configuration settings = 
+  let open Settings in
+  let open Dm.ExecutionManager in
+  let options =
+    match settings.proof.delegation with
+    | None     -> { delegation_mode = CheckProofsInMaster }
+    | Skip     -> { delegation_mode = SkipProofs }
+    | Delegate -> { delegation_mode = DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers } }
+  in
+  Hashtbl.filter_map_inplace (fun _ st ->
+    Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states;
+  check_mode := settings.proof.mode
+
 let send_configuration_request () =
   let id = conf_request_id in
   let method_ = "workspace/configuration" in
@@ -84,9 +99,12 @@ let send_configuration_request () =
   let items = List.map mk_configuration_item ["vscoq"] in
   let params = ConfigurationParams.(yojson_of_t { items }) in
   output_json Request.(yojson_of_t { id; method_; params })
-
+  
 let do_initialize ~id params =
+  let open Settings in
   let open Yojson.Safe.Util in
+  let settings = params |> member "initializationOptions" |> Settings.t_of_yojson in
+  do_configuration settings;
   let capabilities = ServerCapabilities.{
     textDocumentSync = Incremental;
     completionProvider = { 
@@ -98,8 +116,7 @@ let do_initialize ~id params =
     hoverProvider = true;
   } in
   let result = Ok (`Assoc ["capabilities", ServerCapabilities.yojson_of_t capabilities]) in
-  output_json Response.(yojson_of_t {id; result});
-  send_configuration_request ()
+  output_json Response.(yojson_of_t {id; result})
 
 let do_shutdown ~id params =
   let open Yojson.Safe.Util in
@@ -146,6 +163,15 @@ let update_view uri st =
   send_highlights uri st;
   publish_diagnostics uri st
 
+let send_proof_view ~id st loc = 
+  let result = match Dm.DocumentManager.get_proof st loc with
+  | None -> 
+    Ok (`Null) 
+  | Some proofview ->
+    Ok (mk_proofview proofview) 
+  in
+  output_json @@ Response.(yojson_of_t { id; result })
+
 let textDocumentDidOpen params =
   let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
@@ -154,7 +180,12 @@ let textDocumentDidOpen params =
   let vst, opts = get_init_state () in
   let st, events = Dm.DocumentManager.init vst ~opts ~uri ~text in
   let st = Dm.DocumentManager.validate_document st in
-  let (st, events') = Dm.DocumentManager.interpret_to_end st in
+  let (st, events') = 
+    if !check_mode = Settings.Mode.Continuous then 
+      Dm.DocumentManager.interpret_to_end st 
+    else 
+      (st, [])
+  in
   Hashtbl.add states uri st;
   update_view uri st;
   uri, events@events'
@@ -172,7 +203,12 @@ let textDocumentDidChange params =
   let textEdits = List.map read_edit contentChanges in
   let st = Hashtbl.find states uri in
   let st = Dm.DocumentManager.apply_text_edits st textEdits in
-  let (st, events) = Dm.DocumentManager.interpret_to_end st in
+  let (st, events) = 
+    if !check_mode = Settings.Mode.Continuous then 
+      Dm.DocumentManager.interpret_to_end st 
+    else 
+      (st, [])
+  in
   Hashtbl.replace states uri st;
   update_view uri st;
   uri, events
@@ -200,15 +236,15 @@ let textDocumentHover ~id params =
     output_json @@ Response.(yojson_of_t { id; result })
   | _ -> ()
 
-
 let progress_hook uri () =
   let st = Hashtbl.find states uri in
   update_view uri st
 
 let coqtopInterpretToPoint ~id params : (string * Dm.DocumentManager.events) =
   let open Yojson.Safe.Util in
-  let uri = params |> member "uri" |> to_string in
-  let loc = params |> member "location" |> parse_loc in
+  let textDocument = params |> member "textDocument" in 
+  let uri = textDocument |> member "uri" |> to_string in
+  let loc = params |> member "position" |> parse_loc in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_position st loc in
   Hashtbl.replace states uri st;
@@ -217,7 +253,8 @@ let coqtopInterpretToPoint ~id params : (string * Dm.DocumentManager.events) =
 
 let coqtopStepBackward ~id params : (string * Dm.DocumentManager.events) =
   let open Yojson.Safe.Util in
-  let uri = params |> member "uri" |> to_string in
+  let textDocument = params |> member "textDocument" in 
+  let uri = textDocument |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
   Hashtbl.replace states uri st;
@@ -226,7 +263,8 @@ let coqtopStepBackward ~id params : (string * Dm.DocumentManager.events) =
 
 let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
   let open Yojson.Safe.Util in
-  let uri = params |> member "uri" |> to_string in
+  let textDocument = params |> member "textDocument" in 
+  let uri = textDocument |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
   Hashtbl.replace states uri st;
@@ -261,7 +299,8 @@ let coqtopResetCoq ~id params =
 
 let coqtopInterpretToEnd ~id params : (string * Dm.DocumentManager.events) =
   let open Yojson.Safe.Util in
-  let uri = params |> member "uri" |> to_string in
+  let textDocument = params |> member "textDocument" in 
+  let uri = textDocument |> member "uri" |> to_string in
   let st = Hashtbl.find states uri in
   let (st, events) = Dm.DocumentManager.interpret_to_end st in
   Hashtbl.replace states uri st;
@@ -284,15 +323,9 @@ let coqtopUpdateProofView ~id params =
   let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
-  let loc = params |> member "position" |> parse_loc in
+  let loc = params |> member "position" |> to_option parse_loc in
   let st = Hashtbl.find states uri in
-  let result = match Dm.DocumentManager.get_proof st loc with
-  | None -> 
-    Ok (`Null) 
-  | Some proofview ->
-    Ok (mk_proofview proofview) 
-  in
-  output_json @@ Response.(yojson_of_t { id; result })
+  send_proof_view ~id st loc
 
 let coqtopAbout ~id params =
   let open Yojson.Safe.Util in
@@ -346,18 +379,6 @@ let coqtopCheck ~id params =
     let method_ = "vscoq/searchResult" in
     let params = `Assoc [ "id", `String id; "name", `String name; "statement", `String statement ] in
     output_json @@ Notification.(yojson_of_t {method_; params})
-
-let do_configuration settings = 
-  let open Settings in
-  let open Dm.ExecutionManager in
-  let options =
-    match settings.proof.delegation with
-    | None     -> { delegation_mode = CheckProofsInMaster }
-    | Skip     -> { delegation_mode = SkipProofs }
-    | Delegate -> { delegation_mode = DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers } }
-  in
-  Hashtbl.filter_map_inplace (fun _ st ->
-    Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states
 
 let workspaceDidChangeConfiguration params = 
   let open Yojson.Safe.Util in 
@@ -434,7 +455,7 @@ let handle_event = function
       let (ost, events) = Dm.DocumentManager.handle_event e st in
       begin match ost with
         | None -> ()
-        | Some st->
+        | Some st ->
           Hashtbl.replace states uri st;
           update_view uri st
       end;

@@ -147,11 +147,21 @@ module Settings : sig
       [@@deriving yojson]
     end 
 
+    module Mode : sig
+
+        type t =
+        | Continuous 
+        | Manual
+        [@@deriving yojson]
+    
+    end
+
     module Proof : sig
   
       type t = {
         delegation: DelegationMode.t;
         workers: int option;
+        mode: Mode.t;
       } [@@deriving yojson] [@@yojson.allow_extra_fields]
     
     end
@@ -162,4 +172,5 @@ module Settings : sig
 
   
 end
+
   

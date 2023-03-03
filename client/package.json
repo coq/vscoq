@@ -48,17 +48,17 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "coq-sidebar",
+          "id": "vscoq-sidebar",
           "title": "Coq Proof Assistant",
           "icon": "./assets/vscoq_logo.svg"
         }
       ]
     },
     "views": {
-      "coq-sidebar": [
+      "vscoq-sidebar": [
         {
           "type": "webview",
-          "id": "coq.search",
+          "id": "vscoq.search",
           "name": "Query"
         }
       ]
@@ -113,6 +113,20 @@
         "title": "Proof checking",
         "type": "object",
         "properties": {
+          "vscoq.proof.mode": {
+            "scope": "window",
+            "type": "number",
+            "enum": [
+              0,
+              1
+            ],
+            "enumItemLabels": [
+                "Manual",
+                "Continuous"
+            ],
+            "default": 1,
+            "description": "Configures the proof checking mode for Coq."
+          },
           "vscoq.proof.delegation": {
             "scope": "window",
             "type": "string",
@@ -140,22 +154,94 @@
     ],
     "commands": [
       {
-        "command": "coq.displayGoals",
+        "command": "vscoq.displayGoals",
         "category": "Coq",
         "title": "Display Goals",
         "description": "Displays the goal view"
       },
       {
-        "command": "coq.searchCursor",
+        "command": "vscoq.searchCursor",
         "category": "Coq",
         "title": "Search on cursor",
         "description": "Launches a search query for the word under the cursor"
       },
       {
-        "command": "coq.aboutCursor",
+        "command": "vscoq.aboutCursor",
         "category": "Coq",
         "title": "About on cursor",
         "description": "Launches an about query for the word under the cursor"
+      },
+      {
+        "command": "vscoq.interpretToPoint",
+        "category": "Coq", 
+        "title": "Interpret file to point", 
+        "description": "Interprets the current coq file until the given point"
+      },
+      {
+        "command": "vscoq.interpretToEnd",
+        "category": "Coq", 
+        "title": "Interpret file to end", 
+        "description": "Interprets the current coq file until the end"
+      },
+      {
+        "command": "vscoq.stepForward",
+        "title": "Step Forward",
+        "category": "Coq"
+      },
+      {
+        "command": "vscoq.stepBackward",
+        "title": "Step Backward",
+        "category": "Coq"
+      }
+    ],
+    "keybindings":[
+      {
+        "key": "alt+down",
+        "mac": "ctrl+alt+down",
+        "command": "vscoq.stepForward",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "alt+down",
+        "mac": "ctrl+alt+down",
+        "command": "vscoq.stepForward",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "alt+up",
+        "mac": "ctrl+alt+up",
+        "command": "vscoq.stepBackward",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "alt+up",
+        "mac": "ctrl+alt+up",
+        "command": "vscoq.stepBackward",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "alt+right",
+        "mac": "ctrl+alt+right",
+        "command": "vscoq.interpretToPoint",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "alt+right",
+        "mac": "ctrl+alt+right",
+        "command": "vscoq.interpretToPoint",
+        "when": "resourceScheme==coq-view"
+      },
+      {
+        "key": "alt+end",
+        "mac": "ctrl+alt+end",
+        "command": "vscoq.interpretToEnd",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "alt+end",
+        "mac": "ctrl+alt+end",
+        "command": "vscoq.interpretToEnd",
+        "when": "resourceScheme==coq-view"
       }
     ],
     "colors": [
