@@ -341,8 +341,7 @@ let coqtopLocate ~id params =
   let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
-  let loc = params |> member "position" |> parse_loc in(* 
-  let goalIndex = params |> member "goalIndex" in *)
+  let loc = params |> member "position" |> parse_loc in
   let pattern = params |> member "pattern" |> to_string in 
   let st = Hashtbl.find states uri in
   match Dm.DocumentManager.locate st loc ~pattern with
