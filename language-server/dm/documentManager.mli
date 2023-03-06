@@ -97,6 +97,8 @@ val set_ExecutionManager_options : state -> ExecutionManager.options -> state
 
 val check : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
 
+val locate : state -> Position.t -> pattern:string -> (string, string) Result.t
+
 
 module Internal : sig
 

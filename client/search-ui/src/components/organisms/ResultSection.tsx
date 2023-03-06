@@ -1,10 +1,11 @@
 import React, {FunctionComponent} from 'react';
 
-import { QueryResult, SearchResultType, CheckResultType, AboutResultType  } from '../../types';
+import { QueryResult  } from '../../types';
 
 import SearchResult from '../molecules/SearchResult';
 import AboutResult from '../molecules/AboutResult';
 import CheckResult from '../molecules/CheckResult';
+import LocateResult from '../molecules/LocateResult';
 
 import classes from './ResultSection.module.css';
 
@@ -12,8 +13,6 @@ type SearchResultSectionProps = {
     result: QueryResult,
     copyNameHandler: (name: string) => void;
 };
-
-type SearchResults = SearchResultType[];
 
 const searchResultSection: FunctionComponent<SearchResultSectionProps> = (props) => {
 
@@ -47,6 +46,10 @@ const searchResultSection: FunctionComponent<SearchResultSectionProps> = (props)
         resultComponent = <AboutResult  statement={result.statement} />;
         
     };
+
+    if(result.type === "locate") {
+        resultComponent = <LocateResult statement={result.statement} />;
+    }
 
     return (
         <div className={classes.ResultSection}>

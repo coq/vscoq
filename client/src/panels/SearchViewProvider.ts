@@ -8,7 +8,9 @@ import {
     SearchCoqRequest, 
     SearchCoqResult,
     CheckCoqRequest,
-    CheckCoqResponse
+    CheckCoqResponse,
+    LocateCoqRequest,
+    LocateCoqResponse
 } from '../protocol/types';
 import {
     RequestType,
@@ -145,7 +147,6 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                         );
                     }
 
-
                     if(type === "check") {
                         const params: CheckCoqRequest = {textDocument, pattern, position};
                         const req = new RequestType<CheckCoqRequest, CheckCoqResponse, void>("vscoq/check");
@@ -154,6 +155,18 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                             (result: CheckCoqResponse) => {
                                 const notification = {"statement": result, "id": id};
                                 webview.postMessage({"command": "checkResponse", "result": notification});
+                            }
+                        );
+                    }
+
+                    if(type === "locate") {
+                        const params: CheckCoqRequest = {textDocument, pattern, position};
+                        const req = new RequestType<LocateCoqRequest, LocateCoqResponse, void>("vscoq/locate");
+                            
+                        client.sendRequest(req, params).then(
+                            (result: CheckCoqResponse) => {
+                                const notification = {"statement": result, "id": id};
+                                webview.postMessage({"command": "locateResponse", "result": notification});
                             }
                         );
                     }

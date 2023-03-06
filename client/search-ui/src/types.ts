@@ -11,11 +11,16 @@ export interface CheckNotification {
     id: string; 
     statement: string; 
 };
+export interface LocateNotification {
+    id: string; 
+    statement: string; 
+};
 
 export enum QueryType {
     search = "search", 
     about = "about", 
-    check = "check"
+    check = "check",
+    locate = "locate"
 }
 
 export interface SearchResultType {
@@ -34,8 +39,12 @@ export interface AboutResultType {
     type: "about"; 
     statement: string; 
 }
+export interface LocateResultType {
+    type: "locate"; 
+    statement: string;
+}
 
-export type QueryResult = SearchResultType | CheckResultType | AboutResultType;
+export type QueryResult = SearchResultType | CheckResultType | AboutResultType | LocateResultType;
 
 export interface Query {
     pattern: string; 
