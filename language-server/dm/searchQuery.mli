@@ -19,4 +19,5 @@ val interp_search :
   id:string ->
   Environ.env ->
   Evd.evar_map ->
-  Vernacexpr.searchable -> Vernacexpr.search_restriction -> notification Sel.event list
+  (bool * Vernacexpr.search_request) ->
+  notification Sel.event list
