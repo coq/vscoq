@@ -36,7 +36,8 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     } = props;
 
     const {tabs, currentTab} = state;
-    const {pattern, type} = tabs[currentTab];
+    // just handle the state update lag
+    const {pattern ="", type=""} = currentTab < tabs.length ? tabs[currentTab] : {};
 
     return (
             <div className={classes.Page}>

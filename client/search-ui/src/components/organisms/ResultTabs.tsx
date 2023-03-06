@@ -49,7 +49,7 @@ const resultTabs: FunctionComponent<ResultTabProps> = (props) => {
                         () => changeTabHandler(index)
                     }
                     className={tabs.length > 1 ? "" : classes.HiddenTab} //hide the tabs if there is only one
-                    /* aria-selected={index === currentTab} */
+                    aria-selected={index === currentTab} 
                 >
                     {"Query " + (tabs.length - index)}
                     <VSCodeButton 
