@@ -18,8 +18,10 @@ import {
     CheckResultType,
     AboutResultType,
     SearchResultType,
+    LocateNotification, 
+    LocateResultType,
     QueryPanelState, 
-    VsCodeState
+    VsCodeState,
 } from './types';
 
 const defaultTab = {
@@ -62,6 +64,10 @@ const app = () => {
 
             case 'searchResponse':
                 handleSearchNotification(msg.data.result); 
+                break;
+
+            case 'locateResponse': 
+                handleLocateNotification(msg.data.result);
                 break;
 
             case 'launchedSearch': 
@@ -143,14 +149,40 @@ const app = () => {
 
     };
 
+    const handleLocateNotification = (notification: LocateNotification) => {
+        
+        setQueryPanelState(state => { 
+            const result = {type: "locate", statement: notification.statement} as LocateResultType;
+            const newTabs = state.tabs.map(tab => {
+                if(tab.id === notification.id) {
+                    return {...tab, result: result};
+                }
+                return tab;
+            });
+
+            return {...state, tabs: newTabs};
+        }, (newState) => {
+            saveState({state: newState, history, historyIndex});
+        } );
+
+    };
+
+    const initResult = (type: QueryType) => {
+        switch (type) {
+            case QueryType.search:
+                return {type: "search", data: []} as SearchResultType;
+            case QueryType.about:
+                return {type: "about", statement: ""} as AboutResultType;
+            case QueryType.check:
+                return {type: "check", statement: ""} as CheckResultType;
+            case QueryType.locate:
+                return {type: "locate", statement: ""} as LocateResultType;
+        }
+    }
+
     const handleImmediateQueryNotification = (notification: Query) => {
         setQueryPanelState(state => {
-            const result : QueryResult = notification.type === QueryType.search 
-                                        ?  {type: "search", data: []} as SearchResultType
-                                        : notification.type === QueryType.about 
-                                            ? {type: "about", statement: ""} as AboutResultType
-                                            : {type: "check", statement: ""} as CheckResultType;
-
+            const result = initResult(notification.type);
             const newTab : QueryTab[] = [{id: uuid(), pattern: notification.pattern, result: result, type: notification.type}];
             return {currentTab: 0, tabs: newTab.concat(state.tabs)};
         }, (newState) => {
@@ -173,17 +205,6 @@ const app = () => {
         if(state.state) {setQueryPanelState(state.state);}
         if(state.history) {setHistory(state.history);}
         if(state.historyIndex) {setHistoryIndex(state.historyIndex);}
-    };
-
-    const initResult = (query: QueryType) => {
-        if(query === QueryType.search) {
-            return {type: "search", data: []} as SearchResultType;
-        } 
-        else if (query === QueryType.check) {
-            return {type: "check", statement: ""} as CheckResultType;
-        } else {
-            return {type: "about", statement: ""} as AboutResultType;
-        }
     };
 
     const launchQuery = () => {

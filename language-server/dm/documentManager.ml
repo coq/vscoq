@@ -312,6 +312,16 @@ let check st pos ~goal ~pattern =
       let e, info = Exninfo.capture e in
       Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
 
+let locate st pos ~pattern = 
+  match parse_entry st pos (Pcoq.Prim.smart_global) pattern with
+  | { v = AN qid } -> Ok (Pp.string_of_ppcmds @@ Prettyp.print_located_qualid qid)
+  | { v = ByNotation (ntn, sc)} -> 
+    match get_context st pos with
+    | None -> Error("No context found")
+    | Some (sigma, env) -> 
+      Ok( Pp.string_of_ppcmds @@ Notation.locate_notation
+        (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) ntn sc)
+
 module Internal = struct
 
   let document st =

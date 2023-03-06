@@ -50,8 +50,8 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                     <Dropdown 
                         classes={[classes.Dropdown]} 
                         selectedValue={type} 
-                        options={['search', 'check', 'about']} 
-                        optionLabels={['Search', 'Check', 'About']} 
+                        options={['search', 'check', 'about', 'locate']} 
+                        optionLabels={['Search', 'Check', 'About', 'Locate']} 
                         onChange={queryTypeSelectHandler}
                     />
 
