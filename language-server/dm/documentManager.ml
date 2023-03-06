@@ -294,8 +294,7 @@ let search st ~id pos pattern =
   | None -> [] (* TODO execute? *)
   | Some (sigma, env) ->
     let query = parse_entry st pos (G_vernac.search_query) pattern in
-    let searchable = Vernacexpr.(Search [query]) in
-    SearchQuery.interp_search ~id env sigma searchable (Vernacexpr.SearchOutside [])
+    SearchQuery.interp_search ~id env sigma query
 
 let hover st pos = 
   let opattern = Document.word_at_position st.document pos in
