@@ -322,6 +322,14 @@ let locate st pos ~pattern =
       Ok( Pp.string_of_ppcmds @@ Notation.locate_notation
         (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) ntn sc)
 
+let print st pos ~pattern = 
+  match get_context st pos with 
+  | None -> Error("No context found")
+  | Some (sigma, env) -> 
+    let qid = parse_entry st pos (Pcoq.Prim.smart_global) pattern in
+    let udecl = None in (*TODO*)
+    Ok ( Pp.string_of_ppcmds @@ Prettyp.print_name env sigma qid udecl )
+
 module Internal = struct
 
   let document st =

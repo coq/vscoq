@@ -185,6 +185,12 @@
         "category": "Coq"
       },
       {
+        "command": "vscoq.printCursor",
+        "title": "Print on cursor",
+        "description": "Launches a print query for the word under the cursor",
+        "category": "Coq"
+      },
+      {
         "command": "vscoq.interpretToPoint",
         "category": "Coq", 
         "title": "Interpret file to point", 
@@ -278,6 +284,12 @@
         "key": "ctrl+alt+l",
         "mac": "cmd+ctrl+l",
         "command": "vscoq.locateCursor",
+        "when": "editorTextFocus && editorLangId == coq"
+      },
+      {
+        "key": "ctrl+alt+p",
+        "mac": "cmd+ctrl+p",
+        "command": "vscoq.printCursor",
         "when": "editorTextFocus && editorLangId == coq"
       }
     ],

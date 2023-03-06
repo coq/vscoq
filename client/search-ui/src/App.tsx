@@ -9,7 +9,6 @@ import { useStateCallback } from './utilities/hooks';
 
 import { 
     Query, 
-    QueryResult, 
     QueryTab, 
     QueryType, 
     SearchNotification,
@@ -20,6 +19,8 @@ import {
     SearchResultType,
     LocateNotification, 
     LocateResultType,
+    PrintNotification, 
+    PrintResultType,
     QueryPanelState, 
     VsCodeState,
 } from './types';
@@ -37,7 +38,7 @@ const defaultTab = {
 const defaultQueryPanelState = {
     currentTab: 0, 
     tabs: [defaultTab]
-}
+};
 
 const defaultState = {
     history: [],
@@ -69,6 +70,9 @@ const app = () => {
             case 'locateResponse': 
                 handleLocateNotification(msg.data.result);
                 break;
+
+            case 'printResponse':
+                handlePrintNotification(msg.data.result);
 
             case 'launchedSearch': 
                 //TODO: Add UI elements to show user the searching state
@@ -167,6 +171,24 @@ const app = () => {
 
     };
 
+    const handlePrintNotification = (notification: PrintNotification) => {
+        
+        setQueryPanelState(state => { 
+            const result = {type: "print", statement: notification.statement} as PrintResultType;
+            const newTabs = state.tabs.map(tab => {
+                if(tab.id === notification.id) {
+                    return {...tab, result: result};
+                }
+                return tab;
+            });
+
+            return {...state, tabs: newTabs};
+        }, (newState) => {
+            saveState({state: newState, history, historyIndex});
+        } );
+
+    };
+
     const initResult = (type: QueryType) => {
         switch (type) {
             case QueryType.search:
@@ -177,8 +199,10 @@ const app = () => {
                 return {type: "check", statement: ""} as CheckResultType;
             case QueryType.locate:
                 return {type: "locate", statement: ""} as LocateResultType;
+            case QueryType.print: 
+                return {type: "print", statement: ""} as PrintResultType;
         }
-    }
+    };
 
     const handleImmediateQueryNotification = (notification: Query) => {
         setQueryPanelState(state => {
