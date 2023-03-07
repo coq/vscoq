@@ -205,12 +205,14 @@ const app = () => {
     };
 
     const handleImmediateQueryNotification = (notification: Query) => {
+        const {pattern, type} = notification;
+        const result = initResult(type);
+        const id = uuid();
+        const newTab : QueryTab[] = [{id: id, pattern: pattern, result: result, type: type}];
         setQueryPanelState(state => {
-            const result = initResult(notification.type);
-            const newTab : QueryTab[] = [{id: uuid(), pattern: notification.pattern, result: result, type: notification.type}];
-            return {currentTab: 0, tabs: newTab.concat(state.tabs)};
-        }, (newState) => {
-            const {pattern, id, type} = newState.tabs[0];
+            const newTabs = newTab.concat(state.tabs);
+            return {currentTab: 0, tabs: newTabs};
+        }, () => {
             vscode.postMessage({
                 command: "coqQuery",
                 text: pattern,
