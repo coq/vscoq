@@ -6,6 +6,7 @@ import SearchResult from '../molecules/SearchResult';
 import AboutResult from '../molecules/AboutResult';
 import CheckResult from '../molecules/CheckResult';
 import LocateResult from '../molecules/LocateResult';
+import PrintResult from '../molecules/PrintResult';
 
 import classes from './ResultSection.module.css';
 
@@ -49,6 +50,10 @@ const searchResultSection: FunctionComponent<SearchResultSectionProps> = (props)
 
     if(result.type === "locate") {
         resultComponent = <LocateResult statement={result.statement} />;
+    }
+
+    if(result.type === "print") {
+        resultComponent = <PrintResult statement={result.statement} />;
     }
 
     return (

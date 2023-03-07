@@ -77,6 +77,7 @@ export function activate(context: ExtensionContext) {
     registerVscoqTextCommand('aboutCursor', (editor) => launchQuery(editor, "About"));
     registerVscoqTextCommand('checkCursor', (editor) => launchQuery(editor, "Check"));
     registerVscoqTextCommand('locateCursor', (editor) => launchQuery(editor, "Locate"));
+    registerVscoqTextCommand('printCursor', (editor) => launchQuery(editor, "Print"));
     registerVscoqTextCommand('interpretToPoint', (editor) => sendInterpretToPoint(editor, client));
     registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
     registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));

@@ -99,6 +99,8 @@ val check : state -> Position.t -> goal:(int option)  -> pattern:string -> (stri
 
 val locate : state -> Position.t -> pattern:string -> (string, string) Result.t
 
+val print : state -> Position.t -> pattern:string -> (string, string) Result.t
+
 
 module Internal : sig
 

@@ -350,6 +350,19 @@ let coqtopLocate ~id params =
     let result = Ok (`String str) in
     output_json @@ Response.(yojson_of_t { id; result })
 
+let coqtopPrint ~id params = 
+  let open Yojson.Safe.Util in
+  let textDocument = params |> member "textDocument" in
+  let uri = textDocument |> member "uri" |> to_string in
+  let loc = params |> member "position" |> parse_loc in
+  let pattern = params |> member "pattern" |> to_string in 
+  let st = Hashtbl.find states uri in
+  match Dm.DocumentManager.print st loc ~pattern with
+  | Error _ -> ()
+  | Ok str ->
+    let result = Ok (`String str) in
+    output_json @@ Response.(yojson_of_t { id; result })
+
 let coqtopAbout ~id params =
   let open Yojson.Safe.Util in
   let textDocument = params |> member "textDocument" in
@@ -430,6 +443,7 @@ let dispatch_method ~id method_name params : events =
   | "vscoq/about" -> coqtopAbout ~id params; []
   | "vscoq/check" -> coqtopCheck ~id params; []
   | "vscoq/locate" -> coqtopLocate ~id params; []
+  | "vscoq/print" -> coqtopPrint ~id params; []
   | _ -> log @@ "Ignoring call to unknown method: " ^ method_name; []
 
 let handle_lsp_event = function

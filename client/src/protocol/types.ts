@@ -73,6 +73,14 @@ export interface LocateCoqRequest {
 
 export type LocateCoqResponse = string; 
 
+export interface PrintCoqRequest {
+    textDocument: VersionedTextDocumentIdentifier;
+    pattern: string; 
+    position: Position;
+};
+
+export type PrintCoqResponse = string; 
+
 export interface InterpretToPointRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;

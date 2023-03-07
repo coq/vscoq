@@ -15,12 +15,18 @@ export interface LocateNotification {
     id: string; 
     statement: string; 
 };
+export interface PrintNotification {
+    id: string; 
+    statement: string; 
+};
+
 
 export enum QueryType {
     search = "search", 
     about = "about", 
     check = "check",
-    locate = "locate"
+    locate = "locate", 
+    print = "print"
 }
 
 export interface SearchResultType {
@@ -43,8 +49,17 @@ export interface LocateResultType {
     type: "locate"; 
     statement: string;
 }
+export interface PrintResultType {
+    type: "print"; 
+    statement: string;
+}
 
-export type QueryResult = SearchResultType | CheckResultType | AboutResultType | LocateResultType;
+export type QueryResult = 
+    SearchResultType 
+    | CheckResultType 
+    | AboutResultType 
+    | LocateResultType 
+    | PrintResultType;
 
 export interface Query {
     pattern: string; 
