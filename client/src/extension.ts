@@ -25,6 +25,7 @@ import {
 } from './manualChecking';
 import { makeCursorPositionUpdateProofViewRequestParams, makeExecutionUpdateProofViewRequestParams } from './utilities/requests';
 import { DocumentStateViewProvider } from './panels/DocumentStateViewProvider';
+import CoqToolchainManager from './utilities/toolchain';
 
 
 let client: Client;
@@ -107,9 +108,12 @@ export function activate(context: ExtensionContext) {
         
     });
 
+    const coqTM = new CoqToolchainManager();
+
 	client.onReady()
 	.then(() => {
-
+    
+        coqTM.findCoqToolchainBin();
         checkVersion(client, context);
 
 		initializeDecorations(context);
