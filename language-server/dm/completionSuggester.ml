@@ -121,16 +121,19 @@ let atomic_types sigma env t: Atomics.t =
   Atomics.of_list
 
 let debug_print_atomics env sigma atomics = 
-  Atomics.fold (fun t l -> (Pp.string_of_ppcmds (pr_econstr_env env sigma t ) |> Printf.sprintf "%s") :: l) atomics [] |>
-  String.concat "," |>
-  Printf.eprintf "Atomics: [%s]\n"
+  Atomics.fold (fun t l -> (Pp.string_of_ppcmds (pr_econstr_env env sigma t ) |> Printf.sprintf "%s") :: l) atomics [] 
+  |> String.concat "," 
+  |> Printf.eprintf "Atomics: [%s]\n"
 
 let debug_print_decomposed env sigma c =
   let (list, other_c) = decompose_prod sigma c in 
-  list |>
-  List.map (fun (annotation, typ) -> Printf.sprintf "Annot: %s, typ: %s" (Context.binder_name annotation |> Name.print |> Pp.string_of_ppcmds) (Pp.string_of_ppcmds (pr_econstr_env env sigma typ))) |>
-  String.concat ", " |> 
-  Printf.eprintf "[%s]\n" 
+  list
+  |> List.map snd 
+  |> List.cons other_c
+  |> List.map (fun typ -> typ |> pr_econstr_env env sigma |> Pp.string_of_ppcmds) 
+  |> List.rev
+  |> String.concat "; " 
+  |> Printf.eprintf "[%s]\n"
 
 let compare_atomics (goal : Atomics.t) (a1, _ : Atomics.t * _) (a2, _ : Atomics.t * _) : int = 
   match (Atomics.inter a1 goal, Atomics.inter a2 goal) with
@@ -176,11 +179,12 @@ let get_completion_items ~id params st loc =
   let open Yojson.Basic.Util in
   let hypotheses = get_hyps st loc in
   let lemmasOption = DocumentManager.get_lemmas st loc in
-  get_goal_type_option st (Some loc)
+  let result = get_goal_type_option st (Some loc)
   |> Option.map (fun (goal, sigma, env) -> 
     (*debug_print_kind_of_type sigma env (type_kind_opt sigma goal);
     debug_print_unifier env sigma goal;*)
     debug_print_decomposed env sigma goal;
+    goal |> atomic_types sigma env |> debug_print_atomics env sigma;
     let lemmas = lemmasOption |> Option.map 
       (fun l -> 
         rank_choices goal sigma env l 
@@ -191,4 +195,6 @@ let get_completion_items ~id params st loc =
     |> List.map (Option.default []) 
     |> List.flatten
   ) 
-  |> Option.default []
+  |> Option.default [] in
+  if result = [] then Printf.eprintf "No results\n";
+  result
