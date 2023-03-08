@@ -106,7 +106,7 @@ let debug_print_kind_of_type sigma env k: unit =
 
 (* Currently atomic type also returns "_UNBOUND_REL_N, we should probably skip those. "*)
 
-let atomic_types sigma env t: Atomics.t = 
+let atomic_types sigma t: Atomics.t = 
   let rec aux t : types list = 
     match (type_kind_opt sigma t) with
     | Some SortType t -> [] (* Might be possible to get atomics from also *)
@@ -144,12 +144,35 @@ let compare_atomics (goal : Atomics.t) (a1, _ : Atomics.t * _) (a2, _ : Atomics.
     (* Return the set with largest overlap, so we sort in increasing order swap the arguments *)
     compare (Atomics.cardinal r2) (Atomics.cardinal r1)
 
+let split_types sigma c =
+  let (list, other_c) = decompose_prod sigma c in 
+  list 
+  |> List.map snd
+  |> List.cons other_c
+  |> List.map (fun typ -> atomic_types sigma typ)
+  |> List.fold_left (fun (acc, result) item -> (Atomics.union acc item, Atomics.union acc item :: result)) (Atomics.empty, [])
+  |> snd
+
+let best_subtype sigma goal c = 
+  c |> split_types sigma |> List.map (fun a -> (a, a)) |> List.stable_sort (compare_atomics goal) |> List.hd |> fst
+
+let compare_types (goal : Atomics.t) (sigma: Evd.evar_map) (a1, _ : types * _) (a2, _ : types * _) : int = 
+  let a1_best = best_subtype sigma goal a1 in
+  let a2_best = best_subtype sigma goal a2 in
+  match (Atomics.inter a1_best goal, Atomics.inter a2_best goal) with
+  | r1, r2 when Atomics.cardinal r1 = Atomics.cardinal r2 -> 
+    (* If the size is equal, priotize the one with fewest types *)
+    compare (Atomics.cardinal (atomic_types sigma a1)) (Atomics.cardinal (atomic_types sigma a2))
+  | r1, r2 -> 
+    (* Return the set with largest overlap, so we sort in increasing order swap the arguments *)
+    compare (Atomics.cardinal r2) (Atomics.cardinal r1)
+
 let rank_choices (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
-  let lemmaAtomics = List.map (fun (l : CompletionItems.completion_item) -> 
-    (atomic_types sigma env (of_constr l.typ), l)
+  let lemmaTypes = List.map (fun (l : CompletionItems.completion_item) -> 
+    (of_constr l.typ, l)
   ) lemmas in
-  let goalAtomics = atomic_types sigma env goal in
-  List.stable_sort (compare_atomics goalAtomics) lemmaAtomics |> 
+  let goalAtomics = atomic_types sigma goal in
+  List.stable_sort (compare_types goalAtomics sigma) lemmaTypes |> 
   List.map snd
 
 let get_hyps st loc =
@@ -184,7 +207,7 @@ let get_completion_items ~id params st loc =
     (*debug_print_kind_of_type sigma env (type_kind_opt sigma goal);
     debug_print_unifier env sigma goal;*)
     debug_print_decomposed env sigma goal;
-    goal |> atomic_types sigma env |> debug_print_atomics env sigma;
+    goal |> atomic_types sigma |> debug_print_atomics env sigma;
     let lemmas = lemmasOption |> Option.map 
       (fun l -> 
         rank_choices goal sigma env l 
