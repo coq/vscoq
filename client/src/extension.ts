@@ -73,11 +73,11 @@ export function activate(context: ExtensionContext) {
         searchProvider.launchQuery(queryText, type);
     };
 
-    registerVscoqTextCommand('searchCursor', (editor) => launchQuery(editor, "Search"));
-    registerVscoqTextCommand('aboutCursor', (editor) => launchQuery(editor, "About"));
-    registerVscoqTextCommand('checkCursor', (editor) => launchQuery(editor, "Check"));
-    registerVscoqTextCommand('locateCursor', (editor) => launchQuery(editor, "Locate"));
-    registerVscoqTextCommand('printCursor', (editor) => launchQuery(editor, "Print"));
+    registerVscoqTextCommand('searchCursor', (editor) => launchQuery(editor, "search"));
+    registerVscoqTextCommand('aboutCursor', (editor) => launchQuery(editor, "about"));
+    registerVscoqTextCommand('checkCursor', (editor) => launchQuery(editor, "check"));
+    registerVscoqTextCommand('locateCursor', (editor) => launchQuery(editor, "locate"));
+    registerVscoqTextCommand('printCursor', (editor) => launchQuery(editor, "print"));
     registerVscoqTextCommand('interpretToPoint', (editor) => sendInterpretToPoint(editor, client));
     registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
     registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));
