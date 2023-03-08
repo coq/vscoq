@@ -295,11 +295,17 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
     let uri = textDocument |> member "uri" |> to_string in
     let loc = params |> member "position" |> parse_loc in
     let st = Hashtbl.find states uri in
-    let completionItems = Dm.CompletionSuggester.get_completion_items ~id params st loc in
-    let items = List.mapi make_CompletionItem completionItems in
-    let result = Ok (CompletionList.yojson_of_t {isIncomplete = false; items = items;}) in
-    output_json @@ Response.(yojson_of_t { id; result })
-
+    match Dm.CompletionSuggester.get_completion_items ~id params st loc with
+    | Ok completionItems -> 
+      let items = List.mapi make_CompletionItem completionItems in
+      let result = Ok (CompletionList.yojson_of_t {isIncomplete = false; items = items;}) in
+      output_json @@ Response.(yojson_of_t { id; result })
+    | Error e -> 
+      let code = Lsp.LspData.Error.requestFailed in
+      let message = e in
+      let error = Response.Error.{ code; message } in
+      output_json @@ Response.(yojson_of_t { id; result = Error error})
+      
 let coqtopResetCoq ~id params =
   let open Yojson.Safe.Util in
   let uri = params |> member "uri" |> to_string in
