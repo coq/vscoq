@@ -22,15 +22,16 @@ let mk_hyp sigma d (env,l) =
   let hyps = ids' |> List.map (fun id -> (id, Pp.string_of_ppcmds typ', "")) in
   (env', hyps @ l)
 
-let get_goal_type st loc =
-  let goal, sigma = 
-    match DocumentManager.get_proof st loc with
-    | Some Proof.{ goals; sigma; _ } -> List.nth goals 0, sigma
-    | None -> raise (Invalid_argument "goal") 
-  in
-  let evi = Evd.find_undefined sigma goal in
-  let env = Evd.evar_filtered_env (Global.env ()) evi in
-  (Evd.evar_concl evi, sigma, env)
+let get_goal_type_option st loc =
+  let proof = DocumentManager.get_proof st loc in
+  Option.bind proof (fun Proof.{ goals; sigma; _ } -> 
+    List.nth_opt goals 0 
+    |> Option.map (fun goal ->
+      let evi = Evd.find_undefined sigma goal in
+      let env = Evd.evar_filtered_env (Global.env ()) evi in
+      Evd.evar_concl evi, sigma, env
+      )
+    )
 
 type unifier = 
   | SortUniType of ESorts.t
@@ -168,15 +169,18 @@ let get_completion_items ~id params st loc =
   let open Yojson.Basic.Util in
   let hypotheses = get_hyps st loc in
   let lemmasOption = DocumentManager.get_lemmas st loc in
-  let goal, sigma, env = get_goal_type st (Some loc) in
-  debug_print_kind_of_type sigma env (type_kind_opt sigma goal);
-  debug_print_unifier env sigma goal;
-  let lemmas = lemmasOption |> Option.map 
-    (fun l -> 
-      rank_choices goal sigma env l |> 
-      take 10000 |> 
-      List.map CompletionItems.pp_completion_item
-    ) in
-  [lemmas; hypotheses] 
-  |> List.map (Option.default [])
-  |> List.flatten
+  get_goal_type_option st (Some loc)
+  |> Option.map (fun (goal, sigma, env) -> 
+    debug_print_kind_of_type sigma env (type_kind_opt sigma goal);
+    debug_print_unifier env sigma goal;
+    let lemmas = lemmasOption |> Option.map 
+      (fun l -> 
+        rank_choices goal sigma env l 
+        |> take 10000 
+        |> List.map CompletionItems.pp_completion_item
+      ) in
+    [lemmas; hypotheses] 
+    |> List.map (Option.default []) 
+    |> List.flatten
+  ) 
+  |> Option.default []
