@@ -125,6 +125,13 @@ let debug_print_atomics env sigma atomics =
   String.concat "," |>
   Printf.eprintf "Atomics: [%s]\n"
 
+let debug_print_decomposed env sigma c =
+  let (list, other_c) = decompose_prod sigma c in 
+  list |>
+  List.map (fun (annotation, typ) -> Printf.sprintf "Annot: %s, typ: %s" (Context.binder_name annotation |> Name.print |> Pp.string_of_ppcmds) (Pp.string_of_ppcmds (pr_econstr_env env sigma typ))) |>
+  String.concat ", " |> 
+  Printf.eprintf "[%s]\n" 
+
 let compare_atomics (goal : Atomics.t) (a1, _ : Atomics.t * _) (a2, _ : Atomics.t * _) : int = 
   match (Atomics.inter a1 goal, Atomics.inter a2 goal) with
   | r1, r2 when Atomics.cardinal r1 = Atomics.cardinal r2 -> 
@@ -171,8 +178,9 @@ let get_completion_items ~id params st loc =
   let lemmasOption = DocumentManager.get_lemmas st loc in
   get_goal_type_option st (Some loc)
   |> Option.map (fun (goal, sigma, env) -> 
-    debug_print_kind_of_type sigma env (type_kind_opt sigma goal);
-    debug_print_unifier env sigma goal;
+    (*debug_print_kind_of_type sigma env (type_kind_opt sigma goal);
+    debug_print_unifier env sigma goal;*)
+    debug_print_decomposed env sigma goal;
     let lemmas = lemmasOption |> Option.map 
       (fun l -> 
         rank_choices goal sigma env l 
