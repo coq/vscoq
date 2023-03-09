@@ -1,18 +1,25 @@
-import { window } from 'vscode';
+import { window, workspace } from 'vscode';
 import { Disposable } from "vscode-languageclient";
+import { exec } from 'child_process';
 import * as path from 'path';
 
-export default class CoqToolchainManager implements Disposable {
+export default class VsCoqToolchainManager implements Disposable {
     
     private static _channel: any = window.createOutputChannel('vscoq-toolchain-manager');
 
     public dispose(): void {
         
     }
-
-    public findCoqToolchainBin() {
-        this.searchForCoqInPath();
-    }
+    
+    public performChecks() : void {
+        const vscoqtopPath = this.vscoqtopPath();
+        if(vscoqtopPath) {
+            VsCoqToolchainManager._channel.appendLine("Found vscoqtop, searching for coq libs");
+            this.checkIfCoqFound(vscoqtopPath);
+        } else {
+            VsCoqToolchainManager._channel.appendLine("Could not find vscoqtop, notiftying user");
+        }
+    };
 
     private getEnvPath() : string {
         if(process.platform === 'win32') {
@@ -38,11 +45,43 @@ export default class CoqToolchainManager implements Disposable {
         return value.join(path.delimiter);
     }
 
-    private searchForCoqInPath () {
-        const pathVars = this.splitEnvPath(this.getEnvPath());
-        CoqToolchainManager._channel.appendLine('Searching Path var: ');
-        for(let i in pathVars) {
-            CoqToolchainManager._channel.appendLine(pathVars[i]);
+    private vscoqtopPath () : string {
+        const path = workspace.getConfiguration('vscoq').get('path') as string;
+        if(path) {
+            VsCoqToolchainManager._channel.appendLine("Found vscoqtop in user configuration: " + path);
+            return path; 
         }
+        else {
+            VsCoqToolchainManager._channel.appendLine("No path set for vscoqtop in user configuration, querying PATH");
+            return this.searchForVscoqtopInPath();
+        }
+
     }
+
+    private searchForVscoqtopInPath () : string {
+        const pathVars = this.splitEnvPath(this.getEnvPath());
+        VsCoqToolchainManager._channel.appendLine('Searching Path var: ');
+        for(let i in pathVars) {
+            if(path.basename(pathVars[i]) === 'vscoqtop') {
+                VsCoqToolchainManager._channel.appendLine("Found vscoqtop in PATH: " + pathVars[i]);
+                return pathVars[i];
+            }
+        }
+        return "";
+    }
+
+    private checkIfCoqFound(vscoqtopPath: string) {
+        const cmd = vscoqtopPath + " -where";
+        VsCoqToolchainManager._channel.appendLine("Launching command: " + cmd );
+        exec(cmd, (error, stdout, stderr) => {
+            if(error) {
+                VsCoqToolchainManager._channel.appendLine(error);
+                window.showErrorMessage(stderr);
+            } else {
+                VsCoqToolchainManager._channel.appendLine(stdout);
+                VsCoqToolchainManager._channel.appendLine(stderr);
+            }
+        });
+    };
+
 }
