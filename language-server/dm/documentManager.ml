@@ -281,9 +281,9 @@ let about st pos ~goal ~pattern =
   match get_context st pos with 
   | None -> Error ("No context found") (*TODO execute *)
   | Some (sigma, env) ->
-    let ref_or_by_not = parse_entry st pos (Pcoq.Prim.smart_global) pattern in
-    let udecl = None (* TODO? *) in
     try
+      let ref_or_by_not = parse_entry st pos (Pcoq.Prim.smart_global) pattern in
+      let udecl = None (* TODO? *) in
       Ok (Pp.string_of_ppcmds @@ Prettyp.print_about env sigma ref_or_by_not udecl)
     with e ->
       let e, info = Exninfo.capture e in
