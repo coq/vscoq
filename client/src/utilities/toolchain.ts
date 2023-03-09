@@ -18,6 +18,7 @@ export default class VsCoqToolchainManager implements Disposable {
             this.checkIfCoqFound(vscoqtopPath);
         } else {
             VsCoqToolchainManager._channel.appendLine("Could not find vscoqtop, notiftying user");
+            window.showErrorMessage("Could not find vscoqtop, please provide a path in user settings");
         }
     };
 
