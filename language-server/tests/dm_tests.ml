@@ -14,12 +14,9 @@
 open Base
 open Dm
 open Lsp
+open Common
 
-let init_state = Vernacstate.freeze_full_state ~marshallable:false
-
-let init text =
-  let open DocumentManager in
-  init init_state ~opts:[] ~uri:"doc" ~text
+let init text = openDoc ~uri:"doc" ~text
 
 let edit_text st ~start ~stop ~text =
   let doc = DocumentManager.Internal.document st in
@@ -49,6 +46,7 @@ let rec handle_events n (events : DocumentManager.event Sel.todo) st =
     let todo = Sel.enqueue remaining new_events in
     handle_events (n-1) todo st
   end
+let handle_events e st = handle_events 100 e st
 
 let check_no_diag st =
   let diagnostics = DocumentManager.diagnostics st in
@@ -103,7 +101,7 @@ let%test_unit "exec.init" =
   let st, events = DocumentManager.interpret_to_end st in
   let todo = Sel.(enqueue empty init_events) in
   let todo = Sel.(enqueue todo events) in
-  let st = handle_events 4 todo st in
+  let st = handle_events todo st in
   let ranges = (DocumentManager.executed_ranges st).checked in
   let positions = Stdlib.List.map (fun s -> s.LspData.Range.start.character) ranges in
   [%test_eq: int list] positions [ 0; 22 ]

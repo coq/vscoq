@@ -54,7 +54,7 @@ val handle_event : event -> state -> (state option * events)
 (** Execution happens in two steps. In particular the event one takes only
     one task at a time to ease checking for interruption *)
 type prepared_task
-val build_tasks_for : Document.document -> state -> sentence_id -> Vernacstate.t * prepared_task list
+val build_tasks_for : Scheduler.schedule -> state -> sentence_id -> Vernacstate.t * prepared_task list
 val execute : doc_id:Feedback.doc_id -> state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool)
 
 (** Coq toplevels for delegation without fork *)

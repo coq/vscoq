@@ -137,7 +137,7 @@ let interpret_to_loc state loc : (state * event Sel.event list) =
     | None -> (* document is empty *) (state, [])
     | Some { id; stop; start } ->
       let state = { state with observe_id = Some id } in
-      let vst_for_next_todo, todo = ExecutionManager.build_tasks_for state.document state.execution_state id in
+      let vst_for_next_todo, todo = ExecutionManager.build_tasks_for (Document.schedule state.document) state.execution_state id in
       if CList.is_empty todo then
         (state, [])
       else
@@ -157,7 +157,7 @@ let interpret_to state id : (state * event Sel.event list) =
   | None -> (state, []) (* TODO error? *)
   | Some { id; stop; start } ->
     let state = { state with observe_id = Some id } in
-    let vst_for_next_todo, todo = ExecutionManager.build_tasks_for state.document state.execution_state id in
+    let vst_for_next_todo, todo = ExecutionManager.build_tasks_for (Document.schedule state.document) state.execution_state id in
     if CList.is_empty todo then
       (state, [])
     else

@@ -60,10 +60,11 @@ let set_options o = options := o
 
 type prepared_task =
   | PSkip of sentence_id
-  | PExec of sentence_id * ast * Vernacstate.Synterp.t
-  | PQuery of sentence_id * ast * Vernacstate.Synterp.t
+  | PExec of executable_sentence
+  | PQuery of executable_sentence
   | PDelegate of { terminator_id: sentence_id;
                    opener_id: sentence_id;
+                   proof_using: Vernacexpr.section_subset_expr;
                    last_step_id: sentence_id;
                    tasks: prepared_task list;
                  }
@@ -135,8 +136,22 @@ let interp_ast ~doc_id ~state_id ~st ast =
         st, error loc (Pp.string_of_ppcmds msg) st,[]
 
 (* This adapts the Future API with our event model *)
-let interp_qed_delayed ~state_id ~st =
+let interp_qed_delayed ~proof_using ~state_id ~st =
   let f proof =
+    let proof =
+      let env = Global.env () in
+      let sigma, _ = Declare.Proof.get_current_context proof in
+      let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
+      let terms = List.map (fun (_,_,x) -> x) (initial_goals (Declare.Proof.get proof)) in
+      let using = Proof_using.definition_using env sigma ~using:proof_using ~terms in
+      let vars = Environ.named_context env in
+      Names.Id.Set.iter (fun id ->
+          if not (List.exists Util.(Context.Named.Declaration.get_id %> Names.Id.equal id) vars) then
+            CErrors.user_err
+              Pp.(str "Unknown variable: " ++ Names.Id.print id ++ str "."))
+        using;
+      let _, pstate = Declare.Proof.set_used_variables proof ~using in
+      pstate in
     let fix_exn = None in (* FIXME *)
     let f, assign = Future.create_delegate ~blocking:false ~name:"XX" fix_exn in
     Declare.Proof.close_future_proof ~feedback_id:state_id proof f, assign
@@ -204,38 +219,31 @@ let find_fulfilled_opt x m =
 
 let jobs : (DelegationManager.job_id * Sel.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
 
-let prepare_sentence doc id =
-  match Document.get_sentence doc id with
-  | None -> PSkip id
-  | Some sentence ->
-    begin match sentence.Document.ast with
-    | Document.ValidAst (ast,_,_) -> PExec(id,ast,sentence.synterp_state)
-    | Document.ParseError _ -> PSkip id
-    end
-
-let prepare_task delegation_mode doc task : prepared_task list =
+let rec prepare_task task : prepared_task list =
   match task with
   | Skip id -> [PSkip id]
-  | Exec(id,ast,synterp_st) -> [PExec(id,ast,synterp_st)]
-  | Query(id,ast,synterp_st) -> [PQuery(id,ast,synterp_st)]
-  | OpaqueProof { terminator_id; opener_id; tasks_ids } ->
-      match delegation_mode with
+  | Exec e -> [PExec e]
+  | Query e -> [PQuery e]
+  | OpaqueProof { terminator; opener_id; tasks; proof_using} ->
+      match !options.delegation_mode with
       | DelegateProofsToWorkers _ ->
-          let tasks = List.map (prepare_sentence doc) tasks_ids in
-          let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
-          [PDelegate {terminator_id; opener_id; last_step_id; tasks}]
+          log "delegating proofs to workers";
+          let last_step_id = (CList.last tasks).id in
+          let tasks = List.map (fun x -> PExec x) tasks in
+          [PDelegate {terminator_id = terminator.id; opener_id; last_step_id; tasks; proof_using}]
       | CheckProofsInMaster ->
-          List.map (prepare_sentence doc) (tasks_ids @ [terminator_id])
+          log "running the proof in master as per config";
+          List.map (fun x -> PExec x) tasks @ [PExec terminator]
       | SkipProofs ->
-          log (Printf.sprintf "skipping %d" (List.length tasks_ids));
+          log (Printf.sprintf "skipping proof made of %d tasks" (List.length tasks));
           let tasks = [] in
-          let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
-          [PDelegate {terminator_id; opener_id; last_step_id; tasks}]
+          let last_step_id = (CList.last tasks).id in
+          [PDelegate {terminator_id = terminator.id; opener_id; last_step_id; tasks; proof_using}]
 
 let id_of_prepared_task = function
   | PSkip id -> id
-  | PExec(id, _, _) -> id
-  | PQuery(id, _, _) -> id
+  | PExec ex -> ex.id
+  | PQuery ex -> ex.id
   | PDelegate { terminator_id } -> terminator_id
 
 let purge_state = function
@@ -256,7 +264,7 @@ let ensure_proof_over = function
 let worker_execute ~doc_id last_step_id ~send_back (vs,events) = function
   | PSkip id ->
     (vs, events)
-  | PExec (id,ast,synterp) ->
+  | PExec { id; ast; synterp } ->
     let vs = { vs with Vernacstate.synterp } in
     log ("worker interp " ^ Stateid.to_string id);
     let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
@@ -288,23 +296,23 @@ let execute ~doc_id st (vs, events, interrupted) task =
       | PSkip id ->
           let st = update st id (success vs) in
           (st, vs, events, false)
-      | PExec (id,ast,synterp) ->
+      | PExec { id; ast; synterp } ->
           let vs = { vs with Vernacstate.synterp } in
           let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
           let st = update st id v in
           (st, vs, events @ ev, false)
-      | PQuery (id,ast,synterp) ->
+      | PQuery { id; ast; synterp } ->
           let vs = { vs with Vernacstate.synterp } in
           let _, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
           let st = update st id v in
           (st, vs, events @ ev, false)
-      | PDelegate { terminator_id; opener_id; last_step_id; tasks } ->
+      | PDelegate { terminator_id; opener_id; last_step_id; tasks; proof_using } ->
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
             let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id; last_proof_step_id  = last_step_id } in
             let job_id = DelegationManager.mk_job_id terminator_id in
             (* The proof was successfully opened *)
-            let last_vs, v, assign = interp_qed_delayed ~state_id:terminator_id ~st:vs in
+            let last_vs, v, assign = interp_qed_delayed ~state_id:terminator_id ~proof_using ~st:vs in
             let complete_job status =
               try match status with
               | Success None ->
@@ -346,7 +354,7 @@ let execute ~doc_id st (vs, events, interrupted) task =
       let st = update st (id_of_prepared_task task) (Error ((None,"interrupted"),None)) in
       (st, vs, events, true)
 
-let build_tasks_for doc st id =
+let build_tasks_for sch st id =
   let rec build_tasks id tasks =
     begin match find_fulfilled_opt id st.of_sentence with
     | Some (Success (Some vs)) ->
@@ -359,7 +367,7 @@ let build_tasks_for doc st id =
       vs, tasks
     | _ ->
       log @@ "Non (locally) computed state " ^ Stateid.to_string id;
-      let (base_id, task) = task_for_sentence (Document.schedule doc) id in
+      let (base_id, task) = task_for_sentence sch id in
       begin match base_id with
       | None -> (* task should be executed in initial state *)
         st.initial, task :: tasks
@@ -369,7 +377,7 @@ let build_tasks_for doc st id =
     end
   in
   let vs, tasks = build_tasks id [] in
-  vs, List.concat_map (prepare_task !options.delegation_mode doc) tasks
+  vs, List.concat_map prepare_task tasks
 
 let errors st =
   List.fold_left (fun acc (id, (p,_)) ->
