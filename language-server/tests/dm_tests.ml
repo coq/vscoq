@@ -18,13 +18,14 @@ open Lsp
 let init_state = Vernacstate.freeze_full_state ~marshallable:false
 
 let init text =
-  DocumentManager.init init_state ~opts:[] ~uri:"doc" ~text
+  let open DocumentManager in
+  init init_state ~opts:[] ~uri:"doc" ~text
 
 let edit_text st ~start ~stop ~text =
   let doc = DocumentManager.Internal.document st in
   let start = Document.position_of_loc doc start in
-  let stop = Document.position_of_loc doc stop in
-  let range = LspData.Range.{ start; stop } in
+  let end_ = Document.position_of_loc doc stop in
+  let range = LspData.Range.{ start; end_ } in
   DocumentManager.apply_text_edits st [(range, text)]
 
   let insert_text st ~loc ~text =
@@ -51,7 +52,7 @@ let rec handle_events n (events : DocumentManager.event Sel.todo) st =
 
 let check_no_diag st =
   let diagnostics = DocumentManager.diagnostics st in
-  [%test_pred: LspData.diagnostic list] List.is_empty diagnostics
+  [%test_pred: LspData.Diagnostic.t list] List.is_empty diagnostics
 
 let%test_unit "parse.init" =
   let st, events = init "Definition x := true. Definition y := false." in
@@ -104,7 +105,7 @@ let%test_unit "exec.init" =
   let todo = Sel.(enqueue todo events) in
   let st = handle_events 4 todo st in
   let ranges = (DocumentManager.executed_ranges st).checked in
-  let positions = Stdlib.List.map (fun s -> s.LspData.Range.start.char) ranges in
+  let positions = Stdlib.List.map (fun s -> s.LspData.Range.start.character) ranges in
   [%test_eq: int list] positions [ 0; 22 ]
   (*check_no_diag st*)
 
