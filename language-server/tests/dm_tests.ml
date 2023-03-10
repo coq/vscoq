@@ -31,7 +31,7 @@ let edit_text st ~start ~stop ~text =
     edit_text st ~start:loc ~stop:loc ~text
     
 let rec handle_events n (events : DocumentManager.event Sel.todo) st =
-  if n <= 0 then (Stdlib.Format.eprintf "handle_events run out of steps\n"; exit 1)
+  if n <= 0 then (Stdlib.Format.eprintf "handle_events run out of steps\n"; Caml.exit 1)
   else if Sel.only_recurring_events events then st
   else begin
     (*Stdlib.Format.eprintf "waiting %a\n%!" Sel.(pp_todo DocumentManager.pp_event) events;*)
