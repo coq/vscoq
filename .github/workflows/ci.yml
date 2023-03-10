@@ -124,9 +124,10 @@ jobs:
         eval $(opam env)
         cd language-server && make
 
-    - run: |
+    - name: Unit tests
+      run: |
         eval $(opam env)
-        cd language-server && dune exec vscoqtop -- -v
+        cd language-server && make test
 
     - uses: actions/setup-node@v3
       with:
