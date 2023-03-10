@@ -74,7 +74,9 @@ export default class VsCoqToolchainManager implements Disposable {
     }
 
     private checkIfCoqFound(vscoqtopPath: string) {
-        const cmd = "./vscoqtop -where";
+        const options = workspace.getConfiguration('vscoq').get('args') as string[];
+
+        const cmd = ["./vscoqtop -where"].concat(options).join(' ');
         VsCoqToolchainManager._channel.appendLine("Launching command: " + cmd + " in folder: " + vscoqtopPath);
         exec(cmd, {cwd: vscoqtopPath}, (error, stdout, stderr) => {
             if(error) {
