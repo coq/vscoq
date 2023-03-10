@@ -2,6 +2,7 @@ import { window, workspace } from 'vscode';
 import { Disposable } from "vscode-languageclient";
 import { exec } from 'child_process';
 import * as path from 'path';
+import { isFileInFolder } from './fileHelper';
 
 export default class VsCoqToolchainManager implements Disposable {
     
@@ -12,14 +13,17 @@ export default class VsCoqToolchainManager implements Disposable {
     }
     
     public performChecks() : void {
-        const vscoqtopPath = this.vscoqtopPath();
-        if(vscoqtopPath) {
-            VsCoqToolchainManager._channel.appendLine("Found vscoqtop, searching for coq libs");
-            this.checkIfCoqFound(vscoqtopPath);
-        } else {
-            VsCoqToolchainManager._channel.appendLine("Could not find vscoqtop, notiftying user");
-            window.showErrorMessage("Could not find vscoqtop, please provide a path in user settings");
-        }
+
+        this.vscoqtopPath().then(vscoqtopPath => {
+            if(vscoqtopPath) {
+                VsCoqToolchainManager._channel.appendLine("Found vscoqtop, searching for coq libs");
+                this.checkIfCoqFound(vscoqtopPath);
+            } else {
+                VsCoqToolchainManager._channel.appendLine("Could not find vscoqtop, notiftying user");
+                window.showErrorMessage("Could not find vscoqtop, please provide a path in user settings");
+            }
+        });
+
     };
 
     private getEnvPath() : string {
@@ -46,25 +50,23 @@ export default class VsCoqToolchainManager implements Disposable {
         return value.join(path.delimiter);
     }
 
-    private vscoqtopPath () : string {
-        const path = workspace.getConfiguration('vscoq').get('path') as string;
-        if(path) {
-            VsCoqToolchainManager._channel.appendLine("Found vscoqtop in user configuration: " + path);
-            return path; 
+    private async vscoqtopPath () : Promise<string> {
+        const vscoqtopPath = workspace.getConfiguration('vscoq').get('path') as string;
+        if(vscoqtopPath) {
+            VsCoqToolchainManager._channel.appendLine("Found vscoqtop in user configuration: " + vscoqtopPath);
+            return path.dirname(vscoqtopPath); 
         }
         else {
             VsCoqToolchainManager._channel.appendLine("No path set for vscoqtop in user configuration, querying PATH");
-            return this.searchForVscoqtopInPath();
+            return await this.searchForVscoqtopInPath();
         }
 
     }
 
-    private searchForVscoqtopInPath () : string {
+    private async searchForVscoqtopInPath () : Promise<string> {
         const pathVars = this.splitEnvPath(this.getEnvPath());
-        VsCoqToolchainManager._channel.appendLine('Searching Path var: ');
         for(let i in pathVars) {
-            if(path.basename(pathVars[i]) === 'vscoqtop') {
-                VsCoqToolchainManager._channel.appendLine("Found vscoqtop in PATH: " + pathVars[i]);
+            if(await isFileInFolder('vscoqtop', pathVars[i])) {
                 return pathVars[i];
             }
         }
@@ -72,9 +74,9 @@ export default class VsCoqToolchainManager implements Disposable {
     }
 
     private checkIfCoqFound(vscoqtopPath: string) {
-        const cmd = vscoqtopPath + " -where";
-        VsCoqToolchainManager._channel.appendLine("Launching command: " + cmd );
-        exec(cmd, (error, stdout, stderr) => {
+        const cmd = "./vscoqtop -where";
+        VsCoqToolchainManager._channel.appendLine("Launching command: " + cmd + " in folder: " + vscoqtopPath);
+        exec(cmd, {cwd: vscoqtopPath}, (error, stdout, stderr) => {
             if(error) {
                 VsCoqToolchainManager._channel.appendLine(error);
                 window.showErrorMessage(stderr);

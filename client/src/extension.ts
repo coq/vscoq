@@ -113,7 +113,6 @@ export function activate(context: ExtensionContext) {
 	client.onReady()
 	.then(() => {
         
-        coqTM.performChecks();
         checkVersion(client, context);
 
 		initializeDecorations(context);
@@ -144,10 +143,11 @@ export function activate(context: ExtensionContext) {
         });
 
 	});
+    
+    coqTM.performChecks();
 
-
-	// Start the client. This will also launch the server
-	client.start();
+    // Start the client. This will also launch the server
+    client.start();
     context.subscriptions.push(client);
 
 }
