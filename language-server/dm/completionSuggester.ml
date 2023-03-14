@@ -167,6 +167,93 @@ let compare_types (goal : Atomics.t) (sigma: Evd.evar_map) (a1, _ : types * _) (
     (* Return the set with largest overlap, so we sort in increasing order swap the arguments *)
     compare (Atomics.cardinal r2) (Atomics.cardinal r1)
 
+let filter_options a = 
+  a |> Array.to_list |> Option.List.flatten |> Array.of_list
+
+let unifier_kind sigma (t : types) : unifier option = 
+  let rec aux bruijn t = match kind sigma t with
+    | Sort s -> SortUniType s |> Option.make
+    | Cast (c,_,t) -> failwith "Not implemented"
+    | Prod (na,t,c) -> aux (aux bruijn t :: bruijn) c
+    | LetIn (na,b,t,c) -> failwith "Not implemented"
+    | App (c,l) -> 
+      let l' = Array.map (aux bruijn) l in
+      AtomicUniType (c, filter_options l') |> Option.make
+    | Rel i -> List.nth bruijn (i-1)
+    | (Meta _ | Var _ | Evar _ | Const _
+    | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
+      -> AtomicUniType (t,[||]) |> Option.make
+    | (Lambda _ | Construct _ | Int _ | Float _ | Array _) -> None
+  in
+  aux [] t
+
+let score_unifier evd (goal : unifier) (u : unifier) : float =
+  let rec aux g u : float = match (g, u) with
+    | SortUniType s1, SortUniType s2 -> if ESorts.equal evd s1 s2 then 1. else 0.
+    (* We might want to check if the t in AtomicUniType actually belongs in the sort*)
+    | SortUniType _, _ -> 0. (* If the goal has a sort then it has to match *)
+    | _, SortUniType _ -> 1.
+    | AtomicUniType (t1, ua1), AtomicUniType (t2, ua2) -> 
+      let c = EConstr.compare_constr evd (EConstr.eq_constr evd) t1 t2 |> Bool.to_float in
+      if Array.length ua1 <> Array.length ua2 then c
+      else (Float.add) c (Array.map2 aux ua1 ua2 |> Array.fold_left (Float.add) 0.)
+  in
+  aux goal u
+
+let unpack_unifier u : unifier list = 
+  let res = ref [] in
+  let rec aux u = match u with
+    | SortUniType s -> ();
+    | AtomicUniType (t, ua) -> 
+      res := u :: !res;
+      Array.iter aux ua
+  in
+  aux u;
+  !res
+
+let size_unifier u = 
+  let rec aux u = match u with
+    | SortUniType s -> 1l
+    | AtomicUniType (t, ua) -> Array.fold_left (fun acc u -> Int32.add acc (aux u)) 1l ua
+  in
+  aux u
+
+let print_unifier env sigma u =
+  let rec aux i u =
+    Printf.eprintf "%s" (String.init i (fun _ -> ' '));
+    match u with
+    | SortUniType s -> Printf.eprintf "SortUniType: ";
+      (match ESorts.kind sigma s with 
+      | SProp -> Printf.eprintf "SProp\n";
+      | Prop -> Printf.eprintf "Prop\n";
+      | Set  -> Printf.eprintf "Set\n";
+      | Type u -> Printf.eprintf "Type\n";
+      | QSort (u, l) -> Printf.eprintf "QSort\n";
+      )
+    | AtomicUniType (t, ua) -> 
+      Printf.eprintf "AtomicUniType %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma t));
+      Array.iter (fun u -> aux (i + 1) u) ua
+  in
+  aux 0 u
+
+let debug_print_unifier env sigma t : unit = 
+  match (unifier_kind sigma t) with
+  | None -> Printf.eprintf "None\n"
+  | Some unf -> List.iter (fun u -> Printf.eprintf "Size: %d\n" (size_unifier u |> Int32.to_int);
+    print_unifier env sigma u) (unpack_unifier unf)
+
+let finalScore score size = Float.sub size (Float.mul score 5.) 
+
+(*Heuristics*)
+
+let rank_simple_type_intersection (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
+  let lemmaAtomics = List.map (fun (l : CompletionItems.completion_item) -> 
+    (atomic_types sigma (of_constr l.typ), l)
+  ) lemmas in
+  let goalAtomics = atomic_types sigma goal in
+  List.stable_sort (compare_atomics goalAtomics) lemmaAtomics |> 
+  List.map snd 
+  
 
 let rank_split_type_intersection (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
   (*Split type intersection: Split the lemmas by implications, compare the suffix to the goal, pick best match*)
@@ -176,6 +263,26 @@ let rank_split_type_intersection (goal : Evd.econstr) sigma env lemmas : Complet
   let goalAtomics = atomic_types sigma goal in
   List.stable_sort (compare_types goalAtomics sigma) lemmaTypes |> 
   List.map snd
+
+let rank_structured_type_evaluation (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
+  match unifier_kind sigma goal with
+  | None -> lemmas
+  | Some goalUnf -> 
+    let lemmaUnfs = List.map (fun (l : CompletionItems.completion_item) -> 
+      match (unifier_kind sigma (of_constr l.typ)) with
+      | None -> ((Float.min_float), l)
+      | Some unf -> 
+        let scores = List.map (score_unifier sigma goalUnf) (unpack_unifier unf) in
+        let size = size_unifier unf |> Int32.to_float in
+        let maxScore = List.fold_left Float.max 0. scores in
+        let final = finalScore maxScore size in
+        (final, l)
+    ) lemmas in
+    let sorted = List.stable_sort (fun (x, _) (y, _) -> Float.compare x y) lemmaUnfs in
+    Printf.eprintf "Best Result:\n";
+    debug_print_unifier env sigma (List.nth sorted 0 |> snd |> (fun v -> v.typ)|> of_constr);
+    debug_print_kind_of_type sigma env (List.nth sorted 0 |> snd |> (fun v -> v.typ)|> of_constr |> type_kind_opt sigma);
+    List.map snd sorted
 
 (*Put the chosen heuristic on the line below*)
 let rank_choices = rank_split_type_intersection
