@@ -184,9 +184,18 @@ module Settings : sig
       } [@@deriving yojson] [@@yojson.allow_extra_fields]
     
     end
+
+    module RankingAlgoritm : sig
+      type t = 
+      | SimpleTypeIntersection
+      | SplitTypeIntersection
+      | StructuredTypeEvaluation
+      [@@deriving yojson]
+    end
   
     type t = {
       proof: Proof.t;
+      ranking: RankingAlgoritm.t;
     } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
   

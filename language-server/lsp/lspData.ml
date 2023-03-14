@@ -223,6 +223,26 @@ module Settings = struct
   
   end
 
+  module RankingAlgoritm = struct
+
+    type t = 
+    | SimpleTypeIntersection
+    | SplitTypeIntersection
+    | StructuredTypeEvaluation
+
+    let yojson_of_t = function
+    | SimpleTypeIntersection -> `Int 0
+    | SplitTypeIntersection -> `Int 1
+    | StructuredTypeEvaluation -> `Int 2
+
+    let t_of_yojson = function
+    | `Int 0 -> SimpleTypeIntersection
+    | `Int 1 -> SplitTypeIntersection
+    | `Int 2 -> StructuredTypeEvaluation
+    | _ -> Yojson.json_error @@ "invalid value "
+
+  end
+
   module Proof = struct
 
     type t = {
@@ -235,6 +255,7 @@ module Settings = struct
 
   type t = {
     proof: Proof.t;
+    ranking: RankingAlgoritm.t;
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end
