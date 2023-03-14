@@ -430,13 +430,10 @@ let string_of_diff doc l =
 end
 
 type document = {
-  id : int;
   parsed_loc : int;
   raw_doc : RawDoc.t;
   parsed_doc : ParsedDoc.t;
 }
-
-let id_of_doc doc = doc.id
 
 let parsed_ranges doc = ParsedDoc.parsed_ranges doc.raw_doc doc.parsed_doc
 
@@ -591,15 +588,9 @@ let validate_document ({ parsed_loc; raw_doc; parsed_doc } as document) =
     let parsed_loc = ParsedDoc.pos_at_end parsed_doc in
     invalid_ids, { document with parsed_doc; parsed_loc }
 
-let fresh_doc_id =
-  let doc_id = ref (-1) in
-  fun () -> incr doc_id; !doc_id
-
 let create_document text =
-  let id = fresh_doc_id () in
   let raw_doc = RawDoc.create text in
-    { id;
-      parsed_loc = -1;
+    { parsed_loc = -1;
       raw_doc;
       parsed_doc = ParsedDoc.empty;
     }
