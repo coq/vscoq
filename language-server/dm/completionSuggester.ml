@@ -285,7 +285,12 @@ let rank_structured_type_evaluation (goal : Evd.econstr) sigma env lemmas : Comp
     List.map snd sorted
 
 (*Put the chosen heuristic on the line below*)
-let rank_choices = rank_split_type_intersection
+let rank_choices algorithm = 
+  match algorithm with
+  | "simple_type_intersection" -> rank_simple_type_intersection
+  | "split_type_intersection" -> rank_split_type_intersection
+  | "structured_type_evalutation" -> rank_structured_type_evaluation
+  | _ -> failwith "algorithm not found"
 
 let get_hyps st loc =
   let mk_hyps sigma goal =
@@ -310,7 +315,7 @@ let take n l =
   in
   List.rev (sub_list n [] l)
 
-let get_completion_items ~id params st loc =
+let get_completion_items ~id params st loc algorithm =
   let open Yojson.Basic.Util in
   let hypotheses = get_hyps st loc in
   let lemmasOption = DocumentManager.get_lemmas st loc in
@@ -318,7 +323,7 @@ let get_completion_items ~id params st loc =
   |> Option.map (fun (goal, sigma, env) -> 
     let lemmas = lemmasOption |> Option.map 
       (fun l -> 
-        rank_choices goal sigma env l 
+        rank_choices algorithm goal sigma env l
         |> take 10000 
         |> List.map CompletionItems.pp_completion_item
       ) in

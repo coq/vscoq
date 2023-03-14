@@ -32,6 +32,8 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let check_mode = ref Settings.Mode.Continuous
 
+let algorithm = ref "simple_type_intersection"
+
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
 let conf_request_id = 3456736879
@@ -110,6 +112,7 @@ let do_initialize ~id params =
   let open Yojson.Safe.Util in
   let settings = params |> member "initializationOptions" |> Settings.t_of_yojson in
   do_configuration settings;
+  algorithm := (params |> member "initializationOptions" |> member "algorithm" |> to_string);
   let capabilities = ServerCapabilities.{
     textDocumentSync = Incremental;
     completionProvider = { 
@@ -295,7 +298,7 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
     let uri = textDocument |> member "uri" |> to_string in
     let loc = params |> member "position" |> parse_loc in
     let st = Hashtbl.find states uri in
-    let completionItems = Dm.CompletionSuggester.get_completion_items ~id params st loc in
+    let completionItems = Dm.CompletionSuggester.get_completion_items ~id params st loc algorithm.contents in
     let items = List.mapi make_CompletionItem completionItems in
     let result = Ok (CompletionList.yojson_of_t {isIncomplete = false; items = items;}) in
     output_json @@ Response.(yojson_of_t { id; result })
