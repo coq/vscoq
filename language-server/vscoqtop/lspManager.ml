@@ -32,6 +32,8 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let check_mode = ref Settings.Mode.Continuous
 
+let algorithm = ref Settings.RankingAlgoritm.StructuredTypeEvaluation
+
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
 let conf_request_id = 3456736879
@@ -93,7 +95,8 @@ let do_configuration settings =
   in
   Hashtbl.filter_map_inplace (fun _ st ->
     Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states;
-  check_mode := settings.proof.mode
+  check_mode := settings.proof.mode;
+  algorithm := settings.ranking
 
 let send_configuration_request () =
   let id = conf_request_id in
@@ -295,7 +298,7 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
     let uri = textDocument |> member "uri" |> to_string in
     let loc = params |> member "position" |> parse_loc in
     let st = Hashtbl.find states uri in
-    match Dm.CompletionSuggester.get_completion_items ~id params st loc with
+    match Dm.CompletionSuggester.get_completion_items ~id params st loc !algorithm with
     | Ok completionItems -> 
       let items = List.mapi make_CompletionItem completionItems in
       let result = Ok (CompletionList.yojson_of_t {isIncomplete = false; items = items;}) in
