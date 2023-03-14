@@ -167,13 +167,18 @@ let compare_types (goal : Atomics.t) (sigma: Evd.evar_map) (a1, _ : types * _) (
     (* Return the set with largest overlap, so we sort in increasing order swap the arguments *)
     compare (Atomics.cardinal r2) (Atomics.cardinal r1)
 
-let rank_choices (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
+
+let rank_split_type_intersection (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
+  (*Split type intersection: Split the lemmas by implications, compare the suffix to the goal, pick best match*)
   let lemmaTypes = List.map (fun (l : CompletionItems.completion_item) -> 
     (of_constr l.typ, l)
   ) lemmas in
   let goalAtomics = atomic_types sigma goal in
   List.stable_sort (compare_types goalAtomics sigma) lemmaTypes |> 
   List.map snd
+
+(*Put the chosen heuristic on the line below*)
+let rank_choices = rank_split_type_intersection
 
 let get_hyps st loc =
   let mk_hyps sigma goal =
@@ -204,10 +209,6 @@ let get_completion_items ~id params st loc =
   let lemmasOption = DocumentManager.get_lemmas st loc in
   let result = get_goal_type_option st (Some loc)
   |> Option.map (fun (goal, sigma, env) -> 
-    (*debug_print_kind_of_type sigma env (type_kind_opt sigma goal);
-    debug_print_unifier env sigma goal;*)
-    debug_print_decomposed env sigma goal;
-    goal |> atomic_types sigma |> debug_print_atomics env sigma;
     let lemmas = lemmasOption |> Option.map 
       (fun l -> 
         rank_choices goal sigma env l 
