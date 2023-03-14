@@ -112,7 +112,9 @@ let do_initialize ~id params =
   let open Yojson.Safe.Util in
   let settings = params |> member "initializationOptions" |> Settings.t_of_yojson in
   do_configuration settings;
-  algorithm := (params |> member "initializationOptions" |> member "algorithm" |> to_string);
+  match (params |> member "initializationOptions" |> member "algorithm" |> to_option to_string) with
+    | None -> ();
+    | Some s -> algorithm := s;
   let capabilities = ServerCapabilities.{
     textDocumentSync = Incremental;
     completionProvider = { 
