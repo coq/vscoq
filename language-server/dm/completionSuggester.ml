@@ -43,25 +43,7 @@ let get_goal_type_option st loc =
       )
     )
 
-type type_kind =
-  | SortType   of ESorts.t
-  | CastType   of types * types
-  | ProdType   of Name.t Context.binder_annot * types * types
-  | LetInType  of Name.t Context.binder_annot * types * types * types
-  | AtomicType of types * types array
-
-let type_kind sigma t : type_kind = match kind sigma t with
-  | Sort s -> SortType s
-  | Cast (c,_,t) -> CastType (c, t)
-  | Prod (na,t,c) -> ProdType (na, t, c)
-  | LetIn (na,b,t,c) -> LetInType (na, b, t, c)
-  | App (c,l) -> AtomicType (c, l)
-  | (Rel _ | Meta _ | Var _ | Evar _ | Const _
-  | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
-    -> AtomicType (t,[||])
-  | (Lambda _ | Construct _ | Int _ | Float _ | Array _) -> failwith "Not a type"
-
-let type_kind_opt sigma t = try Some (type_kind sigma t) with exn -> None 
+let type_kind_opt sigma t = try Some (kind_of_type sigma t) with exn -> None 
 
 module SimpleAtomics = struct
   let atomic_types sigma t: Atomics.t = 
