@@ -91,8 +91,7 @@ let do_configuration settings =
     | Skip     -> { delegation_mode = SkipProofs }
     | Delegate -> { delegation_mode = DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers } }
   in
-  Hashtbl.filter_map_inplace (fun _ st ->
-    Some (Dm.DocumentManager.set_ExecutionManager_options st options)) states;
+  Dm.ExecutionManager.set_options options;
   check_mode := settings.proof.mode
 
 let send_configuration_request () =

@@ -29,9 +29,6 @@ type state = {
   observe_id : Types.sentence_id option; (* TODO materialize observed loc and line-by-line execution status *)
 }
 
-let set_ExecutionManager_options st o =
-  { st with execution_state = ExecutionManager.set_options st.execution_state o }
-
 type event =
   | Execute of { (* we split the computation to help interruptibility *)
       id : Types.sentence_id; (* sentence of interest *)
