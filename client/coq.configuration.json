@@ -21,30 +21,6 @@
     [
       "(",
       ")"
-    ],
-    [
-      "Proof.",
-      "Qed."
-    ],
-    [
-      "Proof.",
-      "Admitted."
-    ],
-    [
-      "Proof.",
-      "Abort."
-    ],
-    [
-      "match",
-      "end"
-    ],
-    [
-      "repeat match",
-      "end"
-    ],
-    [
-      "repeat lazymatch",
-      "end"
     ]
   ],
   "colorizedBracketPairs": [
