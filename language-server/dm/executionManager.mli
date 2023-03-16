@@ -28,12 +28,11 @@ type delegation_mode =
 type options = {
   delegation_mode : delegation_mode;
 }
-val default_options : options
 
 (** Execution state, includes the cache *)
 type state
 val init : Vernacstate.t -> state
-val set_options : state -> options -> state
+val set_options : options -> unit
 val invalidate : Scheduler.schedule -> sentence_id -> state -> state
 val errors : state -> (sentence_id * (Loc.t option * string)) list
 val feedback : state -> (sentence_id * (Feedback.level * Loc.t option * string)) list

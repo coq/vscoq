@@ -50,15 +50,16 @@ let default_options = { delegation_mode = CheckProofsInMaster }
 type state = {
   initial : Vernacstate.t;
   of_sentence : (sentence_state * feedback_message list) SM.t;
-  options : options;
 }
 
 let init vernac_state = {
   initial = vernac_state;
   of_sentence = SM.empty;
-  options = default_options;
 }
-let set_options st options = { st with options }
+
+let options = ref default_options
+
+let set_options o = options := o
 
 type prepared_task =
   | PSkip of sentence_id
@@ -370,7 +371,7 @@ let build_tasks_for doc st id =
     end
   in
   let vs, tasks = build_tasks id [] in
-  vs, List.concat_map (prepare_task st.options.delegation_mode doc) tasks
+  vs, List.concat_map (prepare_task !options.delegation_mode doc) tasks
 
 let errors st =
   List.fold_left (fun acc (id, (p,_)) ->
