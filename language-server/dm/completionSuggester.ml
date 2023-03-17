@@ -159,27 +159,7 @@ module Structured = struct
       | None -> () (* Lol :) *)
       in
     aux 0 k
-    
-  let filter_options a = 
-    a |> Array.to_list |> Option.List.flatten |> Array.of_list
-
-  let unifier_kind sigma (t : types) : unifier option = 
-    let rec aux bruijn t = match kind sigma t with
-      | Sort s -> SortUniType s |> Option.make
-      | Cast (c,_,t) -> failwith "Not implemented"
-      | Prod (na,t,c) -> aux (aux bruijn t :: bruijn) c
-      | LetIn (na,b,t,c) -> failwith "Not implemented"
-      | App (c,l) -> 
-        let l' = Array.map (aux bruijn) l in
-        AtomicUniType (c, filter_options l') |> Option.make
-      | Rel i -> List.nth bruijn (i-1)
-      | (Meta _ | Var _ | Evar _ | Const _
-      | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
-        -> AtomicUniType (t,[||]) |> Option.make
-      | (Lambda _ | Construct _ | Int _ | Float _ | Array _) -> None
-    in
-    aux [] t
-
+  
   let score_unifier evd (goal : unifier) (u : unifier) : float =
     let rec aux g u : float = match (g, u) with
       | SortUniType s1, SortUniType s2 -> if ESorts.equal evd s1 s2 then 1. else 0.
