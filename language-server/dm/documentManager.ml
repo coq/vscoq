@@ -143,25 +143,32 @@ let interpret_to_loc state loc : (state * event Sel.event list) =
       else
         (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
 
-let interpret_to state id : (state * event Sel.event list) =
+let interpret_state state = 
   let invalid_ids, document = Document.validate_document state.document in
   let execution_state =
     List.fold_left (fun st id ->
       ExecutionManager.invalidate (Document.schedule state.document) id st
       ) state.execution_state (Stateid.Set.elements invalid_ids) in
-  let state = { state with document; execution_state } in
+  { state with document; execution_state }
+
+let interpret_to state id : (state * event Sel.event list) =
+  let state = interpret_state state in
   (* We jump to the sentence before the position, otherwise jumping to the
   whitespace at the beginning of a sentence will observe the state after
   executing the sentence, which is unnatural. *)
   match Document.get_sentence state.document id with
-  | None -> (state, []) (* TODO error? *)
+  | None -> 
+    Printf.eprintf "get_sentence failed\n";
+    (state, []) (* TODO error? *)
   | Some { id; stop; start } ->
     let state = { state with observe_id = Some id } in
     let vst_for_next_todo, todo = ExecutionManager.build_tasks_for state.document state.execution_state id in
     if CList.is_empty todo then
-      (state, [])
+      (Printf.eprintf "interpret_to: no todo\n";
+      (state, []))
     else
-      (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
+      (Printf.eprintf "interpret_to: todo count %d\n" (List.length todo);
+      (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })]))
 
 let interpret_to_position st pos =
   let loc = Document.position_to_loc st.document pos in
@@ -196,9 +203,26 @@ let interpret_to_next st =
       | Some {id } -> interpret_to st id
 
 let interpret_to_end st =
-  match Document.get_last_sentence st.document with 
-  | None -> (st, [])
-  | Some {id} -> interpret_to st id
+  let state = interpret_state st in
+  match Document.get_last_sentence state.document with 
+  | None -> 
+    Printf.eprintf "No last sentence\n";
+    (state, [])
+  | Some {id} -> 
+    Printf.eprintf "Last sentence is %s\n" @@ Stateid.to_string id;
+    match Document.get_sentence state.document id with
+    | None -> 
+      Printf.eprintf "get_sentence failed\n";
+      (state, []) (* TODO error? *)
+    | Some { id; stop; start } ->
+      let state = { state with observe_id = Some id } in
+      let vst_for_next_todo, todo = ExecutionManager.build_tasks_for state.document state.execution_state id in
+      if CList.is_empty todo then
+        (Printf.eprintf "interpret_to: no todo\n";
+        (state, []))
+      else
+        (Printf.eprintf "interpret_to: todo count %d\n" (List.length todo);
+        (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })]))
 
 let retract state loc =
   match Option.bind state.observe_id (Document.get_sentence state.document) with
