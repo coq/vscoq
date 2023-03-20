@@ -35,9 +35,18 @@ let run r =
   | Ok x -> x
   | Error _ -> assert false
   
+type simple_sentence = {
+  start : int;
+  stop : int;
+  id : sentence_id;
+}
+
+let ss_of_s ({ start; stop; id; _ } : Document.sentence) : simple_sentence =
+   { start; stop; id }
+
 type _ parse =
-  | P : 'a parse -> (sentence_id * 'a) parse
-  | E : 'a parse -> (sentence_id * 'a) parse
+  | P : 'a parse -> (simple_sentence * 'a) parse
+  | E : 'a parse -> (simple_sentence * 'a) parse
   | O : unit parse
   
 let rec parse : type a. int -> Document.sentence list -> a parse -> (a,string) Result.t =
@@ -46,22 +55,26 @@ let rec parse : type a. int -> Document.sentence list -> a parse -> (a,string) R
   fun n l spec ->
     match spec, l with
     | O, [] -> Ok ()
-    | P spec, { id; ast = ValidAst _ } :: l ->
-        parse (n+1) l spec >>= (fun a -> Ok(id,a))
-    | E spec, { id; ast = ParseError _ } :: l ->
-        parse (n+1) l spec >>= (fun a -> Ok(id,a))
+    | P spec, ({ id; ast = ValidAst _ } as s) :: l ->
+        parse (n+1) l spec >>= (fun a -> Ok(ss_of_s s,a))
+    | E spec, ({ id; ast = ParseError _ } as s) :: l ->
+        parse (n+1) l spec >>= (fun a -> Ok(ss_of_s s ,a))
     | O, l -> Error ("more sentences than expected, extra " ^ Int.to_string (List.length l))
     | P _, [] -> Error ("less sentences than expected, only " ^ Int.to_string n)
     | E _, [] -> Error ("less sentences than expected, only " ^ Int.to_string n)
     | P _, _ :: _ -> Error ("unexpected parse error at sentence number " ^ Int.to_string n)
     | E _, _ :: _ -> Error ("missing parse error at sentence number " ^ Int.to_string n)
 
-let parse st spec =
+    
+let d_sentences doc spec = 
+  let sentences = Document.sentences_sorted_by_loc doc in
+  let r = run (parse 0 sentences spec) in
+  r
+
+let dm_parse st spec =
   let st = DocumentManager.validate_document st in
   let doc = DocumentManager.Internal.document st in
-  let sentences = Document.sentences doc in
-  let r = run (parse 0 sentences spec) in
-  st, r
+  st, d_sentences doc spec
 
 let sentence_id_of_sexp s = Stateid.of_int (Sexplib.Std.int_of_sexp s)
 let sexp_of_sentence_id i = Sexplib.Std.sexp_of_int (Stateid.to_int i)
