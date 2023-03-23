@@ -135,3 +135,52 @@ jobs:
 
     - run: cd client && yarn run install:all && yarn run build:all && yarn run compile
     - run: cd client && xvfb-run yarn test
+
+
+  release-opam:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        ocaml-compiler: [4.14.x]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+
+    - name: Use OCaml ${{ matrix.ocaml-compiler }}
+      uses: avsm/setup-ocaml@v2
+      with:
+        ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+    - name: Build release
+      run: |
+        eval $(opam env)
+        cd language-server
+        ./make-release.sh
+      
+    - name: Add released repo
+      run: |
+        eval $(opam env)
+        opam repo add release file://$PWD/language-server/_build/opam-repository
+        
+    - name: Install
+      run: |
+        eval $(opam env)
+        opam install vscoq-language-server
+
+    - run: |
+        eval $(opam env)
+        echo "vscoqtop=`which vscoqtop`" >> $GITHUB_ENV
+        vscoqtop -v
+
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+
+    - run: cd client && yarn run package
+    - run: eval $(opam env) && cd client && xvfb-run yarn test
+      env:
+        VSCOQPATH: ${{ env.vscoqtop }}
+        VSCOQARGS: "-bt"
