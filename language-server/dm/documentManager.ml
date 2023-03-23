@@ -209,7 +209,7 @@ let debug_print st prefix =
 let interpret_to_end st =
   debug_print st "Before interpret_to_end";
   let state = interpret_state st in
-  debug_print st "After interpret_to_end";
+  debug_print state "After interpret_to_end";
   match Document.get_last_sentence state.document with 
   | None -> 
     Printf.eprintf "No last sentence\n";

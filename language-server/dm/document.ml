@@ -558,6 +558,11 @@ let rec parse_more synterp_state stream raw parsed =
 let parse_more synterp_state stream raw =
   parse_more synterp_state stream raw []
 
+
+let debug_print st prefix =
+  Printf.eprintf "%s: \n    %s\n" prefix (String.concat "\n    " @@ List.map string_of_sentence st)
+  
+
 let invalidate top_edit parsed_doc new_sentences changes =
   (* Algo:
   We parse the new doc from the topmost edit to the bottom one.
@@ -599,9 +604,6 @@ let invalidate top_edit parsed_doc new_sentences changes =
   in
   let (_,_synterp_state,scheduler_state) = Option.get @@ ParsedDoc.state_at_pos parsed_doc top_edit in
   let old_sentences = ParsedDoc.better_senteces_after parsed_doc top_edit in
-  (* Printf.eprintf "All sentences: \n    %s\n" (String.concat "\n    " @@ List.map string_of_sentence (ParsedDoc.sentences parsed_doc));
-  Printf.eprintf "Old sentences after %d: \n    %s\n" top_edit (String.concat "\n    " @@ List.map string_of_sentence old_sentences);
-  Printf.eprintf "New sentences: \n    %s\n" (String.concat "\n    " @@ List.map string_of_pre_sentence new_sentences); *)
   let diff = ParsedDoc.diff old_sentences new_sentences in
   log @@ "diff:\n" ^ ParsedDoc.string_of_diff parsed_doc diff;
   Printf.eprintf "Diff: \n%s\n" (ParsedDoc.string_of_diff parsed_doc diff);
@@ -621,7 +623,9 @@ let validate_document ({ parsed_loc; raw_doc; parsed_doc } as document) =
     log @@ Format.sprintf "Parsing more from pos %i" stop;
     let new_sentences = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
     log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
+    debug_print (ParsedDoc.sentences parsed_doc) "Before";
     let invalid_ids, parsed_doc = invalidate (stop+1) document.parsed_doc new_sentences document.changes in
+    debug_print (ParsedDoc.sentences parsed_doc) "After";
     let parsed_loc = ParsedDoc.pos_at_end parsed_doc in
     Printf.eprintf "Parsed loc: %i\n" parsed_loc;
     invalid_ids, { document with parsed_doc; parsed_loc; changes = Stateid.Set.empty }
