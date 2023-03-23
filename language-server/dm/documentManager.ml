@@ -202,8 +202,14 @@ let interpret_to_next st =
       | None -> (st, [])
       | Some {id } -> interpret_to st id
 
+let debug_print st prefix =
+  Printf.eprintf "%s: \n    %s\n" prefix (String.concat "\n    " @@ List.map Document.string_of_sentence (Document.sentences st.document))
+
+
 let interpret_to_end st =
+  debug_print st "Before interpret_to_end";
   let state = interpret_state st in
+  debug_print st "After interpret_to_end";
   match Document.get_last_sentence state.document with 
   | None -> 
     Printf.eprintf "No last sentence\n";
@@ -236,7 +242,8 @@ let retract state loc =
 let apply_text_edits state edits =
   let document = Document.apply_text_edits state.document edits in
   let state = { state with document } in
-  retract state (Document.parsed_loc document) 
+  let new_state = retract state (Document.parsed_loc document) in
+  new_state
 
 let validate_document state =
   let invalid_ids, document = Document.validate_document state.document in

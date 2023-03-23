@@ -59,6 +59,8 @@ type sentence = {
 
 val sentences : document -> sentence list
 
+val string_of_sentence : sentence -> string
+
 val get_sentence : document -> sentence_id -> sentence option
 val sentences_before : document -> int -> sentence list
 

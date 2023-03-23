@@ -184,7 +184,7 @@ module ParsedDoc : sig
   val find_sentence_before : t -> int -> sentence option
   val find_sentence_after : t -> int -> sentence option
   val get_last_sentence : t -> sentence option
-  val shift_sentences : t -> int -> int -> t
+  val shift_sentences : t -> int -> int -> t * sentence SM.t
 
   val previous_sentence : t -> sentence_id -> sentence option
   val next_sentence : t -> sentence_id -> sentence option
@@ -273,6 +273,7 @@ end = struct
     match SM.find_opt id parsed.sentences_by_id with
     | None -> parsed
     | Some sentence ->
+      Printf.eprintf "Removing sentence %s\n" (Stateid.to_string id);
       let sentences_by_id = SM.remove id parsed.sentences_by_id in
       let sentences_by_end = LM.remove sentence.stop parsed.sentences_by_end in
       (* TODO clean up the schedule and free cached states *)
@@ -372,6 +373,7 @@ end = struct
     end
 
   let shift_sentences parsed loc offset =
+    let changed = ref SM.empty in
     let (before,ov,after) = split_sentences loc parsed.sentences_by_end in
     let res =
       match ov with
@@ -385,12 +387,17 @@ end = struct
       LM.fold (fun stop v acc -> LM.add (stop + offset) { v with start = v.start + offset; stop = v.stop + offset } acc) after res
     in
     let shift_sentence s =
-      if s.start >= loc then { s with start = s.start + offset; stop = s.stop + offset }
-      else if s.stop >= loc then { s with stop = s.stop + offset }
+      if s.start >= loc then 
+        { s with start = s.start + offset; stop = s.stop + offset }
+      else if s.stop >= loc then 
+        let s' = { s with stop = s.stop + offset } in
+        if s.start <= loc then
+          changed := SM.add s.id s' !changed;
+        s'
       else s
     in
     let sentences_by_id = SM.map shift_sentence parsed.sentences_by_id in
-    { parsed with sentences_by_end; sentences_by_id }
+    { parsed with sentences_by_end; sentences_by_id }, !changed
 
   let previous_sentence parsed id =
     let current = SM.find id parsed.sentences_by_id in
@@ -452,6 +459,7 @@ type document = {
   parsed_loc : int;
   raw_doc : RawDoc.t;
   parsed_doc : ParsedDoc.t;
+  changes: Stateid.Set.t;
 }
 
 let id_of_doc doc = doc.id
@@ -550,7 +558,7 @@ let rec parse_more synterp_state stream raw parsed =
 let parse_more synterp_state stream raw =
   parse_more synterp_state stream raw []
 
-let invalidate top_edit parsed_doc new_sentences =
+let invalidate top_edit parsed_doc new_sentences changes =
   (* Algo:
   We parse the new doc from the topmost edit to the bottom one.
   - If execution is required, we invalidate everything after the parsing
@@ -591,17 +599,17 @@ let invalidate top_edit parsed_doc new_sentences =
   in
   let (_,_synterp_state,scheduler_state) = Option.get @@ ParsedDoc.state_at_pos parsed_doc top_edit in
   let old_sentences = ParsedDoc.better_senteces_after parsed_doc top_edit in
-  Printf.eprintf "All sentences: \n    %s\n" (String.concat "\n    " @@ List.map string_of_sentence (ParsedDoc.sentences parsed_doc));
+  (* Printf.eprintf "All sentences: \n    %s\n" (String.concat "\n    " @@ List.map string_of_sentence (ParsedDoc.sentences parsed_doc));
   Printf.eprintf "Old sentences after %d: \n    %s\n" top_edit (String.concat "\n    " @@ List.map string_of_sentence old_sentences);
-  Printf.eprintf "New sentences: \n    %s\n" (String.concat "\n    " @@ List.map string_of_pre_sentence new_sentences);
+  Printf.eprintf "New sentences: \n    %s\n" (String.concat "\n    " @@ List.map string_of_pre_sentence new_sentences); *)
   let diff = ParsedDoc.diff old_sentences new_sentences in
   log @@ "diff:\n" ^ ParsedDoc.string_of_diff parsed_doc diff;
   Printf.eprintf "Diff: \n%s\n" (ParsedDoc.string_of_diff parsed_doc diff);
-  invalidate_diff parsed_doc scheduler_state Stateid.Set.empty diff
+  let parsed_doc' = Stateid.Set.fold (fun si p -> ParsedDoc.remove_sentence p si) changes parsed_doc in
+  invalidate_diff parsed_doc' scheduler_state changes diff
 
 (** Validate document when raw text has changed *)
 let validate_document ({ parsed_loc; raw_doc; parsed_doc } as document) =
-  Printf.eprintf "ParsedDoc: %s\n" (ParsedDoc.to_string parsed_doc);
   match ParsedDoc.state_at_pos parsed_doc parsed_loc with
   | None -> Stateid.Set.empty, document
   | Some (stop, parsing_state, _scheduler_state) ->
@@ -613,12 +621,10 @@ let validate_document ({ parsed_loc; raw_doc; parsed_doc } as document) =
     log @@ Format.sprintf "Parsing more from pos %i" stop;
     let new_sentences = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
     log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
-    let invalid_ids, parsed_doc = invalidate (stop+1) document.parsed_doc new_sentences in
-    let all_senteces_after = ParsedDoc.sentences parsed_doc in
-    Printf.eprintf "All sentences post invalidate: \n    %s\n" (String.concat "\n    " @@ List.map string_of_sentence all_senteces_after);
+    let invalid_ids, parsed_doc = invalidate (stop+1) document.parsed_doc new_sentences document.changes in
     let parsed_loc = ParsedDoc.pos_at_end parsed_doc in
     Printf.eprintf "Parsed loc: %i\n" parsed_loc;
-    invalid_ids, { document with parsed_doc; parsed_loc }
+    invalid_ids, { document with parsed_doc; parsed_loc; changes = Stateid.Set.empty }
 
 let fresh_doc_id =
   let doc_id = ref (-1) in
@@ -631,34 +637,35 @@ let create_document text =
       parsed_loc = -1;
       raw_doc;
       parsed_doc = ParsedDoc.empty;
+      changes = Stateid.Set.empty;
     }
 
-let apply_text_edit document edit =
+let apply_text_edit (document, changes) edit =
   let loc = RawDoc.loc_of_position document.raw_doc (fst edit).Range.end_ in
   let raw_doc, offset = RawDoc.apply_text_edit document.raw_doc edit in
   log @@ "Edit offset " ^ string_of_int offset;
-  let parsed_doc = ParsedDoc.shift_sentences document.parsed_doc loc offset in
+  let parsed_doc, changed = ParsedDoc.shift_sentences document.parsed_doc loc offset in
+  let parsed_loc = SM.fold (fun _ s c -> min s.start c) changed document.parsed_loc in
   (*
   let execution_state = ExecutionManager.shift_locs document.execution_state loc offset in
   *)
-  { document with raw_doc; parsed_doc }
+  let changes = SM.fold (fun id s changes -> SM.add id s changes) changed changes in
+  { document with raw_doc; parsed_doc; parsed_loc }, changes
 
 let apply_text_edits document edits =
   match edits with
   | [] -> document
   | _ ->
     let senteces_before = ParsedDoc.sentences document.parsed_doc |> List.length in
-    let top_edit : int = RawDoc.loc_of_position document.raw_doc @@ top_edit_position edits in
-    (* FIXME is top_edit_position correct with multiple edits? Shouldn't it be
-       computed as part of the fold below? *)
-    let document = List.fold_left apply_text_edit document edits in
-    let parsed_loc = min top_edit document.parsed_loc in
+    let document, changes = List.fold_left apply_text_edit (document, SM.empty) edits in
+    Printf.eprintf "change set: %s\n" (String.concat ", " @@ List.map (fun (id,_) -> Stateid.to_string id) @@ SM.bindings changes);  
     let senteces_after = ParsedDoc.sentences document.parsed_doc |> List.length in
     Printf.eprintf "Sentences before: %i, after: %i\n" senteces_before senteces_after;
     (*
     let executed_loc = Option.map (min parsed_loc) document.executed_loc in
     *)
-    { document with parsed_loc }
+    let changes = Stateid.Set.of_list (SM.bindings changes |> List.map fst) in
+    { document with changes }
 
 let get_sentence doc id = ParsedDoc.get_sentence doc.parsed_doc id
 let find_sentence doc loc = ParsedDoc.find_sentence doc.parsed_doc loc
