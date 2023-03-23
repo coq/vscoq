@@ -12,10 +12,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let debug_delegation_manager = CDebug.create ~name:"vscoq.delegationManager" ()
+open Types
 
-let log msg = debug_delegation_manager Pp.(fun () ->
-  str @@ Format.asprintf "[%d] %s" (Unix.getpid ()) msg)
+let Log log = Log.mk_log "delegationManager"
 
 type sentence_id = Stateid.t
 
@@ -29,12 +28,13 @@ type execution_status =
   | Error of string Loc.located * Vernacstate.t option (* State to use for resiliency *)
 
 let write_value { write_to; _ } x =
+(** alert: calling log from write value causes a loop, since log (from the worker)
+    writes the value to a channel. Hence we mask [log] *)
+  let log _ = () in
   let data = Marshal.to_bytes x [] in
   let datalength = Bytes.length data in
-  log @@ Printf.sprintf "marshaling %d bytes" datalength;
   let writeno = Unix.write write_to data 0 datalength in
   assert(writeno = datalength);
-  log @@ Printf.sprintf "marshaling done";
   flush_all ()
 
 let abort_on_unix_error f x =
@@ -70,11 +70,7 @@ let master_feedback_queue = Queue.create ()
 let install_feedback send =
   Feedback.add_feeder (fun fb ->
     match fb.Feedback.contents with
-    | Feedback.Message(Feedback.Debug,loc,m) ->
-        (* This is crucial to avoid a busy loop: since a feedback triggers and
-           event, if SEL debug is on we loop, since processing the debug print
-           is also a feedback *)
-        Printf.eprintf "%s\n" @@ Pp.string_of_ppcmds m
+    | Feedback.Message(Feedback.Debug,_,_) -> ()
     | Feedback.Message(lvl,loc,m) -> send (fb.Feedback.span_id,(lvl,loc,m))
     | Feedback.AddedAxiom
     | _ -> () (* STM feedbacks are handled differently *))
@@ -126,10 +122,12 @@ end
 module MakeWorker (Job : Job) = struct
 type job_t = Job.t
 type job_update_request = Job.update_request
-let debug_worker = CDebug.create ~name:("vscoq.Worker." ^ Job.name) ()
 
-let log_worker msg = debug_worker Pp.(fun () ->
-  str @@ Format.asprintf "    [%d] %s" (Unix.getpid ()) msg)
+type worker_message =
+  | Job_update of Job.update_request
+  | DebugMessage of Log.event
+
+let Log log_worker = Log.mk_log ("worker." ^ Job.name)
 
 let install_feedback_worker link =
   Feedback.del_feeder master_feeder;
@@ -139,7 +137,7 @@ let install_feedback_worker link =
    evants, then one ending event. *)
 type delegation =
  | WorkerStart : job_id * 'job * ('job -> send_back:(Job.update_request -> unit) -> unit) * string -> delegation
- | WorkerProgress of { link : link; update_request : Job.update_request }
+ | WorkerProgress of { link : link; update_request : worker_message } (* TODO: use a recurring event (+cancel) and remove link *)
  | WorkerEnd of (int * Unix.process_status)
  | WorkerIOError of exn
 let pr_event = function
@@ -147,6 +145,10 @@ let pr_event = function
   | WorkerIOError _ -> Pp.str "WorkerIOError"
   | WorkerProgress _ -> Pp.str "WorkerProgress"
   | WorkerStart _ -> Pp.str "WorkerStart"
+
+let install_debug_worker link =
+  Log.worker_initialization_done
+    ~fwd_event:(fun e -> write_value link (DebugMessage e))
 
 type events = delegation Sel.event list
 
@@ -207,14 +209,17 @@ let fork_worker : job_id -> (role * events, string * events) result = fun (_, jo
     if pid = 0 then begin
         (* Children process *)
         dup2 null stdin;
+        dup2 null stdout;
         close chan;
-        log_worker @@ "borning...";
+        Log.worker_initialization_begins ();
         let chan = socket PF_INET SOCK_STREAM 0 in
         connect chan address;
         let read_from = chan in
         let write_to = chan in
         let link = { write_to; read_from } in
         install_feedback_worker link;
+        install_debug_worker link;
+        log_worker @@ "borning...";
         Ok (Worker link, [])
     end else
       (* Parent process *)
@@ -262,6 +267,7 @@ let create_process_worker procname (_,job_id) job =
         let write_to = worker in
         let link = { write_to; read_from } in
         install_feedback_worker link;
+        install_debug_worker link;
         log @@ "sending job";
         write_value link job;
         flush_all ();
@@ -288,9 +294,12 @@ let handle_event = function
       if Queue.length pool < !current_pool_size then
         Queue.push () pool;
       (None,[])
-  | WorkerProgress { link; update_request } ->
+  | WorkerProgress { link; update_request = DebugMessage d } ->
+      Log.handle_event d;
+      (None, [worker_progress link])
+  | WorkerProgress { link; update_request = Job_update u } ->
       log "worker progress";
-      (Some update_request, [worker_progress link])
+      (Some u, [worker_progress link])
   | WorkerStart (job_id,job,action,procname) ->
     log "worker starts";
     if Sys.os_type = "Unix" then
@@ -299,7 +308,7 @@ let handle_event = function
         log "worker spawned (fork)";
         (None, events)
       | Ok(Worker link, _) ->
-        action job ~send_back:(abort_on_unix_error write_value link);
+        action job ~send_back:(fun j -> abort_on_unix_error write_value link (Job_update j));
         exit 0
       | Error(msg, cleanup_events) ->
         log @@ "worker did not spawn: " ^ msg;

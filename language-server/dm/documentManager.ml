@@ -12,13 +12,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Types
 open Lsp.LspData
-let debug_dm = CDebug.create ~name:"vscoq.documentManager" ()
 
-let log msg = debug_dm Pp.(fun () ->
-  str @@ Format.asprintf "  [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
+let Log log = Log.mk_log "documentManager"
 
-  type proof_data = (Proof.data * Position.t) option
+type proof_data = (Proof.data * Position.t) option
 
 type state = {
   uri : string;

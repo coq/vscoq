@@ -32,7 +32,7 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let check_mode = ref Settings.Mode.Continuous
 
-let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
+let Dm.Types.Log log = Dm.Log.mk_log "lspManager"
 
 let conf_request_id = 3456736879
 
@@ -41,11 +41,6 @@ let server_info = ServerInfo.{
   version = "2.0.0";
 } 
 
-let log msg = lsp_debug Pp.(fun () ->
-  str @@ Format.asprintf "       [%d, %f] %s" (Unix.getpid ()) (Unix.gettimeofday ()) msg)
-
-(*let string_field name obj = Yojson.Safe.to_string (List.assoc name obj)*)
-
 type lsp_event = 
   | Request of Yojson.Safe.t option
 
@@ -53,6 +48,7 @@ type event =
  | LspManagerEvent of lsp_event
  | DocumentManagerEvent of string * Dm.DocumentManager.event
  | Notification of notification
+ | LogEvent of Dm.Log.event
 
 type events = event Sel.event list
 
@@ -322,11 +318,17 @@ let inject_dm_event uri x : event Sel.event =
 let inject_notification x : event Sel.event =
   Sel.map (fun x -> Notification(x)) x
 
+let inject_debug_event x : event Sel.event =
+  Sel.map (fun x -> LogEvent x) x
+
 let inject_dm_events (uri,l) =
   List.map (inject_dm_event uri) l
 
 let inject_notifications l =
   List.map inject_notification l
+
+let inject_debug_events l =
+  List.map inject_debug_event l
 
 let coqtopUpdateProofView ~id params =
   let open Yojson.Safe.Util in
@@ -420,10 +422,14 @@ let workspaceDidChangeConfiguration params =
   let settings = params |> member "settings" |> Settings.t_of_yojson in
   do_configuration settings
 
+
 let dispatch_method ~id method_name params : events =
+  log ("dispatching: "^method_name);
   match method_name with
   | "initialize" -> do_initialize ~id params; []
-  | "initialized" -> []
+  | "initialized" ->
+    log "---------------- initialized --------------";
+    Dm.Log.lsp_initialization_done () |> inject_debug_events
   | "shutdown" -> do_shutdown ~id params; []
   | "exit" -> do_exit ~id params
   | "workspace/didChangeConfiguration" -> workspaceDidChangeConfiguration params; []
@@ -500,14 +506,18 @@ let handle_event = function
     end
   | Notification notification ->
     output_notification notification; [inject_notification Dm.SearchQuery.query_feedback]
+  | LogEvent e ->
+    Dm.Log.handle_event e; []
 
 let pr_event = function
   | LspManagerEvent e -> pr_lsp_event e
   | DocumentManagerEvent (uri, e) ->
     Pp.str @@ Format.asprintf "%a" Dm.DocumentManager.pp_event e
   | Notification _ -> Pp.str"notif"
+  | LogEvent _ -> Pp.str"debug"
 
 let init injections =
-  init_state := Some (Vernacstate.freeze_full_state ~marshallable:false, injections)
+  init_state := Some (Vernacstate.freeze_full_state ~marshallable:false, injections);
+  [lsp]
 
 

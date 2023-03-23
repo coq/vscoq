@@ -12,14 +12,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Types
+
+val mk_log : string -> (string -> unit) log
+val logs : unit -> string list
+
 type event
 type events = event Sel.event list
 
-val lsp : event Sel.event
+val lsp_initialization_done : unit -> events
+val handle_event : event -> unit
 
-val handle_event : event -> events
-val pr_event : event -> Pp.t
-
-val init : Coqargs.injection_command list -> event Sel.event list
-
-val coqtopSearchResult : id:string -> string -> string -> unit
+val worker_initialization_begins : unit -> unit
+val worker_initialization_done : fwd_event:(event -> unit) -> unit
+  
