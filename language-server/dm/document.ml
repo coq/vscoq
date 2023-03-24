@@ -392,6 +392,7 @@ end = struct
       else if s.stop >= loc then 
         let s' = { s with stop = s.stop + offset } in
         if s.start <= loc then
+          Printf.eprintf "Sentence (%s) was split at %d\n" (string_of_sentence s) loc;
           changed := SM.add s.id s' !changed;
         s'
       else s
@@ -584,6 +585,7 @@ let invalidate top_edit parsed_doc new_sentences changes =
   let rec invalidate_diff parsed_doc scheduler_state invalid_ids = let open ParsedDoc in function
     | [] -> invalid_ids, parsed_doc
     | Equal s :: diffs ->
+      let invalid_ids = List.fold_left (fun ids id -> Stateid.Set.add (fst id) ids) invalid_ids s in
       let patch_sentence (parsed_doc,scheduler_state) (old_s,new_s) =
         ParsedDoc.patch_sentence parsed_doc scheduler_state old_s new_s
       in
@@ -607,8 +609,9 @@ let invalidate top_edit parsed_doc new_sentences changes =
   let diff = ParsedDoc.diff old_sentences new_sentences in
   log @@ "diff:\n" ^ ParsedDoc.string_of_diff parsed_doc diff;
   Printf.eprintf "Diff: \n%s\n" (ParsedDoc.string_of_diff parsed_doc diff);
-  let parsed_doc' = Stateid.Set.fold (fun si p -> ParsedDoc.remove_sentence p si) changes parsed_doc in
-  invalidate_diff parsed_doc' scheduler_state changes diff
+  let invalid_ids, parsed_doc = invalidate_diff parsed_doc scheduler_state changes diff in
+  let parsed_doc = Stateid.Set.fold (fun si p -> ParsedDoc.remove_sentence p si) invalid_ids parsed_doc in
+  Stateid.Set.union invalid_ids changes, parsed_doc
 
 (** Validate document when raw text has changed *)
 let validate_document ({ parsed_loc; raw_doc; parsed_doc } as document) =
