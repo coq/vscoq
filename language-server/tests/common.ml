@@ -122,3 +122,59 @@ let task st id spec =
   let sch = Document.schedule (DocumentManager.Internal.document st) in
   let init, t = Scheduler.task_for_sentence sch id in
   init, run (task t spec)
+
+
+let rec handle_events n (events : DocumentManager.event Sel.todo) st =
+  if n <= 0 then (Stdlib.Format.eprintf "handle_events run out of steps\n"; Caml.exit 1)
+  else if Sel.only_recurring_events events then st
+  else begin
+    (*Stdlib.Format.eprintf "waiting %a\n%!" Sel.(pp_todo DocumentManager.pp_event) events;*)
+    Caml.flush_all ();
+    let (ready, remaining) = Sel.pop_timeout ~stop_after_being_idle_for:1.0 events in
+    let st, new_events =
+      match ready with
+      | None -> st, []
+      | Some ev ->
+        match DocumentManager.handle_event ev st with
+        | None, events' -> st, events'
+        | Some st, events' -> st, events'
+    in
+    let todo = Sel.enqueue remaining new_events in
+    handle_events (n-1) todo st
+  end
+let handle_events e st = handle_events 100 e st
+  
+type diag_spec =
+  | D of sentence_id * Lsp.LspData.Severity.t * string
+
+let check_no_diag st =
+  let diagnostics = DocumentManager.diagnostics st in
+  [%test_pred: Lsp.LspData.Diagnostic.t list] List.is_empty diagnostics
+
+let check_diag st specl =
+  let open Result in
+  let open Lsp.LspData.Diagnostic in
+  let fix_diagnostic { range; message; severity } =
+    let message = Str.global_replace (Str.regexp_string "\n") " " message in
+    let message = Str.global_replace (Str.regexp " Raised at .*$") "" message in
+    { range; message; severity } in
+  let match_diagnostic r s rex { range; message; severity } =
+    Lsp.LspData.Range.included ~in_:r range &&
+    Caml.(=) severity s &&
+    Str.string_match (Str.regexp rex) message 0
+  in
+  let diagnostics = List.map ~f:fix_diagnostic (DocumentManager.diagnostics st) in
+  run @@ map_error
+    ~f:(fun s -> Printf.sprintf "%s\n\nDiagnostics: %s" s (
+         String.concat ~sep:"\n" (List.map ~f:(fun x -> Sexp.to_string (sexp_of_t x)) diagnostics)))
+    (List.fold_left ~f:(fun e c -> e >>= (fun () ->
+      match c with
+      | D(id,s,rex) ->
+          let range = Document.range_of_exec_id (DocumentManager.Internal.document st) id in
+          match List.find ~f:(match_diagnostic range s rex) diagnostics with
+          | Some _ -> Ok ()
+          | None -> Error (Printf.sprintf "no %s diagnostic on %s matching %s"
+                             (Sexp.to_string (Lsp.LspData.Severity.sexp_of_t s))
+                             (Sexp.to_string (Lsp.LspData.Range.sexp_of_t range))
+                             rex)   
+    )) ~init:(Ok ()) specl)

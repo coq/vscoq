@@ -28,30 +28,6 @@ let edit_text st ~start ~stop ~text =
   let insert_text st ~loc ~text =
     edit_text st ~start:loc ~stop:loc ~text
     
-let rec handle_events n (events : DocumentManager.event Sel.todo) st =
-  if n <= 0 then (Stdlib.Format.eprintf "handle_events run out of steps\n"; Caml.exit 1)
-  else if Sel.only_recurring_events events then st
-  else begin
-    (*Stdlib.Format.eprintf "waiting %a\n%!" Sel.(pp_todo DocumentManager.pp_event) events;*)
-    Caml.flush_all ();
-    let (ready, remaining) = Sel.pop_timeout ~stop_after_being_idle_for:1.0 events in
-    let st, new_events =
-      match ready with
-      | None -> st, []
-      | Some ev ->
-        match DocumentManager.handle_event ev st with
-        | None, events' -> st, events'
-        | Some st, events' -> st, events'
-    in
-    let todo = Sel.enqueue remaining new_events in
-    handle_events (n-1) todo st
-  end
-let handle_events e st = handle_events 100 e st
-
-let check_no_diag st =
-  let diagnostics = DocumentManager.diagnostics st in
-  [%test_pred: LspData.Diagnostic.t list] List.is_empty diagnostics
-
 let%test_unit "parse.init" =
   let st, events = init "Definition x := true. Definition y := false." in
   let st = DocumentManager.validate_document st in
