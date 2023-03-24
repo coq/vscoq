@@ -69,3 +69,12 @@ let %test_unit "schedule: section closed" =
   [%test_eq: sentence_id] p1 s4.id;
   [%test_eq: sentence_id] p2 s5.id;
   ()
+
+let %test_unit "schedule: empty proof" =
+  let st, _ = init "Lemma a : True. Qed." in
+  let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
+  let init, (o, (), t) = task st s2.id (Proof O) in
+  [%test_eq: sentence_id option] (Some s1.id) init;
+  [%test_eq: sentence_id] o s1.id;
+  [%test_eq: sentence_id] t s2.id;
+  ()

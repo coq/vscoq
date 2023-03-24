@@ -147,13 +147,13 @@ let find_proof_using_annotation { proof_sentences } =
   | ex_sentence :: _ -> find_proof_using ex_sentence.ast
   | _ -> None
 
-let is_nonempty_opaque_proof terminator section_depth block =
+let is_opaque_proof terminator section_depth block =
   let open Vernacextend in
   match terminator with
   | VtDrop -> Some Vernacexpr.SsEmpty
   | VtKeep VtKeepDefined -> None
   | VtKeep (VtKeepAxiom | VtKeepOpaque) ->
-      if section_depth = 0 && not (CList.is_empty block.proof_sentences) then Some Vernacexpr.SsEmpty
+      if section_depth = 0 then Some Vernacexpr.SsEmpty
       else find_proof_using_annotation block
 
 let push_state id ast synterp classif st =
@@ -168,7 +168,7 @@ let push_state id ast synterp classif st =
     | [] -> (* can happen on ill-formed documents *)
       base_id st, push_ex_sentence ex_sentence st, Exec ex_sentence
     | block :: pop ->
-      match is_nonempty_opaque_proof terminator_type st.section_depth block with
+      match is_opaque_proof terminator_type st.section_depth block with
       | Some proof_using ->
         log "opaque proof";
         let terminator = ex_sentence in
