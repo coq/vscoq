@@ -23,10 +23,15 @@ type state
 
 val initial_state : state
 
+type error_recovery_strategy =
+  | RSkip
+  | RAdmitted
+
 type executable_sentence = {
   id : sentence_id;
   ast : ast;
   synterp : Vernacstate.Synterp.t;
+  error_recovery : error_recovery_strategy;
 }
 
 type task =

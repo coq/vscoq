@@ -18,10 +18,15 @@ let Log log = Log.mk_log "scheduler"
 
 module SM = CMap.Make (Stateid)
 
+type error_recovery_strategy =
+  | RSkip
+  | RAdmitted
+
 type executable_sentence = {
   id : sentence_id;
   ast : ast;
   synterp : Vernacstate.Synterp.t;
+  error_recovery : error_recovery_strategy;
 }
 
 type task =
@@ -158,7 +163,7 @@ let is_opaque_proof terminator section_depth block =
 
 let push_state id ast synterp classif st =
   let open Vernacextend in
-  let ex_sentence = { id; ast; synterp } in
+  let ex_sentence = { id; ast; synterp; error_recovery = RSkip } in
   match classif with
   | VtStartProof _ ->
     base_id st, open_proof_block ex_sentence st, Exec ex_sentence
@@ -171,7 +176,7 @@ let push_state id ast synterp classif st =
       match is_opaque_proof terminator_type st.section_depth block with
       | Some proof_using ->
         log "opaque proof";
-        let terminator = ex_sentence in
+        let terminator = { ex_sentence with error_recovery = RAdmitted } in
         let tasks = List.rev block.proof_sentences in
         let st = { st with proof_blocks = pop } in
         base_id st, push_ex_sentence ex_sentence st, OpaqueProof { terminator; opener_id = block.opener_id; tasks; proof_using }

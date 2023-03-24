@@ -102,9 +102,30 @@ let inject_proof_event = Sel.map (fun x -> ProofWorkerEvent x)
 let inject_proof_events st l =
   (st, List.map inject_proof_event l)
 
+let interp_error_recovery strategy st : Vernacstate.t =
+  match strategy with
+  | RSkip -> st
+  | RAdmitted ->
+    let f = Declare.Proof.save_admitted in
+    let open Vernacstate in (* shadows Declare *)
+    let open Vernacexpr in
+    let open Vernacextend in
+    let { Interp.lemmas; program; _ } = st.interp in
+    match lemmas with
+    | None -> (* if Lemma failed *)
+        st
+    | Some lemmas ->
+        let proof = Vernacstate.LemmaStack.get_top lemmas in
+        let pm = NeList.head program in
+        let pm = f ~pm ~proof in
+        let lemmas = snd (Vernacstate.LemmaStack.pop lemmas) in
+        let program = NeList.map_head (fun _ -> pm) program in
+        Vernacstate.Declare.set (lemmas,program) [@ocaml.warning "-3"];
+        let interp = Vernacstate.Interp.freeze_interp_state ~marshallable:false in
+        { st with interp }
 
 (* just a wrapper around vernac interp *)
-let interp_ast ~doc_id ~state_id ~st ast =
+let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
     Feedback.set_id_for_feedback doc_id state_id;
     ParTactic.set_id_for_feedback state_id;
     Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
@@ -133,7 +154,9 @@ let interp_ast ~doc_id ~state_id ~st ast =
         *)
         let loc = Loc.get_loc info in
         let msg = CErrors.iprint (e, info) in
-        st, error loc (Pp.string_of_ppcmds msg) st,[]
+        let status = error loc (Pp.string_of_ppcmds msg) st in
+        let st = interp_error_recovery error_recovery st in
+        st, status, []
 
 (* This adapts the Future API with our event model *)
 let interp_qed_delayed ~proof_using ~state_id ~st =
@@ -264,10 +287,10 @@ let ensure_proof_over = function
 let worker_execute ~doc_id last_step_id ~send_back (vs,events) = function
   | PSkip id ->
     (vs, events)
-  | PExec { id; ast; synterp } ->
+  | PExec { id; ast; synterp; error_recovery } ->
     let vs = { vs with Vernacstate.synterp } in
     log ("worker interp " ^ Stateid.to_string id);
-    let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
+    let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
     let v = if Stateid.equal id last_step_id then ensure_proof_over v else v in
     send_back (ProofJob.UpdateExecStatus (id,purge_state v));
     (vs, events @ ev)
@@ -296,14 +319,14 @@ let execute ~doc_id st (vs, events, interrupted) task =
       | PSkip id ->
           let st = update st id (success vs) in
           (st, vs, events, false)
-      | PExec { id; ast; synterp } ->
+      | PExec { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
-          let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
+          let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let st = update st id v in
           (st, vs, events @ ev, false)
-      | PQuery { id; ast; synterp } ->
+      | PQuery { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
-          let _, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
+          let _, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let st = update st id v in
           (st, vs, events @ ev, false)
       | PDelegate { terminator_id; opener_id; last_step_id; tasks; proof_using } ->
