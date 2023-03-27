@@ -331,4 +331,7 @@ module Internal = struct
   let document st =
     st.document
 
+  let execution_state st =
+    st.execution_state
+
 end
