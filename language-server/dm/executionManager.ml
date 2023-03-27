@@ -17,7 +17,7 @@ open Types
 
 let Log log = Log.mk_log "executionManager"
 
-type execution_status = DelegationManager.execution_status =
+type execution_status =
   | Success of Vernacstate.t option
   | Error of string Loc.located * Vernacstate.t option (* State to use for resiliency *)
 
@@ -31,8 +31,8 @@ module SM = Map.Make (Stateid)
 type feedback_message = Feedback.level * Loc.t option * Pp.t
 
 type sentence_state =
-  | Done of DelegationManager.execution_status
-  | Delegated of DelegationManager.job_id * (DelegationManager.execution_status -> unit) option
+  | Done of execution_status
+  | Delegated of DelegationManager.job_id * (execution_status -> unit) option
 
 type delegation_mode =
   | CheckProofsInMaster
@@ -156,10 +156,6 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
         let msg = CErrors.iprint (e, info) in
         let status = error loc (Pp.string_of_ppcmds msg) st in
         let st = interp_error_recovery error_recovery st in
-        (*
-        Printf.eprintf "%s\n" ("Failed to execute: " ^
-          Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast));
-        *)
         st, status, []
 
 (* This adapts the Future API with our event model *)
@@ -232,7 +228,9 @@ let handle_event event state =
                 Option.default ignore completion v;
                 Some (update_all id (Done v) fl state)
             | (Done (Success s), fl), Error (err,_) ->
-                (* Qed updated by worker that the proof is not complete *)
+                (* This only happens when a Qed closing a delegated proof
+                   receives an updated by a worker saying that the proof is
+                   not completed *)
                 Some (update_all id (Done (Error (err,s))) fl state)
             | (Done _, _), _ -> None
             | exception Not_found -> None (* TODO: is this possible? *)
@@ -302,27 +300,32 @@ let worker_execute ~doc_id ~send_back (vs,events) = function
     (vs, events @ ev)
   | _ -> assert false
 
+
+(* The execution of Qed for a non-delegated proof checks the proof is completed.
+   When the proof is delegated this step is performed by the worker, which
+   sends back an update on the Qed sentence in case the proof is unfinished *)
+let worker_ensure_proof_is_over vs send_back terminator_id =
+  let f = Declare.Proof.close_proof in
+  let open Vernacstate in (* shadows Declare *)
+  let open Vernacexpr in
+  let open Vernacextend in
+  let { Interp.lemmas; program; _ } = vs.interp in
+  match lemmas with
+  | None -> assert false
+  | Some lemmas ->
+      let proof = Vernacstate.LemmaStack.get_top lemmas in
+      try let _ = f ~opaque:Vernacexpr.Opaque ~keep_body_ucst_separate:false proof in ()
+      with e ->
+        let e, info = Exninfo.capture e in
+        let loc = Loc.get_loc info in
+        let msg = CErrors.iprint (e, info) in
+        let status = error loc (Pp.string_of_ppcmds msg) vs in
+        send_back (ProofJob.UpdateExecStatus (terminator_id,status))
+
 let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id } ~send_back =
   try
     let vs, _ = List.fold_left (worker_execute ~doc_id ~send_back) (vs,[]) tasks in
-    let _ =
-      let f = Declare.Proof.close_proof in
-      let open Vernacstate in (* shadows Declare *)
-      let open Vernacexpr in
-      let open Vernacextend in
-      let { Interp.lemmas; program; _ } = vs.interp in
-      match lemmas with
-      | None -> assert false
-      | Some lemmas ->
-          let proof = Vernacstate.LemmaStack.get_top lemmas in
-          try let _ = f ~opaque:Vernacexpr.Opaque ~keep_body_ucst_separate:false proof in ()
-          with e ->
-            let e, info = Exninfo.capture e in
-            let loc = Loc.get_loc info in
-            let msg = CErrors.iprint (e, info) in
-            let status = error loc (Pp.string_of_ppcmds msg) vs in
-            send_back (ProofJob.UpdateExecStatus (terminator_id,status))
-        in
+    worker_ensure_proof_is_over vs send_back terminator_id;
     flush_all ();
     exit 0
   with e ->
