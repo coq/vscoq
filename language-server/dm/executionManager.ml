@@ -66,7 +66,7 @@ type prepared_task =
   | PDelegate of { terminator_id: sentence_id;
                    opener_id: sentence_id;
                    proof_using: Vernacexpr.section_subset_expr;
-                   last_step_id: sentence_id;
+                   last_step_id: sentence_id option; (* only for setting a proof remotely *)
                    tasks: prepared_task list;
                  }
 
@@ -81,7 +81,6 @@ module ProofJob = struct
     initial_vernac_state : Vernacstate.t;
     doc_id : int;
     terminator_id : sentence_id;
-    last_proof_step_id : sentence_id;
   }
   let name = "proof"
   let binary_name = "vscoqtop_proof_worker.opt"
@@ -157,6 +156,10 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
         let msg = CErrors.iprint (e, info) in
         let status = error loc (Pp.string_of_ppcmds msg) st in
         let st = interp_error_recovery error_recovery st in
+        (*
+        Printf.eprintf "%s\n" ("Failed to execute: " ^
+          Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast));
+        *)
         st, status, []
 
 (* This adapts the Future API with our event model *)
@@ -224,11 +227,14 @@ let handle_event event state =
         | Some (ProofJob.AppendFeedback(id,fb)) ->
             Some (handle_feedback id fb state)
         | Some (ProofJob.UpdateExecStatus(id,v)) ->
-            match SM.find id state.of_sentence with
-            | (Delegated (_,completion), fl) ->
+            match SM.find id state.of_sentence, v with
+            | (Delegated (_,completion), fl), _ ->
                 Option.default ignore completion v;
                 Some (update_all id (Done v) fl state)
-            | (Done _, fl) -> None (* TODO: is this possible? *)
+            | (Done (Success s), fl), Error (err,_) ->
+                (* Qed updated by worker that the proof is not complete *)
+                Some (update_all id (Done (Error (err,s))) fl state)
+            | (Done _, _), _ -> None
             | exception Not_found -> None (* TODO: is this possible? *)
       in
       inject_proof_events state events
@@ -243,6 +249,8 @@ let find_fulfilled_opt x m =
 
 let jobs : (DelegationManager.job_id * Sel.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
 
+let last_opt l = try Some (CList.last l).id with Failure _ -> None
+
 let rec prepare_task task : prepared_task list =
   match task with
   | Skip id -> [PSkip id]
@@ -252,7 +260,7 @@ let rec prepare_task task : prepared_task list =
       match !options.delegation_mode with
       | DelegateProofsToWorkers _ ->
           log "delegating proofs to workers";
-          let last_step_id = (CList.last tasks).id in
+          let last_step_id = last_opt tasks in
           let tasks = List.map (fun x -> PExec x) tasks in
           [PDelegate {terminator_id = terminator.id; opener_id; last_step_id; tasks; proof_using}]
       | CheckProofsInMaster ->
@@ -260,9 +268,7 @@ let rec prepare_task task : prepared_task list =
           List.map (fun x -> PExec x) tasks @ [PExec terminator]
       | SkipProofs ->
           log (Printf.sprintf "skipping proof made of %d tasks" (List.length tasks));
-          let tasks = [] in
-          let last_step_id = (CList.last tasks).id in
-          [PDelegate {terminator_id = terminator.id; opener_id; last_step_id; tasks; proof_using}]
+          [PExec terminator]
 
 let id_of_prepared_task = function
   | PSkip id -> id
@@ -285,21 +291,38 @@ let ensure_proof_over = function
   | x -> x
 
 (* TODO move to proper place *)
-let worker_execute ~doc_id last_step_id ~send_back (vs,events) = function
+let worker_execute ~doc_id ~send_back (vs,events) = function
   | PSkip id ->
     (vs, events)
   | PExec { id; ast; synterp; error_recovery } ->
     let vs = { vs with Vernacstate.synterp } in
     log ("worker interp " ^ Stateid.to_string id);
     let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
-    let v = if Stateid.equal id last_step_id then ensure_proof_over v else v in
     send_back (ProofJob.UpdateExecStatus (id,purge_state v));
     (vs, events @ ev)
   | _ -> assert false
 
-let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; last_proof_step_id; _ } ~send_back =
+let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id } ~send_back =
   try
-    let _ = List.fold_left (worker_execute ~doc_id last_proof_step_id ~send_back) (vs,[]) tasks in
+    let vs, _ = List.fold_left (worker_execute ~doc_id ~send_back) (vs,[]) tasks in
+    let _ =
+      let f = Declare.Proof.close_proof in
+      let open Vernacstate in (* shadows Declare *)
+      let open Vernacexpr in
+      let open Vernacextend in
+      let { Interp.lemmas; program; _ } = vs.interp in
+      match lemmas with
+      | None -> assert false
+      | Some lemmas ->
+          let proof = Vernacstate.LemmaStack.get_top lemmas in
+          try let _ = f ~opaque:Vernacexpr.Opaque ~keep_body_ucst_separate:false proof in ()
+          with e ->
+            let e, info = Exninfo.capture e in
+            let loc = Loc.get_loc info in
+            let msg = CErrors.iprint (e, info) in
+            let status = error loc (Pp.string_of_ppcmds msg) vs in
+            send_back (ProofJob.UpdateExecStatus (terminator_id,status))
+        in
     flush_all ();
     exit 0
   with e ->
@@ -333,7 +356,7 @@ let execute ~doc_id st (vs, events, interrupted) task =
       | PDelegate { terminator_id; opener_id; last_step_id; tasks; proof_using } ->
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
-            let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id; last_proof_step_id  = last_step_id } in
+            let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id } in
             let job_id = DelegationManager.mk_job_id terminator_id in
             (* The proof was successfully opened *)
             let last_vs, v, assign = interp_qed_delayed ~state_id:terminator_id ~proof_using ~st:vs in
@@ -356,19 +379,16 @@ let execute ~doc_id st (vs, events, interrupted) task =
             in
             let st = update st terminator_id (success last_vs) in
             let st = List.fold_left (fun st id ->
-               if Stateid.equal id last_step_id then
+               if Option.equal Stateid.equal (Some id) last_step_id then
                  update_all id (Delegated (job_id,Some complete_job)) [] st
                else
                  update_all id (Delegated (job_id,None)) [] st)
                st (List.map id_of_prepared_task tasks) in
-            if tasks = [] then (st, last_vs, events, false)
-            else begin
-              let e, cancellation =
+            let e, cancellation =
                 ProofWorker.worker_available ~jobs
                   ~fork_action:worker_main in
               Queue.push (job_id, cancellation, job) jobs;
               (st, last_vs,events @ [inject_proof_event e] ,false)
-            end
           | _ ->
             (* If executing the proof opener failed, we skip the proof *)
             let st = update st terminator_id (success vs) in
