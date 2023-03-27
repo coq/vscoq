@@ -57,6 +57,7 @@ let init vernac_state = {
 let options = ref default_options
 
 let set_options o = options := o
+let set_default_options () = options := default_options
 
 type prepared_task =
   | PSkip of sentence_id
