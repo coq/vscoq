@@ -9,6 +9,28 @@ module TypeCompare = struct
   let compare = compare
 end
 
+let take n l =
+  let rec sub_list n accu l =
+    match l with 
+    | [] -> accu 
+    | hd :: tl ->
+      if n = 0 then accu 
+      else sub_list (n - 1) (hd :: accu) tl
+  in
+  List.rev (sub_list n [] l)
+
+let takeSkip n l = 
+  let rec sub_list n accu l =
+    match l with 
+    | [] -> accu, [] 
+    | hd :: tl ->
+      if n = 0 then accu, tl
+      else sub_list (n - 1) (hd :: accu) tl
+  in
+  let take, skip = sub_list n [] l in
+  List.rev (take), skip
+
+
 module Atomics = Set.Make(TypeCompare)
 
 let get_goal_type st loc =
@@ -85,7 +107,7 @@ module Split = struct
   let best_subtype sigma goal c = 
     c |> split_types sigma |> List.map (fun a -> (a, a)) |> List.stable_sort (SimpleAtomics.compare_atomics goal) |> List.hd |> fst
 
-  let rank (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
+  let rank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
     (*Split type intersection: Split the lemmas by implications, compare the suffix to the goal, pick best match*)
     let goal = SimpleAtomics.atomic_types sigma goal in
     let lemmaTypes = List.map (fun (l : CompletionItems.completion_item) -> 
@@ -259,7 +281,31 @@ module Structured = struct
       List.map snd sorted
 end
 
-(*Heuristics*)
+module SelectiveUnification = struct
+  let realRank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+    Printf.eprintf "running unification on %d elements\n" (List.length lemmas);
+    let aux (lemma : CompletionItems.completion_item) =
+      let flags = Evarconv.default_flags_of TransparentState.full in
+      let res = Evarconv.evar_conv_x flags env sigma Reduction.CONV goal (of_constr lemma.typ) in
+      match res with 
+      | Success evd ->
+        (lemma, 0)
+      | UnifFailure (evd, reason) ->
+        (lemma, 1)
+     in
+    lemmas 
+    |> List.map aux
+    |> List.stable_sort (fun a b -> compare (snd a) (snd b))
+    |> List.map fst
+  
+  let selectiveRank use_um (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+    let ranked = Structured.rank use_um goal sigma env lemmas in
+    let take, skip = takeSkip 1000 ranked in
+    List.append (realRank goal sigma env take) skip
+
+
+  let rank = selectiveRank
+end
 
 let rank_choices algorithm = 
   let open Lsp.LspData.Settings.RankingAlgoritm in
@@ -267,16 +313,8 @@ let rank_choices algorithm =
   | SimpleTypeIntersection -> SimpleAtomics.rank
   | SplitTypeIntersection -> Split.rank
   | StructuredTypeEvaluation -> Structured.rank true
+  | SelectiveUnification -> SelectiveUnification.rank true
  
-let take n l =
-  let rec sub_list n accu l =
-    match l with 
-    | [] -> accu 
-    | hd :: tl ->
-      if n = 0 then accu 
-      else sub_list (n - 1) (hd :: accu) tl
-  in
-  List.rev (sub_list n [] l)
 
 let get_completion_items ~id params st loc algorithm =
   try 

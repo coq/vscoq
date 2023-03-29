@@ -229,16 +229,19 @@ module Settings = struct
     | SimpleTypeIntersection
     | SplitTypeIntersection
     | StructuredTypeEvaluation
+    | SelectiveUnification
 
     let yojson_of_t = function
     | SimpleTypeIntersection -> `Int 0
     | SplitTypeIntersection -> `Int 1
     | StructuredTypeEvaluation -> `Int 2
+    | SelectiveUnification -> `Int 3
 
     let t_of_yojson = function
     | `Int 0 -> SimpleTypeIntersection
     | `Int 1 -> SplitTypeIntersection
     | `Int 2 -> StructuredTypeEvaluation
+    | `Int 3 -> SelectiveUnification
     | _ -> Yojson.json_error @@ "invalid value "
 
   end

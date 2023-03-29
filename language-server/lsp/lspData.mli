@@ -190,6 +190,7 @@ module Settings : sig
       | SimpleTypeIntersection
       | SplitTypeIntersection
       | StructuredTypeEvaluation
+      | SelectiveUnification
       [@@deriving yojson]
     end
   
