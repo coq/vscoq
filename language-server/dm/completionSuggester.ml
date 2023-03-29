@@ -84,7 +84,7 @@ module Split = struct
   let best_subtype sigma goal c = 
     c |> split_types sigma |> List.map (fun a -> (a, a)) |> List.stable_sort (SimpleAtomics.compare_atomics goal) |> List.hd |> fst
 
-  let rank (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
+  let rank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
     (*Split type intersection: Split the lemmas by implications, compare the suffix to the goal, pick best match*)
     let goal = SimpleAtomics.atomic_types sigma goal in
     let lemmaTypes = List.map (fun (l : CompletionItems.completion_item) -> 
@@ -219,7 +219,25 @@ module Structured = struct
       List.map snd sorted
 end
 
-(*Heuristics*)
+module SelectiveUnification = struct
+  let rank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+    Printf.eprintf "It is called\n";
+    let (stuff : (CompletionItems.completion_item * int) list) = lemmas 
+    |> List.map (fun (lemma : CompletionItems.completion_item) -> 
+      try
+        Printf.eprintf "1\n";
+        let otherStuff = Evarconv.unify env sigma Reduction.CONV goal (of_constr lemma.typ) in
+        Printf.eprintf "2\n";
+        (lemma, 0)
+      with Evarconv.UnableToUnify (sigma,e) -> (lemma, 1)) 
+    in
+    Printf.eprintf "3\n";
+    let funny = (fun a b -> compare (snd a) (snd b)) in
+    Printf.eprintf "4\n";
+    stuff 
+    |> List.stable_sort funny
+    |> List.map fst
+end
 
 let rank_choices algorithm = 
   let open Lsp.LspData.Settings.RankingAlgoritm in
@@ -227,6 +245,7 @@ let rank_choices algorithm =
   | SimpleTypeIntersection -> SimpleAtomics.rank
   | SplitTypeIntersection -> Split.rank
   | StructuredTypeEvaluation -> Structured.rank
+  | SelectiveUnification -> SelectiveUnification.rank
  
 let take n l =
   let rec sub_list n accu l =

@@ -32,7 +32,7 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let check_mode = ref Settings.Mode.Continuous
 
-let algorithm = ref Settings.RankingAlgoritm.StructuredTypeEvaluation
+let algorithm = ref Settings.RankingAlgoritm.SelectiveUnification
 
 let lsp_debug = CDebug.create ~name:"vscoq.lspManager" ()
 
@@ -70,7 +70,7 @@ let lsp : event Sel.event =
       end
     | Error exn ->
         log @@ ("failed to read message: " ^ Printexc.to_string exn);
-        (*this line is sacred*)
+        (*this line is sacred*) 
         exit(0))
   |> fst
   |> Sel.name "lsp"
