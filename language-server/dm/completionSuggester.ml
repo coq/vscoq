@@ -8,6 +8,28 @@ module TypeCompare = struct
   let compare = compare
 end
 
+let take n l =
+  let rec sub_list n accu l =
+    match l with 
+    | [] -> accu 
+    | hd :: tl ->
+      if n = 0 then accu 
+      else sub_list (n - 1) (hd :: accu) tl
+  in
+  List.rev (sub_list n [] l)
+
+let takeSkip n l = 
+  let rec sub_list n accu l =
+    match l with 
+    | [] -> accu, [] 
+    | hd :: tl ->
+      if n = 0 then accu, tl
+      else sub_list (n - 1) (hd :: accu) tl
+  in
+  let take, skip = sub_list n [] l in
+  List.rev (take), skip
+
+
 module Atomics = Set.Make(TypeCompare)
 
 let get_goal_type st loc =
@@ -220,10 +242,9 @@ module Structured = struct
 end
 
 module SelectiveUnification = struct
-  let rank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+  let realRank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
     Printf.eprintf "running unification on %d elements\n" (List.length lemmas);
-    let (stuff : (CompletionItems.completion_item * int) list) = lemmas 
-    |> List.map (fun (lemma : CompletionItems.completion_item) -> 
+    let aux (lemma : CompletionItems.completion_item) =
       let flags = Evarconv.default_flags_of TransparentState.full in
       let res = Evarconv.evar_conv_x flags env sigma Reduction.CONV goal (of_constr lemma.typ) in
       match res with 
@@ -231,12 +252,19 @@ module SelectiveUnification = struct
         (lemma, 0)
       | UnifFailure (evd, reason) ->
         (lemma, 1)
-    )
-    in
-    let funny = (fun a b -> compare (snd a) (snd b)) in
-    stuff 
-    |> List.stable_sort funny
+     in
+    lemmas 
+    |> List.map aux
+    |> List.stable_sort (fun a b -> compare (snd a) (snd b))
     |> List.map fst
+  
+  let selectiveRank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+    let ranked = Structured.rank goal sigma env lemmas in
+    let take, skip = takeSkip 1000 ranked in
+    List.append (realRank goal sigma env take) skip
+
+
+  let rank = selectiveRank
 end
 
 let rank_choices algorithm = 
@@ -247,15 +275,6 @@ let rank_choices algorithm =
   | StructuredTypeEvaluation -> Structured.rank
   | SelectiveUnification -> SelectiveUnification.rank
  
-let take n l =
-  let rec sub_list n accu l =
-    match l with 
-    | [] -> accu 
-    | hd :: tl ->
-      if n = 0 then accu 
-      else sub_list (n - 1) (hd :: accu) tl
-  in
-  List.rev (sub_list n [] l)
 
 let get_completion_items ~id params st loc algorithm =
   try 
