@@ -2,6 +2,7 @@ module CompactedDecl = Context.Compacted.Declaration
 open Printer
 open EConstr
 open Names
+open Map
 
 module TypeCompare = struct
   type t = types
@@ -95,10 +96,17 @@ module Split = struct
     List.map snd
 end
 
+type rev_bruijn_index = int
+
+
+
 module Structured = struct
   type unifier = 
-    | SortUniType of ESorts.t
+    | SortUniType of ESorts.t * rev_bruijn_index
     | AtomicUniType of types * unifier array
+
+  (* map from rev_bruijn_index to unifier *)
+  module UM = Map.Make(struct type t = rev_bruijn_index let compare = compare end)
 
   (* This is extremely slow, we should not convert it to a list. *)
   let filter_options a = 
@@ -106,9 +114,9 @@ module Structured = struct
 
   let unifier_kind sigma (t : types) : unifier option = 
     let rec aux bruijn t = match kind sigma t with
-      | Sort s -> SortUniType s |> Option.make
+      | Sort s -> SortUniType (s, List.length bruijn) |> Option.make
       | Cast (c,_,t) -> failwith "Not implemented"
-      | Prod (na,t,c) -> aux (aux bruijn t :: bruijn) c
+      | Prod (na,t,c) -> aux (aux bruijn t :: bruijn) c (* Possibly the index should be assigned here instead and be a thing for both types. *)
       | LetIn (na,b,t,c) -> failwith "Not implemented"
       | App (c,l) -> 
         let l' = Array.map (aux bruijn) l in
@@ -125,7 +133,7 @@ module Structured = struct
     let rec aux i u =
       Printf.eprintf "%s" (String.init i (fun _ -> ' '));
       match u with
-      | SortUniType s -> Printf.eprintf "SortUniType: ";
+      | SortUniType (s, i) -> Printf.eprintf "SortUniType (%d): " i;
         (match ESorts.kind sigma s with 
         | SProp -> Printf.eprintf "SProp\n";
         | Prop -> Printf.eprintf "Prop\n";
@@ -159,24 +167,56 @@ module Structured = struct
       | None -> () (* Lol :) *)
       in
     aux 0 k
+
+  let rec matches evd (u1: unifier) (u2: unifier) =
+    match (u1, u2) with
+    | SortUniType (s1, _), SortUniType (s2, _) -> 
+      ESorts.equal evd s1 s2
+    | SortUniType _, _ -> false
+    | _, SortUniType _ -> false (* TODO: Maybe add to UM? Maybe not? The UM is not the goal. *)
+    | AtomicUniType (t1, ua1), AtomicUniType (t2, ua2) -> 
+      let c = EConstr.compare_constr evd (EConstr.eq_constr evd) t1 t2 in
+      if c then 
+        let rec aux ua1 ua2 = 
+          match (ua1, ua2) with
+          | [], [] -> true
+          | [], _ | _, [] -> false
+          | u1 :: ua1, u2 :: ua2 -> 
+            let c = matches evd u1 u2 in
+            if c then aux ua1 ua2 else false
+        in
+        aux (Array.to_list ua1) (Array.to_list ua2)
+      else false
+
+  let atomicMatchFactor = 2.0
   
   let score_unifier evd (goal : unifier) (u : unifier) : float =
-    let rec aux g u : float = match (g, u) with
-      | SortUniType s1, SortUniType s2 -> if ESorts.equal evd s1 s2 then 1. else 0.
+    let rec aux (um : unifier UM.t) g u  : (float * unifier UM.t) = 
+    match (g, u) with
+      | SortUniType (s1, i1), SortUniType (s2, i2) -> if ESorts.equal evd s1 s2 then (1., um) else (0., um)
       (* We might want to check if the t in AtomicUniType actually belongs in the sort*)
-      | SortUniType _, _ -> 0. (* If the goal has a sort then it has to match *)
-      | _, SortUniType _ -> 1.
+      | SortUniType _, _ -> (0., um) (* If the goal has a sort then it has to match *)
+      | AtomicUniType (t, ua), SortUniType (s, i) ->
+        if UM.mem i um then 
+          let u = UM.find i um in
+          matches evd u (SortUniType (s, i)) |> Bool.to_float |> fun x -> (x, um)
+        else (1., UM.add i u um)
       | AtomicUniType (t1, ua1), AtomicUniType (t2, ua2) -> 
-        let c = EConstr.compare_constr evd (EConstr.eq_constr evd) t1 t2 |> Bool.to_float in
-        if Array.length ua1 <> Array.length ua2 then c
-        else (Float.add) c (Array.map2 aux ua1 ua2 |> Array.fold_left (Float.add) 0.)
+        let c = EConstr.compare_constr evd (EConstr.eq_constr evd) t1 t2 |> Bool.to_float |> (Float.mul atomicMatchFactor) in
+        if Array.length ua1 <> Array.length ua2 then (c, um)
+        else 
+          let (score, um) = Array.fold_left (fun (acc, um) (u1, u2) -> 
+            let (s, um) = aux um u1 u2 in
+            (Float.add acc s, um)
+          ) (c, um) (Array.combine ua1 ua2) in
+          (score, um)
     in
-    aux goal u
+    aux UM.empty goal u |> fst
 
   let unpack_unifier u : unifier list = 
     let res = ref [] in
     let rec aux u = match u with
-      | SortUniType s -> ();
+      | SortUniType (s, i) -> ();
       | AtomicUniType (t, ua) -> 
         res := u :: !res;
         Array.iter aux ua
@@ -186,7 +226,7 @@ module Structured = struct
 
   let size_unifier u = 
     let rec aux u = match u with
-      | SortUniType s -> 1l
+      | SortUniType (s, i) -> 1l
       | AtomicUniType (t, ua) -> Array.fold_left (fun acc u -> Int32.add acc (aux u)) 1l ua
     in
     aux u
