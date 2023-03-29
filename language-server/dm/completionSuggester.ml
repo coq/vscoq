@@ -190,7 +190,7 @@ module Structured = struct
 
   let atomicMatchFactor = 2.0
   
-  let score_unifier evd (goal : unifier) (u : unifier) : float =
+  let score_unifier use_um evd (goal : unifier) (u : unifier) : float =
     let rec aux (um : unifier UM.t) g u  : (float * unifier UM.t) = 
     match (g, u) with
       | SortUniType (s1, i1), SortUniType (s2, i2) -> if ESorts.equal evd s1 s2 then (1., um) else (0., um)
@@ -200,7 +200,7 @@ module Structured = struct
         if UM.mem i um then 
           let u = UM.find i um in
           matches evd u (SortUniType (s, i)) |> Bool.to_float |> fun x -> (x, um)
-        else (1., UM.add i u um)
+        else (1., if use_um then UM.add i u um else um)
       | AtomicUniType (t1, ua1), AtomicUniType (t2, ua2) -> 
         let c = EConstr.compare_constr evd (EConstr.eq_constr evd) t1 t2 |> Bool.to_float |> (Float.mul atomicMatchFactor) in
         if Array.length ua1 <> Array.length ua2 then (c, um)
@@ -235,7 +235,7 @@ module Structured = struct
   (* A Lower score is better as we are sorting in ascending order *)
   (* The 5 value is just a placeholder and has not been beenchmarked *)
 
-  let rank (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
+  let rank use_um (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
     Printf.eprintf "Goal\n:";
     debug_print_unifier env sigma goal;
     match unifier_kind sigma goal with
@@ -245,7 +245,7 @@ module Structured = struct
         match (unifier_kind sigma (of_constr l.typ)) with
         | None -> ((Float.min_float), l)
         | Some unf -> 
-          let scores = List.map (score_unifier sigma goalUnf) (unpack_unifier unf) in
+          let scores = List.map (score_unifier use_um sigma goalUnf) (unpack_unifier unf) in
           let size = size_unifier unf |> Int32.to_float in
           let maxScore = List.fold_left Float.max 0. scores in
           let final = finalScore maxScore size in
@@ -266,7 +266,7 @@ let rank_choices algorithm =
   match algorithm with
   | SimpleTypeIntersection -> SimpleAtomics.rank
   | SplitTypeIntersection -> Split.rank
-  | StructuredTypeEvaluation -> Structured.rank
+  | StructuredTypeEvaluation -> Structured.rank true
  
 let take n l =
   let rec sub_list n accu l =
