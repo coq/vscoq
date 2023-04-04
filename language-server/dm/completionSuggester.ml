@@ -134,7 +134,7 @@ module Structured = struct
   let filter_options a = 
     a |> Array.to_list |> Option.List.flatten |> Array.of_list
 
-  let unifier_kind sigma (t : types) : unifier option = 
+  let unifier_kind sigma (t : types) : unifier option =
     let rec aux bruijn t = match kind sigma t with
       | Sort s -> SortUniType (s, List.length bruijn) |> Option.make
       | Cast (c,_,t) -> failwith "Not implemented"
@@ -167,7 +167,7 @@ module Structured = struct
         Printf.eprintf "AtomicUniType %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma t));
         Array.iter (fun u -> aux (i + 1) u) ua
     in
-    Option.iter (aux 0) (unifier_kind sigma t) 
+    Option.iter (aux 0) (unifier_kind sigma t)
 
   let debug_print_kind_of_type sigma env k: unit = 
     let rec aux i k = 
@@ -307,6 +307,38 @@ module SelectiveUnification = struct
   let rank = selectiveRank
 end
 
+module SelectiveSplitUnification = struct
+  let realRank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+    Printf.eprintf "running better unification on %d elements\n" (List.length lemmas);
+    let make_sortable (lemma : CompletionItems.completion_item) =
+      let flags = Evarconv.default_flags_of TransparentState.full in
+      let rec aux (iterations: int) (typ : types) : (CompletionItems.completion_item * int)=
+        let res = Evarconv.evar_conv_x flags env sigma Reduction.CONV goal typ in
+        match res with
+        | Success evd ->
+          (lemma, iterations)
+        | UnifFailure (evd, reason) ->
+          match kind sigma typ with
+          | Prod (x,t,c) -> aux (iterations + 1) c
+          | Cast (c,_,_) -> aux iterations c
+          | _            -> (lemma, 1000) (* This just needs to be an arbitrarily high number*)
+        in
+      aux 0 (of_constr lemma.typ)
+     in
+    lemmas
+    |> List.map make_sortable
+    |> List.stable_sort (fun a b -> compare (snd a) (snd b))
+    |> List.map fst
+
+  let selectiveRank use_um (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+    let ranked = Structured.rank use_um goal sigma env lemmas in
+    let take, skip = takeSkip 1000 ranked in
+    List.append (realRank goal sigma env take) skip
+
+
+  let rank = selectiveRank
+end
+
 let rank_choices algorithm = 
   let open Lsp.LspData.Settings.RankingAlgoritm in
   match algorithm with
@@ -314,6 +346,7 @@ let rank_choices algorithm =
   | SplitTypeIntersection -> Split.rank
   | StructuredTypeEvaluation -> Structured.rank true
   | SelectiveUnification -> SelectiveUnification.rank true
+  | SelectiveSplitUnification -> SelectiveSplitUnification.rank true
  
 
 let get_completion_items ~id params st loc algorithm =

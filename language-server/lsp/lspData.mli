@@ -191,6 +191,7 @@ module Settings : sig
       | SplitTypeIntersection
       | StructuredTypeEvaluation
       | SelectiveUnification
+      | SelectiveSplitUnification
       [@@deriving yojson]
     end
   
