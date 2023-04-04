@@ -352,16 +352,13 @@ let build_tasks_for doc st id =
     | Some (Success (Some vs)) ->
       (* We reached an already computed state *)
       log @@ "Reached computed state " ^ Stateid.to_string id;
-      Printf.eprintf "Reached computed state %s\n" (Stateid.to_string id);
       vs, tasks
     | Some (Error(_,Some vs)) ->
       (* We try to be resilient to an error *)
       log @@ "Error resiliency on state " ^ Stateid.to_string id;
-      Printf.eprintf "Error resiliency on state %s\n" (Stateid.to_string id);
       vs, tasks
     | _ ->
       log @@ "Non (locally) computed state " ^ Stateid.to_string id;
-      Printf.eprintf "Non (locally) computed state %s\n" (Stateid.to_string id);
       let (base_id, task) = task_for_sentence (Document.schedule doc) id in
       begin match base_id with
       | None -> (* task should be executed in initial state *)

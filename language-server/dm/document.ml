@@ -145,12 +145,6 @@ let string_of_sentence sentence =
   sentence.start
   sentence.stop
 
-let string_of_pre_sentence (sentence : pre_sentence) =
-  Format.sprintf "[-1] %s (%i -> %i)"
-  (string_of_parsed_ast sentence.ast)
-  sentence.start
-  sentence.stop
-
 let same_tokens (s1 : sentence) (s2 : pre_sentence) =
   match s1.ast, s2.ast with
   | ValidAst (_,_,tokens1), ValidAst (_,_,tokens2) ->
@@ -178,13 +172,13 @@ module ParsedDoc : sig
   val sentences : t -> sentence list
   val sentences_before : t -> int -> sentence list
   val sentences_after : t -> int -> sentence list
-  val better_senteces_after : t -> int -> sentence list
   val get_sentence : t -> sentence_id -> sentence option
   val find_sentence : t -> int -> sentence option
   val find_sentence_before : t -> int -> sentence option
   val find_sentence_after : t -> int -> sentence option
   val get_last_sentence : t -> sentence option
-  val shift_sentences : t -> int -> int -> t * sentence SM.t
+  val shift_sentences : t -> int -> int -> t
+  val changed_sentences : t -> t -> sentence SM.t
 
   val previous_sentence : t -> sentence_id -> sentence option
   val next_sentence : t -> sentence_id -> sentence option
@@ -273,7 +267,6 @@ end = struct
     match SM.find_opt id parsed.sentences_by_id with
     | None -> parsed
     | Some sentence ->
-      Printf.eprintf "Removing sentence %s\n" (Stateid.to_string id);
       let sentences_by_id = SM.remove id parsed.sentences_by_id in
       let sentences_by_end = LM.remove sentence.stop parsed.sentences_by_end in
       (* TODO clean up the schedule and free cached states *)
@@ -292,29 +285,14 @@ end = struct
     List.map snd @@ SM.bindings parsed.sentences_by_id
 
   let sentences_before parsed loc =
-    let (before,ov,_) = LM.split loc parsed.sentences_by_end in
+    let (before,ov,after) = LM.split loc parsed.sentences_by_end in
     let before = Option.cata (fun v -> LM.add loc v before) before ov in
     List.map (fun (_id,s) -> s) @@ LM.bindings before
 
   let sentences_after parsed loc =
-    let (_,ov,after) = LM.split loc parsed.sentences_by_end in
+    let (before,ov,after) = LM.split loc parsed.sentences_by_end in
     let after = Option.cata (fun v -> LM.add loc v after) after ov in
     List.map (fun (_id,s) -> s) @@ LM.bindings after
-
-  (* TODO: This function should not be necessary, but sentences_after has a bug, which means that it returns wrong results. *)
-  (* Test if the problem is in LM/SM, as it currently uses SM instead which works. *)
-  let better_senteces_after parsed loc = List.filter (fun s -> s.stop >= loc) (sentences parsed)
-
-(*
-    let (before,ov,after) = LM.split loc parsed.sentences_by_end in
-    match ov with
-    | None -> 
-      Printf.eprintf "No sentence at loc %d\n" loc;
-      List.map (fun (_id,s) -> s) @@ LM.bindings after
-    | Some s -> 
-      Printf.eprintf "Yes Sentence at loc %d\n" loc;
-      List.map (fun (_id,s) -> s) @@ LM.bindings (LM.add loc s after)   
-*)
 
   let get_sentence parsed id =
     SM.find_opt id parsed.sentences_by_id
@@ -373,7 +351,6 @@ end = struct
     end
 
   let shift_sentences parsed loc offset =
-    let changed = ref SM.empty in
     let (before,ov,after) = split_sentences loc parsed.sentences_by_end in
     let res =
       match ov with
@@ -387,18 +364,19 @@ end = struct
       LM.fold (fun stop v acc -> LM.add (stop + offset) { v with start = v.start + offset; stop = v.stop + offset } acc) after res
     in
     let shift_sentence s =
-      if s.start >= loc then 
-        { s with start = s.start + offset; stop = s.stop + offset }
-      else if s.stop >= loc then 
-        let s' = { s with stop = s.stop + offset } in
-        if s.start <= loc then
-          Printf.eprintf "Sentence (%s) was split at %d\n" (string_of_sentence s) loc;
-          changed := SM.add s.id s' !changed;
-        s'
+      if s.start >= loc then { s with start = s.start + offset; stop = s.stop + offset }
+      else if s.stop >= loc then { s with stop = s.stop + offset }
       else s
     in
     let sentences_by_id = SM.map shift_sentence parsed.sentences_by_id in
-    { parsed with sentences_by_end; sentences_by_id }, !changed
+    { parsed with sentences_by_end; sentences_by_id }
+
+  let changed_sentences changed orignal =
+    let aux id v1 v2 =
+      if v1.start = v2.start && v1.stop = v2.stop then None
+      else Some v1
+    in
+    SM.union aux changed.sentences_by_id  orignal.sentences_by_id
 
   let previous_sentence parsed id =
     let current = SM.find id parsed.sentences_by_id in
@@ -505,7 +483,6 @@ let rec junk_sentence_end stream =
 let rec parse_more synterp_state stream raw parsed =
   let handle_parse_error start msg =
     log @@ "handling parse error at " ^ string_of_int start;
-    Printf.printf "%s" @@ "handling parse error at " ^ string_of_int start;
     junk_sentence_end stream;
     let stop = Stream.count stream in
     let sentence = { ast = ParseError msg; start; stop; synterp_state } in
@@ -560,9 +537,6 @@ let parse_more synterp_state stream raw =
   parse_more synterp_state stream raw []
 
 
-let debug_print st prefix =
-  Printf.eprintf "%s: \n    %s\n" prefix (String.concat "\n    " @@ List.map string_of_sentence st)
-  
 
 let invalidate top_edit parsed_doc new_sentences changes =
   (* Algo:
@@ -585,6 +559,7 @@ let invalidate top_edit parsed_doc new_sentences changes =
   let rec invalidate_diff parsed_doc scheduler_state invalid_ids = let open ParsedDoc in function
     | [] -> invalid_ids, parsed_doc
     | Equal s :: diffs ->
+      (* Dont know if this should happen. If the sentence is equal we should probably not invalidate it *)
       let invalid_ids = List.fold_left (fun ids id -> Stateid.Set.add (fst id) ids) invalid_ids s in
       let patch_sentence (parsed_doc,scheduler_state) (old_s,new_s) =
         ParsedDoc.patch_sentence parsed_doc scheduler_state old_s new_s
@@ -605,10 +580,9 @@ let invalidate top_edit parsed_doc new_sentences changes =
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs
   in
   let (_,_synterp_state,scheduler_state) = Option.get @@ ParsedDoc.state_at_pos parsed_doc top_edit in
-  let old_sentences = ParsedDoc.better_senteces_after parsed_doc top_edit in
+  let old_sentences = ParsedDoc.sentences_after parsed_doc top_edit in
   let diff = ParsedDoc.diff old_sentences new_sentences in
   log @@ "diff:\n" ^ ParsedDoc.string_of_diff parsed_doc diff;
-  Printf.eprintf "Diff: \n%s\n" (ParsedDoc.string_of_diff parsed_doc diff);
   let invalid_ids, parsed_doc = invalidate_diff parsed_doc scheduler_state changes diff in
   let parsed_doc = Stateid.Set.fold (fun si p -> ParsedDoc.remove_sentence p si) invalid_ids parsed_doc in
   Stateid.Set.union invalid_ids changes, parsed_doc
@@ -618,19 +592,14 @@ let validate_document ({ parsed_loc; raw_doc; parsed_doc } as document) =
   match ParsedDoc.state_at_pos parsed_doc parsed_loc with
   | None -> Stateid.Set.empty, document
   | Some (stop, parsing_state, _scheduler_state) ->
-    Printf.eprintf "Stop: %i\n" stop;
     let text = RawDoc.text raw_doc in
-    Printf.eprintf "Text length: %i\n" (String.length text);
     let stream = Stream.of_string text in
     while Stream.count stream < stop do Stream.junk () stream done;
     log @@ Format.sprintf "Parsing more from pos %i" stop;
     let new_sentences = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
     log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
-    debug_print (ParsedDoc.sentences parsed_doc) "Before";
     let invalid_ids, parsed_doc = invalidate (stop+1) document.parsed_doc new_sentences document.changes in
-    debug_print (ParsedDoc.sentences parsed_doc) "After";
     let parsed_loc = ParsedDoc.pos_at_end parsed_doc in
-    Printf.eprintf "Parsed loc: %i\n" parsed_loc;
     invalid_ids, { document with parsed_doc; parsed_loc; changes = Stateid.Set.empty }
 
 let fresh_doc_id =
@@ -651,7 +620,8 @@ let apply_text_edit (document, changes) edit =
   let loc = RawDoc.loc_of_position document.raw_doc (fst edit).Range.end_ in
   let raw_doc, offset = RawDoc.apply_text_edit document.raw_doc edit in
   log @@ "Edit offset " ^ string_of_int offset;
-  let parsed_doc, changed = ParsedDoc.shift_sentences document.parsed_doc loc offset in
+  let parsed_doc = ParsedDoc.shift_sentences document.parsed_doc loc offset in
+  let changed = ParsedDoc.changed_sentences parsed_doc document.parsed_doc in
   let parsed_loc = SM.fold (fun _ s c -> min s.start c) changed document.parsed_loc in
   (*
   let execution_state = ExecutionManager.shift_locs document.execution_state loc offset in
@@ -663,14 +633,7 @@ let apply_text_edits document edits =
   match edits with
   | [] -> document
   | _ ->
-    let senteces_before = ParsedDoc.sentences document.parsed_doc |> List.length in
     let document, changes = List.fold_left apply_text_edit (document, SM.empty) edits in
-    Printf.eprintf "change set: %s\n" (String.concat ", " @@ List.map (fun (id,_) -> Stateid.to_string id) @@ SM.bindings changes);  
-    let senteces_after = ParsedDoc.sentences document.parsed_doc |> List.length in
-    Printf.eprintf "Sentences before: %i, after: %i\n" senteces_before senteces_after;
-    (*
-    let executed_loc = Option.map (min parsed_loc) document.executed_loc in
-    *)
     let changes = Stateid.Set.of_list (SM.bindings changes |> List.map fst) in
     { document with changes }
 

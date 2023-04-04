@@ -197,12 +197,6 @@ let textDocumentDidOpen params =
 
 let textDocumentDidChange params =
   let open Yojson.Safe.Util in
-  Printf.eprintf "--------------------------------------------\n";
-  Printf.eprintf "textDocumentDidChange (mode: %s): " (match !check_mode with 
-    | Settings.Mode.Continuous -> "continuous"
-    | Settings.Mode.Manual -> "manual");
-  Yojson.Safe.pretty_to_channel stderr params;
-  Printf.eprintf "\n";
   let textDocument = params |> member "textDocument" in
   let uri = textDocument |> member "uri" |> to_string in
   let contentChanges = params |> member "contentChanges" |> to_list in
