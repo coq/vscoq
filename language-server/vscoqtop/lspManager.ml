@@ -148,11 +148,10 @@ let publish_diagnostics uri doc =
   output_json @@ Notification.(yojson_of_t { method_; params })
 
 let send_highlights uri doc =
-  let { Dm.DocumentManager.parsed; checked; checked_by_delegate; legacy_highlight } =
+  let { Dm.DocumentManager.parsed; checked; legacy_highlight } =
     Dm.DocumentManager.executed_ranges doc in
   let parsed = List.map Range.yojson_of_t parsed in
   let checked = List.map Range.yojson_of_t checked in
-  (* let checked_by_delegate = List.map mk_range checked_by_delegate in *)
   let legacy_highlight = List.map Range.yojson_of_t legacy_highlight in
   let params = `Assoc [
     "uri", `String uri;

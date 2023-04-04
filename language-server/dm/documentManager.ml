@@ -52,7 +52,6 @@ type events = event Sel.event list
 type exec_overview = {
   parsed : Range.t list;
   checked : Range.t list;
-  checked_by_delegate : Range.t list;
   legacy_highlight : Range.t list;
 }
 
@@ -63,17 +62,14 @@ let executed_ranges doc execution_state loc =
   let ids_before_loc = List.map (fun s -> s.Document.id) @@ Document.sentences_before doc loc in
   let ids = List.map (fun s -> s.Document.id) @@ Document.sentences doc in
   let executed_ids = List.filter (ExecutionManager.is_executed execution_state) ids in
-  let remotely_executed_ids = List.filter (ExecutionManager.is_remotely_executed execution_state) ids in
-  let parsed_ids = List.filter (fun x -> not (List.mem x executed_ids || List.mem x remotely_executed_ids)) ids in
+  let parsed_ids = List.filter (fun x -> not (List.mem x executed_ids || ExecutionManager.is_remotely_executed execution_state x)) ids in
   let legacy_ids = List.filter (fun x -> ExecutionManager.is_executed execution_state x || ExecutionManager.is_remotely_executed execution_state x) ids_before_loc in
   log @@ Printf.sprintf "highlight: legacy: %s" (String.concat " " (List.map Stateid.to_string legacy_ids));
   log @@ Printf.sprintf "highlight: parsed: %s" (String.concat " " (List.map Stateid.to_string parsed_ids));
   log @@ Printf.sprintf "highlight: parsed + checked: %s" (String.concat " " (List.map Stateid.to_string executed_ids));
-  log @@ Printf.sprintf "highlight: parsed + checked_by_delegate: %s" (String.concat " " (List.map Stateid.to_string remotely_executed_ids));
   { 
     parsed = ranges_of parsed_ids;
     checked = ranges_of executed_ids;
-    checked_by_delegate = ranges_of remotely_executed_ids;
     legacy_highlight = ranges_of legacy_ids; 
   }
 
