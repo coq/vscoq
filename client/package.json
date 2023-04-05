@@ -120,15 +120,19 @@
             "enum": [
               0,
               1,
-              2
+              2,
+              3,
+              4
             ],
             "enumItemLabels": [
                 "SimpleTypeIntersection",
                 "SplitTypeIntersection",
-                "StructuredTypeEvaluation"
+                "StructuredTypeEvaluation",
+                "SelectiveUnification",
+                "SelectiveSplitUnification"
             ],
-            "default": 2,
-            "description": "Configures the ranking algoritm for auto completions in Coq."
+            "default": 4,
+            "description": "Configures the ranking algorithm for auto completions in Coq."
           },
           "vscoq.proof.mode": {
             "scope": "window",
