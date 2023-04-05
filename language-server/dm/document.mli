@@ -62,6 +62,9 @@ val sentences : document -> sentence list
 val get_sentence : document -> sentence_id -> sentence option
 val sentences_before : document -> int -> sentence list
 
+val surrounding_sentences : document -> sentence_id -> sentence option * sentence option
+(** [surrounding_sentences doc id] returns the sentence before and after [id] *)
+
 val find_sentence : document -> int -> sentence option
 (** [find_sentence doc loc] finds the sentence containing the loc *)
 

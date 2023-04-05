@@ -281,23 +281,23 @@ let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; last_proof_
 let execute ~doc_id st (vs, events, interrupted) task =
   if interrupted then begin
     let st = update st (id_of_prepared_task task) (Error ((None,"interrupted"),None)) in
-    (st, vs, events, true)
+    (st, vs, events, true, None)
   end else
     try
       match task with
       | PSkip id ->
           let st = update st id (success vs) in
-          (st, vs, events, false)
+          (st, vs, events, false, None)
       | PExec (id,ast,synterp) ->
           let vs = { vs with Vernacstate.synterp } in
           let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
           let st = update st id v in
-          (st, vs, events @ ev, false)
+          (st, vs, events @ ev, false, Some id)
       | PQuery (id,ast,synterp) ->
           let vs = { vs with Vernacstate.synterp } in
           let _, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
           let st = update st id v in
-          (st, vs, events @ ev, false)
+          (st, vs, events @ ev, false, None)
       | PDelegate { terminator_id; opener_id; last_step_id; tasks } ->
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
@@ -329,22 +329,22 @@ let execute ~doc_id st (vs, events, interrupted) task =
                else
                  update_all id (Delegated (job_id,None)) [] st)
                st (List.map id_of_prepared_task tasks) in
-            if tasks = [] then (st, last_vs, events, false)
+            if tasks = [] then (st, last_vs, events, false, None)
             else begin
               let e, cancellation =
                 ProofWorker.worker_available ~jobs
                   ~fork_action:worker_main in
               Queue.push (job_id, cancellation, job) jobs;
-              (st, last_vs,events @ [inject_proof_event e] ,false)
+              (st, last_vs,events @ [inject_proof_event e], false, Some (id_of_prepared_task task))
             end
           | _ ->
             (* If executing the proof opener failed, we skip the proof *)
             let st = update st terminator_id (success vs) in
-            (st, vs,events,false)
+            (st, vs,events,false, None)
           end
     with Sys.Break ->
       let st = update st (id_of_prepared_task task) (Error ((None,"interrupted"),None)) in
-      (st, vs, events, true)
+      (st, vs, events, true, None)
 
 let build_tasks_for doc st id =
   let rec build_tasks id tasks =

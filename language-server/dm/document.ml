@@ -171,6 +171,7 @@ module ParsedDoc : sig
   val remove_sentences_after : t -> int -> t * Stateid.Set.t
   val sentences : t -> sentence list
   val sentences_before : t -> int -> sentence list
+  val surrounding_sentences : t -> sentence_id -> sentence option * sentence option
   val sentences_after : t -> int -> sentence list
   val get_sentence : t -> sentence_id -> sentence option
   val find_sentence : t -> int -> sentence option
@@ -287,6 +288,16 @@ end = struct
     let (before,ov,after) = LM.split loc parsed.sentences_by_end in
     let before = Option.cata (fun v -> LM.add loc v before) before ov in
     List.map (fun (_id,s) -> s) @@ LM.bindings before
+
+  let surrounding_sentences parsed id =
+    let loc = match SM.find_opt id parsed.sentences_by_id with
+      | None -> 
+        CErrors.anomaly Pp.(str"Trying to get surrounding sentences of non-existing sentence " ++ Stateid.print id)
+      | Some sentence -> sentence.stop
+    in
+    let before = LM.find_last_opt (fun k -> k < loc) parsed.sentences_by_end |> Option.map snd in
+    let after = LM.find_first_opt (fun k -> loc < k) parsed.sentences_by_end |> Option.map snd in
+    before, after
 
   let sentences_after parsed loc =
     let (before,ov,after) = LM.split loc parsed.sentences_by_end in
@@ -643,6 +654,7 @@ let range_of_coq_loc doc loc = RawDoc.range_of_loc doc.raw_doc loc
 let parse_errors doc = ParsedDoc.parse_errors doc.raw_doc doc.parsed_doc
 let sentences doc = ParsedDoc.sentences doc.parsed_doc
 let sentences_before doc loc = ParsedDoc.sentences_before doc.parsed_doc loc
+let surrounding_sentences doc id = ParsedDoc.surrounding_sentences doc.parsed_doc id
 
 let text doc = RawDoc.text doc.raw_doc
 let word_at_position doc pos = RawDoc.word_at_position doc.raw_doc pos

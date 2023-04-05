@@ -55,7 +55,7 @@ val handle_event : event -> state -> (state option * events)
     one task at a time to ease checking for interruption *)
 type prepared_task
 val build_tasks_for : Document.document -> state -> sentence_id -> Vernacstate.t * prepared_task list
-val execute : doc_id:Feedback.doc_id -> state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool)
+val execute : doc_id:Feedback.doc_id -> state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool * sentence_id option)
 
 (** Coq toplevels for delegation without fork *)
 module ProofWorkerProcess : sig

@@ -19,6 +19,21 @@ let Log log = Log.mk_log "documentManager"
 
 type proof_data = (Proof.data * Position.t) option
 
+module SM = Map.Make (Stateid)
+
+type encompassing_range = {
+  ids : Range.t SM.t;
+  start : Position.t;
+  end_ : Position.t;
+}
+
+let empty_encompassing_range = {
+  ids = SM.empty;
+  start = { line = 0; character = 0 };
+  end_ = { line = 0; character = 0 };
+}
+
+  
 type state = {
   uri : string;
   init_vs : Vernacstate.t;
@@ -26,7 +41,25 @@ type state = {
   document : Document.document;
   execution_state : ExecutionManager.state;
   observe_id : Types.sentence_id option; (* TODO materialize observed loc and line-by-line execution status *)
+  checked : encompassing_range;
 }
+
+let add_sentence st id = 
+  let doc = st.document in
+  let checked = st.checked in
+  let sentence_range = Document.range_of_exec_id doc id in
+  let ids = SM.add id sentence_range checked.ids in
+  if SM.cardinal ids = 1 then
+    { ids; start = sentence_range.start; end_ = sentence_range.end_ }
+  else
+    let start = if sentence_range.start < checked.start then sentence_range.start else checked.start in
+    let end_ = if sentence_range.end_ > checked.end_ then sentence_range.end_ else checked.end_ in
+    { ids; start; end_ }
+
+(* Document.surrounding_sentences st.document id 
+Need to check the surronding sentences and probably have more ranges which can also be merged later.   
+
+*)
 
 type event =
   | Execute of { (* we split the computation to help interruptibility *)
@@ -55,28 +88,29 @@ type exec_overview = {
   legacy_highlight : Range.t list;
 }
 
+let is_executed execution_state id = 
+  ExecutionManager.is_executed execution_state id || ExecutionManager.is_remotely_executed execution_state id
+
 let executed_ranges doc execution_state loc =
   let ranges_of l =
     List.sort (fun { Range.start = s1 } { Range.start = s2 } -> compare s1 s2) @@
     List.map (Document.range_of_exec_id doc) l in
-  let ids_before_loc = List.map (fun s -> s.Document.id) @@ Document.sentences_before doc loc in
   let ids = List.map (fun s -> s.Document.id) @@ Document.sentences doc in
   let executed_ids = List.filter (ExecutionManager.is_executed execution_state) ids in
-  let parsed_ids = List.filter (fun x -> not (List.mem x executed_ids || ExecutionManager.is_remotely_executed execution_state x)) ids in
-  let legacy_ids = List.filter (fun x -> ExecutionManager.is_executed execution_state x || ExecutionManager.is_remotely_executed execution_state x) ids_before_loc in
-  log @@ Printf.sprintf "highlight: legacy: %s" (String.concat " " (List.map Stateid.to_string legacy_ids));
-  log @@ Printf.sprintf "highlight: parsed: %s" (String.concat " " (List.map Stateid.to_string parsed_ids));
-  log @@ Printf.sprintf "highlight: parsed + checked: %s" (String.concat " " (List.map Stateid.to_string executed_ids));
+  let parsed_ids = List.filter (fun x -> not (is_executed execution_state x)) ids in
+  let legacy_ids = List.filter (is_executed execution_state) ids in
   { 
     parsed = ranges_of parsed_ids;
     checked = ranges_of executed_ids;
     legacy_highlight = ranges_of legacy_ids; 
   }
 
-let executed_ranges st =
-  match Option.bind st.observe_id (Document.get_sentence st.document) with
-  | None -> executed_ranges st.document st.execution_state (Document.end_loc st.document)
-  | Some { stop } -> executed_ranges st.document st.execution_state stop
+let executed_ranges (st : state) =
+  { 
+    parsed = [];
+    checked = [];
+    legacy_highlight = [{ Range.start = st.checked.start; Range.end_ = st.checked.end_ }]; 
+  }
 
 let make_diagnostic doc id oloc message severity =
   let range =
@@ -109,7 +143,7 @@ let init init_vs ~opts ~uri ~text =
   let top = Coqargs.(dirpath_of_top (TopPhysical uri)) in
   Coqinit.start_library ~top opts;
   let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
-  { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event ExecutionManager.local_feedback]
+  { uri; opts; init_vs; document; execution_state; observe_id = None; checked = empty_encompassing_range }, [inject_em_event ExecutionManager.local_feedback]
 
 let reset { uri; opts; init_vs; document } =
   let document = Document.create_document (Document.text document) in
@@ -117,7 +151,7 @@ let reset { uri; opts; init_vs; document } =
   let top = Coqargs.(dirpath_of_top (TopPhysical uri)) in
   Coqinit.start_library ~top opts;
   let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
-  { uri; opts; init_vs; document; execution_state; observe_id = None }
+  { uri; opts; init_vs; document; execution_state; observe_id = None; checked = empty_encompassing_range}
 
 let interpret_to_loc state loc : (state * event Sel.event list) =
     let invalid_ids, document = Document.validate_document state.document in
@@ -228,11 +262,18 @@ let handle_event ev st =
   | Execute { id; vst_for_next_todo; started; todo = task :: todo } ->
     (*log "Execute (more tasks)";*)
     let doc_id = Document.id_of_doc st.document in
-    let (execution_state,vst_for_next_todo,events,interrupted) =
+    let (execution_state,vst_for_next_todo,events,interrupted, executed_id) =
       ExecutionManager.execute ~doc_id st.execution_state (vst_for_next_todo, [], false) task in
     (* We do not update the state here because we may have received feedback while
        executing *)
-    (Some {st with execution_state}, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
+    (
+    match executed_id with 
+    | None -> (Some {st with execution_state}, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
+    | Some id ->
+      let checked = add_sentence st id in
+      let st = {st with execution_state; checked} in
+      (Some st, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
+    )
   | ExecutionManagerEvent ev ->
     let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
