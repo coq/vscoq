@@ -284,9 +284,10 @@ let coqtopStepForward ~id params : (string * Dm.DocumentManager.events) =
   update_view uri st;
   (uri,events)
   
-  let make_CompletionItem i (label, typ, path) : CompletionItem.t = 
+  let make_CompletionItem i (label, insertText, typ, path) : CompletionItem.t = 
     {
       label;
+      insertText = Some insertText;
       detail = Some typ;
       documentation = Some ("Path: " ^ path);
       sortText = Some (Printf.sprintf "%5d" i);

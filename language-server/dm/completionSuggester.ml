@@ -249,7 +249,7 @@ module SelectiveUnification = struct
       let res = Evarconv.evar_conv_x flags env sigma Reduction.CONV goal (of_constr lemma.typ) in
       match res with 
       | Success evd ->
-        (lemma, 0)
+        ({lemma with completes = Some Fully}, 0)
       | UnifFailure (evd, reason) ->
         (lemma, 1)
      in
@@ -276,7 +276,7 @@ module SelectiveSplitUnification = struct
         let res = Evarconv.evar_conv_x flags env sigma Reduction.CONV goal typ in
         match res with 
         | Success evd ->
-          (lemma, iterations)
+          ({lemma with completes = if iterations = 0 then Some Fully else Some Partially}, iterations)
         | UnifFailure (evd, reason) ->
           match kind sigma typ with
           | Prod (x,t,c) -> aux (iterations + 1) c
@@ -318,7 +318,7 @@ let get_completion_items ~id params st loc algorithm =
     | Some (goal, sigma, env), Some lemmas ->
       rank_choices algorithm goal sigma env lemmas
       |> take 10000 
-      |> List.map CompletionItems.pp_completion_item 
+      |> List.map (CompletionItems.pp_completion_item) 
       |> Result.ok
   with e -> 
     Printf.eprintf "Error in creating completion items: %s" (Printexc.to_string e);

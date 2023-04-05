@@ -27,6 +27,7 @@ module CompletionItem : sig
   (* See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_completion *)
   type t = {
     label : string;
+    insertText : string option;
     detail : string option;
     documentation : string option;
     sortText : string option;

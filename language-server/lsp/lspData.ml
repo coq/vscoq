@@ -39,6 +39,7 @@ module CompletionItem = struct
 
   type t = {
     label : string;
+    insertText : string option [@yojson.option];
     detail : string option [@yojson.option];
     documentation : string option [@yojson.option];
     sortText : string option [@yojson.option];
