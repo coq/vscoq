@@ -10,14 +10,25 @@ The language server is developed in ocaml and makes it possible to link from the
 
 ### Architecture 
 ```mermaid
-    flowchart TD
-    A[Vscoqtop] --> B[LSPManager] 
-    B --> C[DocumentManager]
-    B --> D[ExecutionManager]
-    D --> E[DelegationManager]
-    C --> F[Queries]
-    C --> G[Document]
-    C --> H[Scheduler]
+    stateDiagram-v2
+        A: Vcoqtop
+        B: LSPManager
+        C: DocumentManager
+        D: ExecutionManager
+        note left of D: Coq Vernac
+        E: DelegationManager
+        F: Queries
+        note right of F: Coq API
+        G: Document
+        note right of G: Coq parser
+        H: Scheduler
+        A --> B 
+        B --> C
+        B --> D
+        D --> E
+        C --> F
+        C --> G
+        C --> H
 ```
 
 ### Building
