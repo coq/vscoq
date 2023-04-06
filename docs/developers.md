@@ -11,14 +11,14 @@ The language server is developed in ocaml and makes it possible to link from the
 ### Architecture 
 
 The architecture is organized in the following comopnents. 
-* **VsCoqtop: ** This component handles the main event loop. 
-* **LSPManager: ** This component handles the JSONRPC encoding, LSP requests, notifications and responses as well as LSP events dispatch.
-* **DocumentManager: ** The document manager handles everything that pertains to document representation and parsing. 
-* **Document: ** Raw and parsed document represnetations. 
-* **Scheduler: ** Incremental static dependency analysis.
-* **Queries: ** This handles the coq queries (Search, About, etc...)
-* **Exectution manager: ** Maintains coq states. Handles execution and feedback. 
-* **Delegation manager: ** Handles worker tasks and feedback. 
+* **VsCoqtop:** This component handles the main event loop. 
+* **LSPManager:** This component handles the JSONRPC encoding, LSP requests, notifications and responses as well as LSP events dispatch.
+* **DocumentManager:** The document manager handles everything that pertains to document representation and parsing. 
+* **Document:** Raw and parsed document represnetations. 
+* **Scheduler:** Incremental static dependency analysis.
+* **Queries:** This handles the coq queries (Search, About, etc...)
+* **Exectution manager:** Maintains coq states. Handles execution and feedback. 
+* **Delegation manager:** Handles worker tasks and feedback. 
 
 ```mermaid
     stateDiagram-v2
