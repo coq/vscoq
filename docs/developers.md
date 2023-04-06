@@ -9,6 +9,16 @@ The two main building blocks are the language server and the client (the vscode 
 The language server is developed in ocaml and makes it possible to link from the client directly to the coq API and exploit [LSP](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/). 
 
 ### Architecture 
+```mermaid
+    flowchart TD
+    A[Vscoqtop] --> B[LSPManager] 
+    B --> C[DocumentManager]
+    B --> D[ExecutionManager]
+    D --> E[DelegationManager]
+    C --> F[Queries]
+    C --> G[Document]
+    C --> H[Scheduler]
+```
 
 ### Building
 
