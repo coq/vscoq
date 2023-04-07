@@ -94,6 +94,15 @@
           "default": "open-script",
           "markdownDescription": "When to start an instance of coqtop: when a Coq script is opened (`open-script`) or else when the user begins interaction (`interaction`; default)."
         },
+        "coqtop.projectSettingsType": {
+          "type": "string",
+          "enum": [
+            "_CoqProject",
+            "Dune"
+          ],
+          "default": "_CoqProject",
+          "description": "Load project settings from _CoqProject, or use dune coq top."
+        },
         "coqtop.useDune": {
           "type": "boolean",
           "markdownDescription": "(Experimental) Use `dune coq top` to run `coqidetop`."
