@@ -5,6 +5,7 @@ import * as net from 'net';
 import * as path from 'path';
 import * as vscode from 'vscode-languageserver';
 import * as semver from 'semver';
+import * as process from 'process';
 
 import {ChildProcess, spawn} from 'child_process';
 import {CoqTopSettings} from '../protocol';
@@ -224,6 +225,8 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
     var topfile : string[] = [];
     var scriptPath = this.scriptPath;
     const relScriptPath = path.relative(this.projectRoot, scriptPath);
+    this.console.log('process.cwd(): ' + process.cwd() + '; scriptPath: ' + scriptPath + '; this.projectRoot: ' +
+      this.projectRoot + '; relScriptPath: ' + relScriptPath);
     if (semver.satisfies(this.coqtopVersion, ">= 8.10") && !this.settings.useDune && scriptPath != undefined) {
       // Dune computes this internally, so we skip it.
       topfile = ['-topfile', scriptPath];
