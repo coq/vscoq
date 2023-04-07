@@ -223,6 +223,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
   private spawnCoqTop(mainAddr : string, controlAddr: string) {
     var topfile : string[] = [];
     var scriptPath = this.scriptPath;
+    const relScriptPath = path.relative(this.projectRoot, scriptPath);
     if (semver.satisfies(this.coqtopVersion, ">= 8.10") && !this.settings.useDune && scriptPath != undefined) {
       // Dune computes this internally, so we skip it.
       topfile = ['-topfile', scriptPath];
@@ -252,7 +253,7 @@ export class CoqTop extends IdeSlave8 implements coqtop.CoqTop {
 
     const [binary, args] = this.settings.useDune ?
       [this.settings.dunePath, ["coq", "top", "--toplevel=" + coqtopModule,
-        scriptPath, "--", ...coqArgs]] :
+        relScriptPath, "--", ...coqArgs]] :
       [coqtopModule, coqArgs]
 
     this.console.log('exec: ' + binary + ' ' + args.join(' '));
