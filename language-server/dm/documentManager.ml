@@ -60,19 +60,20 @@ let merge_ranges a b =
   let end_ = max a.end_ b.end_ in
   {ids; start; end_}
 
-let sentence_checked st id =  let sentence_range = Document.range_of_exec_id st.document id in
+let add_id_to_ranges doc ranges id = 
+  let sentence_range = Document.range_of_exec_id doc id in
   let start, end_ = (sentence_range.start, sentence_range.end_) in
-  let only_new = add_sentence st.document id empty_encompassing_range in
+  let only_new = add_sentence doc id empty_encompassing_range in
   let rec aux f (ranges : encompassing_range list) = match ranges with 
     | x :: xs when f x -> merge_ranges x only_new :: xs
     | x :: xs when x.end_ < end_ -> x :: only_new :: xs (* We did not find a good merge before going past the end *)
     | x :: xs -> x :: aux f xs
     | [] -> [only_new]
   in
-  match Document.surrounding_sentences st.document id with
-  | None, None -> aux (fun _ -> false) st.checked
-  | Some before, None -> aux (fun x -> SM.mem before.id x.ids) st.checked
-  | None, Some after -> aux (fun x -> SM.mem after.id x.ids) st.checked
+  match Document.surrounding_sentences doc id with
+  | None, None -> aux (fun _ -> false) ranges
+  | Some before, None -> aux (fun x -> SM.mem before.id x.ids) ranges
+  | None, Some after -> aux (fun x -> SM.mem after.id x.ids) ranges
   | Some before, Some after -> 
   let rec aux (ranges : encompassing_range list) = match ranges with 
     | x :: y :: xs when (SM.mem before.id x.ids && SM.mem after.id y.ids) -> 
@@ -82,7 +83,9 @@ let sentence_checked st id =  let sentence_range = Document.range_of_exec_id st.
     | x :: xs -> x :: aux xs
     | [] -> [only_new]
   in
-  aux st.checked
+  aux ranges
+
+let sentence_checked st id = {st with checked = add_id_to_ranges st.document st.checked id}
 
 (* Document.surrounding_sentences st.document id 
 Need to check the surronding sentences and probably have more ranges which can also be merged later.   
@@ -299,8 +302,7 @@ let handle_event ev st =
     match executed_id with 
     | None -> (Some {st with execution_state}, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
     | Some id ->
-      let checked = sentence_checked st id in
-      let st = {st with execution_state; checked} in
+      let st = sentence_checked {st with execution_state} id in
       (Some st, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
     )
   | ExecutionManagerEvent ev ->
