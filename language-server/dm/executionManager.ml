@@ -292,7 +292,7 @@ let execute ~doc_id st (vs, events, interrupted) task =
           let vs = { vs with Vernacstate.synterp } in
           let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
           let st = update st id v in
-          (st, vs, events @ ev, false, Some id)
+          (st, vs, events @ ev, false, Some [id])
       | PQuery (id,ast,synterp) ->
           let vs = { vs with Vernacstate.synterp } in
           let _, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
@@ -335,7 +335,7 @@ let execute ~doc_id st (vs, events, interrupted) task =
                 ProofWorker.worker_available ~jobs
                   ~fork_action:worker_main in
               Queue.push (job_id, cancellation, job) jobs;
-              (st, last_vs,events @ [inject_proof_event e], false, Some (id_of_prepared_task task))
+              (st, last_vs,events @ [inject_proof_event e], false, Some (List.map id_of_prepared_task tasks))
             end
           | _ ->
             (* If executing the proof opener failed, we skip the proof *)

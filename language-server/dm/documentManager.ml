@@ -61,8 +61,7 @@ let merge_ranges a b =
   {ids; start; end_}
 
 let add_id_to_ranges doc ranges id = 
-  let sentence_range = Document.range_of_exec_id doc id in
-  let start, end_ = (sentence_range.start, sentence_range.end_) in
+  let ({start; end_} : Lsp.LspData.Range.t) = Document.range_of_exec_id doc id in
   let only_new = add_sentence doc id empty_encompassing_range in
   let rec aux f (ranges : encompassing_range list) = match ranges with 
     | x :: xs when f x -> merge_ranges x only_new :: xs
@@ -85,7 +84,11 @@ let add_id_to_ranges doc ranges id =
   in
   aux ranges
 
-let sentence_checked st id = {st with checked = add_id_to_ranges st.document st.checked id}
+let remove_id_from_ranges doc ranges id =
+  let ({start; end_} : Lsp.LspData.Range.t) = Document.range_of_exec_id doc id in
+  []
+
+let sentence_checked id st = {st with checked = add_id_to_ranges st.document st.checked id}
 
 (* Document.surrounding_sentences st.document id 
 Need to check the surronding sentences and probably have more ranges which can also be merged later.   
@@ -301,8 +304,8 @@ let handle_event ev st =
     (
     match executed_id with 
     | None -> (Some {st with execution_state}, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
-    | Some id ->
-      let st = sentence_checked {st with execution_state} id in
+    | Some ids ->
+      let st = List.fold_right sentence_checked ids {st with execution_state} in
       (Some st, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
     )
   | ExecutionManagerEvent ev ->
