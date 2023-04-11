@@ -61,32 +61,42 @@ let merge_ranges a b =
   {ids; start; end_}
 
 let add_id_to_ranges doc ranges id = 
-  let ({start; end_} : Lsp.LspData.Range.t) = Document.range_of_exec_id doc id in
-  let only_new = add_sentence doc id empty_encompassing_range in
-  let rec aux f (ranges : encompassing_range list) = match ranges with 
-    | x :: xs when f x -> merge_ranges x only_new :: xs
-    | x :: xs when x.end_ < end_ -> x :: only_new :: xs (* We did not find a good merge before going past the end *)
-    | x :: xs -> x :: aux f xs
-    | [] -> [only_new]
-  in
-  match Document.surrounding_sentences doc id with
-  | None, None -> aux (fun _ -> false) ranges
-  | Some before, None -> aux (fun x -> SM.mem before.id x.ids) ranges
-  | None, Some after -> aux (fun x -> SM.mem after.id x.ids) ranges
-  | Some before, Some after -> 
-  let rec aux (ranges : encompassing_range list) = match ranges with 
-    | x :: y :: xs when (SM.mem before.id x.ids && SM.mem after.id y.ids) -> 
-      (merge_ranges x only_new |> merge_ranges y) :: xs
-    | x :: xs when (SM.mem before.id x.ids || SM.mem after.id x.ids) -> merge_ranges x only_new :: xs
-    | x :: xs when x.end_ < end_ -> x :: only_new :: xs (* We did not find a good merge before going past the end *)
-    | x :: xs -> x :: aux xs
-    | [] -> [only_new]
-  in
-  aux ranges
+  try
+    let ({start; end_} : Lsp.LspData.Range.t) = Document.range_of_exec_id doc id in
+    let only_new = add_sentence doc id empty_encompassing_range in
+    let rec aux f (ranges : encompassing_range list) = match ranges with 
+      | x :: xs when f x -> merge_ranges x only_new :: xs
+      | x :: xs when x.end_ < end_ -> x :: only_new :: xs (* We did not find a good merge before going past the end *)
+      | x :: xs -> x :: aux f xs
+      | [] -> [only_new]
+    in
+    match Document.surrounding_sentences doc id with
+    | None, None -> aux (fun _ -> false) ranges
+    | Some before, None -> aux (fun x -> SM.mem before.id x.ids) ranges
+    | None, Some after -> aux (fun x -> SM.mem after.id x.ids) ranges
+    | Some before, Some after -> 
+    let rec aux (ranges : encompassing_range list) = match ranges with 
+      | x :: y :: xs when (SM.mem before.id x.ids && SM.mem after.id y.ids) -> 
+        (merge_ranges x only_new |> merge_ranges y) :: xs
+      | x :: xs when (SM.mem before.id x.ids || SM.mem after.id x.ids) -> merge_ranges x only_new :: xs
+      | x :: xs when x.end_ < end_ -> x :: only_new :: xs (* We did not find a good merge before going past the end *)
+      | x :: xs -> x :: aux xs
+      | [] -> [only_new]
+    in
+    aux ranges
+  with e ->
+    let e, info = Exninfo.capture e in
+    log (Pp.string_of_ppcmds @@ CErrors.iprint (e, info));
+    ranges
 
 let remove_id_from_ranges doc ranges id =
-  let ({start; end_} : Lsp.LspData.Range.t) = Document.range_of_exec_id doc id in
-  []
+  try
+    let ({start; end_} : Lsp.LspData.Range.t) = Document.range_of_exec_id doc id in
+    ranges
+  with e ->
+    let e, info = Exninfo.capture e in
+    log (Pp.string_of_ppcmds @@ CErrors.iprint (e, info));
+    ranges
 
 let sentence_checked id st = {st with checked = add_id_to_ranges st.document st.checked id}
 
