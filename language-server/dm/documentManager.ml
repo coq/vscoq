@@ -41,20 +41,48 @@ type state = {
   document : Document.document;
   execution_state : ExecutionManager.state;
   observe_id : Types.sentence_id option; (* TODO materialize observed loc and line-by-line execution status *)
-  checked : encompassing_range;
+  checked : encompassing_range list;
 }
 
-let add_sentence st id = 
-  let doc = st.document in
-  let checked = st.checked in
+let add_sentence doc id (range : encompassing_range) = 
   let sentence_range = Document.range_of_exec_id doc id in
-  let ids = SM.add id sentence_range checked.ids in
+  let ids = SM.add id sentence_range range.ids in
   if SM.cardinal ids = 1 then
     { ids; start = sentence_range.start; end_ = sentence_range.end_ }
   else
-    let start = if sentence_range.start < checked.start then sentence_range.start else checked.start in
-    let end_ = if sentence_range.end_ > checked.end_ then sentence_range.end_ else checked.end_ in
+    let start = if sentence_range.start < range.start then sentence_range.start else range.start in
+    let end_ = if sentence_range.end_ > range.end_ then sentence_range.end_ else range.end_ in
     { ids; start; end_ }
+
+let merge_ranges a b = 
+  let ids = SM.add_seq (SM.to_seq b.ids) a.ids in
+  let start = min a.start b.start in
+  let end_ = max a.end_ b.end_ in
+  {ids; start; end_}
+
+let sentence_checked st id =  let sentence_range = Document.range_of_exec_id st.document id in
+  let start, end_ = (sentence_range.start, sentence_range.end_) in
+  let only_new = add_sentence st.document id empty_encompassing_range in
+  let rec aux f (ranges : encompassing_range list) = match ranges with 
+    | x :: xs when f x -> merge_ranges x only_new :: xs
+    | x :: xs when x.end_ < end_ -> x :: only_new :: xs (* We did not find a good merge before going past the end *)
+    | x :: xs -> x :: aux f xs
+    | [] -> [only_new]
+  in
+  match Document.surrounding_sentences st.document id with
+  | None, None -> aux (fun _ -> false) st.checked
+  | Some before, None -> aux (fun x -> SM.mem before.id x.ids) st.checked
+  | None, Some after -> aux (fun x -> SM.mem after.id x.ids) st.checked
+  | Some before, Some after -> 
+  let rec aux (ranges : encompassing_range list) = match ranges with 
+    | x :: y :: xs when (SM.mem before.id x.ids && SM.mem after.id y.ids) -> 
+      (merge_ranges x only_new |> merge_ranges y) :: xs
+    | x :: xs when (SM.mem before.id x.ids || SM.mem after.id x.ids) -> merge_ranges x only_new :: xs
+    | x :: xs when x.end_ < end_ -> x :: only_new :: xs (* We did not find a good merge before going past the end *)
+    | x :: xs -> x :: aux xs
+    | [] -> [only_new]
+  in
+  aux st.checked
 
 (* Document.surrounding_sentences st.document id 
 Need to check the surronding sentences and probably have more ranges which can also be merged later.   
@@ -106,10 +134,11 @@ let executed_ranges doc execution_state loc =
   }
 
 let executed_ranges (st : state) =
+  let checked = List.map (fun x -> { Range.start = x.start; Range.end_ = x.end_ }) st.checked in
   { 
     parsed = [];
     checked = [];
-    legacy_highlight = [{ Range.start = st.checked.start; Range.end_ = st.checked.end_ }]; 
+    legacy_highlight = checked; 
   }
 
 let make_diagnostic doc id oloc message severity =
@@ -143,7 +172,7 @@ let init init_vs ~opts ~uri ~text =
   let top = Coqargs.(dirpath_of_top (TopPhysical uri)) in
   Coqinit.start_library ~top opts;
   let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
-  { uri; opts; init_vs; document; execution_state; observe_id = None; checked = empty_encompassing_range }, [inject_em_event ExecutionManager.local_feedback]
+  { uri; opts; init_vs; document; execution_state; observe_id = None; checked = [] }, [inject_em_event ExecutionManager.local_feedback]
 
 let reset { uri; opts; init_vs; document } =
   let document = Document.create_document (Document.text document) in
@@ -151,7 +180,7 @@ let reset { uri; opts; init_vs; document } =
   let top = Coqargs.(dirpath_of_top (TopPhysical uri)) in
   Coqinit.start_library ~top opts;
   let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
-  { uri; opts; init_vs; document; execution_state; observe_id = None; checked = empty_encompassing_range}
+  { uri; opts; init_vs; document; execution_state; observe_id = None; checked = []}
 
 let interpret_to_loc state loc : (state * event Sel.event list) =
     let invalid_ids, document = Document.validate_document state.document in
@@ -270,7 +299,7 @@ let handle_event ev st =
     match executed_id with 
     | None -> (Some {st with execution_state}, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
     | Some id ->
-      let checked = add_sentence st id in
+      let checked = sentence_checked st id in
       let st = {st with execution_state; checked} in
       (Some st, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
     )
