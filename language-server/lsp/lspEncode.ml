@@ -28,7 +28,7 @@ let mk_goal sigma g =
   in
   let mk_hyp d (env,l) =
     let d' = CompactedDecl.to_named_context d in
-    let env' = List.fold_right Environ.push_named d' env in
+    let env' = List.fold_right EConstr.push_named d' env in
     let ids, body, typ = match d with
     | CompactedDecl.LocalAssum (ids, typ) ->
        ids, None, typ
@@ -36,17 +36,17 @@ let mk_goal sigma g =
       ids, Some c, typ
     in
   let ids = List.map (fun id -> `String (Names.Id.to_string id.Context.binder_name)) ids in
-  let typ = pr_ltype_env env sigma typ in
+  let typ = pr_letype_env env sigma typ in
     let hyp = `Assoc ([
       "identifiers", `List ids;
       "type", `String (Pp.string_of_ppcmds typ);
       "diff", `String "None";
-    ] @ Option.cata (fun body -> ["body", `String (Pp.string_of_ppcmds @@ pr_lconstr_env ~inctx:true env sigma body)]) [] body) in
+    ] @ Option.cata (fun body -> ["body", `String (Pp.string_of_ppcmds @@ pr_leconstr_env ~inctx:true env sigma body)]) [] body) in
     (env', hyp :: l)
   in
   let (_env, hyps) =
     Context.Compacted.fold mk_hyp
-      (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
+      (Termops.compact_named_context sigma (EConstr.named_context env)) ~init:(min_env,[]) in
   `Assoc [
     "id", `Int id;
     "hypotheses", `List (List.rev hyps);
