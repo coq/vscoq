@@ -103,5 +103,6 @@ val print : state -> Position.t -> pattern:string -> (string, string) Result.t
 module Internal : sig
 
   val document : state -> Document.document
+  val execution_state : state -> ExecutionManager.state
 
 end

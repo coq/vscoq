@@ -33,6 +33,10 @@ module Range = struct
     end_ : Position.t; [@key "end"]
   } [@@deriving sexp, yojson]
 
+  let included ~in_ { start; end_ } =
+    let (<=) x y = Position.compare x y <= 0 in
+    in_.start <= start && end_ <= in_.end_
+
 end 
 
 module CompletionItem = struct 

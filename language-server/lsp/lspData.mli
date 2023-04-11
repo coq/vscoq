@@ -13,13 +13,14 @@
 (**************************************************************************)
 module Position :
   sig
-    type t = { line : int; character : int; } [@@deriving yojson]
+    type t = { line : int; character : int; } [@@deriving yojson, sexp]
     val compare : t -> t -> int
     val to_string : t -> string
   end
 
 module Range : sig
-  type t = { start : Position.t; end_ : Position.t; } [@@deriving yojson]
+  type t = { start : Position.t; end_ : Position.t; } [@@deriving yojson, sexp]
+  val included : in_:t -> t -> bool
 end
 
 module CompletionItem : sig 

@@ -23,14 +23,26 @@ type state
 
 val initial_state : state
 
+type error_recovery_strategy =
+  | RSkip
+  | RAdmitted
+
+type executable_sentence = {
+  id : sentence_id;
+  ast : ast;
+  synterp : Vernacstate.Synterp.t;
+  error_recovery : error_recovery_strategy;
+}
+
 type task =
   | Skip of sentence_id
-  | Exec of sentence_id * ast * Vernacstate.Synterp.t
-  | OpaqueProof of { terminator_id: sentence_id;
+  | Exec of executable_sentence
+  | OpaqueProof of { terminator: executable_sentence;
                      opener_id: sentence_id;
-                     tasks_ids : sentence_id list;
+                     proof_using: Vernacexpr.section_subset_expr;
+                     tasks : executable_sentence list; (* non empty list *)
                    }
-  | Query of sentence_id * ast * Vernacstate.Synterp.t
+  | Query of executable_sentence
 
 type schedule
 (** Holds the dependencies among sentences and a schedule to evaluate all

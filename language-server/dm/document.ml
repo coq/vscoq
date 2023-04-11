@@ -170,6 +170,7 @@ module ParsedDoc : sig
   val remove_sentence : t -> sentence_id -> t
   val remove_sentences_after : t -> int -> t * Stateid.Set.t
   val sentences : t -> sentence list
+  val sentences_sorted_by_loc : t -> sentence list
   val sentences_before : t -> int -> sentence list
   val sentences_after : t -> int -> sentence list
   val get_sentence : t -> sentence_id -> sentence option
@@ -282,6 +283,9 @@ end = struct
   
   let sentences parsed =
     List.map snd @@ SM.bindings parsed.sentences_by_id
+
+  let sentences_sorted_by_loc parsed =
+    List.sort (fun { start = s1} { start = s2 } -> s1 - s2) @@ List.map snd @@ SM.bindings parsed.sentences_by_id
 
   let sentences_before parsed loc =
     let (before,ov,after) = LM.split loc parsed.sentences_by_end in
@@ -642,7 +646,14 @@ let range_of_exec_id doc id = ParsedDoc.range_of_id doc.raw_doc doc.parsed_doc i
 let range_of_coq_loc doc loc = RawDoc.range_of_loc doc.raw_doc loc
 let parse_errors doc = ParsedDoc.parse_errors doc.raw_doc doc.parsed_doc
 let sentences doc = ParsedDoc.sentences doc.parsed_doc
+let sentences_sorted_by_loc doc = ParsedDoc.sentences_sorted_by_loc doc.parsed_doc
 let sentences_before doc loc = ParsedDoc.sentences_before doc.parsed_doc loc
 
 let text doc = RawDoc.text doc.raw_doc
 let word_at_position doc pos = RawDoc.word_at_position doc.raw_doc pos
+
+module Internal = struct
+
+  let range_of_sentence_id doc id = range_of_exec_id doc id
+
+end

@@ -58,6 +58,7 @@ type sentence = {
 }
 
 val sentences : document -> sentence list
+val sentences_sorted_by_loc : document -> sentence list
 
 val get_sentence : document -> sentence_id -> sentence option
 val sentences_before : document -> int -> sentence list
@@ -93,3 +94,8 @@ val position_of_loc : document -> int -> Position.t
 val position_to_loc : document -> Position.t -> int
 val word_at_position: document -> Position.t -> string option
 
+module Internal : sig
+
+  val range_of_sentence_id : document -> sentence_id -> Range.t
+
+end

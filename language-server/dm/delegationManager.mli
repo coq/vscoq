@@ -45,10 +45,6 @@ module type Job = sig
   val appendFeedback : sentence_id -> (Feedback.level * Loc.t option * Pp.t) -> update_request
 end
 
-type execution_status =
-  | Success of Vernacstate.t option
-  | Error of string Loc.located * Vernacstate.t option (* State to use for resiliency *)
-
 type job_id
 val cancel_job : job_id -> unit
 

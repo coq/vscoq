@@ -23,14 +23,10 @@ type link = {
   read_from:  Unix.file_descr;
 }
 
-type execution_status =
-  | Success of Vernacstate.t option
-  | Error of string Loc.located * Vernacstate.t option (* State to use for resiliency *)
-
 let write_value { write_to; _ } x =
 (** alert: calling log from write value causes a loop, since log (from the worker)
     writes the value to a channel. Hence we mask [log] *)
-  let log _ = () in
+  let [@warning "-26"] log _ = () in
   let data = Marshal.to_bytes x [] in
   let datalength = Bytes.length data in
   let writeno = Unix.write write_to data 0 datalength in
