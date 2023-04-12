@@ -131,6 +131,8 @@ let remove_id_from_ranges doc ranges id =
 
 let sentence_checked id st = {st with checked = add_id_to_ranges st.document st.checked id}
 
+let sentence_invalidated id st = {st with checked = remove_id_from_ranges st.document st.checked id}
+
 (* Document.surrounding_sentences st.document id 
 Need to check the surronding sentences and probably have more ranges which can also be merged later.   
 
@@ -229,13 +231,16 @@ let reset { uri; opts; init_vs; document } =
   let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
   { uri; opts; init_vs; document; execution_state; observe_id = None; checked = []}
 
+let validate_document state =
+  let invalid_ids, document = Document.validate_document state.document in
+  let execution_state =
+    List.fold_left (fun st id ->
+      ExecutionManager.invalidate (Document.schedule state.document) id st
+      ) state.execution_state (Stateid.Set.elements invalid_ids) in
+  Stateid.Set.fold sentence_invalidated invalid_ids { state with document; execution_state; }
+
 let interpret_to_loc state loc : (state * event Sel.event list) =
-    let invalid_ids, document = Document.validate_document state.document in
-    let execution_state =
-      List.fold_left (fun st id ->
-        ExecutionManager.invalidate (Document.schedule state.document) id st
-        ) state.execution_state (Stateid.Set.elements invalid_ids) in
-    let state = { state with document; execution_state } in
+    let state = validate_document state in
     (* We jump to the sentence before the position, otherwise jumping to the
     whitespace at the beginning of a sentence will observe the state after
     executing the sentence, which is unnatural. *)
@@ -250,12 +255,7 @@ let interpret_to_loc state loc : (state * event Sel.event list) =
         (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
 
 let interpret_to state id : (state * event Sel.event list) =
-  let invalid_ids, document = Document.validate_document state.document in
-  let execution_state =
-    List.fold_left (fun st id ->
-      ExecutionManager.invalidate (Document.schedule state.document) id st
-      ) state.execution_state (Stateid.Set.elements invalid_ids) in
-  let state = { state with document; execution_state } in
+  let state = validate_document state in
   (* We jump to the sentence before the position, otherwise jumping to the
   whitespace at the beginning of a sentence will observe the state after
   executing the sentence, which is unnatural. *)
@@ -319,14 +319,6 @@ let apply_text_edits state edits =
   let document = Document.apply_text_edits state.document edits in
   let state = { state with document } in
   retract state (Document.parsed_loc document) 
-
-let validate_document state =
-  let invalid_ids, document = Document.validate_document state.document in
-  let execution_state =
-    List.fold_left (fun st id ->
-      ExecutionManager.invalidate (Document.schedule state.document) id st
-      ) state.execution_state (Stateid.Set.elements invalid_ids) in
-  { state with document; execution_state }
 
 let handle_event ev st =
   match ev with
