@@ -54,6 +54,33 @@ let add_sentence doc id (range : encompassing_range) =
     let end_ = if sentence_range.end_ > range.end_ then sentence_range.end_ else range.end_ in
     { ids; start; end_ }
 
+let remove_sentence doc id (range : encompassing_range) : encompassing_range list =
+  if not (SM.mem id range.ids) then [range] 
+  else
+  if SM.cardinal range.ids = 1 then 
+    []
+  else
+  let ({start; end_} : Lsp.LspData.Range.t) = Document.range_of_exec_id doc id in
+  match Document.surrounding_sentences doc id with
+  | Some before, None when SM.mem before.id range.ids && range.end_ = end_ -> 
+    [{ids = SM.remove id range.ids; start = range.start; end_ = Document.position_of_loc doc before.stop}]
+  | None, Some after when SM.mem after.id range.ids && range.start = start -> 
+    [{ids = SM.remove id range.ids; start = Document.position_of_loc doc after.start; end_ = range.end_}]
+  | Some before, Some after when SM.mem before.id range.ids && SM.mem after.id range.ids -> 
+    let ids = SM.remove id range.ids in 
+    let first = {
+      ids = SM.filter (fun _ (r : Range.t) -> r.end_ < start) ids; 
+      start = range.start; 
+      end_ = Document.position_of_loc doc before.stop
+    } in
+    let second = {
+      ids = SM.filter (fun _ (r : Range.t) -> r.start > end_) ids; 
+      start = Document.position_of_loc doc after.start; 
+      end_ = range.end_
+    } in
+    [first; second]
+  | _ -> CErrors.anomaly Pp.(str"Trying to remove id from a range without neighbors being in range" ++ Stateid.print id)
+
 let merge_ranges a b = 
   let ids = SM.add_seq (SM.to_seq b.ids) a.ids in
   let start = min a.start b.start in
@@ -91,8 +118,12 @@ let add_id_to_ranges doc ranges id =
 
 let remove_id_from_ranges doc ranges id =
   try
-    let ({start; end_} : Lsp.LspData.Range.t) = Document.range_of_exec_id doc id in
-    ranges
+    let rec aux = function
+      | x :: xs when SM.mem id x.ids -> remove_sentence doc id x @ xs
+      | x :: xs -> x :: aux xs
+      | [] -> CErrors.anomaly Pp.(str"Trying to remove id from range it was not in " ++ Stateid.print id)
+    in
+    aux ranges
   with e ->
     let e, info = Exninfo.capture e in
     log (Pp.string_of_ppcmds @@ CErrors.iprint (e, info));
