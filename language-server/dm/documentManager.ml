@@ -186,7 +186,7 @@ let executed_ranges (st : state) =
   let checked = List.map (fun x -> { Range.start = x.start; Range.end_ = x.end_ }) st.checked in
   { 
     parsed = [];
-    checked = [];
+    checked = checked;
     legacy_highlight = checked; 
   }
 
