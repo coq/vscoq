@@ -10,6 +10,38 @@ The language server is developed in ocaml and makes it possible to link from the
 
 ### Architecture 
 
+The architecture is organized in the following components.
+* **VsCoqtop:** This component handles the main event loop.
+* **LSPManager:** This component handles the JSONRPC encoding, LSP requests, notifications and responses as well as LSP events dispatch.
+* **DocumentManager:** The document manager handles everything that pertains to document representation and parsing.
+* **Document:** Raw and parsed document representations.
+* **Scheduler:** Incremental static dependency analysis.
+* **Queries:** This handles the coq queries (Search, About, etc...)
+* **Execution manager:** Maintains coq states. Handles execution and feedback.
+* **Delegation manager:** Handles worker tasks and feedback.
+
+```mermaid
+    stateDiagram-v2
+        A: Vscoqtop
+        B: LSPManager
+        C: DocumentManager
+        D: ExecutionManager
+        note left of D: Coq Vernac
+        E: DelegationManager
+        F: Queries
+        note right of F: Coq API
+        G: Document
+        note right of G: Coq parser
+        H: Scheduler
+        A --> B
+        B --> C
+        B --> D
+        D --> E
+        C --> F
+        C --> G
+        C --> H
+```
+
 ### Building
 
 If you have nix installed, you can do a full developer build of the language server by running:

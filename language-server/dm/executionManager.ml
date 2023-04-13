@@ -17,7 +17,7 @@ open Types
 
 let Log log = Log.mk_log "executionManager"
 
-type execution_status = DelegationManager.execution_status =
+type execution_status =
   | Success of Vernacstate.t option
   | Error of string Loc.located * Vernacstate.t option (* State to use for resiliency *)
 
@@ -31,8 +31,8 @@ module SM = Map.Make (Stateid)
 type feedback_message = Feedback.level * Loc.t option * Pp.t
 
 type sentence_state =
-  | Done of DelegationManager.execution_status
-  | Delegated of DelegationManager.job_id * (DelegationManager.execution_status -> unit) option
+  | Done of execution_status
+  | Delegated of DelegationManager.job_id * (execution_status -> unit) option
 
 type delegation_mode =
   | CheckProofsInMaster
@@ -57,14 +57,16 @@ let init vernac_state = {
 let options = ref default_options
 
 let set_options o = options := o
+let set_default_options () = options := default_options
 
 type prepared_task =
   | PSkip of sentence_id
-  | PExec of sentence_id * ast * Vernacstate.Synterp.t
-  | PQuery of sentence_id * ast * Vernacstate.Synterp.t
+  | PExec of executable_sentence
+  | PQuery of executable_sentence
   | PDelegate of { terminator_id: sentence_id;
                    opener_id: sentence_id;
-                   last_step_id: sentence_id;
+                   proof_using: Vernacexpr.section_subset_expr;
+                   last_step_id: sentence_id option; (* only for setting a proof remotely *)
                    tasks: prepared_task list;
                  }
 
@@ -79,7 +81,6 @@ module ProofJob = struct
     initial_vernac_state : Vernacstate.t;
     doc_id : int;
     terminator_id : sentence_id;
-    last_proof_step_id : sentence_id;
   }
   let name = "proof"
   let binary_name = "vscoqtop_proof_worker.opt"
@@ -101,9 +102,30 @@ let inject_proof_event = Sel.map (fun x -> ProofWorkerEvent x)
 let inject_proof_events st l =
   (st, List.map inject_proof_event l)
 
+let interp_error_recovery strategy st : Vernacstate.t =
+  match strategy with
+  | RSkip -> st
+  | RAdmitted ->
+    let f = Declare.Proof.save_admitted in
+    let open Vernacstate in (* shadows Declare *)
+    let open Vernacexpr in
+    let open Vernacextend in
+    let { Interp.lemmas; program; _ } = st.interp in
+    match lemmas with
+    | None -> (* if Lemma failed *)
+        st
+    | Some lemmas ->
+        let proof = Vernacstate.LemmaStack.get_top lemmas in
+        let pm = NeList.head program in
+        let pm = f ~pm ~proof in
+        let lemmas = snd (Vernacstate.LemmaStack.pop lemmas) in
+        let program = NeList.map_head (fun _ -> pm) program in
+        Vernacstate.Declare.set (lemmas,program) [@ocaml.warning "-3"];
+        let interp = Vernacstate.Interp.freeze_interp_state ~marshallable:false in
+        { st with interp }
 
 (* just a wrapper around vernac interp *)
-let interp_ast ~doc_id ~state_id ~st ast =
+let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
     Feedback.set_id_for_feedback doc_id state_id;
     ParTactic.set_id_for_feedback state_id;
     Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
@@ -132,11 +154,27 @@ let interp_ast ~doc_id ~state_id ~st ast =
         *)
         let loc = Loc.get_loc info in
         let msg = CErrors.iprint (e, info) in
-        st, error loc (Pp.string_of_ppcmds msg) st,[]
+        let status = error loc (Pp.string_of_ppcmds msg) st in
+        let st = interp_error_recovery error_recovery st in
+        st, status, []
 
 (* This adapts the Future API with our event model *)
-let interp_qed_delayed ~state_id ~st =
+let interp_qed_delayed ~proof_using ~state_id ~st =
   let f proof =
+    let proof =
+      let env = Global.env () in
+      let sigma, _ = Declare.Proof.get_current_context proof in
+      let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
+      let terms = List.map (fun (_,_,x) -> x) (initial_goals (Declare.Proof.get proof)) in
+      let using = Proof_using.definition_using env sigma ~using:proof_using ~terms in
+      let vars = Environ.named_context env in
+      Names.Id.Set.iter (fun id ->
+          if not (List.exists Util.(Context.Named.Declaration.get_id %> Names.Id.equal id) vars) then
+            CErrors.user_err
+              Pp.(str "Unknown variable: " ++ Names.Id.print id ++ str "."))
+        using;
+      let _, pstate = Declare.Proof.set_used_variables proof ~using in
+      pstate in
     let fix_exn = None in (* FIXME *)
     let f, assign = Future.create_delegate ~blocking:false ~name:"XX" fix_exn in
     Declare.Proof.close_future_proof ~feedback_id:state_id proof f, assign
@@ -185,11 +223,16 @@ let handle_event event state =
         | Some (ProofJob.AppendFeedback(id,fb)) ->
             Some (handle_feedback id fb state)
         | Some (ProofJob.UpdateExecStatus(id,v)) ->
-            match SM.find id state.of_sentence with
-            | (Delegated (_,completion), fl) ->
+            match SM.find id state.of_sentence, v with
+            | (Delegated (_,completion), fl), _ ->
                 Option.default ignore completion v;
                 Some (update_all id (Done v) fl state)
-            | (Done _, fl) -> None (* TODO: is this possible? *)
+            | (Done (Success s), fl), Error (err,_) ->
+                (* This only happens when a Qed closing a delegated proof
+                   receives an updated by a worker saying that the proof is
+                   not completed *)
+                Some (update_all id (Done (Error (err,s))) fl state)
+            | (Done _, _), _ -> None
             | exception Not_found -> None (* TODO: is this possible? *)
       in
       inject_proof_events state events
@@ -204,38 +247,31 @@ let find_fulfilled_opt x m =
 
 let jobs : (DelegationManager.job_id * Sel.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
 
-let prepare_sentence doc id =
-  match Document.get_sentence doc id with
-  | None -> PSkip id
-  | Some sentence ->
-    begin match sentence.Document.ast with
-    | Document.ValidAst (ast,_,_) -> PExec(id,ast,sentence.synterp_state)
-    | Document.ParseError _ -> PSkip id
-    end
+let last_opt l = try Some (CList.last l).id with Failure _ -> None
 
-let prepare_task delegation_mode doc task : prepared_task list =
+let rec prepare_task task : prepared_task list =
   match task with
   | Skip id -> [PSkip id]
-  | Exec(id,ast,synterp_st) -> [PExec(id,ast,synterp_st)]
-  | Query(id,ast,synterp_st) -> [PQuery(id,ast,synterp_st)]
-  | OpaqueProof { terminator_id; opener_id; tasks_ids } ->
-      match delegation_mode with
+  | Exec e -> [PExec e]
+  | Query e -> [PQuery e]
+  | OpaqueProof { terminator; opener_id; tasks; proof_using} ->
+      match !options.delegation_mode with
       | DelegateProofsToWorkers _ ->
-          let tasks = List.map (prepare_sentence doc) tasks_ids in
-          let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
-          [PDelegate {terminator_id; opener_id; last_step_id; tasks}]
+          log "delegating proofs to workers";
+          let last_step_id = last_opt tasks in
+          let tasks = List.map (fun x -> PExec x) tasks in
+          [PDelegate {terminator_id = terminator.id; opener_id; last_step_id; tasks; proof_using}]
       | CheckProofsInMaster ->
-          List.map (prepare_sentence doc) (tasks_ids @ [terminator_id])
+          log "running the proof in master as per config";
+          List.map (fun x -> PExec x) tasks @ [PExec terminator]
       | SkipProofs ->
-          log (Printf.sprintf "skipping %d" (List.length tasks_ids));
-          let tasks = [] in
-          let last_step_id = if CList.is_empty tasks_ids then terminator_id (* FIXME probably wrong, check what to do with empty proofs *) else CList.last tasks_ids in
-          [PDelegate {terminator_id; opener_id; last_step_id; tasks}]
+          log (Printf.sprintf "skipping proof made of %d tasks" (List.length tasks));
+          [PExec terminator]
 
 let id_of_prepared_task = function
   | PSkip id -> id
-  | PExec(id, _, _) -> id
-  | PQuery(id, _, _) -> id
+  | PExec ex -> ex.id
+  | PQuery ex -> ex.id
   | PDelegate { terminator_id } -> terminator_id
 
 let purge_state = function
@@ -253,21 +289,43 @@ let ensure_proof_over = function
   | x -> x
 
 (* TODO move to proper place *)
-let worker_execute ~doc_id last_step_id ~send_back (vs,events) = function
+let worker_execute ~doc_id ~send_back (vs,events) = function
   | PSkip id ->
     (vs, events)
-  | PExec (id,ast,synterp) ->
+  | PExec { id; ast; synterp; error_recovery } ->
     let vs = { vs with Vernacstate.synterp } in
     log ("worker interp " ^ Stateid.to_string id);
-    let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
-    let v = if Stateid.equal id last_step_id then ensure_proof_over v else v in
+    let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
     send_back (ProofJob.UpdateExecStatus (id,purge_state v));
     (vs, events @ ev)
   | _ -> assert false
 
-let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; last_proof_step_id; _ } ~send_back =
+
+(* The execution of Qed for a non-delegated proof checks the proof is completed.
+   When the proof is delegated this step is performed by the worker, which
+   sends back an update on the Qed sentence in case the proof is unfinished *)
+let worker_ensure_proof_is_over vs send_back terminator_id =
+  let f = Declare.Proof.close_proof in
+  let open Vernacstate in (* shadows Declare *)
+  let open Vernacexpr in
+  let open Vernacextend in
+  let { Interp.lemmas; program; _ } = vs.interp in
+  match lemmas with
+  | None -> assert false
+  | Some lemmas ->
+      let proof = Vernacstate.LemmaStack.get_top lemmas in
+      try let _ = f ~opaque:Vernacexpr.Opaque ~keep_body_ucst_separate:false proof in ()
+      with e ->
+        let e, info = Exninfo.capture e in
+        let loc = Loc.get_loc info in
+        let msg = CErrors.iprint (e, info) in
+        let status = error loc (Pp.string_of_ppcmds msg) vs in
+        send_back (ProofJob.UpdateExecStatus (terminator_id,status))
+
+let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id } ~send_back =
   try
-    let _ = List.fold_left (worker_execute ~doc_id last_proof_step_id ~send_back) (vs,[]) tasks in
+    let vs, _ = List.fold_left (worker_execute ~doc_id ~send_back) (vs,[]) tasks in
+    worker_ensure_proof_is_over vs send_back terminator_id;
     flush_all ();
     exit 0
   with e ->
@@ -288,23 +346,23 @@ let execute ~doc_id st (vs, events, interrupted) task =
       | PSkip id ->
           let st = update st id (success vs) in
           (st, vs, events, false, None)
-      | PExec (id,ast,synterp) ->
+      | PExec { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
-          let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
+          let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let st = update st id v in
           (st, vs, events @ ev, false, Some [id])
-      | PQuery (id,ast,synterp) ->
+      | PQuery { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
-          let _, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ast in
+          let _, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let st = update st id v in
           (st, vs, events @ ev, false, None)
-      | PDelegate { terminator_id; opener_id; last_step_id; tasks } ->
+      | PDelegate { terminator_id; opener_id; last_step_id; tasks; proof_using } ->
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
-            let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id; last_proof_step_id  = last_step_id } in
+            let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id } in
             let job_id = DelegationManager.mk_job_id terminator_id in
             (* The proof was successfully opened *)
-            let last_vs, v, assign = interp_qed_delayed ~state_id:terminator_id ~st:vs in
+            let last_vs, v, assign = interp_qed_delayed ~state_id:terminator_id ~proof_using ~st:vs in
             let complete_job status =
               try match status with
               | Success None ->
@@ -324,19 +382,16 @@ let execute ~doc_id st (vs, events, interrupted) task =
             in
             let st = update st terminator_id (success last_vs) in
             let st = List.fold_left (fun st id ->
-               if Stateid.equal id last_step_id then
+               if Option.equal Stateid.equal (Some id) last_step_id then
                  update_all id (Delegated (job_id,Some complete_job)) [] st
                else
                  update_all id (Delegated (job_id,None)) [] st)
                st (List.map id_of_prepared_task tasks) in
-            if tasks = [] then (st, last_vs, events, false, None)
-            else begin
-              let e, cancellation =
+            let e, cancellation =
                 ProofWorker.worker_available ~jobs
                   ~fork_action:worker_main in
               Queue.push (job_id, cancellation, job) jobs;
-              (st, last_vs,events @ [inject_proof_event e], false, Some (List.map id_of_prepared_task tasks))
-            end
+              (st, last_vs,events @ [inject_proof_event e],false ,Some (List.map id_of_prepared_task tasks))
           | _ ->
             (* If executing the proof opener failed, we skip the proof *)
             let st = update st terminator_id (success vs) in
@@ -346,7 +401,7 @@ let execute ~doc_id st (vs, events, interrupted) task =
       let st = update st (id_of_prepared_task task) (Error ((None,"interrupted"),None)) in
       (st, vs, events, true, None)
 
-let build_tasks_for doc st id =
+let build_tasks_for sch st id =
   let rec build_tasks id tasks =
     begin match find_fulfilled_opt id st.of_sentence with
     | Some (Success (Some vs)) ->
@@ -359,7 +414,7 @@ let build_tasks_for doc st id =
       vs, tasks
     | _ ->
       log @@ "Non (locally) computed state " ^ Stateid.to_string id;
-      let (base_id, task) = task_for_sentence (Document.schedule doc) id in
+      let (base_id, task) = task_for_sentence sch id in
       begin match base_id with
       | None -> (* task should be executed in initial state *)
         st.initial, task :: tasks
@@ -369,7 +424,7 @@ let build_tasks_for doc st id =
     end
   in
   let vs, tasks = build_tasks id [] in
-  vs, List.concat_map (prepare_task !options.delegation_mode doc) tasks
+  vs, List.concat_map prepare_task tasks
 
 let errors st =
   List.fold_left (fun acc (id, (p,_)) ->

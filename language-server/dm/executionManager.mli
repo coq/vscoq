@@ -33,6 +33,7 @@ type options = {
 type state
 val init : Vernacstate.t -> state
 val set_options : options -> unit
+val set_default_options : unit -> unit
 val invalidate : Scheduler.schedule -> sentence_id -> state -> state
 val errors : state -> (sentence_id * (Loc.t option * string)) list
 val feedback : state -> (sentence_id * (Feedback.level * Loc.t option * string)) list
@@ -54,7 +55,7 @@ val handle_event : event -> state -> (state option * events)
 (** Execution happens in two steps. In particular the event one takes only
     one task at a time to ease checking for interruption *)
 type prepared_task
-val build_tasks_for : Document.document -> state -> sentence_id -> Vernacstate.t * prepared_task list
+val build_tasks_for : Scheduler.schedule -> state -> sentence_id -> Vernacstate.t * prepared_task list
 val execute : doc_id:Feedback.doc_id -> state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool * sentence_id list option)
 
 (** Coq toplevels for delegation without fork *)
