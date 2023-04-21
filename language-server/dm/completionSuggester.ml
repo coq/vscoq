@@ -137,9 +137,9 @@ module Structured = struct
   let unifier_kind sigma (t : types) : unifier option =
     let rec aux bruijn t = match kind sigma t with
       | Sort s -> SortUniType (s, List.length bruijn) |> Option.make
-      | Cast (c,_,t) -> failwith "Not implemented"
+      | Cast (c,_,t) -> None
       | Prod (na,t,c) -> aux (aux bruijn t :: bruijn) c (* Possibly the index should be assigned here instead and be a thing for both types. *)
-      | LetIn (na,b,t,c) -> failwith "Not implemented"
+      | LetIn (name,b,t,c) -> aux (aux bruijn t :: bruijn) c
       | App (c,l) -> 
         let l' = Array.map (aux bruijn) l in
         AtomicUniType (c, filter_options l') |> Option.make
@@ -150,6 +150,63 @@ module Structured = struct
       | (Lambda _ | Construct _ | Int _ | Float _ | Array _) -> None
     in
     aux [] t
+
+  let debug_print_cast env sigma t : unit = 
+    let rec aux i u = 
+      Printf.eprintf "%s" (String.init i (fun _ -> ' '));
+      match kind sigma u with
+      | Sort s -> Printf.eprintf "SortUniType: ";
+        (match ESorts.kind sigma s with 
+        | SProp -> Printf.eprintf "SProp\n";
+        | Prop -> Printf.eprintf "Prop\n";
+        | Set  -> Printf.eprintf "Set\n";
+        | Type u -> Printf.eprintf "Type\n";
+        | QSort (u, l) -> Printf.eprintf "QSort\n";
+        )
+      | Cast (c,_,t) -> Printf.eprintf "cast: %s, %s\n" 
+        (Pp.string_of_ppcmds (pr_econstr_env env sigma c))
+        (Pp.string_of_ppcmds (pr_econstr_env env sigma t))
+      | Prod (na,t,c) -> Printf.eprintf "Prod: %s, %s\n" 
+        (Pp.string_of_ppcmds (pr_econstr_env env sigma t))
+        (Pp.string_of_ppcmds (pr_econstr_env env sigma c));
+        aux (i+1) t;
+        aux (i+1) c
+      | LetIn (name,b,t,c) -> 
+        Printf.eprintf "LetIn: %s, %s, %s\n" 
+          (Pp.string_of_ppcmds (pr_econstr_env env sigma b))
+          (Pp.string_of_ppcmds (pr_econstr_env env sigma t))
+          (Pp.string_of_ppcmds (pr_econstr_env env sigma c));
+        aux (i+1) t;
+        aux (i+1) c;
+        aux (i+1) b
+      | App (c,l) -> 
+        Printf.eprintf "App: %s\n" 
+          (Pp.string_of_ppcmds (pr_econstr_env env sigma c));
+        Array.iter (aux (i+1)) l
+      | Rel i -> Printf.eprintf "Rel: %d\n" i
+      | (Meta _ | Var _ | Evar _ | Const _
+      | Proj _ | Case _ | Fix _ | CoFix _ | Ind _) -> ()
+      | (Lambda _ | Construct _ | Int _ | Float _ | Array _) -> ()
+    in
+    aux 0 t;
+    Printf.eprintf "has_cast: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma t))
+
+  let has_cast env sigma (t : types) : bool =
+    let rec aux t = match kind sigma t with
+      | Sort s -> false
+      | Cast (c,_,t) -> true
+      | Prod (na,t,c) -> aux t || aux c (* Possibly the index should be assigned here instead and be a thing for both types. *)
+      | LetIn (name,b,t,c) -> aux t || aux c || aux b
+      | App (c,l) -> 
+        let l' = Array.map (aux) l in
+        Array.fold_left (||) (aux c) l'
+      | Rel i -> false
+      | (Meta _ | Var _ | Evar _ | Const _
+      | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
+        -> false
+      | (Lambda _ | Construct _ | Int _ | Float _ | Array _) -> false
+    in
+    aux t
 
   let debug_print_unifier env sigma t : unit = 
     let rec aux i u =
@@ -260,6 +317,7 @@ module Structured = struct
   let rank use_um (goal : Evd.econstr) sigma env lemmas : CompletionItems.completion_item list =
     Printf.eprintf "Goal\n:";
     debug_print_unifier env sigma goal;
+    List.iter (fun (l : CompletionItems.completion_item) -> if has_cast env sigma (of_constr l.typ) then debug_print_cast env sigma (of_constr l.typ)) lemmas;
     match unifier_kind sigma goal with
     | None -> lemmas
     | Some goalUnf -> 
