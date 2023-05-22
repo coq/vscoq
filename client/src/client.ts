@@ -11,6 +11,7 @@ import {decorationsManual, decorationsContinuous} from './Decorations';
 export default class Client extends LanguageClient {
 
 	private _channel: any = vscode.window.createOutputChannel('vscoq');
+    private _decorations: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
 
 	constructor(
         serverOptions: ServerOptions,
@@ -33,27 +34,31 @@ export default class Client extends LanguageClient {
         this._channel.appendLine(message);
     };
 
-    public handleHighlights(uri: String, parsedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
-        const editors = this.getDocumentEditors(uri);
-        
-        const config = vscode.workspace.getConfiguration('vscoq.proof');
-
-        editors.map(editor => {/* 
-            editor.setDecorations(decorations.parsed, parsedRange);*/
-            if(config.mode === 0) {
-                //editor.setDecorations(decorationsManual.processing, processingRange); 
-                editor.setDecorations(decorationsManual.processed, processedRange);
-            } else {
-                //editor.setDecorations(decorationsContinuous.processing, processingRange); 
-                editor.setDecorations(decorationsContinuous.processed, processedRange);
-            }
-
-        });
+    public saveHighlights(uri: String, parsedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
+        this._decorations.set(uri, processedRange);
     }
+
+    public updateHightlights() {
+        for(let entry of this._decorations.entries()) {
+            this.updateDocumentEditors(entry[0], entry[1]);
+        }
+    };
 
     private getDocumentEditors(uri: String) {
         return vscode.window.visibleTextEditors.filter(editor => {
             return editor.document.uri.toString() === uri;
+        });
+    }
+
+    private updateDocumentEditors(uri: String, ranges: vscode.Range[]) {
+        const config = vscode.workspace.getConfiguration('vscoq.proof');
+        const editors = this.getDocumentEditors(uri);
+        editors.map(editor => {
+            if(config.mode === 0) {
+                editor.setDecorations(decorationsManual.processed, ranges);
+            } else {
+                editor.setDecorations(decorationsContinuous.processed, ranges);
+            }
         });
     }
 
