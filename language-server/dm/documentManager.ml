@@ -231,9 +231,8 @@ let handle_event ev st =
     (Some st, [])
   | Execute { id; vst_for_next_todo; started; todo = task :: todo } ->
     (*log "Execute (more tasks)";*)
-    let doc_id = Document.id_of_doc st.document in
     let (execution_state,vst_for_next_todo,events,interrupted) =
-      ExecutionManager.execute ~doc_id st.execution_state (vst_for_next_todo, [], false) task in
+      ExecutionManager.execute st.execution_state (vst_for_next_todo, [], false) task in
     (* We do not update the state here because we may have received feedback while
        executing *)
     (Some {st with execution_state}, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])

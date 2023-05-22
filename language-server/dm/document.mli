@@ -26,9 +26,6 @@ val create_document : string -> document
 (** [create_document text] creates a fresh document with content defined by
     [text]. *)
 
-val id_of_doc : document -> int
-(** Unique id of the document *)
-
 val validate_document : document -> sentence_id_set * document
 (** [validate_document doc] parses the document without forcing any execution
     and returns the set of invalidated sentences *)

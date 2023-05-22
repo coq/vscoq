@@ -44,15 +44,23 @@ type options = {
 }
 let default_options = { delegation_mode = CheckProofsInMaster }
 
+let doc_id = ref (-1)
+let fresh_doc_id () = incr doc_id; !doc_id
+
 type state = {
   initial : Vernacstate.t;
   of_sentence : (sentence_state * feedback_message list) SM.t;
+  doc_id : int; (* unique number used to interface with Coq's Feedback *)
+
 }
 
-let init vernac_state = {
-  initial = vernac_state;
-  of_sentence = SM.empty;
-}
+let init vernac_state =
+  let doc_id = fresh_doc_id () in
+  {
+    initial = vernac_state;
+    of_sentence = SM.empty;
+    doc_id;
+  }
 
 let options = ref default_options
 
@@ -336,7 +344,7 @@ let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_
     Feedback.msg_debug @@ Pp.str "==========================================================";
     exit 1
 
-let execute ~doc_id st (vs, events, interrupted) task =
+let execute st (vs, events, interrupted) task =
   if interrupted then begin
     let st = update st (id_of_prepared_task task) (Error ((None,"interrupted"),None)) in
     (st, vs, events, true)
@@ -348,18 +356,18 @@ let execute ~doc_id st (vs, events, interrupted) task =
           (st, vs, events, false)
       | PExec { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
-          let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
+          let vs, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let st = update st id v in
           (st, vs, events @ ev, false)
       | PQuery { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
-          let _, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
+          let _, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let st = update st id v in
           (st, vs, events @ ev, false)
       | PDelegate { terminator_id; opener_id; last_step_id; tasks; proof_using } ->
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
-            let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id } in
+            let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id = st.doc_id; terminator_id } in
             let job_id = DelegationManager.mk_job_id terminator_id in
             (* The proof was successfully opened *)
             let last_vs, v, assign = interp_qed_delayed ~state_id:terminator_id ~proof_using ~st:vs in
