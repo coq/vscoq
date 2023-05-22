@@ -75,7 +75,8 @@ let output_json ?(trace=true) obj =
   let msg  = Yojson.Safe.pretty_to_string ~std:true obj in
   let size = String.length msg in
   let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in
-  log @@ "sent: " ^ msg;
+  if trace then
+    log @@ "sent: " ^ msg;
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
 let do_configuration settings = 
@@ -145,7 +146,7 @@ let publish_diagnostics uri doc =
   ]
   in
   let method_ = "textDocument/publishDiagnostics" in
-  output_json @@ Notification.(yojson_of_t { method_; params })
+  output_json ~trace:false @@ Notification.(yojson_of_t { method_; params }) 
 
 let send_highlights uri doc =
   let { Dm.DocumentManager.parsed; checked; checked_by_delegate; legacy_highlight } =
@@ -162,7 +163,7 @@ let send_highlights uri doc =
   ]
   in
   let method_ = "vscoq/updateHighlights" in
-  output_json @@ Notification.(yojson_of_t { method_; params })
+  output_json ~trace:false @@ Notification.(yojson_of_t { method_; params })
 
 let update_view uri st =
   send_highlights uri st;
