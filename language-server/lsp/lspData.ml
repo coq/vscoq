@@ -13,6 +13,21 @@
 (**************************************************************************)
 open Sexplib.Std
 
+module Uri = struct
+
+  include Uri
+
+  let t_of_yojson = function
+  | `String str -> Uri.of_string str
+  | _ -> raise (Invalid_argument "t_of_yojson")
+
+  let yojson_of_t uri = `String (Uri.to_string uri)
+
+  let of_fname fname =
+    Uri.make ~scheme:"file" ~path:fname ()
+
+end
+
 module Position = struct
   
   type t = { line : int; character : int; } [@@deriving sexp, yojson]
@@ -49,24 +64,20 @@ module CompletionItem = struct
 
 end
 
-module CompletionList = struct 
-
-  type t = {
-    isIncomplete : bool;
-    items : CompletionItem.t list;
-  } [@@deriving yojson]
-  
-end
-
 module Severity = struct
 
   type t = Feedback.level =
-  | Debug [@value 1]
-  | Info [@value 2]
-  | Notice [@value 3]
-  | Warning [@value 3]
-  | Error [@value 4]
+  | Debug
+  | Info
+  | Notice
+  | Warning
+  | Error
   [@@deriving sexp, yojson]
+
+  let yojson_of_t = function
+  | Error -> `Int 1
+  | Warning -> `Int 2
+  | Debug | Info | Notice -> `Int 3
 
 end
 
@@ -154,15 +165,6 @@ module ServerInfo = struct
 
 end
 
-module InitializeResult = struct
-  
-  type t = {
-    capabilities: ServerCapabilities.t; 
-    serverInfo: ServerInfo.t;
-  } [@@deriving yojson]
-
-end
-
 module Hover = struct 
     
   type t = {
@@ -177,12 +179,6 @@ module ConfigurationItem = struct
 	  scopeUri: string option; [@yojson option]
 	  section: string option; [@yojson option]
   } [@@deriving yojson]
-
-end
-
-module ConfigurationParams = struct
-
-  type t = { items: ConfigurationItem.t list } [@@deriving yojson]
 
 end
 
@@ -240,4 +236,50 @@ module Settings = struct
     proof: Proof.t;
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
+end
+
+module TextDocumentItem = struct
+
+  type t = {
+    uri: Uri.t;
+    languageId: string;
+    version: int;
+    text: string;
+  } [@@deriving yojson]
+
+end
+
+module TextDocumentIdentifier = struct
+
+  type t = {
+    uri: Uri.t;
+  } [@@deriving yojson]
+
+end
+
+module VersionedTextDocumentIdentifier = struct
+
+  type t = {
+    uri: Uri.t;
+    version: int;
+  } [@@deriving yojson]
+
+end
+
+module TextDocumentPositionParams = struct
+
+  type t = {
+    textDocument: TextDocumentIdentifier.t;
+    position: Position.t;
+  } [@@deriving yojson]
+
+end
+
+module TextDocumentContentChangeEvent = struct
+
+  type t = {
+    range : Range.t option; [@yojson.option]
+    text : string;
+  } [@@deriving yojson]
+  
 end

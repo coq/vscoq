@@ -20,7 +20,7 @@ let Log log = Log.mk_log "documentManager"
 type proof_data = (Proof.data * Position.t) option
 
 type state = {
-  uri : string;
+  uri : Uri.t;
   init_vs : Vernacstate.t;
   opts : Coqargs.injection_command list;
   document : Document.document;
@@ -107,10 +107,10 @@ let diagnostics st =
     List.map mk_error_diag exec_errors @
     List.map mk_diag feedback
 
-let init init_vs ~opts ~uri ~text =
+let init init_vs ~opts uri ~text =
   let document = Document.create_document text in
   Vernacstate.unfreeze_full_state init_vs;
-  let top = Coqargs.(dirpath_of_top (TopPhysical uri)) in
+  let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
   Coqinit.start_library ~top opts;
   let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
   { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event ExecutionManager.local_feedback]
@@ -118,7 +118,7 @@ let init init_vs ~opts ~uri ~text =
 let reset { uri; opts; init_vs; document } =
   let document = Document.create_document (Document.text document) in
   Vernacstate.unfreeze_full_state init_vs;
-  let top = Coqargs.(dirpath_of_top (TopPhysical uri)) in
+  let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
   Coqinit.start_library ~top opts;
   let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
   { uri; opts; init_vs; document; execution_state; observe_id = None }
