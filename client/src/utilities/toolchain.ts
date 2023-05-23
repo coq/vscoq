@@ -83,8 +83,8 @@ export default class VsCoqToolchainManager implements Disposable {
                 VsCoqToolchainManager._channel.appendLine(error);
                 window.showErrorMessage(stderr);
             } else {
-                VsCoqToolchainManager._channel.appendLine(stdout);
-                VsCoqToolchainManager._channel.appendLine(stderr);
+                VsCoqToolchainManager._channel.appendLine("Standard output: " + stdout);
+                VsCoqToolchainManager._channel.appendLine("Error output: " + stderr);
             }
         });
     };
