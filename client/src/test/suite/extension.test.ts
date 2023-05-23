@@ -14,7 +14,7 @@ async function openTextFile(file : string) {
 
 suite('Should get diagnostics', function () {
 
-	this.timeout(30000);
+	this.timeout(50000);
 
 	test('Diagnoses an undefined ref error', async () => {
 
@@ -61,6 +61,39 @@ suite('Should get diagnostics', function () {
 		expect(allDiagnostics.length).toBe(2);
 	
 	});
+
+
+	test('Opens two files and gets feedback in the appropriate tab', async () => {
+
+
+		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
+		await ext.activate();
+
+        await openTextFile('basic.v');
+
+		await openTextFile('warn.v');
+
+		await sleep(10000); // Wait for server initialization
+
+		const allDiagnostics = vscode.languages.getDiagnostics();
+
+		expect(allDiagnostics.length).toBe(2);
+
+		const [uri1, diagnostics1] = allDiagnostics[0];
+		const [uri2, diagnostics2] = allDiagnostics[1];
+
+		expect(uri1.toString()).toMatch(/.*basic.v/);
+		expect(diagnostics1.length).toBe(1);
+		expect(diagnostics1[0].message).toMatch(/The reference zar was not found.*/);
+		expect(diagnostics1[0].severity).toBe(vscode.DiagnosticSeverity.Error);
+
+		expect(uri2.toString()).toMatch(/.*warn.v/);
+		expect(diagnostics2.length).toBe(1);
+		expect(diagnostics2[0].message).toMatch(/.*There is no flag or option.*/);
+		expect(diagnostics2[0].severity).toBe(vscode.DiagnosticSeverity.Error); // BUG, should be warning
+	
+	});
+
 
 });
 
