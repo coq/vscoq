@@ -73,6 +73,10 @@ export default class VsCoqToolchainManager implements Disposable {
         return "";
     }
 
+    //Check if vscoqtop can load the prelude at its expected installation site, 
+    //or wherever the user specified by passing -coqlib. 
+    //(since 8.18 -where does not only print where the prelude is expected to be, 
+    //but also checks it exists).
     private checkIfCoqFound(vscoqtopPath: string) {
         const options = workspace.getConfiguration('vscoq').get('args') as string[];
 
@@ -80,8 +84,10 @@ export default class VsCoqToolchainManager implements Disposable {
         VsCoqToolchainManager._channel.appendLine("Launching command: " + cmd + " in folder: " + vscoqtopPath);
         exec(cmd, {cwd: vscoqtopPath}, (error, stdout, stderr) => {
             if(error) {
-                VsCoqToolchainManager._channel.appendLine(error);
-                window.showErrorMessage(stderr);
+                const errorMessage = `${vscoqtopPath} cannot run properly since the installation of coq standard library seems broken: ${stderr}\n
+                                        If this is not the coq installation you wish to use , set the right path in the settings panel.`;
+                VsCoqToolchainManager._channel.appendLine(errorMessage);
+                window.showErrorMessage(errorMessage);
             } else {
                 VsCoqToolchainManager._channel.appendLine("Standard output: " + stdout);
                 VsCoqToolchainManager._channel.appendLine("Error output: " + stderr);
