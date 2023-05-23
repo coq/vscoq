@@ -98,7 +98,8 @@ export function activate(context: ExtensionContext) {
         context.subscriptions.push(workspace.onDidChangeConfiguration(event => updateServerOnConfigurationChange(event, context, client)));
 		
         client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
-            client.handleHighlights(uri, parsedRange, processingRange, processedRange);
+            client.saveHighlights(uri, parsedRange, processingRange, processedRange);
+            client.updateHightlights();
 		});
 
         client.onNotification("vscoq/searchResult", (searchResult: SearchCoqResult) => {
@@ -114,6 +115,9 @@ export function activate(context: ExtensionContext) {
             }
         );
 
+        window.onDidChangeActiveTextEditor(editor => {
+            client.updateHightlights();
+        });
 
 	});
 
