@@ -42,14 +42,15 @@ module type Job = sig
   type update_request
 
   (** Called to handle feedback sent by the worker process *)
-  val appendFeedback : sentence_id -> (Feedback.level * Loc.t option * Pp.t) -> update_request
+  val appendFeedback : Feedback.route_id * sentence_id -> (Feedback.level * Loc.t option * Pp.t) -> update_request
 end
 
-type job_id
-val cancel_job : job_id -> unit
+type job_handle
+
+val cancel_job : job_handle -> unit
 
 (** If the job fails to start, the error is reported on this sentence *)
-val mk_job_id : sentence_id -> job_id
+val mk_job_handle : Feedback.route_id * sentence_id -> job_handle
 
 module type Worker = sig
    type job_t
@@ -71,8 +72,9 @@ module type Worker = sig
       - if we can fork, job is passed to fork_action
       - otherwise Job.binary_name is spawn and the job sent to it *)
    val worker_available :
-     jobs:((job_id * Sel.cancellation_handle * job_t) Queue.t) ->
+     jobs:((job_handle * Sel.cancellation_handle * job_t) Queue.t) ->
      fork_action:(job_t -> send_back:(job_update_request -> unit) -> unit) ->
+     feedback_cleanup:(unit -> unit) ->
      delegation Sel.event * Sel.cancellation_handle
    
    (* for worker toplevels *)
@@ -87,7 +89,3 @@ module type Worker = sig
 end
 
 module MakeWorker (Job : Job) : Worker with type job_t = Job.t and type job_update_request = Job.update_request
-
-(* To be put in in the initial set of events in order to receive locally
-   feedback which generate remotely *)
-val local_feedback : (sentence_id * (Feedback.level * Loc.t option * Pp.t)) Sel.event

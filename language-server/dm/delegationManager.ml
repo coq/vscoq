@@ -40,20 +40,23 @@ let abort_on_unix_error f x =
     Printf.eprintf "Error: %s: %s: %s\n%!" f p (Unix.error_message e);
     exit 3
 
+
+type job_handle = (Feedback.route_id * sentence_id) * int option ref
+
 module type Job = sig
   type t
   val name : string
   val binary_name : string
   val initial_pool_size : int
   type update_request
-  val appendFeedback : sentence_id -> (Feedback.level * Loc.t option * Pp.t) -> update_request
+  val appendFeedback : Feedback.route_id * sentence_id -> (Feedback.level * Loc.t option * Pp.t) -> update_request
 end
 
 (* One typically created a job id way before the worker is spawned, so we
    allocate a slot for the PID, but set it later. The sentence_id is used
    for error reporting (e.g. fail to spawn) *)
-type job_id = sentence_id * int option ref
-let mk_job_id sid = sid, ref None
+let mk_job_handle (rid, sid) : job_handle = (rid, sid), ref None
+
 let cancel_job (_,id) =
   match !id with
   | None -> ()
@@ -61,25 +64,13 @@ let cancel_job (_,id) =
 
 (* TODO: this queue should not be here, it should be "per URI" but we want to
    keep here the conversion (STM) feedback -> (LSP) feedback *)
-let master_feedback_queue = Queue.create ()
 
 let install_feedback send =
   Feedback.add_feeder (fun fb ->
     match fb.Feedback.contents with
-    | Feedback.Message(Feedback.Debug,_,_) -> ()
-    | Feedback.Message(lvl,loc,m) -> send (fb.Feedback.span_id,(lvl,loc,m))
-    | Feedback.AddedAxiom
+    | Feedback.Message(lvl,loc,m) -> send (fb.Feedback.route,fb.Feedback.span_id,(lvl,loc,m))
     | _ -> () (* STM feedbacks are handled differently *))
-
-let master_feeder = install_feedback (fun x -> Queue.push x master_feedback_queue)
-
-let local_feedback : (sentence_id * (Feedback.level * Loc.t option * Pp.t)) Sel.event =
-  Sel.on_queue master_feedback_queue (fun x -> x)
-  |> Sel.uncancellable
-  |> Sel.name "workers_feedback"
-  |> Sel.make_recurring
-  |> Sel.set_priority PriorityManager.feedback
-
+    
 module type Worker = sig
   type job_t
   type job_update_request
@@ -100,8 +91,9 @@ module type Worker = sig
       - if we can fork, job is passed to fork_action
       - otherwise Job.binary_name is spawn and the job sent to it *)
   val worker_available :
-    jobs:((job_id * Sel.cancellation_handle * job_t) Queue.t) ->
+    jobs:((job_handle * Sel.cancellation_handle * job_t) Queue.t) ->
     fork_action:(job_t -> send_back:(job_update_request -> unit) -> unit) ->
+    feedback_cleanup:(unit -> unit) ->
     delegation Sel.event * Sel.cancellation_handle
   
   (* for worker toplevels *)
@@ -125,14 +117,15 @@ type worker_message =
 
 let Log log_worker = Log.mk_log ("worker." ^ Job.name)
 
-let install_feedback_worker link =
-  Feedback.del_feeder master_feeder;
-  ignore(install_feedback (fun (id,fb) -> write_value link (Job.appendFeedback id fb)))
+let install_feedback_worker ~feedback_cleanup link =
+  feedback_cleanup ();
+  ignore(install_feedback (fun (rid,id,fb) -> write_value link (Job.appendFeedback (rid, id) fb)))
 
+type feedback_cleanup = unit -> unit
 (* This is the lifetime of a delegation, there is one start event, many progress
    evants, then one ending event. *)
 type delegation =
- | WorkerStart : job_id * 'job * ('job -> send_back:(Job.update_request -> unit) -> unit) * string -> delegation
+ | WorkerStart : feedback_cleanup * job_handle * 'job * ('job -> send_back:(Job.update_request -> unit) -> unit) * string -> delegation
  | WorkerProgress of { link : link; update_request : worker_message } (* TODO: use a recurring event (+cancel) and remove link *)
  | WorkerEnd of (int * Unix.process_status)
  | WorkerIOError of exn
@@ -168,9 +161,9 @@ let resize_pool new_pool_size =
 ;;
 
 (* In order to create a job we enqueue this event *)
-let worker_available ~jobs ~fork_action : delegation Sel.event * Sel.cancellation_handle =
-  Sel.on_queues jobs pool (fun (job_id, _, job) () ->
-    WorkerStart (job_id,job,fork_action,Job.binary_name))
+let worker_available ~jobs ~fork_action ~feedback_cleanup : delegation Sel.event * Sel.cancellation_handle =
+  Sel.on_queues jobs pool (fun (job_handle, _, job) () ->
+    WorkerStart (feedback_cleanup,job_handle,job,fork_action,Job.binary_name))
 
 (* When a worker is spawn, we enqueue this event, since eventually it will die *)
 let worker_ends pid : delegation Sel.event =
@@ -191,7 +184,7 @@ let accept_timeout ?(timeout=2.0) sr =
   if r = [] then None
   else Some (Unix.accept sr)
 
-let fork_worker : job_id -> (role * events, string * events) result = fun (_, job_id) ->
+let fork_worker : feedback_cleanup:feedback_cleanup -> int option ref -> (role * events, string * events) result = fun ~feedback_cleanup cancellation_handle ->
   let open Unix in
   try
     let chan = socket PF_INET SOCK_STREAM 0 in
@@ -213,13 +206,13 @@ let fork_worker : job_id -> (role * events, string * events) result = fun (_, jo
         let read_from = chan in
         let write_to = chan in
         let link = { write_to; read_from } in
-        install_feedback_worker link;
+        install_feedback_worker ~feedback_cleanup link;
         install_debug_worker link;
         log_worker @@ "borning...";
         Ok (Worker link, [])
     end else
       (* Parent process *)
-      let () = job_id := Some pid in
+      let () = cancellation_handle := Some pid in
       match accept_timeout chan with
       | None ->
           close chan;
@@ -240,7 +233,7 @@ let fork_worker : job_id -> (role * events, string * events) result = fun (_, jo
 
 let option_name = "-" ^ Str.global_replace (Str.regexp_string " ") "." Job.name ^ "_master_address"
 
-let create_process_worker procname (_,job_id) job =
+let create_process_worker procname cancellation_handle job =
   let open Unix in
   try
     let chan = socket PF_INET SOCK_STREAM 0 in
@@ -254,7 +247,7 @@ let create_process_worker procname (_,job_id) job =
     let args = Array.append  [|procname;option_name;string_of_int port|] extra_flags in
     let pid = create_process procname args null stdout stderr in
     close null;
-    let () = job_id := Some pid in
+    let () = cancellation_handle := Some pid in
     log @@ Printf.sprintf "created worker %d, waiting on port %d" pid port;
     match accept_timeout chan with
     | Some(worker, _worker_addr) ->
@@ -262,7 +255,7 @@ let create_process_worker procname (_,job_id) job =
         let read_from = worker in
         let write_to = worker in
         let link = { write_to; read_from } in
-        install_feedback_worker link;
+        install_feedback_worker ~feedback_cleanup:(fun _ -> ()) link;
         install_debug_worker link;
         log @@ "sending job";
         write_value link job;
@@ -296,10 +289,10 @@ let handle_event = function
   | WorkerProgress { link; update_request = Job_update u } ->
       log "worker progress";
       (Some u, [worker_progress link])
-  | WorkerStart (job_id,job,action,procname) ->
+  | WorkerStart (feedback_cleanup, (feedback_route,cancellation_handle),job,action,procname) ->
     log "worker starts";
     if Sys.os_type = "Unix" then
-      match fork_worker job_id with
+      match fork_worker ~feedback_cleanup cancellation_handle with
       | Ok(Master, events) ->
         log "worker spawned (fork)";
         (None, events)
@@ -308,15 +301,15 @@ let handle_event = function
         exit 0
       | Error(msg, cleanup_events) ->
         log @@ "worker did not spawn: " ^ msg;
-        (Some(Job.appendFeedback (fst job_id) (Feedback.Error,None,Pp.str msg)), cleanup_events)
+        (Some(Job.appendFeedback feedback_route (Feedback.Error,None,Pp.str msg)), cleanup_events)
     else
-      match create_process_worker procname job_id job with
+      match create_process_worker procname cancellation_handle job with
       | Ok events ->
           log "worker spawned (create_process)";
           (None, events)
       | Error(msg, cleanup_events) ->
           log @@ "worker did not spawn: " ^ msg;
-          (Some(Job.appendFeedback (fst job_id) (Feedback.Error,None,Pp.str msg)), cleanup_events)
+          (Some(Job.appendFeedback feedback_route (Feedback.Error,None,Pp.str msg)), cleanup_events)
 
 
 (* the only option is the socket port *)
