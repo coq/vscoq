@@ -36,6 +36,11 @@ not yet released nor published on the VsCode marketplace.
 ## Features
 * Continuous and incremental checking of Coq documents
 * Asynchronous proof checking
+
+* Customisable goal panel 
+
+![](gif/goals-accordion.gif)
+
 * Syntax highlighting
 * Dedicated panel for queries and their history
 
