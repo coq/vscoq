@@ -34,17 +34,24 @@ VsCoq 2 is under heavy development and not ready for production use yet. It is
 not yet released nor published on the VsCode marketplace.
 
 ## Features
-* Continuous and incremental checking of Coq documents
+* Syntax highlighting
 * Asynchronous proof checking
+
+* Continuous and incremental checking of Coq documents
+
+![](gif/continuous-mode.gif)
+
+![](gif/manual-mode.gif)
 
 * Customisable goal panel 
 
 ![](gif/goals-accordion.gif)
 
-* Syntax highlighting
+![](gif/goals-tabs.gif)
+
 * Dedicated panel for queries and their history
 
-![](gif/coq-search-panel-small.gif)
+![](gif/query-panel.gif)
 
 * Supports \_CoqProject
 
