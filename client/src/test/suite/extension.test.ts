@@ -9,7 +9,7 @@ import * as vscode from 'vscode';
 async function openTextFile(file : string) {
   const docUri = vscode.Uri.file(path.resolve(__dirname, '../../../testFixture', file));
   const doc = await vscode.workspace.openTextDocument(docUri);
-  await vscode.window.showTextDocument(doc);
+  await vscode.window.showTextDocument(doc, { preview : false });
 }
 
 suite('Should get diagnostics', function () {
