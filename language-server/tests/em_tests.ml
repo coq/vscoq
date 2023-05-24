@@ -17,7 +17,9 @@ open Lsp
 open Common
 open Lsp.LspData.Severity
 
-let init text = openDoc ~uri:"doc" ~text
+let uri = Uri.make ~scheme:"file" ~path:"foo" ()
+
+let init text = openDoc uri ~text
 
 let%test_unit "exec: finished proof" =
   let st, init_events = init "Lemma x : True. trivial. Qed. Check x." in
