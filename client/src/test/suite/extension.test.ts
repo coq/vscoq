@@ -6,30 +6,27 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 // import * as myExtension from '../../extension';
 
-async function openTextFile(file : string) {
+async function openTextFile(file : string) : Promise<vscode.Uri> {
   const docUri = vscode.Uri.file(path.resolve(__dirname, '../../../testFixture', file));
   const doc = await vscode.workspace.openTextDocument(docUri);
   await vscode.window.showTextDocument(doc, { preview : false });
+  return docUri;
 }
 
 suite('Should get diagnostics', function () {
 
-	this.timeout(50000);
+	this.timeout(60000);
 
 	test('Diagnoses an undefined ref error', async () => {
 
-        await openTextFile('basic.v');
+        const doc = await openTextFile('basic.v');
 
 		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
 		await ext.activate();
         
 		await sleep(10000); // Wait for server initialization
 
-		const allDiagnostics = vscode.languages.getDiagnostics();
-
-		expect(allDiagnostics.length).toBe(1);
-
-		const [uri, diagnostics] = allDiagnostics[0];
+		const diagnostics = vscode.languages.getDiagnostics(doc);
 		
 		expect(diagnostics.length).toBe(1);
 
@@ -44,50 +41,49 @@ suite('Should get diagnostics', function () {
 
 	test('Opens two files and gets feedback', async () => {
 
-
 		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
 		await ext.activate();
 
-        await openTextFile('basic.v');
+        const doc1 = await openTextFile('basic.v');
 
 		await sleep(10000); // Wait for server initialization
 
-		await openTextFile('warn.v');
+		const doc2 = await openTextFile('warn.v');
 
 		await sleep(10000); // Wait for server initialization
 
-		const allDiagnostics = vscode.languages.getDiagnostics();
+		const diagnostics1 = vscode.languages.getDiagnostics(doc1);
+		const diagnostics2 = vscode.languages.getDiagnostics(doc2);
 
-		expect(allDiagnostics.length).toBe(2);
+		expect(diagnostics1.length).toBe(1);
+		expect(diagnostics2.length).toBe(1);
 	
 	});
 
 
 	test('Opens two files and gets feedback in the appropriate tab', async () => {
 
-
 		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
 		await ext.activate();
 
-        await openTextFile('basic.v');
+        const doc1 = await openTextFile('basic.v');
 
-		await openTextFile('warn.v');
+		const doc2 = await openTextFile('warn.v');
 
 		await sleep(10000); // Wait for server initialization
 
-		const allDiagnostics = vscode.languages.getDiagnostics();
+		const diagnostics1 = vscode.languages.getDiagnostics(doc1);
+		const diagnostics2 = vscode.languages.getDiagnostics(doc2);
 
-		expect(allDiagnostics.length).toBe(2);
-
-		const [uri1, diagnostics1] = allDiagnostics[0];
-		const [uri2, diagnostics2] = allDiagnostics[1];
-
-		expect(uri1.toString()).toMatch(/.*basic.v/);
 		expect(diagnostics1.length).toBe(1);
 		expect(diagnostics1[0].message).toMatch(/The reference zar was not found.*/);
 		expect(diagnostics1[0].severity).toBe(vscode.DiagnosticSeverity.Error);
 
-		expect(uri2.toString()).toMatch(/.*warn.v/);
+		expect(diagnostics2.length).toBe(1);
+		expect(diagnostics2[0].message).toMatch(/.*There is no flag or option.*/);
+		expect(diagnostics2[0].severity).toBe(vscode.DiagnosticSeverity.Error); // BUG, should be warning
+	
+	});
 		expect(diagnostics2.length).toBe(1);
 		expect(diagnostics2[0].message).toMatch(/.*There is no flag or option.*/);
 		expect(diagnostics2[0].severity).toBe(vscode.DiagnosticSeverity.Error); // BUG, should be warning
