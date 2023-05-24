@@ -16,7 +16,9 @@ open Dm
 open Lsp
 open Common
 
-let init text = openDoc ~uri:"doc" ~text
+let uri = Uri.make ~scheme:"file" ~path:"foo" ()
+
+let init text = openDoc uri ~text
 
 let edit_text st ~start ~stop ~text =
   let doc = DocumentManager.Internal.document st in

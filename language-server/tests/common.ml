@@ -25,9 +25,8 @@ let injections =
 
 let init_state = Vernacstate.freeze_full_state ~marshallable:false
 
-let openDoc ~uri ~text =
-  DocumentManager.init init_state ~opts:injections ~uri ~text
-
+let openDoc uri ~text =
+  DocumentManager.init init_state ~opts:injections uri ~text
 
 let run r =
   [%test_pred: (_,string) Result.t ] (function Error _ -> false | _ -> true) r;

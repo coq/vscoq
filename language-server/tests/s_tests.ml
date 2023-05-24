@@ -17,7 +17,9 @@ open Lsp
 open Common
 open Types
 
-let init text = openDoc ~uri:"doc" ~text
+let uri = Uri.make ~scheme:"file" ~path:"foo" ()
+
+let init text = openDoc uri ~text
 
 (* ********************************************************** *)
 

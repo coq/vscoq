@@ -11,8 +11,10 @@ let trdeps doc s1 =
     else trclose f s' in
   trclose (Scheduler.dependents (Document.schedule doc)) (Stateid.Set.singleton s1.id)
 
+let uri = Uri.make ~scheme:"file" ~path:"foo" ()
+
 let %test_unit "document: invalidate top" =
-  let dm, _ = openDoc ~uri:"foo" ~text:"Definition x := 3. Lemma foo : x = 3. Proof. reflexivity. Qed." in
+  let dm, _ = openDoc uri ~text:"Definition x := 3. Lemma foo : x = 3. Proof. reflexivity. Qed." in
   let doc = DocumentManager.Internal.document dm in
   let invalid, doc = Document.validate_document doc in
   [%test_eq: sentence_id list] [] (Stateid.Set.elements invalid);
@@ -33,7 +35,7 @@ let %test_unit "document: invalidate top" =
   ()
 
 let %test_unit "document: invalidate proof" =
-  let dm, _ = openDoc ~uri:"foo" ~text:"Definition x := 3. Lemma foo : x = 3. Proof. reflexivity. Qed." in
+  let dm, _ = openDoc uri ~text:"Definition x := 3. Lemma foo : x = 3. Proof. reflexivity. Qed." in
   let doc = DocumentManager.Internal.document dm in
   let invalid, doc = Document.validate_document doc in
   [%test_eq: sentence_id list] [] (Stateid.Set.elements invalid);
