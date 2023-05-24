@@ -38,19 +38,23 @@ not yet released nor published on the VsCode marketplace.
 * Asynchronous proof checking
 
 * Continuous and incremental checking of Coq documents
-
+The new version of vscoq allows for continuous checking, see the goal panel update as you scroll or edit your document.
 ![](gif/continuous-mode.gif)
 
+Note that users can opt out and choose to use the classic step by step checking mode. 
 ![](gif/manual-mode.gif)
 
 * Customisable goal panel 
-
+Users can choose their preferred display mode, see goals in accordion lists...
 ![](gif/goals-accordion.gif)
 
+... Or organized in tabs. 
 ![](gif/goals-tabs.gif)
 
 * Dedicated panel for queries and their history
 
+We now support a dedicated panel for queries. We currently support Search, Check, About, Locate and Print with plans 
+to add more in the future.
 ![](gif/query-panel.gif)
 
 * Supports \_CoqProject
