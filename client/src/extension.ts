@@ -1,7 +1,8 @@
 import {workspace, window, commands, ExtensionContext,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
-  TextEditor, 
+  TextEditor,
+  ViewColumn, 
 } from 'vscode';
 
 import {
@@ -23,6 +24,7 @@ import {
     sendStepBackward
 } from './manualChecking';
 import { makeCursorPositionUpdateProofViewRequestParams, makeExecutionUpdateProofViewRequestParams } from './utilities/requests';
+import { DocumentStateViewProvider } from './panels/DocumentStateViewProvider';
 
 
 let client: Client;
@@ -73,6 +75,9 @@ export function activate(context: ExtensionContext) {
         searchProvider.launchQuery(queryText, type);
     };
 
+    const documentStateProvider = new DocumentStateViewProvider(client); 
+    context.subscriptions.push(workspace.registerTextDocumentContentProvider("vscoq-document-state", documentStateProvider));
+
     registerVscoqTextCommand('searchCursor', (editor) => launchQuery(editor, "search"));
     registerVscoqTextCommand('aboutCursor', (editor) => launchQuery(editor, "about"));
     registerVscoqTextCommand('checkCursor', (editor) => launchQuery(editor, "check"));
@@ -85,6 +90,13 @@ export function activate(context: ExtensionContext) {
     registerVscoqTextCommand('displayGoals', (editor) => {
         const reqParams = makeExecutionUpdateProofViewRequestParams(editor);
         GoalPanel.refreshGoalPanel(context.extensionUri, editor, client, reqParams);
+    });
+    registerVscoqTextCommand('documentState', async (editor) => {
+        const document = await workspace.openTextDocument(documentStateProvider.uri);
+        await window.showTextDocument(document, {
+            viewColumn: ViewColumn.Two,
+            preserveFocus: true,
+        }); 
     });
 
 	client.onReady()
