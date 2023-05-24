@@ -19,11 +19,11 @@ suite('Should get diagnostics', function () {
 
 	test('Diagnoses an undefined ref error', async () => {
 
-        const doc = await openTextFile('basic.v');
-
 		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
 		await ext.activate();
         
+        const doc = await openTextFile('basic.v');
+
 		await sleep(10000); // Wait for server initialization
 
 		const diagnostics = vscode.languages.getDiagnostics(doc);
@@ -45,9 +45,6 @@ suite('Should get diagnostics', function () {
 		await ext.activate();
 
         const doc1 = await openTextFile('basic.v');
-
-		await sleep(10000); // Wait for server initialization
-
 		const doc2 = await openTextFile('warn.v');
 
 		await sleep(10000); // Wait for server initialization
@@ -67,7 +64,6 @@ suite('Should get diagnostics', function () {
 		await ext.activate();
 
         const doc1 = await openTextFile('basic.v');
-
 		const doc2 = await openTextFile('warn.v');
 
 		await sleep(10000); // Wait for server initialization
