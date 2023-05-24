@@ -29,8 +29,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-      with:
-        submodules: 'true'
     - name: Configure Dune
       run: |
         mkdir -p ~/.config/dune
@@ -41,8 +39,7 @@ jobs:
     - uses: cachix/install-nix-action@v18
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run: nix build '.?submodules=1'
-    - run: nix develop .#vscoq-language-server -c bash -c "cd language-server && make world"
+    - run: nix develop .#vscoq-language-server -c bash -c "cd language-server && dune build"
     - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
     - run: xvfb-run nix develop .#vscoq-client -c bash -c "cd client && yarn test"
       if: runner.os == 'Linux'
@@ -58,21 +55,12 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-      with:
-        submodules: 'true'
 
     - name: Use OCaml ${{ matrix.ocaml-compiler }}
       uses: avsm/setup-ocaml@v2
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-    - name: Install Coq
-      env:
-        OPAMYES: true
-      run: |
-        opam pin add coq-core.8.17.0+vscoq ./language-server/coq
-        opam pin add coq-stdlib.8.17.0+vscoq ./language-server/coq
-      
     - name: Install vscoq-language-server
       env:
         OPAMYES: true
@@ -104,8 +92,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-      with:
-        submodules: 'true'
 
     - name: Use OCaml ${{ matrix.ocaml-compiler }}
       uses: avsm/setup-ocaml@v2
@@ -116,18 +102,17 @@ jobs:
       env:
         OPAMYES: true
       run: |
-        opam install ./language-server/coq/coq-core.opam          --deps-only
         opam install ./language-server/vscoq-language-server.opam --deps-only --with-doc --with-test
       
     - name: Build vscoq-language-server
       run: |
         eval $(opam env)
-        cd language-server && make
+        cd language-server && dune build
 
     - name: Unit tests
       run: |
         eval $(opam env)
-        cd language-server && make test
+        cd language-server && dune runtest
 
     - uses: actions/setup-node@v3
       with:
@@ -146,8 +131,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-      with:
-        submodules: 'true'
 
     - name: Use OCaml ${{ matrix.ocaml-compiler }}
       uses: avsm/setup-ocaml@v2

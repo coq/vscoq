@@ -1,4 +1,0 @@
-[submodule "language-server/coq"]
-	path = language-server/coq
-	url = https://github.com/maximedenes/coq.git
-	branch = separate-parsing-execution

@@ -12,8 +12,8 @@ build: [
   [ "dune" "build" "-p" "vscoq-language-server" "--display=short"] 
 ]
 depends: [
-  "coq-core" {= "8.17.0+vscoq" & !with-test}
-  "coq-stdlib" {= "8.17.0+vscoq" & !with-test}
+  "coq-core" {= "dev"}
+  "coq-stdlib" {= "dev"}
   "yojson"
   "ocamlfind"
   "ppx_inline_test"
