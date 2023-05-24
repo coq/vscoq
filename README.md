@@ -36,8 +36,8 @@ not yet released nor published on the VsCode marketplace.
 ## Features
 * Syntax highlighting
 * Asynchronous proof checking
-
 * Continuous and incremental checking of Coq documents
+
 The new version of vscoq allows for continuous checking, see the goal panel update as you scroll or edit your document.
 ![](gif/continuous-mode.gif)
 
@@ -45,11 +45,12 @@ Note that users can opt out and choose to use the classic step by step checking 
 ![](gif/manual-mode.gif)
 
 * Customisable goal panel 
+  
 Users can choose their preferred display mode, see goals in accordion lists...
 ![](gif/goals-accordion.gif)
 
 ... Or organized in tabs. 
-![](gif/goals-tabs.gif)
+![](gif/goals-tab.gif)
 
 * Dedicated panel for queries and their history
 
