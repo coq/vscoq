@@ -93,6 +93,7 @@ val word_at_position: document -> Position.t -> string option
 
 module Internal : sig
 
+  val to_string : document -> string
   val range_of_sentence_id : document -> sentence_id -> Range.t
 
 end

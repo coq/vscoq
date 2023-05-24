@@ -172,6 +172,22 @@ module Request = struct
 
   end
 
+  module DocumentStateParams = struct 
+
+    type t = {
+      textDocument : TextDocumentIdentifier.t;
+    } [@@deriving yojson]
+
+  end
+
+  module DocumentStateResult = struct
+    
+    type t = {
+      document : string;
+    } [@@deriving yojson]
+
+  end
+
   type 'rsp params =
   | InterpretToPoint : InterpretToPointParams.t -> unit params
   | InterpretToEnd : InterpretToEndParams.t -> unit params
@@ -184,6 +200,7 @@ module Request = struct
   | Locate : LocateParams.t -> string params
   | Print : PrintParams.t -> string params
   | Search : SearchParams.t -> unit params
+  | DocumentState : DocumentStateParams.t -> DocumentStateResult.t params 
 
   type t =
   | Std : int * _ Protocol.Request.Client.params -> t
@@ -203,6 +220,7 @@ module Request = struct
     | "vscoq/check" -> Ext (id, Check CheckParams.(t_of_yojson params))
     | "vscoq/locate" -> Ext (id, Locate LocateParams.(t_of_yojson params))
     | "vscoq/print" -> Ext (id, Print PrintParams.(t_of_yojson params))
+    | "vscoq/documentState" -> Ext (id, DocumentState DocumentStateParams.(t_of_yojson params))
     | _ ->
       let Protocol.Request.Client.Pack (id, req) = Protocol.Request.Client.t_of_jsonrpc req in
       Std (id, req)
@@ -221,6 +239,7 @@ module Request = struct
       | Locate _ -> yojson_of_string resp
       | Print _ -> yojson_of_string resp
       | Search _ -> yojson_of_unit resp
+      | DocumentState _ -> DocumentStateResult.(yojson_of_t resp)
 
   type 'b dispatch = {
     dispatch_std : 'a. id:int -> 'a Protocol.Request.Client.params -> ('a, string) result * 'b;

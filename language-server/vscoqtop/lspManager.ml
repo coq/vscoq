@@ -329,6 +329,15 @@ let coqtopSearch ~id params =
     let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
     Error(message), []
 
+let sendDocumentState ~id params = 
+  let Request.Client.DocumentStateParams.{ textDocument } = params in
+  let uri = textDocument.uri in
+  let st = Hashtbl.find states (Uri.path uri) in
+  let doc = Dm.DocumentManager.Internal.document st in
+  let document = Dm.Document.Internal.to_string doc in
+  Ok Request.Client.DocumentStateResult.{ document }, []
+  
+
 let workspaceDidChangeConfiguration params = 
   let Protocol.Notification.Client.DidChangeConfigurationParams.{ settings } = params in
   let settings = Settings.t_of_yojson settings in
@@ -362,6 +371,7 @@ let dispatch_ext_request : type a. id:int -> a Request.Client.params -> (a,strin
   | Locate params -> coqtopLocate ~id params
   | Print params -> coqtopPrint ~id params
   | Search params -> coqtopSearch ~id params
+  | DocumentState params -> sendDocumentState ~id params
 
 let dispatch_notification =
   let open Notification.Client in function
