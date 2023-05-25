@@ -279,6 +279,7 @@ module TextDocumentContentChangeEvent = struct
 
   type t = {
     range : Range.t option; [@yojson.option]
+    rangeLength : int option; [@yojson.option]
     text : string;
   } [@@deriving yojson]
   

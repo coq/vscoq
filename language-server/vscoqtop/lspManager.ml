@@ -385,17 +385,22 @@ let handle_lsp_event = function
   | Receive None ->
       []
   | Receive (Some rpc) ->
-    begin match rpc with
-    | Request req ->
-        log @@ "ui request: " ^ req.method_;
-        let resp, events = Request.Client.yojson_of_result req dispatch in
-        output_json resp;
-        events
-    | Notification notif ->
-      dispatch_notification @@ Notification.Client.t_of_jsonrpc notif
-    | Response resp ->
-        log @@ "got unknown response";
-        []
+    begin try
+      begin match rpc with
+      | Request req ->
+          log @@ "ui request: " ^ req.method_;
+          let resp, events = Request.Client.yojson_of_result req dispatch in
+          output_json resp;
+          events
+      | Notification notif ->
+        dispatch_notification @@ Notification.Client.t_of_jsonrpc notif
+      | Response resp ->
+          log @@ "got unknown response";
+          []
+      end
+    with Ppx_yojson_conv_lib__Yojson_conv.Of_yojson_error(exn,json) ->
+      log @@ "error parsing json: " ^ Yojson.Safe.pretty_to_string json;
+      []
     end
   | Send jsonrpc ->
     output_json (JsonRpc.yojson_of_t jsonrpc); []
