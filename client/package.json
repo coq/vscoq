@@ -211,6 +211,11 @@
         "command": "vscoq.stepBackward",
         "title": "Step Backward",
         "category": "Coq"
+      },
+      {
+        "command": "vscoq.documentState", 
+        "title": "Get Document State", 
+        "category": "Coq"
       }
     ],
     "keybindings":[

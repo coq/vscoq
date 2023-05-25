@@ -645,6 +645,7 @@ let word_at_position doc pos = RawDoc.word_at_position doc.raw_doc pos
 
 module Internal = struct
 
+  let to_string doc = ParsedDoc.to_string doc.parsed_doc
   let range_of_sentence_id doc id = range_of_exec_id doc id
 
 end

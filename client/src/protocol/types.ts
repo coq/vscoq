@@ -1,4 +1,4 @@
-import { integer, VersionedTextDocumentIdentifier } from "vscode-languageclient";
+import { integer, TextDocumentIdentifier, VersionedTextDocumentIdentifier } from "vscode-languageclient";
 import { Position } from "vscode";
 
 type Nullable<T> = T | null;
@@ -85,3 +85,11 @@ export interface InterpretToPointRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;
 };
+
+export interface DocumentStateRequest {
+    textDocument: TextDocumentIdentifier;
+}
+
+export interface DocumentStateResponse {
+    document: string;
+}
