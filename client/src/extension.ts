@@ -61,6 +61,9 @@ export function activate(context: ExtensionContext) {
     const searchProvider = new SearchViewProvider(context.extensionUri, client);
     context.subscriptions.push(window.registerWebviewViewProvider(SearchViewProvider.viewType, searchProvider));
 
+    const documentStateProvider = new DocumentStateViewProvider(client); 
+    context.subscriptions.push(workspace.registerTextDocumentContentProvider("vscoq-document-state", documentStateProvider));
+
     const launchQuery = (editor: TextEditor, type: string)=> {
         const selection = editor.selection;
         const {end, start} = selection; 
@@ -75,8 +78,6 @@ export function activate(context: ExtensionContext) {
         searchProvider.launchQuery(queryText, type);
     };
 
-    const documentStateProvider = new DocumentStateViewProvider(client); 
-    context.subscriptions.push(workspace.registerTextDocumentContentProvider("vscoq-document-state", documentStateProvider));
 
     registerVscoqTextCommand('searchCursor', (editor) => launchQuery(editor, "search"));
     registerVscoqTextCommand('aboutCursor', (editor) => launchQuery(editor, "about"));
@@ -92,11 +93,18 @@ export function activate(context: ExtensionContext) {
         GoalPanel.refreshGoalPanel(context.extensionUri, editor, client, reqParams);
     });
     registerVscoqTextCommand('documentState', async (editor) => {
+            
+        documentStateProvider.setDocumentUri(editor.document.uri);
+
         const document = await workspace.openTextDocument(documentStateProvider.uri);
+
+        documentStateProvider.fire();
+
         await window.showTextDocument(document, {
             viewColumn: ViewColumn.Two,
             preserveFocus: true,
         }); 
+        
     });
 
 	client.onReady()
