@@ -66,7 +66,7 @@ module Request = struct
   module InterpretToPointParams = struct
 
     type t = {
-      textDocument : TextDocumentIdentifier.t;
+      textDocument : VersionedTextDocumentIdentifier.t;
       position : Position.t;
     } [@@deriving yojson]
 
@@ -75,7 +75,7 @@ module Request = struct
   module InterpretToEndParams = struct
 
     type t = {
-      textDocument : TextDocumentIdentifier.t;
+      textDocument : VersionedTextDocumentIdentifier.t;
     } [@@deriving yojson]
 
   end
@@ -83,7 +83,7 @@ module Request = struct
   module StepBackwardParams = struct
 
     type t = {
-      textDocument : TextDocumentIdentifier.t;
+      textDocument : VersionedTextDocumentIdentifier.t;
     } [@@deriving yojson]
 
   end
@@ -91,7 +91,7 @@ module Request = struct
   module StepForwardParams = struct
 
     type t = {
-      textDocument : TextDocumentIdentifier.t;
+      textDocument : VersionedTextDocumentIdentifier.t;
     } [@@deriving yojson]
 
   end
@@ -107,7 +107,7 @@ module Request = struct
   module AboutParams = struct
 
     type t = {
-      textDocument : TextDocumentIdentifier.t;
+      textDocument : VersionedTextDocumentIdentifier.t;
       position : Position.t;
       pattern : string;
     } [@@deriving yojson]
@@ -117,7 +117,7 @@ module Request = struct
   module CheckParams = struct
 
     type t = {
-      textDocument : TextDocumentIdentifier.t;
+      textDocument : VersionedTextDocumentIdentifier.t;
       position : Position.t;
       pattern : string;
     } [@@deriving yojson]
@@ -127,7 +127,7 @@ module Request = struct
   module LocateParams = struct
 
     type t = {
-      textDocument : TextDocumentIdentifier.t;
+      textDocument : VersionedTextDocumentIdentifier.t;
       position : Position.t;
       pattern : string;
     } [@@deriving yojson]
@@ -137,7 +137,7 @@ module Request = struct
   module PrintParams = struct
 
     type t = {
-      textDocument : TextDocumentIdentifier.t;
+      textDocument : VersionedTextDocumentIdentifier.t;
       position : Position.t;
       pattern : string;
     } [@@deriving yojson]
@@ -147,7 +147,7 @@ module Request = struct
   module SearchParams = struct
 
     type t = {
-      textDocument : TextDocumentIdentifier.t;
+      textDocument : VersionedTextDocumentIdentifier.t;
       position : Position.t;
       pattern : string;
       id : string;
@@ -158,7 +158,7 @@ module Request = struct
   module UpdateProofViewParams = struct
 
     type t = {
-      textDocument : TextDocumentIdentifier.t;
+      textDocument : VersionedTextDocumentIdentifier.t;
       position : Position.t;
     } [@@deriving yojson]
 
@@ -190,7 +190,6 @@ module Request = struct
   | Ext : int * _ params -> t
 
   let t_of_jsonrpc (JsonRpc.Request.{ id; method_; params } as req) =
-    let open Yojson.Safe.Util in
     match method_ with
     | "vscoq/interpretToPoint" -> Ext (id, InterpretToPoint InterpretToPointParams.(t_of_yojson params))
     | "vscoq/stepBackward" -> Ext (id, StepBackward StepBackwardParams.(t_of_yojson params))
