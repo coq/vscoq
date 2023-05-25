@@ -73,12 +73,11 @@ let lsp : event Sel.event =
   |> Sel.make_recurring
   |> Sel.set_priority Dm.PriorityManager.lsp_message
 
-let output_json ?(trace=true) obj =
+let output_json obj =
   let msg  = Yojson.Safe.pretty_to_string ~std:true obj in
   let size = String.length msg in
   let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in
-  if trace then
-    log @@ "sent: " ^ msg;
+  log @@ "sent: " ^ msg;
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
 let output_jsonrpc jsonrpc =
@@ -140,7 +139,9 @@ let do_initialize ~id params =
     capabilities = capabilities; 
     serverInfo = server_info;
   } in
-  Ok initialize_result, [Sel.now @@ LspManagerEvent (send_configuration_request ())]
+  log "---------------- initialized --------------";
+  let debug_events = Dm.Log.lsp_initialization_done () |> inject_debug_events in
+  Ok initialize_result, debug_events@[Sel.now @@ LspManagerEvent (send_configuration_request ())]
 
 let do_shutdown ~id params =
   Ok(()), []
@@ -373,9 +374,7 @@ let dispatch_notification =
     textDocumentDidClose params
   | DidChangeConfiguration params ->
     workspaceDidChangeConfiguration params
-  | Initialized ->
-    log "---------------- initialized --------------";
-    Dm.Log.lsp_initialization_done () |> inject_debug_events
+  | Initialized -> []
   | Exit ->
     do_exit ()
   | UnknownNotification -> []
