@@ -81,11 +81,6 @@ export interface PrintCoqRequest {
 
 export type PrintCoqResponse = string; 
 
-export interface InterpretToPointRequest {
-    textDocument: VersionedTextDocumentIdentifier;
-    position: Position;
-};
-
 export interface DocumentStateRequest {
     textDocument: TextDocumentIdentifier;
 }

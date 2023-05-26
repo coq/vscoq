@@ -3,19 +3,12 @@ import {
     VersionedTextDocumentIdentifier,
 } from 'vscode-languageclient/node';
 
-import { InterpretToPointRequest, UpdateProofViewRequest } from '../protocol/types';
+import { UpdateProofViewRequest } from '../protocol/types';
 
 export const makeVersionedDocumentId = (editor: TextEditor) => {
     const uri = editor.document.uri; 
     const version = editor.document.version; 
     return VersionedTextDocumentIdentifier.create(uri.toString(), version);
-};
-
-export const makeInterpretToPointRequestParams = (editor: TextEditor) => {
-    const textDocument = makeVersionedDocumentId(editor);
-    const position = editor.selection.active;
-    const params: InterpretToPointRequest = {textDocument, position};
-    return params;
 };
 
 export const makeExecutionUpdateProofViewRequestParams = (editor: TextEditor) => {
