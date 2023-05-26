@@ -19,6 +19,54 @@ module Notification = struct
 
     include Protocol.Notification.Client
 
+    module InterpretToPointParams = struct
+
+      type t = {
+        textDocument : VersionedTextDocumentIdentifier.t;
+        position : Position.t;
+      } [@@deriving yojson]
+
+    end
+
+    module InterpretToEndParams = struct
+
+      type t = {
+        textDocument : VersionedTextDocumentIdentifier.t;
+      } [@@deriving yojson]
+
+    end
+
+    module StepBackwardParams = struct
+
+      type t = {
+        textDocument : VersionedTextDocumentIdentifier.t;
+      } [@@deriving yojson]
+
+    end
+
+    module StepForwardParams = struct
+
+      type t = {
+        textDocument : VersionedTextDocumentIdentifier.t;
+      } [@@deriving yojson]
+
+    end
+
+    type t =
+    | Std of Protocol.Notification.Client.t
+    | InterpretToEnd of InterpretToEndParams.t
+    | InterpretToPoint of InterpretToPointParams.t
+    | StepForward of StepForwardParams.t
+    | StepBackward of StepBackwardParams.t
+
+    let t_of_jsonrpc (JsonRpc.Notification.{ method_; params } as notif) =
+      match method_ with
+      | "vscoq/interpretToPoint" -> InterpretToPoint InterpretToPointParams.(t_of_yojson params)
+      | "vscoq/stepBackward" -> StepBackward StepBackwardParams.(t_of_yojson params)
+      | "vscoq/stepForward" -> StepForward StepForwardParams.(t_of_yojson params)
+      | "vscoq/interpretToEnd" -> InterpretToEnd InterpretToEndParams.(t_of_yojson params)
+      | _ -> Std (Protocol.Notification.Client.t_of_jsonrpc notif)
+
   end
 
   module Server = struct
@@ -62,39 +110,6 @@ module Request = struct
   module Client = struct
 
   include Protocol.Request.Client
-
-  module InterpretToPointParams = struct
-
-    type t = {
-      textDocument : VersionedTextDocumentIdentifier.t;
-      position : Position.t;
-    } [@@deriving yojson]
-
-  end
-
-  module InterpretToEndParams = struct
-
-    type t = {
-      textDocument : VersionedTextDocumentIdentifier.t;
-    } [@@deriving yojson]
-
-  end
-
-  module StepBackwardParams = struct
-
-    type t = {
-      textDocument : VersionedTextDocumentIdentifier.t;
-    } [@@deriving yojson]
-
-  end
-
-  module StepForwardParams = struct
-
-    type t = {
-      textDocument : VersionedTextDocumentIdentifier.t;
-    } [@@deriving yojson]
-
-  end
 
   module ResetParams = struct
 
@@ -189,10 +204,6 @@ module Request = struct
   end
 
   type 'rsp params =
-  | InterpretToPoint : InterpretToPointParams.t -> unit params
-  | InterpretToEnd : InterpretToEndParams.t -> unit params
-  | StepBackward : StepBackwardParams.t -> unit params
-  | StepForward : StepForwardParams.t -> unit params
   | UpdateProofView : UpdateProofViewParams.t -> UpdateProofViewResult.t params
   | Reset : ResetParams.t -> unit params
   | About : AboutParams.t -> string params
@@ -208,11 +219,7 @@ module Request = struct
 
   let t_of_jsonrpc (JsonRpc.Request.{ id; method_; params } as req) =
     match method_ with
-    | "vscoq/interpretToPoint" -> Ext (id, InterpretToPoint InterpretToPointParams.(t_of_yojson params))
-    | "vscoq/stepBackward" -> Ext (id, StepBackward StepBackwardParams.(t_of_yojson params))
-    | "vscoq/stepForward" -> Ext (id, StepForward StepForwardParams.(t_of_yojson params))
     | "vscoq/resetCoq" -> Ext (id, Reset ResetParams.(t_of_yojson params))
-    | "vscoq/interpretToEnd" -> Ext (id, InterpretToEnd InterpretToEndParams.(t_of_yojson params))
     | "vscoq/updateProofView" -> Ext (id, UpdateProofView UpdateProofViewParams.(t_of_yojson params))
     | "vscoq/search" -> Ext (id, Search SearchParams.(t_of_yojson params))
     | "vscoq/about" -> Ext (id, About AboutParams.(t_of_yojson params))
@@ -227,11 +234,7 @@ module Request = struct
   let yojson_of_response : type a. a params -> a -> Yojson.Safe.t =
     fun req resp ->
       match req with
-      | InterpretToPoint _ -> yojson_of_unit resp
-      | InterpretToEnd _ -> yojson_of_unit resp
       | UpdateProofView _ -> UpdateProofViewResult.(yojson_of_t resp)
-      | StepBackward _ -> yojson_of_unit resp
-      | StepForward _ -> yojson_of_unit resp
       | Reset _ -> yojson_of_unit resp
       | About _ -> yojson_of_string resp
       | Check _ -> yojson_of_string resp

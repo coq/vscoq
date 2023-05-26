@@ -11,13 +11,12 @@ import {
 import GoalPanel from './panels/GoalPanel';
 
 import Client from './client';
-import { InterpretToPointRequest, UpdateProofViewResponse } from './protocol/types';
-import { makeInterpretToPointRequestParams, makeVersionedDocumentId } from './utilities/requests';
+import { makeVersionedDocumentId } from './utilities/requests';
 
 export const sendInterpretToPoint = (editor: TextEditor,  client: Client) => {
-    const req = new RequestType<InterpretToPointRequest, UpdateProofViewResponse, void>("vscoq/interpretToPoint");
-    const params = makeInterpretToPointRequestParams(editor);
-    client.sendRequest(req, params);
+    const textDocument = makeVersionedDocumentId(editor);
+    const position = editor.selection.active;
+    client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position});
 };
 
 export const sendInterpretToEnd = (editor: TextEditor,  client: Client) => {
