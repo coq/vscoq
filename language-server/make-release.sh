@@ -12,12 +12,9 @@ function mkp {
   (cd $D; git archive --format=tar.gz --prefix=$P-$V/ -o $repo/$P.tar.gz HEAD)
   cp $D/$P.opam $repo/packages/$P/$P.$V/opam
   echo -e "\nurl {\n src: \"file://$repo/$P.tar.gz\"\n checksum: \"sha256=$(sha256sum $repo/$P.tar.gz|cut -f 1 -d ' ')\"\n }" >> $repo/packages/$P/$P.$V/opam
-  sed -i 's/ & !with-test//' $repo/packages/$P/$P.$V/opam
   sed -i '/version: "dev"/d' $repo/packages/$P/$P.$V/opam
 }
 
-mkp coq-core              8.17.0+vscoq coq/
-mkp coq-stdlib            8.17.0+vscoq coq/
 mkp vscoq-language-server 0.1          ./
 
 cd $repo

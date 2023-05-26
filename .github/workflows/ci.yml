@@ -4,6 +4,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  PIN_COQ: 59ef6f783caf5f08ca07fece8b7ab09b3459b656
+
 jobs:
   build-extension:
     strategy:
@@ -61,6 +64,13 @@ jobs:
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
+    - name: Pin Coq
+      env:
+        OPAMYES: true
+      run: |
+        opam pin add coq-core.dev "https://github.com/coq/coq.git#$PIN_COQ"
+        opam pin add coq-stdlib.dev "https://github.com/coq/coq.git#$PIN_COQ"
+
     - name: Install vscoq-language-server
       env:
         OPAMYES: true
@@ -97,6 +107,13 @@ jobs:
       uses: avsm/setup-ocaml@v2
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+    - name: Pin Coq
+      env:
+        OPAMYES: true
+      run: |
+        opam pin add coq-core.dev "https://github.com/coq/coq.git#$PIN_COQ"
+        opam pin add coq-stdlib.dev "https://github.com/coq/coq.git#$PIN_COQ"
 
     - name: Install deps
       env:
@@ -147,7 +164,14 @@ jobs:
       run: |
         eval $(opam env)
         opam repo add release file://$PWD/language-server/_build/opam-repository
-        
+
+    - name: Pin Coq
+      env:
+        OPAMYES: true
+      run: |
+        opam pin add coq-core.dev "https://github.com/coq/coq.git#$PIN_COQ"
+        opam pin add coq-stdlib.dev "https://github.com/coq/coq.git#$PIN_COQ"
+
     - name: Install
       run: |
         eval $(opam env)
