@@ -237,30 +237,30 @@ let progress_hook uri () =
   let st = Hashtbl.find states (Uri.path uri) in
   update_view uri st
 
-let coqtopInterpretToPoint ~id params =
-  let Request.Client.InterpretToPointParams.{ textDocument; position } = params in
+let coqtopInterpretToPoint params =
+  let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
   let st = Hashtbl.find states (Uri.path uri) in
   let (st, events) = Dm.DocumentManager.interpret_to_position st position in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
-  Ok(()), inject_dm_events (uri, events)
+  inject_dm_events (uri, events)
 
-let coqtopStepBackward ~id params =
-  let Request.Client.StepBackwardParams.{ textDocument = { uri } } = params in
+let coqtopStepBackward params =
+  let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (Uri.path uri) in
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
-  Ok(()), inject_dm_events (uri,events)
+  inject_dm_events (uri,events)
 
-let coqtopStepForward ~id params =
-  let Request.Client.StepForwardParams.{ textDocument = { uri } } = params in
+let coqtopStepForward params =
+  let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (Uri.path uri) in
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
-  Ok(()), inject_dm_events (uri,events)
+  inject_dm_events (uri,events)
   
  let make_CompletionItem (label, typ, path) : CompletionItem.t = 
    {
@@ -284,13 +284,13 @@ let coqtopResetCoq ~id params =
   update_view uri st;
   Ok(()), []
 
-let coqtopInterpretToEnd ~id params =
-  let Request.Client.InterpretToEndParams.{ textDocument = { uri } } = params in
+let coqtopInterpretToEnd params =
+  let Notification.Client.InterpretToEndParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (Uri.path uri) in
   let (st, events) = Dm.DocumentManager.interpret_to_end st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
-  Ok(()), inject_dm_events (uri,events)
+  inject_dm_events (uri,events)
 
 let coqtopUpdateProofView ~id params =
   let Request.Client.UpdateProofViewParams.{ textDocument = { uri }; position } = params in
@@ -356,15 +356,11 @@ let dispatch_request : type a. id:int -> a Protocol.Request.Client.params -> (a,
     textDocumentCompletion ~id params
   | Hover params ->
     textDocumentHover ~id params, []
-  | UnknownRequest -> Ok(()), []
+  | UnknownRequest -> log "Received unknown request"; Ok(()), []
 
 let dispatch_ext_request : type a. id:int -> a Request.Client.params -> (a,string) result * events =
   fun ~id req ->
   match req with
-  | InterpretToPoint params -> coqtopInterpretToPoint ~id params
-  | InterpretToEnd params -> coqtopInterpretToEnd ~id params
-  | StepBackward params -> coqtopStepBackward ~id params
-  | StepForward params -> coqtopStepForward ~id params
   | UpdateProofView params -> coqtopUpdateProofView ~id params
   | Reset params -> coqtopResetCoq ~id params
   | About params -> coqtopAbout ~id params
@@ -374,8 +370,8 @@ let dispatch_ext_request : type a. id:int -> a Request.Client.params -> (a,strin
   | Search params -> coqtopSearch ~id params
   | DocumentState params -> sendDocumentState ~id params
 
-let dispatch_notification =
-  let open Notification.Client in function
+let dispatch_notification = 
+  let open Protocol.Notification.Client in function 
   | DidOpenTextDocument params ->
     textDocumentDidOpen params
   | DidChangeTextDocument params ->
@@ -387,7 +383,15 @@ let dispatch_notification =
   | Initialized -> []
   | Exit ->
     do_exit ()
-  | UnknownNotification -> []
+  | UnknownNotification -> log "Received unknown notification"; []
+
+let dispatch_ext_notification =
+  let open Notification.Client in function
+  | InterpretToPoint params -> coqtopInterpretToPoint params
+  | InterpretToEnd params -> coqtopInterpretToEnd params
+  | StepBackward params -> coqtopStepBackward params
+  | StepForward params -> coqtopStepForward params
+  | Std notif -> dispatch_notification notif
 
 let dispatch = Request.Client.{ dispatch_std = dispatch_request; dispatch_ext = dispatch_ext_request }
 
@@ -403,7 +407,7 @@ let handle_lsp_event = function
           output_json resp;
           events
       | Notification notif ->
-        dispatch_notification @@ Notification.Client.t_of_jsonrpc notif
+        dispatch_ext_notification @@ Notification.Client.t_of_jsonrpc notif
       | Response resp ->
           log @@ "got unknown response";
           []
