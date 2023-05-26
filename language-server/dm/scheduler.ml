@@ -142,7 +142,7 @@ Qed.
 
 let find_proof_using (ast : ast) =
   match ast.CAst.v.expr with
-  | VernacPure(VernacProof(_,Some e)) -> Some e
+  | VernacSynPure(VernacProof(_,Some e)) -> Some e
   | _ -> log "no ast for proof using, looking at a default";
          Proof_using.get_default_proof_using ()
 

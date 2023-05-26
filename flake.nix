@@ -1,11 +1,19 @@
 {
   description = "VsCoq 2, a language server for Coq based on LSP";
 
-  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs = {
 
-  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.url = "github:numtide/flake-utils";
+
+    mycoq = { url = "github:maximedenes/coq/master"; };
+    mycoq.inputs.nixpkgs.follows = "nixpkgs";
+
+  };
+
+  outputs = { self, nixpkgs, flake-utils, mycoq }:
     flake-utils.lib.eachDefaultSystem (system:
   
+   let coq = mycoq.defaultPackage.${system}; in
    rec {
 
     packages.default = self.packages.${system}.vscoq-language-server;
@@ -13,12 +21,14 @@
     packages.vscoq-language-server =
       # Notice the reference to nixpkgs here.
       with import nixpkgs { inherit system; };
+      
       ocamlPackages.buildDunePackage {
         duneVersion = "3";
         pname = "vscoq-language-server";
         version = "2.0.0-beta1";
         src = ./language-server;
         buildInputs = [
+          coq
           bash
           hostname
           python3

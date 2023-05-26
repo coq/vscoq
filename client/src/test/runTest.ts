@@ -19,7 +19,7 @@ async function main() {
         const userSettingsPath = path.join(userDataDir, 'User');
 
 		const vscoqPath = process.env.VSCOQPATH || path.resolve(__dirname, "../../../language-server/_build/install/default/bin/vscoqtop");
-		const vscoqArgs = process.env.VSCOQARGS?.split(' ') || ["-coqlib",path.resolve(__dirname, "../../../language-server/_build/install/default/lib/coq")];
+		const vscoqArgs = process.env.VSCOQARGS?.split(' ');
 
         const userSettings = {
 			"vscoq.path": vscoqPath,

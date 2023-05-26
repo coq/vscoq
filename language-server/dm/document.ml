@@ -452,12 +452,10 @@ let parse_one_sentence stream ~st =
   *)
 
 let parse_one_sentence stream ~st =
-  let entry = Pvernac.main_entry (Some (Vernacinterp.get_default_proof_mode ())) in
+  let entry = Pvernac.main_entry (Some (Synterp.get_default_proof_mode ())) in
   let pa = Pcoq.Parsable.make stream in
     Vernacstate.Synterp.unfreeze st;
-    Flags.with_option Flags.we_are_parsing
-      (fun () -> Pcoq.Entry.parse entry pa)
-      ()
+    Pcoq.Entry.parse entry pa
 
 let rec junk_whitespace stream =
   match Stream.peek () stream with
@@ -499,20 +497,14 @@ let rec parse_more synterp_state stream raw parsed =
       let lex = CLexer.Lexer.tok_func sstr in
       let tokens = stream_tok 0 [] lex begin_line begin_char in
       begin
-        match Synterp.synterp ~atts:ast.CAst.v.attrs ast.CAst.v.expr with
-        | parsing_eff, entry ->
+        try
+          let entry = Synterp.synterp_control ast in
           let classif = Vernac_classifier.classify_vernac ast in
-          let ast = CAst.make ?loc:(ast.CAst.loc) Vernacexpr.{
-            control = ast.CAst.v.control;
-            attrs = ast.CAst.v.attrs;
-            expr = entry;
-          }
-          in
           let synterp_state = Vernacstate.Synterp.freeze ~marshallable:false in
-          let sentence = { ast = ValidAst(ast,classif,tokens); start = begin_char; stop; synterp_state } in
+          let sentence = { ast = ValidAst(entry,classif,tokens); start = begin_char; stop; synterp_state } in
           let parsed = sentence :: parsed in
           parse_more synterp_state stream raw parsed
-        | exception exn ->
+        with exn ->
           let e, info = Exninfo.capture exn in
           let loc = Loc.get_loc @@ info in
           handle_parse_error start (loc,Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))

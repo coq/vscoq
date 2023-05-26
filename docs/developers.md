@@ -48,7 +48,7 @@ If you have nix installed, you can do a full developer build of the language ser
 
 ```
 nix build '.?submodules=1'
-nix develop .#vscoq-language-server -c bash -c "cd language-server && make world"
+nix develop .#vscoq-language-server -c bash -c "cd language-server && dune build"
 ```
 
 ### Debugging

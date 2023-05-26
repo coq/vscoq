@@ -20,7 +20,7 @@ let injections =
   Coqinit.init_ocaml ();
   let opts, _ = Coqargs.parse_args
     ~usage:(Boot.Usage.{executable_name = ""; extra_args = ""; extra_options = ""})
-    ~init:Coqargs.default ["";"-coqlib";Unix.getcwd ()^"/../../install/default/lib/coq"] in
+    ~init:Coqargs.default [] in
   Coqinit.init_runtime opts
 
 let init_state = Vernacstate.freeze_full_state ~marshallable:false

@@ -15,7 +15,7 @@ open Lsp.LspData
 
 type sentence_id = Stateid.t
 type sentence_id_set = Stateid.Set.t
-type ast = Synterp.vernac_entry_control
+type ast = Synterp.vernac_control_entry
 
 type text_edit = Range.t * string
 
