@@ -112,15 +112,15 @@ module LM = Map.Make (Int)
 
 module SM = Map.Make (Stateid)
 
-type parsed_ast =
-  | ValidAst of ast * Vernacextend.vernac_classification * Tok.t list
-  | ParseError of string Loc.located
-
-let string_of_parsed_ast = function
-  | ValidAst (ast,classif,tokens) -> (* (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac_entry ast.expr) ^ " [" ^ String.concat "--" (List.map (Tok.extract_string false) tokens) ^ "]" *)
+type parsed_ast = {
+  ast: ast;
+  classification: Vernacextend.vernac_classification;
+  tokens: Tok.t list
+}
+  
+let string_of_parsed_ast {ast; classification; tokens} = 
   (* TODO implement printer for vernac_entry *)
-    "[" ^ String.concat "--" (List.map (Tok.extract_string false) tokens) ^ "]" 
-  | ParseError _ -> "(parse error)"
+  "[" ^ String.concat "--" (List.map (Tok.extract_string false) tokens) ^ "]" 
 
 type pre_sentence = {
   start : int;
@@ -139,6 +139,12 @@ type sentence = {
   id : sentence_id;
 }
 
+type parsing_error = {
+  start: int; 
+  stop: int; 
+  msg: string Loc.located;
+}
+
 let string_of_sentence sentence =
   Format.sprintf "[%s] %s (%i -> %i)" (Stateid.to_string sentence.id)
   (string_of_parsed_ast sentence.ast)
@@ -146,10 +152,7 @@ let string_of_sentence sentence =
   sentence.stop
 
 let same_tokens (s1 : sentence) (s2 : pre_sentence) =
-  match s1.ast, s2.ast with
-  | ValidAst (_,_,tokens1), ValidAst (_,_,tokens2) ->
-    CList.equal Tok.equal tokens1 tokens2
-  | _ -> false
+    CList.equal Tok.equal s1.ast.tokens s2.ast.tokens
 
 
 module ParsedDoc : sig
@@ -164,7 +167,8 @@ module ParsedDoc : sig
 
   val parsed_ranges : RawDoc.t -> t -> Range.t list
 
-  val parse_errors : RawDoc.t -> t -> (Stateid.t * (Loc.t option * string)) list
+  val parse_errors : t -> parsing_error list
+  val set_parse_errors : t -> parsing_error list -> t
 
   val add_sentence : t -> int -> int -> parsed_ast -> Vernacstate.Synterp.t -> Scheduler.state -> t * Scheduler.state
   val remove_sentence : t -> sentence_id -> t
@@ -184,8 +188,8 @@ module ParsedDoc : sig
   val next_sentence : t -> sentence_id -> sentence option
 
   val pos_at_end : t -> int
-  val state_at_end : t -> (int * Vernacstate.Synterp.t * Scheduler.state) option
-  val state_at_pos : t -> int -> (int * Vernacstate.Synterp.t * Scheduler.state) option
+  val state_at_end : t -> (int * Vernacstate.Synterp.t * Scheduler.state)
+  val state_at_pos : t -> int -> (int * Vernacstate.Synterp.t * Scheduler.state)
 
   val patch_sentence : t -> Scheduler.state -> sentence_id -> pre_sentence -> t * Scheduler.state
 
@@ -205,12 +209,14 @@ end = struct
   type t = {
     sentences_by_id : sentence SM.t;
     sentences_by_end : sentence LM.t;
+    parsing_errors_by_end : parsing_error LM.t;
     schedule : Scheduler.schedule;
   }
 
   let empty = {
     sentences_by_id = SM.empty;
     sentences_by_end = LM.empty;
+    parsing_errors_by_end = LM.empty;
     schedule = Scheduler.initial_schedule;
   }
 
@@ -219,7 +225,7 @@ end = struct
 
   let schedule parsed = parsed.schedule
 
-  let range_of_sentence raw sentence =
+  let range_of_sentence raw (sentence : sentence) =
     let start = RawDoc.position_of_loc raw sentence.start in
     let end_ = RawDoc.position_of_loc raw sentence.stop in
     Range.{ start; end_ }
@@ -231,34 +237,28 @@ end = struct
 
   let parsed_ranges raw parsed =
     SM.fold (fun _id sentence acc ->
-      match sentence.ast with
-      | ParseError _ -> acc
-      | ValidAst _ -> range_of_sentence raw sentence :: acc)
+      range_of_sentence raw sentence :: acc)
       parsed.sentences_by_id
       []
 
-  let parse_errors raw parsed =
-    let collect_error id sentence acc =
-      match sentence.ast with
-      | ParseError (oloc, message) ->
-        (id, (oloc, message)) :: acc
-      | ValidAst _ -> acc
-    in
-    SM.fold collect_error parsed.sentences_by_id []
+  let parse_errors parsed =
+    List.map snd (LM.bindings parsed.parsing_errors_by_end)
 
-  let add_sentence parsed start stop ast synterp_state scheduler_state_before =
+  let set_parse_errors parsed errors =
+    let parsing_errors_by_end =
+      List.fold_left (fun acc error -> LM.add error.stop error acc) LM.empty errors
+    in
+    { parsed with parsing_errors_by_end }
+
+  let add_sentence parsed start stop (ast: parsed_ast) synterp_state scheduler_state_before =
     let id = Stateid.fresh () in
+    let ast' = (ast.ast, ast.classification, synterp_state) in
     let scheduler_state_after, schedule =
-      let oast =
-        match ast with
-        | ValidAst (ast,classif,_tokens) -> Some (ast,classif,synterp_state)
-        | ParseError _ -> None
-      in
-      Scheduler.schedule_sentence (id,oast) scheduler_state_before parsed.schedule
+      Scheduler.schedule_sentence (id, ast') scheduler_state_before parsed.schedule
     in
     (* FIXME may invalidate scheduler_state_XXX for following sentences -> propagate? *)
     let sentence = { start; stop; ast; id; synterp_state; scheduler_state_before; scheduler_state_after } in
-    { sentences_by_end = LM.add stop sentence parsed.sentences_by_end;
+    { parsed with sentences_by_end = LM.add stop sentence parsed.sentences_by_end;
       sentences_by_id = SM.add id sentence parsed.sentences_by_id;
       schedule
     }, scheduler_state_after
@@ -285,7 +285,7 @@ end = struct
     List.map snd @@ SM.bindings parsed.sentences_by_id
 
   let sentences_sorted_by_loc parsed =
-    List.sort (fun { start = s1} { start = s2 } -> s1 - s2) @@ List.map snd @@ SM.bindings parsed.sentences_by_id
+    List.sort (fun ({ start = s1} : sentence) { start = s2 } -> s1 - s2) @@ List.map snd @@ SM.bindings parsed.sentences_by_id
 
   let sentences_before parsed loc =
     let (before,ov,after) = LM.split loc parsed.sentences_by_end in
@@ -320,13 +320,8 @@ end = struct
 
   let state_after_sentence = function
     | Some (stop, { synterp_state; scheduler_state_after; ast; id }) ->
-      begin match ast with
-      | ParseError _ ->
-        Some (stop, synterp_state, scheduler_state_after)
-      | ValidAst (ast, classif, _tokens) ->
-          Some (stop, synterp_state, scheduler_state_after)
-      end
-    | None -> Some (-1, Vernacstate.Synterp.init (), Scheduler.initial_state)
+      (stop, synterp_state, scheduler_state_after)
+    | None -> (-1, Vernacstate.Synterp.init (), Scheduler.initial_state)
 
   (** Returns the state at position [pos] if it does not require execution *)
   let state_at_pos parsed pos =
@@ -343,7 +338,7 @@ end = struct
     | Some (stop, _) -> stop
     | None -> -1
 
-  let split_sentences loc sentences =
+  let split_sentences loc (sentences : sentence LM.t) =
     let (before,ov,after) = LM.split loc sentences in
     match ov with
     | Some v -> (before,Some (loc,v),after)
@@ -364,9 +359,9 @@ end = struct
         LM.add (stop + offset) { v with stop = v.stop + offset } before
     in
     let sentences_by_end =
-      LM.fold (fun stop v acc -> LM.add (stop + offset) { v with start = v.start + offset; stop = v.stop + offset } acc) after res
+      LM.fold (fun stop (v : sentence) acc -> LM.add (stop + offset) { v with start = v.start + offset; stop = v.stop + offset } acc) after res
     in
-    let shift_sentence s =
+    let shift_sentence (s : sentence) =
       if s.start >= loc then { s with start = s.start + offset; stop = s.stop + offset }
       else if s.stop >= loc then { s with stop = s.stop + offset }
       else s
@@ -386,18 +381,14 @@ end = struct
     log @@ "Patching sentence " ^ Stateid.to_string id;
     let old_sentence = SM.find id parsed.sentences_by_id in
     let scheduler_state_after, schedule =
-      let oast =
-        match ast with
-        | ValidAst (ast,classif,_tokens) -> Some (ast,classif,synterp_state)
-        | ParseError _ -> None
-      in
-      Scheduler.schedule_sentence (id,oast) scheduler_state_before parsed.schedule
+      let ast = (ast.ast, ast.classification, synterp_state) in
+      Scheduler.schedule_sentence (id,ast) scheduler_state_before parsed.schedule
     in
     let new_sentence = { old_sentence with ast; start; stop; scheduler_state_before; scheduler_state_after } in
     let sentences_by_id = SM.add id new_sentence parsed.sentences_by_id in
     let sentences_by_end = LM.remove old_sentence.stop parsed.sentences_by_end in
     let sentences_by_end = LM.add new_sentence.stop new_sentence sentences_by_end in
-    { sentences_by_end; sentences_by_id; schedule }, scheduler_state_after
+    { parsed with sentences_by_end; sentences_by_id; schedule }, scheduler_state_after
 
 type diff =
   | Deleted of sentence_id list
@@ -469,21 +460,21 @@ let rec junk_sentence_end stream =
   | [] -> ()
   | _ ->  Stream.junk () stream; junk_sentence_end stream
 
-(** Parse until we need to execute more. *)
-let rec parse_more synterp_state stream raw parsed =
+(** TODO move inside ParsedDoc, remove set_parsing_errors *)
+let rec parse_more synterp_state stream raw parsed errors =
   let handle_parse_error start msg =
     log @@ "handling parse error at " ^ string_of_int start;
     junk_sentence_end stream;
     let stop = Stream.count stream in
-    let sentence = { ast = ParseError msg; start; stop; synterp_state } in
-    let parsed = sentence :: parsed in
-    parse_more synterp_state stream raw parsed
+    let parsing_error = { msg; start; stop; } in
+    let errors = parsing_error :: errors in
+    parse_more synterp_state stream raw parsed errors
   in
   let start = Stream.count stream in
   begin
     (* FIXME should we save lexer state? *)
     match parse_one_sentence stream ~st:synterp_state with
-    | None (* EOI *) -> List.rev parsed
+    | None (* EOI *) -> List.rev parsed, errors
     | Some ast ->
       let stop = Stream.count stream in
       log @@ "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
@@ -499,11 +490,11 @@ let rec parse_more synterp_state stream raw parsed =
       begin
         try
           let entry = Synterp.synterp_control ast in
-          let classif = Vernac_classifier.classify_vernac ast in
+          let classification = Vernac_classifier.classify_vernac ast in
           let synterp_state = Vernacstate.Synterp.freeze ~marshallable:false in
-          let sentence = { ast = ValidAst(entry,classif,tokens); start = begin_char; stop; synterp_state } in
+          let sentence = { ast = {ast = entry; classification;tokens}; start = begin_char; stop; synterp_state } in
           let parsed = sentence :: parsed in
-          parse_more synterp_state stream raw parsed
+          parse_more synterp_state stream raw parsed errors
         with exn ->
           let e, info = Exninfo.capture exn in
           let loc = Loc.get_loc @@ info in
@@ -518,7 +509,7 @@ let rec parse_more synterp_state stream raw parsed =
   end
 
 let parse_more synterp_state stream raw =
-  parse_more synterp_state stream raw []
+  parse_more synterp_state stream raw [] []
 
 let invalidate top_edit parsed_doc new_sentences =
   (* Algo:
@@ -559,7 +550,7 @@ let invalidate top_edit parsed_doc new_sentences =
       let parsed_doc, scheduler_state = List.fold_left add_sentence (parsed_doc,scheduler_state) new_sentences in
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs
   in
-  let (_,_synterp_state,scheduler_state) = Option.get @@ ParsedDoc.state_at_pos parsed_doc top_edit in
+  let (_,_synterp_state,scheduler_state) = ParsedDoc.state_at_pos parsed_doc top_edit in
   let old_sentences = ParsedDoc.sentences_after parsed_doc top_edit in
   let diff = ParsedDoc.diff old_sentences new_sentences in
   log @@ "diff:\n" ^ ParsedDoc.string_of_diff parsed_doc diff;
@@ -567,18 +558,17 @@ let invalidate top_edit parsed_doc new_sentences =
 
 (** Validate document when raw text has changed *)
 let validate_document ({ parsed_loc; raw_doc; parsed_doc } as document) =
-  match ParsedDoc.state_at_pos parsed_doc parsed_loc with
-  | None -> Stateid.Set.empty, document
-  | Some (stop, parsing_state, _scheduler_state) ->
-    let text = RawDoc.text raw_doc in
-    let stream = Stream.of_string text in
-    while Stream.count stream < stop do Stream.junk () stream done;
-    log @@ Format.sprintf "Parsing more from pos %i" stop;
-    let new_sentences = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
-    log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
-    let invalid_ids, parsed_doc = invalidate (stop+1) document.parsed_doc new_sentences in
-    let parsed_loc = ParsedDoc.pos_at_end parsed_doc in
-    invalid_ids, { document with parsed_doc; parsed_loc }
+  let (stop, parsing_state, _scheduler_state) = ParsedDoc.state_at_pos parsed_doc parsed_loc in
+  let text = RawDoc.text raw_doc in
+  let stream = Stream.of_string text in
+  while Stream.count stream < stop do Stream.junk () stream done;
+  log @@ Format.sprintf "Parsing more from pos %i" stop;
+  let new_sentences, errors = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
+  log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
+  let invalid_ids, parsed_doc = invalidate (stop+1) document.parsed_doc new_sentences in
+  let parsed_doc = ParsedDoc.set_parse_errors parsed_doc errors in
+  let parsed_loc = ParsedDoc.pos_at_end parsed_doc in
+  invalid_ids, { document with parsed_doc; parsed_loc }
 
 let create_document text =
   let raw_doc = RawDoc.create text in
@@ -627,7 +617,7 @@ let end_loc doc = RawDoc.end_loc doc.raw_doc
 
 let range_of_exec_id doc id = ParsedDoc.range_of_id doc.raw_doc doc.parsed_doc id
 let range_of_coq_loc doc loc = RawDoc.range_of_loc doc.raw_doc loc
-let parse_errors doc = ParsedDoc.parse_errors doc.raw_doc doc.parsed_doc
+let parse_errors doc = ParsedDoc.parse_errors doc.parsed_doc
 let sentences doc = ParsedDoc.sentences doc.parsed_doc
 let sentences_sorted_by_loc doc = ParsedDoc.sentences_sorted_by_loc doc.parsed_doc
 let sentences_before doc loc = ParsedDoc.sentences_before doc.parsed_doc loc

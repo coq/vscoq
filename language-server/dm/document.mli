@@ -30,7 +30,19 @@ val validate_document : document -> sentence_id_set * document
 (** [validate_document doc] parses the document without forcing any execution
     and returns the set of invalidated sentences *)
 
-val parse_errors : document -> (sentence_id * (Loc.t option * string)) list
+type parsed_ast = {
+  ast: ast;
+  classification: Vernacextend.vernac_classification;
+  tokens: Tok.t list
+}
+
+type parsing_error = {
+  start: int; 
+  stop: int; 
+  msg: string Loc.located;
+}
+
+val parse_errors : document -> parsing_error list
 (** [parse_errors doc] returns the list of sentences which failed to parse
     (see validate_document) together with their error message *)
 
@@ -39,10 +51,6 @@ type text_edit = Range.t * string
 val apply_text_edits : document -> text_edit list -> document
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The
     new text is not parsed or executed. *)
-
-type parsed_ast =
-  | ValidAst of ast * Vernacextend.vernac_classification * Tok.t list (* the list of tokens generating ast, a sort of fingerprint to compare ASTs  *)
-  | ParseError of string Loc.located
 
 type sentence = {
   start : int;

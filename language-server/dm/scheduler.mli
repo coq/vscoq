@@ -50,7 +50,7 @@ type schedule
 
 val initial_schedule : schedule
 
-val schedule_sentence : sentence_id * (ast * Vernacextend.vernac_classification * Vernacstate.Synterp.t) option -> state -> schedule -> state * schedule
+val schedule_sentence : sentence_id * (ast * Vernacextend.vernac_classification * Vernacstate.Synterp.t) -> state -> schedule -> state * schedule
 (** Identifies the structure of the document and dependencies between sentences
     in order to easily compute the tasks to interpret the a sentence.
     Input sentence is None on parsing error. *)

@@ -103,7 +103,8 @@ let diagnostics st =
     make_diagnostic st.document id oloc msg lvl
   in
   let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(Feedback.Error,oloc,msg)) in
-  List.map mk_error_diag parse_errors @
+  let mk_parsing_error_diag Document.{ msg = (oloc,msg) } = mk_diag (Stateid.dummy (* FIXME *),(Feedback.Error,oloc,msg)) in
+  List.map mk_parsing_error_diag parse_errors @
     List.map mk_error_diag exec_errors @
     List.map mk_diag feedback
 
