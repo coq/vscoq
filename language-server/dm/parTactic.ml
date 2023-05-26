@@ -25,8 +25,8 @@ module TacticJob = struct
     | Error of Pp.t
   type update_request =
     | UpdateSolution of Evar.t * solution
-    | AppendFeedback of sentence_id * (Feedback.level * Loc.t option * Pp.t)
-  let appendFeedback id fb = AppendFeedback(id,fb)
+    | AppendFeedback of Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)
+  let appendFeedback (rid,id) fb = AppendFeedback(rid,id,fb)
 
   type t =  {
     state    : Vernacstate.t;
@@ -92,8 +92,8 @@ let worker_solve_one_goal { TacticJob.state; ast; goalno; goal; name } ~send_bac
   with e when CErrors.noncritical e ->
     send_back (TacticJob.UpdateSolution (goal, TacticJob.Error Pp.(CErrors.print e ++ spc() ++ str "(for subgoal "++int goalno ++ str ")")))
 
-let feedback_id = ref Stateid.dummy
-let set_id_for_feedback id = feedback_id := id
+let feedback_id = ref (0,Stateid.dummy)
+let set_id_for_feedback rid sid = feedback_id := (rid,sid)
 
 let interp_par ~pstate ~info ast ~abstract ~with_end_tac : Declare.Proof.t =
   let state = Vernacstate.freeze_full_state ~marshallable:true in
@@ -102,9 +102,10 @@ let interp_par ~pstate ~info ast ~abstract ~with_end_tac : Declare.Proof.t =
     Declare.Proof.fold pstate ~f:(fun p ->
      (Proof.data p).Proof.goals |> CList.map_i (fun goalno goal ->
        let job = { TacticJob.state; ast; goalno = goalno + 1; goal; name = string_of_int (Evar.repr goal)} in
-       let job_id = DelegationManager.mk_job_id !feedback_id in
+       let job_id = DelegationManager.mk_job_handle !feedback_id in
        let e, cancellation =
-         TacticWorker.worker_available ~jobs:queue ~fork_action:worker_solve_one_goal in
+         TacticWorker.worker_available ~feedback_cleanup:(fun _ -> ()) (* not really correct, since there is a cleanup to be done, but it concern a sel loop which is dead (we don't come back to it), so we can ignore the problem *)
+           ~jobs:queue ~fork_action:worker_solve_one_goal in
        Queue.push (job_id, cancellation, job) queue;
         e, job_id
       ) 0) in

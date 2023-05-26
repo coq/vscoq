@@ -31,7 +31,13 @@ type options = {
 
 (** Execution state, includes the cache *)
 type state
-val init : Vernacstate.t -> state
+type event
+type events = event Sel.event list
+val pr_event : event -> Pp.t
+
+val init : Vernacstate.t -> state * event Sel.event
+val destroy : state -> unit
+
 val set_options : options -> unit
 val set_default_options : unit -> unit
 val invalidate : Scheduler.schedule -> sentence_id -> state -> state
@@ -47,9 +53,6 @@ val get_context : state -> sentence_id -> (Evd.evar_map * Environ.env) option
 val get_lemmas : Evd.evar_map -> Environ.env -> completion_item list
 
 (** Events for the main loop *)
-type event type events = event Sel.event list
-val pr_event : event -> Pp.t
-val local_feedback : event Sel.event
 val handle_event : event -> state -> (state option * events)
 
 (** Execution happens in two steps. In particular the event one takes only

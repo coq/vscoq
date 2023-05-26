@@ -112,16 +112,17 @@ let init init_vs ~opts uri ~text =
   Vernacstate.unfreeze_full_state init_vs;
   let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
   Coqinit.start_library ~top opts;
-  let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
-  { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event ExecutionManager.local_feedback]
+  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
+  { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
 
-let reset { uri; opts; init_vs; document } =
+let reset { uri; opts; init_vs; document; execution_state } =
   let document = Document.create_document (Document.text document) in
   Vernacstate.unfreeze_full_state init_vs;
   let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
   Coqinit.start_library ~top opts;
-  let execution_state = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
-  { uri; opts; init_vs; document; execution_state; observe_id = None }
+  ExecutionManager.destroy execution_state;
+  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
+  { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
 
 let interpret_to_loc state loc : (state * event Sel.event list) =
     let invalid_ids, document = Document.validate_document state.document in

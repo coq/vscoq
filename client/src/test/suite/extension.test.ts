@@ -1,16 +1,8 @@
 import { expect } from 'expect';
-import * as path from 'node:path';
-
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-// import * as myExtension from '../../extension';
-
-async function openTextFile(file : string) {
-  const docUri = vscode.Uri.file(path.resolve(__dirname, '../../../testFixture', file));
-  const doc = await vscode.workspace.openTextDocument(docUri);
-  await vscode.window.showTextDocument(doc);
-}
+import * as common from './common';
 
 suite('Should get diagnostics', function () {
 
@@ -18,18 +10,14 @@ suite('Should get diagnostics', function () {
 
 	test('Diagnoses an undefined ref error', async () => {
 
-        await openTextFile('basic.v');
-
 		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
 		await ext.activate();
         
-		await sleep(10000); // Wait for server initialization
+        const doc = await common.openTextFile('basic.v');
 
-		const allDiagnostics = vscode.languages.getDiagnostics();
+		await common.sleep(10000); // Wait for server initialization
 
-		expect(allDiagnostics.length).toBe(1);
-
-		const [uri, diagnostics] = allDiagnostics[0];
+		const diagnostics = vscode.languages.getDiagnostics(doc);
 		
 		expect(diagnostics.length).toBe(1);
 
@@ -44,26 +32,20 @@ suite('Should get diagnostics', function () {
 
 	test('Opens two files and gets feedback', async () => {
 
-
 		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
 		await ext.activate();
 
-        await openTextFile('basic.v');
+        const doc1 = await common.openTextFile('basic.v');
+		const doc2 = await common.openTextFile('warn.v');
 
-		await sleep(10000); // Wait for server initialization
+		await common.sleep(10000); // Wait for server initialization
 
-		await openTextFile('warn.v');
+		const diagnostics1 = vscode.languages.getDiagnostics(doc1);
+		const diagnostics2 = vscode.languages.getDiagnostics(doc2);
 
-		await sleep(10000); // Wait for server initialization
-
-		const allDiagnostics = vscode.languages.getDiagnostics();
-
-		expect(allDiagnostics.length).toBe(2);
+		expect(diagnostics1.length).toBe(1);
+		expect(diagnostics2.length).toBe(1);
 	
 	});
 
 });
-
-async function sleep(ms: number) {
-	return new Promise(resolve => setTimeout(resolve, ms));
-}

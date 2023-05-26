@@ -32,7 +32,7 @@ type feedback_message = Feedback.level * Loc.t option * Pp.t
 
 type sentence_state =
   | Done of execution_status
-  | Delegated of DelegationManager.job_id * (execution_status -> unit) option
+  | Delegated of DelegationManager.job_handle * (execution_status -> unit) option
 
 type delegation_mode =
   | CheckProofsInMaster
@@ -47,20 +47,20 @@ let default_options = { delegation_mode = CheckProofsInMaster }
 let doc_id = ref (-1)
 let fresh_doc_id () = incr doc_id; !doc_id
 
+type document_id = int
+
+type coq_feedback_listener = int
+
 type state = {
   initial : Vernacstate.t;
   of_sentence : (sentence_state * feedback_message list) SM.t;
-  doc_id : int; (* unique number used to interface with Coq's Feedback *)
 
+  (* ugly stuff to correctly dispatch Coq feedback *)
+  doc_id : document_id; (* unique number used to interface with Coq's Feedback *)
+  coq_feeder : coq_feedback_listener;
+  sel_feedback_queue : (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)) Queue.t;
+  sel_cancellation_handle : Sel.cancellation_handle;
 }
-
-let init vernac_state =
-  let doc_id = fresh_doc_id () in
-  {
-    initial = vernac_state;
-    of_sentence = SM.empty;
-    doc_id;
-  }
 
 let options = ref default_options
 
@@ -81,8 +81,8 @@ type prepared_task =
 module ProofJob = struct
   type update_request =
     | UpdateExecStatus of sentence_id * execution_status
-    | AppendFeedback of sentence_id * (Feedback.level * Loc.t option * Pp.t)
-  let appendFeedback id fb = AppendFeedback(id,fb)
+    | AppendFeedback of Feedback.route_id * Types.sentence_id * (Feedback.level * Loc.t option * Pp.t)
+  let appendFeedback (rid,sid) fb = AppendFeedback(rid,sid,fb)
 
   type t = {
     tasks : prepared_task list;
@@ -99,7 +99,7 @@ end
 module ProofWorker = DelegationManager.MakeWorker(ProofJob)
 
 type event =
-  | LocalFeedback of sentence_id * (Feedback.level * Loc.t option * Pp.t)
+  | LocalFeedback of Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)
   | ProofWorkerEvent of ProofWorker.delegation
 type events = event Sel.event list
 let pr_event = function
@@ -135,7 +135,7 @@ let interp_error_recovery strategy st : Vernacstate.t =
 (* just a wrapper around vernac interp *)
 let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
     Feedback.set_id_for_feedback doc_id state_id;
-    ParTactic.set_id_for_feedback state_id;
+    ParTactic.set_id_for_feedback doc_id state_id;
     Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
     let result =
       try Ok(Vernacinterp.interp_entry ~st ast,[])
@@ -206,7 +206,41 @@ let update state id v =
   update_all id (Done v) fl state
 ;;
 
-let local_feedback = Sel.map (fun (x,y) -> LocalFeedback(x,y)) DelegationManager.local_feedback
+let local_feedback feedback_queue : event Sel.event * Sel.cancellation_handle =
+  let e, c = Sel.on_queue feedback_queue (fun (rid,sid,msg) -> LocalFeedback(rid,sid,msg)) in
+  e |> Sel.name "feedback"
+    |> Sel.make_recurring
+    |> Sel.set_priority PriorityManager.feedback,
+  c
+
+let install_feedback_listener doc_id send =
+  let open Feedback in
+  add_feeder (fun fb ->
+    match fb.contents with
+    | Feedback.Message(lvl,loc,m) when lvl != Feedback.Debug && fb.doc_id = doc_id -> send (fb.Feedback.route,fb.Feedback.span_id,(lvl,loc,m))
+    | _ -> () (* STM feedbacks are handled differently *))
+
+let init vernac_state =
+  let doc_id = fresh_doc_id () in
+  let sel_feedback_queue = Queue.create () in
+  let coq_feeder = install_feedback_listener doc_id (fun x -> Queue.push x sel_feedback_queue) in
+  let event, sel_cancellation_handle = local_feedback sel_feedback_queue in
+  {
+    initial = vernac_state;
+    of_sentence = SM.empty;
+    doc_id;
+    coq_feeder;
+    sel_feedback_queue;
+    sel_cancellation_handle;
+  },
+  event
+
+(* called by the forked child. Since the Feedback API is imperative, the
+   feedback pipes have to be modified in place *)
+let feedback_cleanup { coq_feeder; sel_feedback_queue; sel_cancellation_handle } =
+  Feedback.del_feeder coq_feeder;
+  Queue.clear sel_feedback_queue;
+  Sel.cancel sel_cancellation_handle
 
 let handle_feedback id fb state =
   match fb with
@@ -221,14 +255,14 @@ let handle_feedback id fb state =
 
 let handle_event event state =
   match event with
-  | LocalFeedback (id,fb) ->
+  | LocalFeedback (_,id,fb) ->
       Some (handle_feedback id fb state), []
   | ProofWorkerEvent event ->
       let update, events = ProofWorker.handle_event event in
       let state =
         match update with
         | None -> None
-        | Some (ProofJob.AppendFeedback(id,fb)) ->
+        | Some (ProofJob.AppendFeedback(_,id,fb)) ->
             Some (handle_feedback id fb state)
         | Some (ProofJob.UpdateExecStatus(id,v)) ->
             match SM.find id state.of_sentence, v with
@@ -253,7 +287,13 @@ let find_fulfilled_opt x m =
     | Delegated _ -> None
   with Not_found -> None
 
-let jobs : (DelegationManager.job_id * Sel.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
+let jobs : (DelegationManager.job_handle * Sel.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
+
+(* TODO: kill all Delegated... *)
+let destroy st =
+  feedback_cleanup st;
+  Queue.iter (fun (h,c,_) -> DelegationManager.cancel_job h; Sel.cancel c) jobs
+
 
 let last_opt l = try Some (CList.last l).id with Failure _ -> None
 
@@ -368,7 +408,7 @@ let execute st (vs, events, interrupted) task =
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
             let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id = st.doc_id; terminator_id } in
-            let job_id = DelegationManager.mk_job_id terminator_id in
+            let job_id = DelegationManager.mk_job_handle (0,terminator_id) in
             (* The proof was successfully opened *)
             let last_vs, v, assign = interp_qed_delayed ~state_id:terminator_id ~proof_using ~st:vs in
             let complete_job status =
@@ -397,7 +437,9 @@ let execute st (vs, events, interrupted) task =
                st (List.map id_of_prepared_task tasks) in
             let e, cancellation =
                 ProofWorker.worker_available ~jobs
-                  ~fork_action:worker_main in
+                  ~fork_action:worker_main
+                  ~feedback_cleanup:(fun () -> feedback_cleanup st)
+                in
               Queue.push (job_id, cancellation, job) jobs;
               (st, last_vs,events @ [inject_proof_event e] ,false)
           | _ ->

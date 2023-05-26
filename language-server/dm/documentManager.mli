@@ -58,7 +58,7 @@ val interpret_to_end : state -> (state * events)
 (** [interpret_to_end doc] navigates to the last sentence in [doc]
     and returns the resulting state. *)
 
-val reset : state -> state
+val reset : state -> state * events
 (** resets Coq *)
 
 

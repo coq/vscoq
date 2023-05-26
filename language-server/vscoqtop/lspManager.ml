@@ -279,10 +279,10 @@ let coqtopStepForward ~id params =
 let coqtopResetCoq ~id params =
   let Request.Client.ResetParams.{ uri } = params in
   let st = Hashtbl.find states (Uri.path uri) in
-  let st = Dm.DocumentManager.reset st in
+  let st, events = Dm.DocumentManager.reset st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
-  Ok(()), []
+  Ok(()), (uri,events) |> inject_dm_events
 
 let coqtopInterpretToEnd ~id params =
   let Request.Client.InterpretToEndParams.{ textDocument = { uri } } = params in
