@@ -335,4 +335,16 @@ module Internal = struct
   let execution_state st =
     st.execution_state
 
+  let string_of_state st =
+    let sentences = Document.sentences_sorted_by_loc st.document in
+    let string_of_state id =
+      if ExecutionManager.is_executed st.execution_state id then "(executed)"
+      else if ExecutionManager.is_remotely_executed st.execution_state id then "(executed in worker)"
+      else "(not executed)"
+    in
+    let string_of_sentence sentence =
+      Document.Internal.string_of_sentence sentence ^ " " ^ string_of_state sentence.id
+    in
+    String.concat "\n" @@ List.map string_of_sentence sentences
+
 end

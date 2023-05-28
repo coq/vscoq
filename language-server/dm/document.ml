@@ -145,12 +145,6 @@ type parsing_error = {
   msg: string Loc.located;
 }
 
-let string_of_sentence sentence =
-  Format.sprintf "[%s] %s (%i -> %i)" (Stateid.to_string sentence.id)
-  (string_of_parsed_ast sentence.ast)
-  sentence.start
-  sentence.stop
-
 let same_tokens (s1 : sentence) (s2 : pre_sentence) =
     CList.equal Tok.equal s1.ast.tokens s2.ast.tokens
 
@@ -160,8 +154,6 @@ module ParsedDoc : sig
   type t
 
   val empty : t
-
-  val to_string : t -> string
 
   val schedule : t -> Scheduler.schedule
 
@@ -219,9 +211,6 @@ end = struct
     parsing_errors_by_end = LM.empty;
     schedule = Scheduler.initial_schedule;
   }
-
-  let to_string parsed =
-    LM.fold (fun stop s acc -> acc ^ string_of_sentence s ^ "\n") parsed.sentences_by_end ""
 
   let schedule parsed = parsed.schedule
 
@@ -627,7 +616,12 @@ let word_at_position doc pos = RawDoc.word_at_position doc.raw_doc pos
 
 module Internal = struct
 
-  let to_string doc = ParsedDoc.to_string doc.parsed_doc
+  let string_of_sentence sentence =
+    Format.sprintf "[%s] %s (%i -> %i)" (Stateid.to_string sentence.id)
+    (string_of_parsed_ast sentence.ast)
+    sentence.start
+    sentence.stop
+
   let range_of_sentence_id doc id = range_of_exec_id doc id
 
 end

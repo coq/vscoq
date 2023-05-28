@@ -334,10 +334,8 @@ let sendDocumentState ~id params =
   let Request.Client.DocumentStateParams.{ textDocument } = params in
   let uri = textDocument.uri in
   let st = Hashtbl.find states (Uri.path uri) in
-  let doc = Dm.DocumentManager.Internal.document st in
-  let document = Dm.Document.Internal.to_string doc in
+  let document = Dm.DocumentManager.Internal.string_of_state st in
   Ok Request.Client.DocumentStateResult.{ document }, []
-  
 
 let workspaceDidChangeConfiguration params = 
   let Protocol.Notification.Client.DidChangeConfigurationParams.{ settings } = params in
