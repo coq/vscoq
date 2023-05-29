@@ -11,16 +11,22 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
-open Lsp.LspData
-
-type sentence_id = Stateid.t
-type sentence_id_set = Stateid.Set.t
+open Lsp
+open LspData
 
 type text_edit = Range.t * string
 
-type link = {
-  write_to :  Unix.file_descr;
-  read_from:  Unix.file_descr;
-}
+type t
 
-type 'a log = Log : 'a -> 'a log
+val create : string -> t
+val text : t -> string
+
+val position_of_loc : t -> int -> Position.t
+val loc_of_position : t -> Position.t -> int
+val end_loc : t -> int
+
+val range_of_loc : t -> Loc.t -> Range.t
+val word_at_position: t -> Position.t -> string option
+
+(** Applies a text edit, and returns start, stop locations and shift *)
+val apply_text_edit : t -> text_edit -> t * int * int * int

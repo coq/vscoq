@@ -24,7 +24,7 @@ type error_recovery_strategy =
 
 type executable_sentence = {
   id : sentence_id;
-  ast : ast;
+  ast : Synterp.vernac_control_entry;
   synterp : Vernacstate.Synterp.t;
   error_recovery : error_recovery_strategy;
 }
@@ -140,7 +140,7 @@ Qed.
 
 (* FIXME handle commands with side effects followed by `Abort` *)
 
-let find_proof_using (ast : ast) =
+let find_proof_using (ast : Synterp.vernac_control_entry) =
   match ast.CAst.v.expr with
   | VernacSynPure(VernacProof(_,Some e)) -> Some e
   | _ -> log "no ast for proof using, looking at a default";
