@@ -206,6 +206,7 @@ let textDocumentDidChange params =
   let st = Dm.DocumentManager.apply_text_edits st text_edits in
   let (st, events) = 
     if !check_mode = Settings.Mode.Continuous then 
+      let st = Dm.DocumentManager.validate_document st in
       Dm.DocumentManager.interpret_to_end st 
     else 
       (st, [])
@@ -241,6 +242,7 @@ let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
   let st = Hashtbl.find states (Uri.path uri) in
+  let st = Dm.DocumentManager.validate_document st in
   let (st, events) = Dm.DocumentManager.interpret_to_position st position in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
@@ -249,6 +251,7 @@ let coqtopInterpretToPoint params =
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (Uri.path uri) in
+  let st = Dm.DocumentManager.validate_document st in
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
@@ -257,6 +260,7 @@ let coqtopStepBackward params =
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (Uri.path uri) in
+  let st = Dm.DocumentManager.validate_document st in
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
@@ -287,6 +291,7 @@ let coqtopResetCoq ~id params =
 let coqtopInterpretToEnd params =
   let Notification.Client.InterpretToEndParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (Uri.path uri) in
+  let st = Dm.DocumentManager.validate_document st in
   let (st, events) = Dm.DocumentManager.interpret_to_end st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
