@@ -59,7 +59,7 @@ type exec_overview = {
 let executed_ranges doc execution_state loc =
   let ranges_of l =
     List.sort (fun { Range.start = s1 } { Range.start = s2 } -> compare s1 s2) @@
-    List.map (Document.range_of_exec_id doc) l in
+    List.map (Document.range_of_id doc) l in
   let ids_before_loc = List.map (fun s -> s.Document.id) @@ Document.sentences_before doc loc in
   let ids = List.map (fun s -> s.Document.id) @@ Document.sentences doc in
   let executed_ids = List.filter (ExecutionManager.is_executed execution_state) ids in
@@ -79,15 +79,17 @@ let executed_ranges doc execution_state loc =
 
 let executed_ranges st =
   match Option.bind st.observe_id (Document.get_sentence st.document) with
-  | None -> executed_ranges st.document st.execution_state (Document.end_loc st.document)
+  | None ->
+    let end_loc = RawDocument.end_loc @@ Document.raw_document st.document in
+    executed_ranges st.document st.execution_state end_loc
   | Some { stop } -> executed_ranges st.document st.execution_state stop
 
 let make_diagnostic doc id oloc message severity =
   let range =
     match oloc with
-    | None -> Document.range_of_exec_id doc id
+    | None -> Document.range_of_id doc id
     | Some loc ->
-      Document.range_of_coq_loc doc loc
+      RawDocument.range_of_loc (Document.raw_document doc) loc
   in
   Diagnostic.{ range; message; severity }
 
@@ -103,7 +105,8 @@ let diagnostics st =
     make_diagnostic st.document id oloc msg lvl
   in
   let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(Feedback.Error,oloc,msg)) in
-  List.map mk_error_diag parse_errors @
+  let mk_parsing_error_diag Document.{ msg = (oloc,msg) } = mk_diag (Stateid.dummy (* FIXME *),(Feedback.Error,oloc,msg)) in
+  List.map mk_parsing_error_diag parse_errors @
     List.map mk_error_diag exec_errors @
     List.map mk_diag feedback
 
@@ -116,7 +119,8 @@ let init init_vs ~opts uri ~text =
   { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
 
 let reset { uri; opts; init_vs; document; execution_state } =
-  let document = Document.create_document (Document.text document) in
+  let text = RawDocument.text @@ Document.raw_document document in
+  let document = Document.create_document text in
   Vernacstate.unfreeze_full_state init_vs;
   let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
   Coqinit.start_library ~top opts;
@@ -125,12 +129,6 @@ let reset { uri; opts; init_vs; document; execution_state } =
   { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
 
 let interpret_to_loc state loc : (state * event Sel.event list) =
-    let invalid_ids, document = Document.validate_document state.document in
-    let execution_state =
-      List.fold_left (fun st id ->
-        ExecutionManager.invalidate (Document.schedule state.document) id st
-        ) state.execution_state (Stateid.Set.elements invalid_ids) in
-    let state = { state with document; execution_state } in
     (* We jump to the sentence before the position, otherwise jumping to the
     whitespace at the beginning of a sentence will observe the state after
     executing the sentence, which is unnatural. *)
@@ -145,15 +143,6 @@ let interpret_to_loc state loc : (state * event Sel.event list) =
         (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
 
 let interpret_to state id : (state * event Sel.event list) =
-  let invalid_ids, document = Document.validate_document state.document in
-  let execution_state =
-    List.fold_left (fun st id ->
-      ExecutionManager.invalidate (Document.schedule state.document) id st
-      ) state.execution_state (Stateid.Set.elements invalid_ids) in
-  let state = { state with document; execution_state } in
-  (* We jump to the sentence before the position, otherwise jumping to the
-  whitespace at the beginning of a sentence will observe the state after
-  executing the sentence, which is unnatural. *)
   match Document.get_sentence state.document id with
   | None -> (state, []) (* TODO error? *)
   | Some { id; stop; start } ->
@@ -165,7 +154,7 @@ let interpret_to state id : (state * event Sel.event list) =
       (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
 
 let interpret_to_position st pos =
-  let loc = Document.position_to_loc st.document pos in
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match Document.find_sentence_before st.document loc with
   | None -> (st, []) (* document is empty *)
   | Some { id } -> interpret_to st id
@@ -197,9 +186,9 @@ let interpret_to_next st =
       | Some {id } -> interpret_to st id
 
 let interpret_to_end st =
-  match Document.get_last_sentence st.document with 
+  match Document.get_last_sentence st.document with (* FIXME last sentence should be computed after document validation *)
   | None -> (st, [])
-  | Some {id} -> interpret_to st id
+  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to st id
 
 let retract state loc =
   match Option.bind state.observe_id (Document.get_sentence state.document) with
@@ -211,9 +200,9 @@ let retract state loc =
     else state
 
 let apply_text_edits state edits =
-  let document = Document.apply_text_edits state.document edits in
+  let document, loc = Document.apply_text_edits state.document edits in
   let state = { state with document } in
-  retract state (Document.parsed_loc document) 
+  retract state loc
 
 let validate_document state =
   let invalid_ids, document = Document.validate_document state.document in
@@ -243,7 +232,7 @@ let handle_event ev st =
 
 let get_proof st pos =
   let id_of_pos pos =
-    let loc = Document.position_to_loc st.document pos in
+    let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
     match Document.find_sentence_before st.document loc with
     | None -> None
     | Some { id } -> Some id
@@ -252,7 +241,7 @@ let get_proof st pos =
   Option.bind oid (ExecutionManager.get_proofview st.execution_state)
 
 let get_context st pos =
-  let loc = Document.position_to_loc st.document pos in
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match Document.find_sentence_before st.document loc with
   | None -> None
   | Some sentence ->
@@ -266,19 +255,19 @@ let get_lemmas st pos =
 
 let parse_entry st pos entry pattern =
   let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
-  let loc = Document.position_to_loc st.document pos in
-  let st = match Document.find_sentence_before st.document loc with
+  let st = match Document.find_sentence_before st.document pos with
   | None -> st.init_vs.Vernacstate.synterp.parsing
   | Some { synterp_state } -> synterp_state.Vernacstate.Synterp.parsing
   in
   Vernacstate.Parser.parse st entry pa
 
 let about st pos ~goal ~pattern =
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with 
   | None -> Error ("No context found") (*TODO execute *)
   | Some (sigma, env) ->
     try
-      let ref_or_by_not = parse_entry st pos (Pcoq.Prim.smart_global) pattern in
+      let ref_or_by_not = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
       let udecl = None (* TODO? *) in
       Ok (Pp.string_of_ppcmds @@ Prettyp.print_about env sigma ref_or_by_not udecl)
     with e ->
@@ -286,21 +275,23 @@ let about st pos ~goal ~pattern =
       Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
 
 let search st ~id pos pattern =
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with
   | None -> [] (* TODO execute? *)
   | Some (sigma, env) ->
-    let query = parse_entry st pos (G_vernac.search_query) pattern in
+    let query = parse_entry st loc (G_vernac.search_query) pattern in
     SearchQuery.interp_search ~id env sigma query
 
 let hover st pos = 
-  let opattern = Document.word_at_position st.document pos in
+  let opattern = RawDocument.word_at_position (Document.raw_document st.document) pos in
   Option.map (fun pattern -> about st pos ~goal:None ~pattern) opattern
 
 let check st pos ~goal ~pattern =
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with 
   | None -> Error ("No context found") (*TODO execute *)
   | Some (sigma,env) ->
-    let rc = parse_entry st pos Pcoq.Constr.lconstr pattern in
+    let rc = parse_entry st loc Pcoq.Constr.lconstr pattern in
     try
       let redexpr = None in
       Ok (Pp.string_of_ppcmds @@ Vernacentries.check_may_eval env sigma redexpr rc)
@@ -309,7 +300,8 @@ let check st pos ~goal ~pattern =
       Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
 
 let locate st pos ~pattern = 
-  match parse_entry st pos (Pcoq.Prim.smart_global) pattern with
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
+  match parse_entry st loc (Pcoq.Prim.smart_global) pattern with
   | { v = AN qid } -> Ok (Pp.string_of_ppcmds @@ Prettyp.print_located_qualid qid)
   | { v = ByNotation (ntn, sc)} -> 
     match get_context st pos with
@@ -319,10 +311,11 @@ let locate st pos ~pattern =
         (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) ntn sc)
 
 let print st pos ~pattern = 
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with 
   | None -> Error("No context found")
   | Some (sigma, env) -> 
-    let qid = parse_entry st pos (Pcoq.Prim.smart_global) pattern in
+    let qid = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
     let udecl = None in (*TODO*)
     Ok ( Pp.string_of_ppcmds @@ Prettyp.print_name env sigma qid udecl )
 
@@ -333,5 +326,17 @@ module Internal = struct
 
   let execution_state st =
     st.execution_state
+
+  let string_of_state st =
+    let sentences = Document.sentences_sorted_by_loc st.document in
+    let string_of_state id =
+      if ExecutionManager.is_executed st.execution_state id then "(executed)"
+      else if ExecutionManager.is_remotely_executed st.execution_state id then "(executed in worker)"
+      else "(not executed)"
+    in
+    let string_of_sentence sentence =
+      Document.Internal.string_of_sentence sentence ^ " " ^ string_of_state sentence.id
+    in
+    String.concat "\n" @@ List.map string_of_sentence sentences
 
 end

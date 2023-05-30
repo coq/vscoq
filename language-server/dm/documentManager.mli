@@ -86,7 +86,7 @@ val handle_event : event -> state -> (state option * events)
 
 val search : state -> id:string -> Position.t -> string -> notification Sel.event list
 
-val about : state -> Position.t -> goal:(int option)  -> pattern:string -> (string,string) Result.t
+val about : state -> Position.t -> goal:(int option) -> pattern:string -> (string,string) Result.t
 
 val hover : state -> Position.t -> (string,string) Result.t option
 (** Returns an optional Result:
@@ -104,5 +104,6 @@ module Internal : sig
 
   val document : state -> Document.document
   val execution_state : state -> ExecutionManager.state
+  val string_of_state : state -> string
 
 end

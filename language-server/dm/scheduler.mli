@@ -29,7 +29,7 @@ type error_recovery_strategy =
 
 type executable_sentence = {
   id : sentence_id;
-  ast : ast;
+  ast : Synterp.vernac_control_entry;
   synterp : Vernacstate.Synterp.t;
   error_recovery : error_recovery_strategy;
 }
@@ -50,7 +50,7 @@ type schedule
 
 val initial_schedule : schedule
 
-val schedule_sentence : sentence_id * (ast * Vernacextend.vernac_classification * Vernacstate.Synterp.t) option -> state -> schedule -> state * schedule
+val schedule_sentence : sentence_id * (Synterp.vernac_control_entry * Vernacextend.vernac_classification * Vernacstate.Synterp.t) -> state -> schedule -> state * schedule
 (** Identifies the structure of the document and dependencies between sentences
     in order to easily compute the tasks to interpret the a sentence.
     Input sentence is None on parsing error. *)

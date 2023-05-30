@@ -24,7 +24,7 @@ type error_recovery_strategy =
 
 type executable_sentence = {
   id : sentence_id;
-  ast : ast;
+  ast : Synterp.vernac_control_entry;
   synterp : Vernacstate.Synterp.t;
   error_recovery : error_recovery_strategy;
 }
@@ -140,7 +140,7 @@ Qed.
 
 (* FIXME handle commands with side effects followed by `Abort` *)
 
-let find_proof_using (ast : ast) =
+let find_proof_using (ast : Synterp.vernac_control_entry) =
   match ast.CAst.v.expr with
   | VernacSynPure(VernacProof(_,Some e)) -> Some e
   | _ -> log "no ast for proof using, looking at a default";
@@ -215,9 +215,8 @@ let string_of_state st =
   let scopes = (List.map (fun b -> List.map (fun x -> x.id) b.proof_sentences) st.proof_blocks) @ [st.document_scope] in
   String.concat "|" (List.map (fun l -> String.concat " " (List.map Stateid.to_string l)) scopes)
 
-let schedule_sentence (id,oast) st schedule =
-  let base, st, task = match oast with
-    | Some (ast,classif,synterp_st) ->
+let schedule_sentence (id, (ast, classif, synterp_st)) st schedule =
+  let base, st, task = 
       let open Vernacexpr in
       let (base, st, task) = push_state id ast synterp_st classif st in
       begin match ast.CAst.v.expr with
@@ -227,7 +226,6 @@ let schedule_sentence (id,oast) st schedule =
         (base, { st with section_depth = max 0 (st.section_depth - 1) }, task)
       | _ -> (base, st, task)
       end
-    | None -> base_id st, st, Skip id
   in
 (*
   log @@ "Scheduled " ^ (Stateid.to_string id) ^ " based on " ^ (match base with Some id -> Stateid.to_string id | None -> "no state");

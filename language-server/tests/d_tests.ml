@@ -19,7 +19,7 @@ let %test_unit "document: invalidate top" =
   let invalid, doc = Document.validate_document doc in
   [%test_eq: sentence_id list] [] (Stateid.Set.elements invalid);
   let s1,(s2,(s3,(s4,(s5,())))) = d_sentences doc (P(P(P(P(P(O)))))) in
-  let doc = Document.apply_text_edits doc [Document.Internal.range_of_sentence_id doc s1.id,"Definition x := 4."] in
+  let doc, _loc = Document.apply_text_edits doc [Document.range_of_id doc s1.id,"Definition x := 4."] in
   let invalid, doc = Document.validate_document doc in
   let r1,(r2,(r3,(r4,(r5,())))) = d_sentences doc (P(P(P(P(P(O)))))) in
   [%test_eq: sentence_id list] [s1.id] (Stateid.Set.elements invalid);
@@ -40,7 +40,7 @@ let %test_unit "document: invalidate proof" =
   let invalid, doc = Document.validate_document doc in
   [%test_eq: sentence_id list] [] (Stateid.Set.elements invalid);
   let s1,(s2,(s3,(s4,(s5,())))) = d_sentences doc (P(P(P(P(P(O)))))) in
-  let doc = Document.apply_text_edits doc [Document.Internal.range_of_sentence_id doc s3.id,"idtac."] in
+  let doc, _loc = Document.apply_text_edits doc [Document.range_of_id doc s3.id,"idtac."] in
   let invalid, doc = Document.validate_document doc in
   let r1,(r2,(r3,(r4,(r5,())))) = d_sentences doc (P(P(P(P(P(O)))))) in
   [%test_eq: sentence_id list] [s3.id] (Stateid.Set.elements invalid);

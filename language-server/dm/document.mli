@@ -22,6 +22,8 @@ open Lsp.LspData
     sentences *)
 type document
 
+val raw_document : document -> RawDocument.t
+
 val create_document : string -> document
 (** [create_document text] creates a fresh document with content defined by
     [text]. *)
@@ -30,19 +32,26 @@ val validate_document : document -> sentence_id_set * document
 (** [validate_document doc] parses the document without forcing any execution
     and returns the set of invalidated sentences *)
 
-val parse_errors : document -> (sentence_id * (Loc.t option * string)) list
+type parsed_ast = {
+  ast: Synterp.vernac_control_entry;
+  classification: Vernacextend.vernac_classification;
+  tokens: Tok.t list
+}
+
+type parsing_error = {
+  start: int; 
+  stop: int; 
+  msg: string Loc.located;
+}
+
+val parse_errors : document -> parsing_error list
 (** [parse_errors doc] returns the list of sentences which failed to parse
     (see validate_document) together with their error message *)
 
-type text_edit = Range.t * string
-
-val apply_text_edits : document -> text_edit list -> document
-(** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The
-    new text is not parsed or executed. *)
-
-type parsed_ast =
-  | ValidAst of ast * Vernacextend.vernac_classification * Tok.t list (* the list of tokens generating ast, a sort of fingerprint to compare ASTs  *)
-  | ParseError of string Loc.located
+val apply_text_edits : document -> text_edit list -> document * int
+(** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
+    text is not parsed or executed. The returned int is the start loc of the topmost
+    edit. *)
 
 type sentence = {
   start : int;
@@ -61,39 +70,23 @@ val get_sentence : document -> sentence_id -> sentence option
 val sentences_before : document -> int -> sentence list
 
 val find_sentence : document -> int -> sentence option
-(** [find_sentence doc loc] finds the sentence containing the loc *)
+(** [find_sentence pos loc] finds the sentence containing the loc *)
 
 val find_sentence_before : document -> int -> sentence option
-(** [find_sentence_before doc loc] finds the last sentence before the loc *)
+(** [find_sentence_before pos loc] finds the last sentence before the loc *)
 
 val find_sentence_after : document -> int -> sentence option
-(** [find_sentence_after doc loc] finds the first sentence after the loc *)
+(** [find_sentence_after pos loc] finds the first sentence after the loc *)
 
 val get_last_sentence : document  -> sentence option
 (** [get_last_sentence doc] returns the last parsed sentence *)
 
-val parsed_loc : document -> int
-(** the last loc of the document which was parsed *)
-
-val end_loc : document -> int
-(** the last loc of the document *)
-
 val schedule : document -> Scheduler.schedule
 
-val text : document -> string
-(** the whole text *)
-
-(* Fishy APIs *)
-val range_of_exec_id : document -> Stateid.t -> Range.t
-val range_of_coq_loc : document -> Loc.t -> Range.t
-
-val position_of_loc : document -> int -> Position.t
-val position_to_loc : document -> Position.t -> int
-val word_at_position: document -> Position.t -> string option
+val range_of_id : document -> Stateid.t -> Range.t
 
 module Internal : sig
 
-  val to_string : document -> string
-  val range_of_sentence_id : document -> sentence_id -> Range.t
+  val string_of_sentence : sentence -> string
 
 end
