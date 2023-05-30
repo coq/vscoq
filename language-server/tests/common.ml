@@ -48,25 +48,27 @@ type _ parse =
   | E : 'a parse -> (Document.parsing_error * 'a) parse
   | O : unit parse
 
-let rec parse : type a. int -> Document.sentence list -> Document.parsing_error list -> a parse -> (a,string) Result.t =
+let rec parse : type a. int -> int -> Document.sentence list -> Document.parsing_error list -> a parse -> (a,string) Result.t =
   let open Document in
   let open Result in
-  fun n sentences errors spec ->
+  fun m n sentences errors spec ->
     match spec, sentences, errors with
     | O, [], [] -> Ok ()
     | P spec, ({ id } as s) :: l, errors ->
-        parse (n+1) l errors spec >>= (fun a -> Ok(ss_of_s s,a))
+        parse (m+1) n l errors spec >>= (fun a -> Ok(ss_of_s s,a))
     | E spec, sentences, error :: l ->
-        parse (n+1) sentences l spec >>= (fun a -> Ok(error,a))
+        parse m (n+1) sentences l spec >>= (fun a -> Ok(error,a))
     | O, (_ :: _ as l), _ -> Error ("more sentences than expected, extra " ^ Int.to_string (List.length l))
     | O, _, (_ :: _ as l) -> Error ("more errors than expected, extra " ^ Int.to_string (List.length l))
-    | P _, [], _ -> Error ("less sentences than expected, only " ^ Int.to_string n)
-    | E _, _, [] -> Error ("less sentences than expected, only " ^ Int.to_string n)
+    | P _, [], errors ->
+      let errors = String.concat ~sep:"\n" @@ List.map ~f:(fun err -> snd err.Document.msg) errors in
+      Error ("fewer sentences than expected, only " ^ Int.to_string m ^ " list of errors:\n" ^ errors)
+    | E _, _, [] -> Error ("fewer errors than expected, only " ^ Int.to_string n)
 
 let d_sentences doc spec = 
   let sentences = Document.sentences_sorted_by_loc doc in
   let errors = Document.parse_errors doc in
-  let r = run (parse 0 sentences errors spec) in
+  let r = run (parse 0 0 sentences errors spec) in
   r
 
 let dm_parse st spec =

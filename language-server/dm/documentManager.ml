@@ -84,10 +84,10 @@ let executed_ranges st =
     executed_ranges st.document st.execution_state end_loc
   | Some { stop } -> executed_ranges st.document st.execution_state stop
 
-let make_diagnostic doc id oloc message severity =
+let make_diagnostic doc range oloc message severity =
   let range =
     match oloc with
-    | None -> Document.range_of_id doc id
+    | None -> range
     | Some loc ->
       RawDocument.range_of_loc (Document.raw_document doc) loc
   in
@@ -102,10 +102,17 @@ let diagnostics st =
   let exec_errors = all_exec_errors |> List.filter exists in
   let feedback = all_feedback |> List.filter exists in
   let mk_diag (id,(lvl,oloc,msg)) =
-    make_diagnostic st.document id oloc msg lvl
+    make_diagnostic st.document (Document.range_of_id st.document id) oloc msg lvl
   in
   let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(Feedback.Error,oloc,msg)) in
-  let mk_parsing_error_diag Document.{ msg = (oloc,msg) } = mk_diag (Stateid.dummy (* FIXME *),(Feedback.Error,oloc,msg)) in
+  let mk_parsing_error_diag Document.{ msg = (oloc,msg); start; stop } =
+    let doc = Document.raw_document st.document in
+    let severity = Feedback.Error in
+    let start = RawDocument.position_of_loc doc start in
+    let end_ = RawDocument.position_of_loc doc stop in
+    let range = Range.{ start; end_ } in
+    make_diagnostic st.document range oloc msg severity
+  in
   List.map mk_parsing_error_diag parse_errors @
     List.map mk_error_diag exec_errors @
     List.map mk_diag feedback

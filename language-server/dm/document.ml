@@ -302,7 +302,6 @@ let rec junk_sentence_end stream =
 let rec parse_more synterp_state stream raw parsed errors =
   let handle_parse_error start msg =
     log @@ "handling parse error at " ^ string_of_int start;
-    junk_sentence_end stream;
     let stop = Stream.count stream in
     let parsing_error = { msg; start; stop; } in
     let errors = parsing_error :: errors in
@@ -330,19 +329,21 @@ let rec parse_more synterp_state stream raw parsed errors =
           let entry = Synterp.synterp_control ast in
           let classification = Vernac_classifier.classify_vernac ast in
           let synterp_state = Vernacstate.Synterp.freeze ~marshallable:false in
-          let sentence = { ast = {ast = entry; classification;tokens}; start = begin_char; stop; synterp_state } in
+          let sentence = { ast = { ast = entry; classification; tokens }; start = begin_char; stop; synterp_state } in
           let parsed = sentence :: parsed in
           parse_more synterp_state stream raw parsed errors
         with exn ->
           let e, info = Exninfo.capture exn in
           let loc = Loc.get_loc @@ info in
-          handle_parse_error start (loc,Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
+          handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
         end
     | exception (Stream.Error msg as exn) ->
       let loc = Loc.get_loc @@ Exninfo.info exn in
+      junk_sentence_end stream;
       handle_parse_error start (loc,msg)
     | exception (CLexer.Error.E e as exn) -> (* May be more problematic to handle for the diff *)
       let loc = Loc.get_loc @@ Exninfo.info exn in
+      junk_sentence_end stream;
       handle_parse_error start (loc,CLexer.Error.to_string e)
   end
 
