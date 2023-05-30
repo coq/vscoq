@@ -25,6 +25,7 @@ import {
 } from './manualChecking';
 import { makeCursorPositionUpdateProofViewRequestParams, makeExecutionUpdateProofViewRequestParams } from './utilities/requests';
 import { DocumentStateViewProvider } from './panels/DocumentStateViewProvider';
+import VsCoqToolchainManager from './utilities/toolchain';
 
 
 let client: Client;
@@ -107,9 +108,11 @@ export function activate(context: ExtensionContext) {
         
     });
 
+    const coqTM = new VsCoqToolchainManager();
+
 	client.onReady()
 	.then(() => {
-
+        
         checkVersion(client, context);
 
 		initializeDecorations(context);
@@ -140,10 +143,11 @@ export function activate(context: ExtensionContext) {
         });
 
 	});
+    
+    coqTM.performChecks();
 
-
-	// Start the client. This will also launch the server
-	client.start();
+    // Start the client. This will also launch the server
+    client.start();
     context.subscriptions.push(client);
 
 }
