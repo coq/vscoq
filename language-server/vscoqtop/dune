@@ -2,6 +2,6 @@
  (name vscoqtop)
  (public_name vscoqtop)
  (modules vscoqtop lspManager)
- (flags -rectypes -linkall)
+ (flags -linkall)
  (package vscoq-language-server)
  (libraries coq-core.sysinit coq-core.tactics sel yojson dm lsp))

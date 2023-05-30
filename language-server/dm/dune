@@ -2,14 +2,13 @@
  (name dm)
  (public_name vscoq-language-server.dm)
  (modules :standard \ vscoqtop_proof_worker vscoqtop_tactic_worker)
- (flags -rectypes)
  (libraries coq-core.sysinit coq-core.vernac coq-core.parsing sel lsp))
 
 (executable
  (name vscoqtop_proof_worker)
  (public_name vscoqtop_proof_worker.opt)
  (modules vscoqtop_proof_worker)
- (flags -rectypes -linkall)
+ (flags -linkall)
  (package vscoq-language-server)
  (libraries coq-core.sysinit coq-core.tactics dm lsp))
 
@@ -17,6 +16,6 @@
  (name vscoqtop_tactic_worker)
  (public_name vscoqtop_tactic_worker.opt)
  (modules vscoqtop_tactic_worker)
- (flags -rectypes -linkall)
+ (flags -linkall)
  (package vscoq-language-server)
  (libraries coq-core.sysinit coq-core.tactics dm lsp))
