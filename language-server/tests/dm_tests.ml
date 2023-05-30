@@ -22,8 +22,9 @@ let init text = openDoc uri ~text
 
 let edit_text st ~start ~stop ~text =
   let doc = DocumentManager.Internal.document st in
-  let start = Document.position_of_loc doc start in
-  let end_ = Document.position_of_loc doc stop in
+  let doc = Document.raw_document doc in
+  let start = RawDocument.position_of_loc doc start in
+  let end_ = RawDocument.position_of_loc doc stop in
   let range = LspData.Range.{ start; end_ } in
   DocumentManager.apply_text_edits st [(range, text)]
 
@@ -33,7 +34,8 @@ let edit_text st ~start ~stop ~text =
 let%test_unit "parse.init" =
   let st, events = init "Definition x := true. Definition y := false." in
   let st = DocumentManager.validate_document st in
-  [%test_eq: int] (Document.end_loc @@ DocumentManager.Internal.document st) 44;
+  let doc = Document.raw_document @@ DocumentManager.Internal.document st in
+  [%test_eq: int] (RawDocument.end_loc doc) 44;
   let sentences = Document.sentences @@ DocumentManager.Internal.document st in
   let positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
   [%test_eq: int list] positions [ 0; 22 ];
@@ -52,18 +54,22 @@ let%test_unit "parse.squash" =
   let st, events = init "Definition x := true. Definition y := false. Definition z := 0." in
   let st = edit_text st ~start:20 ~stop:21 ~text:"" in
   let st = DocumentManager.validate_document st in
-  let sentences = Document.sentences @@ DocumentManager.Internal.document st in
+  let doc = DocumentManager.Internal.document st in
+  let sentences = Document.sentences doc in
   let start_positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
   let stop_positions = Stdlib.List.map (fun s -> s.Document.stop) sentences in
-  [%test_eq: int list] start_positions [ 0; 44 ];
-  [%test_eq: int list] stop_positions [ 43; 62 ]
+  [%test_eq: int list] start_positions [ 44 ];
+  [%test_eq: int list] stop_positions [ 62 ];
+  [%test_eq: int] (List.length (Document.parse_errors doc)) 1
 
 let%test_unit "parse.error_recovery" =
   let st, events = init "## . Definition x := true. !! . Definition y := false." in
   let st = DocumentManager.validate_document st in
-  let sentences = Document.sentences @@ DocumentManager.Internal.document st in
+  let doc = DocumentManager.Internal.document st in
+  let sentences = Document.sentences doc in
   let start_positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
-  [%test_eq: int list] start_positions [ 0; 5; 26; 32 ]
+  [%test_eq: int list] start_positions [ 5; 32 ];
+  [%test_eq: int] (List.length (Document.parse_errors doc)) 2
 
 let%test_unit "parse.extensions" =
   let st, events = init "Notation \"## x\" := x (at level 0). Definition f (x : nat) := ##xx." in
