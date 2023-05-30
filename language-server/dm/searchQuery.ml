@@ -11,13 +11,8 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
-open CErrors
-open Names
 open Util
-open Pp
 open Printer
-open Search
-open Vernacexpr
 open Lsp.LspData
 
 (* Note: this queue is not very useful today, as we process results in the main
@@ -29,7 +24,7 @@ let query_feedback : notification Sel.event =
   |> Sel.uncancellable
 
 let interp_search ~id env sigma s =
-  let pr_search ref kind env c =
+  let pr_search ref _kind env c =
     let pr = pr_global ref in
     let open Impargs in
     let impls = implicits_of_global ref in

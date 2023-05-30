@@ -62,7 +62,7 @@ let assign_tac ~abstract res : unit Proofview.tactic =
 
 let command_focus = Proof.new_focus_kind ()
 
-let worker_solve_one_goal { TacticJob.state; ast; goalno; goal; name } ~send_back =
+let worker_solve_one_goal { TacticJob.state; ast; goalno; goal } ~send_back =
   let focus_cond = Proof.no_cond command_focus in
   let pr_goal g = string_of_int (Evar.repr g) in
   Vernacstate.unfreeze_full_state state;
@@ -138,6 +138,7 @@ let interp_par ~pstate ~info ast ~abstract ~with_end_tac : Declare.Proof.t =
   Declare.Proof.map pstate ~f:(fun p ->
     let p,_,() = Proof.run_tactic (Global.env()) (assign_tac ~abstract results) p in
     p)
+  [@@warning "-27"] (* FIXME: why are info and with_end_tac unused? *)
 
 let () = ComTactic.set_par_implementation interp_par
 
@@ -148,6 +149,7 @@ module TacticWorkerProcess = struct
     let send_back, job = TacticWorker.setup_plumbing options in
     worker_solve_one_goal job ~send_back;
     exit 0
+    [@@warning "-27"] (* FIXME: why is st unused? *)
   let log = TacticWorker.log
 end
 

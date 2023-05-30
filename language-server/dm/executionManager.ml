@@ -116,8 +116,6 @@ let interp_error_recovery strategy st : Vernacstate.t =
   | RAdmitted ->
     let f = Declare.Proof.save_admitted in
     let open Vernacstate in (* shadows Declare *)
-    let open Vernacexpr in
-    let open Vernacextend in
     let { Interp.lemmas; program; _ } = st.interp in
     match lemmas with
     | None -> (* if Lemma failed *)
@@ -297,7 +295,7 @@ let destroy st =
 
 let last_opt l = try Some (CList.last l).id with Failure _ -> None
 
-let rec prepare_task task : prepared_task list =
+let prepare_task task : prepared_task list =
   match task with
   | Skip id -> [PSkip id]
   | Exec e -> [PExec e]
@@ -326,19 +324,9 @@ let purge_state = function
   | Success _ -> Success None
   | Error(e,_) -> Error (e,None)
 
-let ensure_proof_over = function
-  | Success (Some st) as x ->
-     (* uncomment to see the size of state/proof.
-      log @@ Printf.sprintf "final state: %d\n" (Bytes.length @@ Marshal.to_bytes x []);
-      let f proof = log @@ Printf.sprintf "final proof: %d\n" (Bytes.length @@ Marshal.to_bytes (Declare.Proof.return_proof proof) []) in
-      Vernacstate.LemmaStack.with_top (Option.get @@ st.Vernacstate.lemmas) ~f; *)
-     Vernacstate.LemmaStack.with_top (Option.get @@ st.Vernacstate.interp.lemmas)
-       ~f:(fun p -> if Proof.is_done @@ Declare.Proof.get p then x else Error((None,"Proof is not finished"),None))
-  | x -> x
-
 (* TODO move to proper place *)
 let worker_execute ~doc_id ~send_back (vs,events) = function
-  | PSkip id ->
+  | PSkip _id ->
     (vs, events)
   | PExec { id; ast; synterp; error_recovery } ->
     let vs = { vs with Vernacstate.synterp } in
@@ -355,9 +343,7 @@ let worker_execute ~doc_id ~send_back (vs,events) = function
 let worker_ensure_proof_is_over vs send_back terminator_id =
   let f = Declare.Proof.close_proof in
   let open Vernacstate in (* shadows Declare *)
-  let open Vernacexpr in
-  let open Vernacextend in
-  let { Interp.lemmas; program; _ } = vs.interp in
+  let { Interp.lemmas } = vs.interp in
   match lemmas with
   | None -> assert false
   | Some lemmas ->
@@ -410,7 +396,7 @@ let execute st (vs, events, interrupted) task =
             let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id = st.doc_id; terminator_id } in
             let job_id = DelegationManager.mk_job_handle (0,terminator_id) in
             (* The proof was successfully opened *)
-            let last_vs, v, assign = interp_qed_delayed ~state_id:terminator_id ~proof_using ~st:vs in
+            let last_vs, _v, assign = interp_qed_delayed ~state_id:terminator_id ~proof_using ~st:vs in
             let complete_job status =
               try match status with
               | Success None ->
@@ -553,7 +539,6 @@ let get_proof st id =
   | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = None; _ } })) -> log "Proof requested in a state with no proof"; None
   | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = Some st; _ } })) ->
       log "Proof is there";
-      let open Proof in
       let open Declare in
       let open Vernacstate in
       st |> LemmaStack.with_top ~f:Proof.get |> Option.make
@@ -563,8 +548,8 @@ let get_proofview st id = Option.map Proof.data (get_proof st id)
 let get_lemmas sigma env =
   let open CompletionItems in
   let results = ref [] in
-  let display ref kind env c =
-    results := mk_completion_item sigma ref kind env c :: results.contents;
+  let display ref _kind env c =
+    results := mk_completion_item sigma ref env c :: results.contents;
   in
   Search.generic_search env display;
   results.contents
@@ -575,7 +560,6 @@ let get_context st id =
   | Some (Error _) -> log "Context requested in error state"; None
   | Some (Success None) -> log "Context requested in a remotely checked state"; None
   | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = Some st; _ } })) ->
-    let open Proof in
     let open Declare in
     let open Vernacstate in
     st |> LemmaStack.with_top ~f:Proof.get_current_context |> Option.make

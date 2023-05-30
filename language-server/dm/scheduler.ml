@@ -211,7 +211,7 @@ let string_of_task (task_id,(base_id,task)) =
   Format.sprintf "[%s] : [%s] -> %s" (Stateid.to_string task_id) (Option.cata Stateid.to_string "init" base_id) s
   *)
 
-let string_of_state st =
+let _string_of_state st =
   let scopes = (List.map (fun b -> List.map (fun x -> x.id) b.proof_sentences) st.proof_blocks) @ [st.document_scope] in
   String.concat "|" (List.map (fun l -> String.concat " " (List.map Stateid.to_string l)) scopes)
 

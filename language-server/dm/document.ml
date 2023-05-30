@@ -75,12 +75,6 @@ let range_of_id document id =
   | None -> CErrors.anomaly Pp.(str"Trying to get range of non-existing sentence " ++ Stateid.print id)
   | Some sentence -> range_of_sentence document.raw_doc sentence
 
-let parsed_ranges raw parsed =
-  SM.fold (fun _id sentence acc ->
-    range_of_sentence raw sentence :: acc)
-    parsed.sentences_by_id
-    []
-
 let parse_errors parsed =
   List.map snd (LM.bindings parsed.parsing_errors_by_end)
 
@@ -112,28 +106,19 @@ let remove_sentence parsed id =
     (* TODO clean up the schedule and free cached states *)
     { parsed with sentences_by_id; sentences_by_end; }
 
-let remove_sentences_after parsed loc =
-  log @@ "Removing sentences after loc " ^ string_of_int loc;
-  let (before,ov,after) = LM.split loc parsed.sentences_by_end in
-  let removed = Option.cata (fun v -> LM.add loc v after) after ov in
-  let removed = LM.fold (fun _ sentence acc -> Stateid.Set.add sentence.id acc) removed Stateid.Set.empty in
-  let sentences_by_id = Stateid.Set.fold (fun id m -> log @@ "Remove sentence (after) " ^ Stateid.to_string id; SM.remove id m) removed parsed.sentences_by_id in
-  (* TODO clean up the schedule and free cached states *)
-  { parsed with sentences_by_id; sentences_by_end = before; }, removed
-
 let sentences parsed =
   List.map snd @@ SM.bindings parsed.sentences_by_id
 
 let sentences_sorted_by_loc parsed =
-  List.sort (fun ({ start = s1} : sentence) { start = s2 } -> s1 - s2) @@ List.map snd @@ SM.bindings parsed.sentences_by_id
+  List.sort (fun ({ start = s1 } : sentence) { start = s2 } -> s1 - s2) @@ List.map snd @@ SM.bindings parsed.sentences_by_id
 
 let sentences_before parsed loc =
-  let (before,ov,after) = LM.split loc parsed.sentences_by_end in
+  let (before,ov,_after) = LM.split loc parsed.sentences_by_end in
   let before = Option.cata (fun v -> LM.add loc v before) before ov in
   List.map (fun (_id,s) -> s) @@ LM.bindings before
 
 let sentences_after parsed loc =
-  let (before,ov,after) = LM.split loc parsed.sentences_by_end in
+  let (_before,ov,after) = LM.split loc parsed.sentences_by_end in
   let after = Option.cata (fun v -> LM.add loc v after) after ov in
   List.map (fun (_id,s) -> s) @@ LM.bindings after
 
@@ -159,7 +144,7 @@ let get_last_sentence parsed =
   Option.map snd @@ LM.find_last_opt (fun _ -> true) parsed.sentences_by_end
 
 let state_after_sentence = function
-  | Some (stop, { synterp_state; scheduler_state_after; ast; id }) ->
+  | Some (stop, { synterp_state; scheduler_state_after }) ->
     (stop, synterp_state, scheduler_state_after)
   | None -> (-1, Vernacstate.Synterp.init (), Scheduler.initial_state)
 
@@ -167,11 +152,6 @@ let state_after_sentence = function
 let state_at_pos parsed pos =
   state_after_sentence @@
     LM.find_last_opt (fun stop -> stop <= pos) parsed.sentences_by_end
-
-(** Returns the state at the end of [parsed] if it does not require execution *)
-let state_at_end parsed =
-  state_after_sentence @@
-    LM.max_binding_opt parsed.sentences_by_end
 
 let pos_at_end parsed =
   match LM.max_binding_opt parsed.sentences_by_end with
@@ -209,14 +189,6 @@ let shift_sentences parsed loc offset =
   let sentences_by_id = SM.map shift_sentence parsed.sentences_by_id in
   { parsed with sentences_by_end; sentences_by_id }
 
-let previous_sentence parsed id =
-  let current = SM.find id parsed.sentences_by_id in
-  Option.map snd @@ LM.find_last_opt (fun stop -> stop <= current.start) parsed.sentences_by_end
-
-let next_sentence parsed id =
-  let current = SM.find id parsed.sentences_by_id in
-  Option.map snd @@ LM.find_first_opt (fun stop -> stop > current.stop) parsed.sentences_by_end
-
 let patch_sentence parsed scheduler_state_before id ({ ast; start; stop; synterp_state } : pre_sentence) =
   log @@ "Patching sentence " ^ Stateid.to_string id;
   let old_sentence = SM.find id parsed.sentences_by_id in
@@ -250,7 +222,7 @@ let rec diff old_sentences new_sentences =
       Equal [(old_sentence.id,new_sentence)] :: diff old_sentences new_sentences
     else Deleted [old_sentence.id] :: Added [new_sentence] :: diff old_sentences new_sentences
 
-let string_of_parsed_ast {ast; classification; tokens} = 
+let string_of_parsed_ast { tokens } = 
   (* TODO implement printer for vernac_entry *)
   "[" ^ String.concat "--" (List.map (Tok.extract_string false) tokens) ^ "]" 
 
@@ -284,12 +256,6 @@ let parse_one_sentence stream ~st =
   let pa = Pcoq.Parsable.make stream in
     Vernacstate.Synterp.unfreeze st;
     Pcoq.Entry.parse entry pa
-
-let rec junk_whitespace stream =
-  match Stream.peek () stream with
-  | Some (' ' | '\t' | '\n' |'\r') ->
-    Stream.junk () stream; junk_whitespace stream
-  | _ -> ()
 
 let rec junk_sentence_end stream =
   match Stream.npeek () 2 stream with
@@ -421,7 +387,7 @@ let create_document text =
 
 let apply_text_edit document edit =
   let raw_doc, start, stop, shift = RawDocument.apply_text_edit document.raw_doc edit in
-  let document = shift_sentences document start shift in
+  let document = shift_sentences document stop shift in
   let parsed_loc = min document.parsed_loc start in
   { document with raw_doc; parsed_loc }
 

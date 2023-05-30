@@ -13,9 +13,10 @@
 (**************************************************************************)
 open Base
 open Dm
-open Lsp
 open Common
 open Types
+
+[@@@warning "-27"]
 
 let uri = Uri.make ~scheme:"file" ~path:"foo" ()
 

@@ -17,8 +17,6 @@ open Lsp.LspData
 
 let Log log = Log.mk_log "documentManager"
 
-type proof_data = (Proof.data * Position.t) option
-
 type state = {
   uri : Uri.t;
   init_vs : Vernacstate.t;
@@ -135,24 +133,10 @@ let reset { uri; opts; init_vs; document; execution_state } =
   let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
   { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
 
-let interpret_to_loc state loc : (state * event Sel.event list) =
-    (* We jump to the sentence before the position, otherwise jumping to the
-    whitespace at the beginning of a sentence will observe the state after
-    executing the sentence, which is unnatural. *)
-    match Document.find_sentence_before state.document loc with
-    | None -> (* document is empty *) (state, [])
-    | Some { id; stop; start } ->
-      let state = { state with observe_id = Some id } in
-      let vst_for_next_todo, todo = ExecutionManager.build_tasks_for (Document.schedule state.document) state.execution_state id in
-      if CList.is_empty todo then
-        (state, [])
-      else
-        (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
-
 let interpret_to state id : (state * event Sel.event list) =
   match Document.get_sentence state.document id with
   | None -> (state, []) (* TODO error? *)
-  | Some { id; stop; start } ->
+  | Some { id } ->
     let state = { state with observe_id = Some id } in
     let vst_for_next_todo, todo = ExecutionManager.build_tasks_for (Document.schedule state.document) state.execution_state id in
     if CList.is_empty todo then
@@ -172,7 +156,7 @@ let interpret_to_previous st =
   | Some id ->
     match Document.get_sentence st.document id with
     | None -> (st, []) (* TODO error? *)
-    | Some { id; stop; start} ->
+    | Some { start} ->
       match Document.find_sentence_before st.document start with
       | None -> (st, [])
       | Some {id } -> interpret_to st id
@@ -187,7 +171,7 @@ let interpret_to_next st =
   | Some id ->
     match Document.get_sentence st.document id with
     | None -> (st, []) (* TODO error? *)
-    | Some { id; stop; start} ->
+    | Some { stop } ->
       match Document.find_sentence_after st.document (stop+1) with
       | None -> (st, [])
       | Some {id } -> interpret_to st id
@@ -228,7 +212,7 @@ let handle_event ev st =
     (Some st, [])
   | Execute { id; vst_for_next_todo; started; todo = task :: todo } ->
     (*log "Execute (more tasks)";*)
-    let (execution_state,vst_for_next_todo,events,interrupted) =
+    let (execution_state,vst_for_next_todo,events,_interrupted) =
       ExecutionManager.execute st.execution_state (vst_for_next_todo, [], false) task in
     (* We do not update the state here because we may have received feedback while
        executing *)
@@ -268,7 +252,7 @@ let parse_entry st pos entry pattern =
   in
   Vernacstate.Parser.parse st entry pa
 
-let about st pos ~goal ~pattern =
+let about st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with 
   | None -> Error ("No context found") (*TODO execute *)
@@ -291,9 +275,9 @@ let search st ~id pos pattern =
 
 let hover st pos = 
   let opattern = RawDocument.word_at_position (Document.raw_document st.document) pos in
-  Option.map (fun pattern -> about st pos ~goal:None ~pattern) opattern
+  Option.map (fun pattern -> about st pos ~pattern) opattern
 
-let check st pos ~goal ~pattern =
+let check st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with 
   | None -> Error ("No context found") (*TODO execute *)

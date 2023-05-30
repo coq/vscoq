@@ -1,4 +1,3 @@
-open Names
 open Constr
 open Libnames
 open Nametab
@@ -12,7 +11,7 @@ type completion_item = {
   sigma : Evd.evar_map;
 }
 
-let mk_completion_item sigma ref kind env (c : constr) : completion_item = 
+let mk_completion_item sigma ref env (c : constr) : completion_item = 
   {
     ref = ref;
     path = path_of_global ref;

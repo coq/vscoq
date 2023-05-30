@@ -1,4 +1,6 @@
 (alias
    (name default)
     (deps vscoq-language-server.install))
-(vendored_dirs coq)
+(env
+ (dev     (flags :standard -w -9))
+ (release     (flags :standard -w -9)))
