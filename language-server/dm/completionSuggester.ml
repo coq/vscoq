@@ -6,7 +6,7 @@ let mk_hyp sigma d (env,l) =
   let env' = List.fold_right EConstr.push_named d' env in
   let ids, typ = match d with
   | CompactedDecl.LocalAssum (ids, typ) -> ids, typ
-  | CompactedDecl.LocalDef (ids,c,typ) -> ids, typ
+  | CompactedDecl.LocalDef (ids,_c,typ) -> ids, typ
   in
   let ids' = List.map (fun id -> Names.Id.to_string id.Context.binder_name) ids in
   let typ' = pr_letype_env env sigma typ in
@@ -26,8 +26,7 @@ let get_hyps st loc =
   DocumentManager.get_proof st (Some loc)
     |> Option.map (fun Proof.{ goals; sigma; _ } -> Option.cata (mk_hyps sigma) [] (List.nth_opt goals 0)) 
  
-let get_completion_items ~id params st loc =
-  let open Yojson.Basic.Util in
+let get_completion_items st loc =
   let hypotheses = get_hyps st loc in
   let lemmasOption = DocumentManager.get_lemmas st loc in
   let lemmas = lemmasOption |> Option.map (List.map CompletionItems.pp_completion_item) in

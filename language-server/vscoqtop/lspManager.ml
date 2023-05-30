@@ -276,7 +276,7 @@ let coqtopStepForward params =
  let textDocumentCompletion ~id params =
    let Request.Client.CompletionParams.{ textDocument = { uri }; position } = params in
    let st = Hashtbl.find states (Uri.path uri) in
-   let completionItems = Dm.CompletionSuggester.get_completion_items ~id params st position in
+   let completionItems = Dm.CompletionSuggester.get_completion_items st position in
    let items = List.map make_CompletionItem completionItems in
    Ok Request.Client.CompletionResult.{isIncomplete = false; items = items;}, []
 
@@ -315,14 +315,12 @@ let coqtopPrint ~id params =
 let coqtopAbout ~id params =
   let Request.Client.AboutParams.{ textDocument = { uri }; position; pattern } = params in
   let st = Hashtbl.find states (Uri.path uri) in
-  let goal = None in (*TODO*)
-  Dm.DocumentManager.about st position ~goal ~pattern, []
+  Dm.DocumentManager.about st position ~pattern, []
 
 let coqtopCheck ~id params =
   let Request.Client.CheckParams.{ textDocument = { uri }; position; pattern } = params in
   let st = Hashtbl.find states (Uri.path uri) in
-  let goal = None in (*TODO*)
-  Dm.DocumentManager.check st position ~goal ~pattern, []
+  Dm.DocumentManager.check st position ~pattern, []
 
 let coqtopSearch ~id params =
   let Request.Client.SearchParams.{ textDocument = { uri }; id; position; pattern } = params in

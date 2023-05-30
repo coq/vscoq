@@ -24,7 +24,7 @@ type link = {
 }
 
 let write_value { write_to; _ } x =
-(** alert: calling log from write value causes a loop, since log (from the worker)
+(* alert: calling log from write value causes a loop, since log (from the worker)
     writes the value to a channel. Hence we mask [log] *)
   let [@warning "-26"] log _ = () in
   let data = Marshal.to_bytes x [] in

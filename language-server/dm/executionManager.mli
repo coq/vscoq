@@ -14,7 +14,6 @@
 
 open Types
 open CompletionItems
-open Lsp.LspData
 
 (** The event manager is in charge of the actual event of tasks (as
     defined by the scheduler), caching event states and invalidating

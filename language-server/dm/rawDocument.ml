@@ -16,21 +16,6 @@ open LspData
 
 type text_edit = Range.t * string
 
-let top_edit_position edits =
-  match edits with
-  | [] -> assert false
-  | (Range.{ start },_) :: edits ->
-    List.fold_left (fun min (Range.{ start },_) ->
-    if Position.compare start min < 0 then start else min) start edits
-
-let bottom_edit_position edits =
-  match edits with
-  | [] -> assert false
-  | (Range.{ end_ },_) :: edits ->
-    List.fold_left (fun max (Range.{ end_ },_) ->
-    if Position.compare end_ max > 0 then end_ else max) end_ edits
-
-
 type t = {
   text : string;
   lines : int array; (* locs of beginning of lines *)
@@ -71,8 +56,6 @@ let word_at_position raw pos : string option =
     word := Some (Str.matched_string raw.text);
   done;
   word.contents
-
-type edit = Range.t * string
 
 let apply_text_edit raw (Range.{start; end_}, editText) =
   let start = loc_of_position raw start in

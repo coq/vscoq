@@ -72,7 +72,6 @@ module Notification = struct
       }
 
       let t_of_yojson json =
-        let open Yojson.Safe in
         match json with
         | `Assoc [(`Str "settings", settings)] -> { settings }
         | _ -> raise (Invalid_argument "DidChangeConfigurationParams of json")
@@ -193,7 +192,6 @@ module Request = struct
     type t = Pack : int * _ params -> t
 
     let t_of_jsonrpc JsonRpc.Request.{ id; method_; params } =
-      let open Yojson.Safe.Util in
       match method_ with
       | "initialize" -> Pack (id, Initialize InitializeParams.(t_of_yojson params))
       | "shutdown" -> Pack (id, Shutdown)
