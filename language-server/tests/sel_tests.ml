@@ -14,6 +14,8 @@
 open Base
 open Sel
 
+[@@@warning "-27"]
+
 (************************ UTILS **********************************************)
 
 (* we don't want to lock forever doing tests, esp if we know pop_opt would be
@@ -25,7 +27,7 @@ let wait_timeout todo =
   ready, todo
 
 (* match a string list against a rex list, useful for errors *)
-let rec osmatch r s =
+let osmatch r s =
   match s with
   | None -> false
   | Some s -> Str.string_match (Str.regexp r) s 0

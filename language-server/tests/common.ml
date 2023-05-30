@@ -49,12 +49,11 @@ type _ parse =
   | O : unit parse
 
 let rec parse : type a. int -> int -> Document.sentence list -> Document.parsing_error list -> a parse -> (a,string) Result.t =
-  let open Document in
   let open Result in
   fun m n sentences errors spec ->
     match spec, sentences, errors with
     | O, [], [] -> Ok ()
-    | P spec, ({ id } as s) :: l, errors ->
+    | P spec, s :: l, errors ->
         parse (m+1) n l errors spec >>= (fun a -> Ok(ss_of_s s,a))
     | E spec, sentences, error :: l ->
         parse m (n+1) sentences l spec >>= (fun a -> Ok(error,a))

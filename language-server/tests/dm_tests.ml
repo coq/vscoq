@@ -16,6 +16,8 @@ open Dm
 open Lsp
 open Common
 
+[@@@warning "-27"]
+
 let uri = Uri.make ~scheme:"file" ~path:"foo" ()
 
 let init text = openDoc uri ~text

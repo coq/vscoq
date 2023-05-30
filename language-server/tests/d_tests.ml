@@ -3,6 +3,8 @@ open Dm
 open Types
 open Base
 
+[@@@warning "-27"]
+
 let trdeps doc s1 =
   (* This closure should be an API used in Schedule used by ExecutionManager *)
   let rec trclose f s =
