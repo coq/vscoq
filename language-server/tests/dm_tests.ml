@@ -104,6 +104,23 @@ let%test_unit "exec.require_error" =
   let positions = Stdlib.List.map (fun s -> s.LspData.Range.start.character) ranges in
   [%test_eq: int list] positions [ 19 ]
 
+let%test_unit "step_forward.delete_observe_id" =
+  let st, init_events = init "Definition x := 3. Lemma foo : x = 3." in 
+  let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
+  let todo = Sel.(enqueue empty init_events) in
+  let st, events = DocumentManager.interpret_to_next st in
+  let todo = Sel.(enqueue todo events) in
+  let st = handle_events todo st in
+  let st, events = DocumentManager.interpret_to_next st in
+  let todo = Sel.(enqueue todo events) in
+  let st = handle_events todo st in
+  [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s2.id)) (DocumentManager.Internal.observe_id st);
+  let doc = DocumentManager.Internal.document st in
+  let st = DocumentManager.apply_text_edits st [Document.range_of_id doc s2.id,""] in
+  [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s1.id)) (DocumentManager.Internal.observe_id st)
+
+
+
 (*
 let%test_unit "exec.insert" =
   let st, events = init "Definition x := true. Definition y := false." in

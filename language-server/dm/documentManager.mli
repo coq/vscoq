@@ -105,5 +105,6 @@ module Internal : sig
   val document : state -> Document.document
   val execution_state : state -> ExecutionManager.state
   val string_of_state : state -> string
+  val observe_id : state -> Types.sentence_id option
 
 end

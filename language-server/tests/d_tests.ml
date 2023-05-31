@@ -56,16 +56,28 @@ let %test_unit "document: invalidate proof" =
   [%test_pred: sentence_id] (fun x -> not (Stateid.Set.mem x deps)) r3.id;
   [%test_pred: sentence_id] (fun x -> not (Stateid.Set.mem x deps)) r5.id;
   ()
-(*
+
+
 let %test_unit "document: invalidate proof 2" =
-  let dm, _ = openDoc ~uri:"foo" ~text:"Definition x := 3. Lemma foo : x = 3. Proof. reflexivity. Qed." in
+  let dm, _ = openDoc uri ~text:"Definition x := 3. Lemma foo : x = 3. Proof. reflexivity. Qed." in
   let doc = DocumentManager.Internal.document dm in
   let invalid, doc = Document.validate_document doc in
   [%test_eq: sentence_id list] [] (Stateid.Set.elements invalid);
   let s1,(s2,(s3,(s4,(s5,())))) = d_sentences doc (P(P(P(P(P(O)))))) in
-  let doc = Document.apply_text_edits doc [Document.Internal.range_of_sentence_id doc s3.id,""] in
-  let invalid, doc = Document.validate_document doc in
+  let doc, _ = Document.apply_text_edits doc [Document.range_of_id doc s3.id,""] in
+  let (invalid, doc) = Document.validate_document doc in
   let r1,(r2,(r3,(r4,()))) = d_sentences doc (P(P(P(P(O))))) in
   (* HERE THE BUG *)
   ()
-*)
+
+let %test_unit "document: delete line" = 
+  let dm, _ = openDoc uri ~text:"Definition x:= 3. Lemma foo : x = 3. Proof. reflexitivity. Qed." in 
+  let doc = DocumentManager.Internal.document dm in 
+  let invalid, doc = Document.validate_document doc in
+  [%test_eq: sentence_id list] [] (Stateid.Set.elements invalid);
+  let s1,(s2,(s3,(s4,(s5,())))) = d_sentences doc (P(P(P(P(P(O)))))) in
+  let doc, _loc = Document.apply_text_edits doc [Document.range_of_id doc s5.id,""] in
+  let invalid, doc = Document.validate_document doc in 
+  let sentences_id = Stateid.Set.of_list (List.map (Document.sentences doc) ~f:(fun s -> s.id)) in
+  [%test_pred: sentence_id] (fun x -> not (Stateid.Set.mem x sentences_id)) s5.id;
+  ()
