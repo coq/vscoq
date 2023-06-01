@@ -158,37 +158,6 @@ let pos_at_end parsed =
   | Some (stop, _) -> stop
   | None -> -1
 
-let split_sentences loc (sentences : sentence LM.t) =
-  let (before,ov,after) = LM.split loc sentences in
-  match ov with
-  | Some v -> (before,Some (loc,v),after)
-  | None ->
-    begin match LM.min_binding_opt after with
-    | Some (stop, { start } as b) when start <= loc -> (before, Some b, LM.remove stop after)
-    | _ -> (before, None, after)
-  end
-
-let shift_sentences parsed loc offset =
-  let (before,ov,after) = split_sentences loc parsed.sentences_by_end in
-  let res =
-    match ov with
-    | None -> before
-    | Some (stop,v) when v.start >= loc ->
-      LM.add (stop + offset) { v with start = v.start + offset; stop = v.stop + offset } before
-    | Some (stop,v) ->
-      LM.add (stop + offset) { v with stop = v.stop + offset } before
-  in
-  let sentences_by_end =
-    LM.fold (fun stop (v : sentence) acc -> LM.add (stop + offset) { v with start = v.start + offset; stop = v.stop + offset } acc) after res
-  in
-  let shift_sentence (s : sentence) =
-    if s.start >= loc then { s with start = s.start + offset; stop = s.stop + offset }
-    else if s.stop >= loc then { s with stop = s.stop + offset }
-    else s
-  in
-  let sentences_by_id = SM.map shift_sentence parsed.sentences_by_id in
-  { parsed with sentences_by_end; sentences_by_id }
-
 let patch_sentence parsed scheduler_state_before id ({ ast; start; stop; synterp_state } : pre_sentence) =
   log @@ "Patching sentence " ^ Stateid.to_string id;
   let old_sentence = SM.find id parsed.sentences_by_id in
@@ -386,8 +355,7 @@ let create_document text =
     }
 
 let apply_text_edit document edit =
-  let raw_doc, start, stop, shift = RawDocument.apply_text_edit document.raw_doc edit in
-  let document = shift_sentences document stop shift in
+  let raw_doc, start = RawDocument.apply_text_edit document.raw_doc edit in
   let parsed_loc = min document.parsed_loc start in
   { document with raw_doc; parsed_loc }
 
