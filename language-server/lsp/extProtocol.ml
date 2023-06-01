@@ -174,7 +174,7 @@ module Request = struct
 
     type t = {
       textDocument : VersionedTextDocumentIdentifier.t;
-      position : Position.t;
+      position : Position.t option;
     } [@@deriving yojson]
 
   end
