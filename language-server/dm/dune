@@ -2,7 +2,7 @@
  (name dm)
  (public_name vscoq-language-server.dm)
  (modules :standard \ vscoqtop_proof_worker vscoqtop_tactic_worker)
- (libraries coq-core.sysinit coq-core.vernac coq-core.parsing sel lsp))
+ (libraries base coq-core.sysinit coq-core.vernac coq-core.parsing sel lsp))
 
 (executable
  (name vscoqtop_proof_worker)

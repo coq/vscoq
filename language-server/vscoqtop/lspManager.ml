@@ -204,9 +204,9 @@ let textDocumentDidChange params =
   in
   let text_edits = List.map mk_text_edit contentChanges in
   let st = Dm.DocumentManager.apply_text_edits st text_edits in
+  let st = Dm.DocumentManager.validate_document st in
   let (st, events) = 
     if !check_mode = Settings.Mode.Continuous then 
-      let st = Dm.DocumentManager.validate_document st in
       Dm.DocumentManager.interpret_to_end st 
     else 
       (st, [])

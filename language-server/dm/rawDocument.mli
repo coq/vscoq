@@ -28,5 +28,5 @@ val end_loc : t -> int
 val range_of_loc : t -> Loc.t -> Range.t
 val word_at_position: t -> Position.t -> string option
 
-(** Applies a text edit, and returns start, stop locations and shift *)
-val apply_text_edit : t -> text_edit -> t * int * int * int
+(** Applies a text edit, and returns start location *)
+val apply_text_edit : t -> text_edit -> t * int
