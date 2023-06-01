@@ -300,7 +300,7 @@ let coqtopInterpretToEnd params =
 let coqtopUpdateProofView ~id params =
   let Request.Client.UpdateProofViewParams.{ textDocument = { uri }; position } = params in
   let st = Hashtbl.find states (Uri.path uri) in
-  Ok(Dm.DocumentManager.get_proof st (Some position)), []
+  Ok(Dm.DocumentManager.get_proof st position), []
 
 let coqtopLocate ~id params = 
   let Request.Client.LocateParams.{ textDocument = { uri }; position; pattern } = params in
