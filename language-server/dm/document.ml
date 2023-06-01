@@ -361,7 +361,8 @@ let apply_text_edit document edit =
 
 let apply_text_edits document edits =
   let doc' = { document with raw_doc = document.raw_doc } in
-  List.fold_left apply_text_edit doc' edits, document.parsed_loc
+  let doc = List.fold_left apply_text_edit doc' edits in
+  doc, doc.parsed_loc
 
 module Internal = struct
 

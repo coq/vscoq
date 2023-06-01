@@ -184,8 +184,8 @@ let interpret_to_end st =
 let retract state loc =
   match Option.bind state.observe_id (Document.get_sentence state.document) with
   | None -> state
-  | Some { start } ->
-    if loc < start then
+  | Some { stop } ->
+    if loc < stop then
       let observe_id = Option.map (fun s -> s.Document.id) @@ Document.find_sentence_before state.document loc in
       { state with observe_id }
     else state
