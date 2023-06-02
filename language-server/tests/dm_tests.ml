@@ -90,8 +90,10 @@ let%test_unit "exec.init" =
   let st = handle_events todo st in
   let ranges = (DocumentManager.executed_ranges st).checked in
   let positions = Stdlib.List.map (fun s -> s.LspData.Range.start.character) ranges in
-  [%test_eq: int list] positions [ 0; 22 ]
-  (*check_no_diag st*)
+  [%test_eq: int list] positions [ 0 ];
+  let positions = Stdlib.List.map (fun s -> s.LspData.Range.end_.character) ranges in
+  [%test_eq: int list] positions [ 44 ];
+  check_no_diag st
 
 let%test_unit "exec.require_error" =
   let st, init_events = init "Require fuhidkgjh. Definition x := true." in

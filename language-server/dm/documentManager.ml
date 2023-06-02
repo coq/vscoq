@@ -54,8 +54,23 @@ type exec_overview = {
   legacy_highlight : Range.t list;
 }
 
+let merge_ranges doc (r1,l) r2 =
+  let loc1 = RawDocument.loc_of_position doc r1.Range.end_ in
+  let loc2 = RawDocument.loc_of_position doc r2.Range.start in
+  if RawDocument.only_whitespace_between doc (loc1+1) (loc2-1) then
+    Range.{ start = r1.Range.start; end_ = r2.Range.end_ }, l
+  else
+    r2, r1 :: l
+
+let compress_ranges doc = function
+  | [] -> []
+  | range :: tl ->
+    let r, l = List.fold_left (merge_ranges doc) (range,[]) tl in
+    r :: l
+
 let executed_ranges doc execution_state loc =
   let ranges_of l =
+    compress_ranges (Document.raw_document doc) @@
     List.sort (fun { Range.start = s1 } { Range.start = s2 } -> compare s1 s2) @@
     List.map (Document.range_of_id doc) l in
   let ids_before_loc = List.map (fun s -> s.Document.id) @@ Document.sentences_before doc loc in
