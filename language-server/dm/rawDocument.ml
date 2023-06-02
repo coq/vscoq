@@ -65,3 +65,12 @@ let apply_text_edit raw (Range.{start; end_}, editText) =
   let new_text = before ^ editText ^ after in (* FIXME avoid concatenation *)
   let new_lines = compute_lines new_text in (* FIXME compute this incrementally *)
   { text = new_text; lines = new_lines }, start
+
+let only_whitespace_between raw loc1 loc2 =
+  let res = ref true in
+  for i = loc1 to loc2 do
+    let code = Char.code raw.text.[i] in
+    if code <> 0x20 && code <> 0xD && code <> 0xA && code <> 0x9
+      then res := false
+  done;
+  !res
