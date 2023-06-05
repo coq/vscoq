@@ -142,6 +142,25 @@ let%test_unit "step_forward.delete_observe_id" =
   let st = DocumentManager.apply_text_edits st [Document.range_of_id doc s2.id,""] in 
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s1.id)) (DocumentManager.Internal.observe_id st) *)
 
+  let%test_unit "step_forward.document_begin" =
+  let st, init_events = init "(* Some comment *)\nLemma foo : x = 3." in
+  let st, (s1, ()) = dm_parse st (P O) in
+  let todo = Sel.(enqueue empty init_events) in
+  let st, events = DocumentManager.interpret_to_next st in
+  let st = handle_events todo st in 
+  [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s1.id)) (DocumentManager.Internal.observe_id st)
+
+  let%test_unit "step_backward.document_begin" =
+  let st, init_events = init "(* Some comment *)\nLemma foo : x = 3." in
+  let st, (s1, ()) = dm_parse st (P O) in
+  let todo = Sel.(enqueue empty init_events) in
+  let st, events = DocumentManager.interpret_to_next st in
+  let st = handle_events todo st in
+  let todo = Sel.(enqueue empty init_events) in
+  let st, events = DocumentManager.interpret_to_previous st in
+  let st = handle_events todo st in
+  [%test_eq: bool] (Option.is_none (DocumentManager.Internal.observe_id st)) true
+  
 (*
 let%test_unit "exec.insert" =
   let st, events = init "Definition x := true. Definition y := false." in
