@@ -168,20 +168,20 @@ let interpret_to_position st pos =
 let interpret_to_previous st =
   match st.observe_id with
   | None -> (st, [])
-  | Some id ->
-    match Document.get_sentence st.document id with
+  | Some oid ->
+    match Document.get_sentence st.document oid with
     | None -> (st, []) (* TODO error? *)
-    | Some { start} ->
+    | Some { start } ->
       match Document.find_sentence_before st.document start with
-      | None -> (st, [])
-      | Some {id } -> interpret_to st id
+      | None -> reset st
+      | Some { id } -> interpret_to st id
 
 let interpret_to_next st =
   match st.observe_id with
   | None -> 
     begin match Document.get_first_sentence st.document with
-    | None -> log ("Matched find sentence to none"); (st, []) (*The document is empty*)
-    | Some {id} -> log ("Matched oberve_id to " ^ Stateid.to_string id); interpret_to st id
+    | None -> (st, []) (*The document is empty*)
+    | Some {id} -> interpret_to st id
     end
   | Some id ->
     match Document.get_sentence st.document id with
