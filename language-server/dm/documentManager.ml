@@ -91,11 +91,11 @@ let executed_ranges doc execution_state loc =
   }
 
 let executed_ranges st =
-  match Option.bind st.observe_id (Document.get_sentence st.document) with
-  | None ->
-    let end_loc = RawDocument.end_loc @@ Document.raw_document st.document in
-    executed_ranges st.document st.execution_state end_loc
-  | Some { stop } -> executed_ranges st.document st.execution_state stop
+  let loc = match Option.bind st.observe_id (Document.get_sentence st.document) with
+  | None -> 0
+  | Some { stop } -> stop
+  in
+  executed_ranges st.document st.execution_state loc
 
 let make_diagnostic doc range oloc message severity =
   let range =
@@ -173,7 +173,9 @@ let interpret_to_previous st =
     | None -> (st, []) (* TODO error? *)
     | Some { start } ->
       match Document.find_sentence_before st.document start with
-      | None -> reset st
+      | None -> 
+        Vernacstate.unfreeze_full_state st.init_vs; 
+        { st with observe_id=None}, []
       | Some { id } -> interpret_to st id
 
 let interpret_to_next st =
