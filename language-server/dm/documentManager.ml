@@ -179,9 +179,9 @@ let interpret_to_previous st =
 let interpret_to_next st =
   match st.observe_id with
   | None -> 
-    begin match Document.find_sentence st.document 0 with
-    | None -> (st, []) (*The document is empty*)
-    | Some {id} -> interpret_to st id
+    begin match Document.get_first_sentence st.document with
+    | None -> log ("Matched find sentence to none"); (st, []) (*The document is empty*)
+    | Some {id} -> log ("Matched oberve_id to " ^ Stateid.to_string id); interpret_to st id
     end
   | Some id ->
     match Document.get_sentence st.document id with
