@@ -122,8 +122,8 @@
               1
             ],
             "enumItemLabels": [
-                "Manual",
-                "Continuous"
+              "Manual",
+              "Continuous"
             ],
             "default": 1,
             "description": "Configures the proof checking mode for Coq."
@@ -192,14 +192,14 @@
       },
       {
         "command": "vscoq.interpretToPoint",
-        "category": "Coq", 
-        "title": "Interpret file to point", 
+        "category": "Coq",
+        "title": "Interpret file to point",
         "description": "Interprets the current coq file until the given point"
       },
       {
         "command": "vscoq.interpretToEnd",
-        "category": "Coq", 
-        "title": "Interpret file to end", 
+        "category": "Coq",
+        "title": "Interpret file to end",
         "description": "Interprets the current coq file until the end"
       },
       {
@@ -213,8 +213,8 @@
         "category": "Coq"
       },
       {
-        "command": "vscoq.documentState", 
-        "title": "Get Document State", 
+        "command": "vscoq.documentState",
+        "title": "Get Document State",
         "category": "Coq"
       }
     ],
@@ -268,22 +268,22 @@
         "when": "resourceScheme==coq-view"
       },
       {
-          "key": "ctrl+alt+a",
-          "mac": "cmd+ctrl+a",
-          "command": "vscoq.aboutCursor",
-          "when": "editorTextFocus && editorLangId == coq"
+        "key": "ctrl+alt+a",
+        "mac": "cmd+ctrl+a",
+        "command": "vscoq.aboutCursor",
+        "when": "editorTextFocus && editorLangId == coq"
       },
       {
-          "key": "ctrl+alt+k",
-          "mac": "cmd+ctrl+k",
-          "command": "vscoq.searchCursor",
-          "when": "editorTextFocus && editorLangId == coq"
+        "key": "ctrl+alt+k",
+        "mac": "cmd+ctrl+k",
+        "command": "vscoq.searchCursor",
+        "when": "editorTextFocus && editorLangId == coq"
       },
       {
-          "key": "ctrl+alt+c",
-          "mac": "cmd+ctrl+c",
-          "command": "vscoq.checkCursor",
-          "when": "editorTextFocus && editorLangId == coq"
+        "key": "ctrl+alt+c",
+        "mac": "cmd+ctrl+c",
+        "command": "vscoq.checkCursor",
+        "when": "editorTextFocus && editorLangId == coq"
       },
       {
         "key": "ctrl+alt+l",
@@ -563,6 +563,7 @@
     "build:search-ui": "cd search-ui && yarn run build",
     "build:dev:search-ui": "cd search-ui && yarn run build:dev",
     "vscode:prepublish": "yarn run package",
+    "deploy": "vsce publish --yarn",
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "yarn run install:all && yarn run build:all && webpack --mode production --devtool hidden-source-map",
@@ -581,6 +582,7 @@
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
     "@vscode/test-electron": "^2.2.0",
+    "@vscode/vsce": "^2.19.0",
     "eslint": "^8.28.0",
     "expect": "^29.4.3",
     "glob": "^8.0.3",
