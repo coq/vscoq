@@ -140,6 +140,9 @@ let find_sentence_after parsed loc =
   | Some (_, sentence) -> Some sentence
   | _ -> None
 
+let get_first_sentence parsed = 
+  Option.map snd @@ LM.find_first_opt (fun _ -> true) parsed.sentences_by_end
+
 let get_last_sentence parsed = 
   Option.map snd @@ LM.find_last_opt (fun _ -> true) parsed.sentences_by_end
 
