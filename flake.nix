@@ -5,15 +5,15 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
-    mycoq = { url = "github:maximedenes/coq/master"; };
-    mycoq.inputs.nixpkgs.follows = "nixpkgs";
+    coq-master = { url = "github:coq/coq/master"; };
+    coq-master.inputs.nixpkgs.follows = "nixpkgs";
 
   };
 
-  outputs = { self, nixpkgs, flake-utils, mycoq }:
+  outputs = { self, nixpkgs, flake-utils, coq-master }:
     flake-utils.lib.eachDefaultSystem (system:
   
-   let coq = mycoq.defaultPackage.${system}; in
+   let coq = coq-master.defaultPackage.${system}; in
    rec {
 
     packages.default = self.packages.${system}.vscoq-language-server;

@@ -1,5 +1,27 @@
 {
   "nodes": {
+    "coq-master": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1686001569,
+        "narHash": "sha256-yi4IG5jMTffk75md2QmZF/kuvTR9TGYfcwYZFkO7Eek=",
+        "owner": "coq",
+        "repo": "coq",
+        "rev": "aa45e86f9abfe2e6a096e7c0a8359b1bad96588c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "coq",
+        "ref": "master",
+        "repo": "coq",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -23,48 +45,26 @@
         "systems": "systems_2"
       },
       "locked": {
-        "lastModified": 1681202837,
-        "narHash": "sha256-H+Rh19JDwRtpVPAWp64F+rlEtxUWBAQW28eAi3SRSzg=",
+        "lastModified": 1685518550,
+        "narHash": "sha256-o2d0KcvaXzTrPRIo0kOLV0/QXHhDQ5DTi+OxcjO8xqY=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "cfacdce06f30d2b68473a46042957675eebb3401",
+        "rev": "a1720a10a6cfe8234c0e93907ffe81be440f4cef",
         "type": "github"
       },
       "original": {
         "owner": "numtide",
         "repo": "flake-utils",
-        "type": "github"
-      }
-    },
-    "mycoq": {
-      "inputs": {
-        "flake-utils": "flake-utils_2",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1685124973,
-        "narHash": "sha256-IO4R3qOg/hUCQNdb2Hh/nDWYeFWfZstwLogAJZ3PXxw=",
-        "owner": "maximedenes",
-        "repo": "coq",
-        "rev": "bd5d8304a5fedc1ebf44b9addfd0f853519cc6ff",
-        "type": "github"
-      },
-      "original": {
-        "owner": "maximedenes",
-        "ref": "master",
-        "repo": "coq",
         "type": "github"
       }
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1684973047,
-        "narHash": "sha256-ZLnSr35L6C49pCZS9fZCCqkIKNAeQzykov2QfosNG9w=",
+        "lastModified": 1685938391,
+        "narHash": "sha256-96Jw6TbWDLSopt5jqCW8w1Fc1cjQyZlhfBnJ3OZGpME=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "21eb6c6ba74dcbe3ea5926ee46287300fb066630",
+        "rev": "31cd1b4afbaf0b1e81272ee9c31d1ab606503aed",
         "type": "github"
       },
       "original": {
@@ -74,8 +74,8 @@
     },
     "root": {
       "inputs": {
-        "flake-utils": "flake-utils",
-        "mycoq": "mycoq",
+        "coq-master": "coq-master",
+        "flake-utils": "flake-utils_2",
         "nixpkgs": "nixpkgs"
       }
     },
