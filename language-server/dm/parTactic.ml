@@ -96,7 +96,8 @@ let feedback_id = ref (0,Stateid.dummy)
 let set_id_for_feedback rid sid = feedback_id := (rid,sid)
 
 let interp_par ~pstate ~info ast ~abstract ~with_end_tac : Declare.Proof.t =
-  let state = Vernacstate.freeze_full_state ~marshallable:true in
+  let state = Vernacstate.freeze_full_state () in
+  let state = Vernacstate.Stm.make_shallow state in
   let queue = Queue.create () in
   let events, job_ids = List.split @@
     Declare.Proof.fold pstate ~f:(fun p ->

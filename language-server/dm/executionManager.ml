@@ -127,7 +127,7 @@ let interp_error_recovery strategy st : Vernacstate.t =
         let lemmas = snd (Vernacstate.LemmaStack.pop lemmas) in
         let program = NeList.map_head (fun _ -> pm) program in
         Vernacstate.Declare.set (lemmas,program) [@ocaml.warning "-3"];
-        let interp = Vernacstate.Interp.freeze_interp_state ~marshallable:false in
+        let interp = Vernacstate.Interp.freeze_interp_state () in
         { st with interp }
 
 (* just a wrapper around vernac interp *)

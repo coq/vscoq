@@ -23,7 +23,7 @@ let injections =
     ~init:Coqargs.default [] in
   Coqinit.init_runtime opts
 
-let init_state = Vernacstate.freeze_full_state ~marshallable:false
+let init_state = Vernacstate.freeze_full_state ()
 
 let openDoc uri ~text =
   DocumentManager.init init_state ~opts:injections uri ~text

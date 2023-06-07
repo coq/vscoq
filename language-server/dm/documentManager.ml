@@ -135,7 +135,7 @@ let init init_vs ~opts uri ~text =
   Vernacstate.unfreeze_full_state init_vs;
   let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
   Coqinit.start_library ~top opts;
-  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
+  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ()) in
   { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
 
 let reset { uri; opts; init_vs; document; execution_state } =
@@ -145,7 +145,7 @@ let reset { uri; opts; init_vs; document; execution_state } =
   let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
   Coqinit.start_library ~top opts;
   ExecutionManager.destroy execution_state;
-  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ~marshallable:false) in
+  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ()) in
   { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
 
 let interpret_to state id : (state * event Sel.event list) =
