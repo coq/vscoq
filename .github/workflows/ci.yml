@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 env:
-  PIN_COQ: 59ef6f783caf5f08ca07fece8b7ab09b3459b656
+  PIN_COQ: 51814505fdeb5bc9f11fc7bd95493f0e7397509f
 
 jobs:
   build-extension:

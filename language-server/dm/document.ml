@@ -266,7 +266,7 @@ let rec parse_more synterp_state stream raw parsed errors =
         try
           let entry = Synterp.synterp_control ast in
           let classification = Vernac_classifier.classify_vernac ast in
-          let synterp_state = Vernacstate.Synterp.freeze ~marshallable:false in
+          let synterp_state = Vernacstate.Synterp.freeze () in
           let sentence = { ast = { ast = entry; classification; tokens }; start = begin_char; stop; synterp_state } in
           let parsed = sentence :: parsed in
           parse_more synterp_state stream raw parsed errors

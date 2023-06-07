@@ -460,5 +460,5 @@ let pr_event = function
   | LogEvent _ -> Pp.str"debug"
 
 let init injections =
-  init_state := Some (Vernacstate.freeze_full_state ~marshallable:false, injections);
+  init_state := Some (Vernacstate.freeze_full_state (), injections);
   [lsp]
