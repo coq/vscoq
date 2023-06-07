@@ -58,9 +58,12 @@ val interpret_to_end : state -> (state * events)
 (** [interpret_to_end doc] navigates to the last sentence in [doc]
     and returns the resulting state. *)
 
+val interpret_in_background : state -> (state * events)
+(** [interpret_in_background doc] same as [interpret_to_end] but computation 
+    is done in background (with lower priority) *)
+
 val reset : state -> state * events
 (** resets Coq *)
-
 
 type exec_overview = {
   parsed : Range.t list;

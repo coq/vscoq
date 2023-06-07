@@ -84,9 +84,19 @@ module Notification = struct
 
     end
 
+    module ProofViewParams = struct
+
+      type t = Proof.data option
+
+      let yojson_of_t pv = yojson_of_option LspEncode.mk_proofview pv
+
+    end
+
+
     type t =
     | Std of Protocol.Notification.Server.t
     | UpdateHighlights of UpdateHighlightsParams.t
+    | ProofView of ProofViewParams.t
     | SearchResult of query_result
 
     let jsonrpc_of_t = function
@@ -95,7 +105,11 @@ module Notification = struct
       | UpdateHighlights params ->
         let method_ = "vscoq/updateHighlights" in
         let params = UpdateHighlightsParams.yojson_of_t params in
-        JsonRpc.Notification.{ method_; params }      
+        JsonRpc.Notification.{ method_; params }
+      | ProofView params -> 
+        let method_ = "vscoq/proofView" in
+        let params = ProofViewParams.yojson_of_t params in 
+        JsonRpc.Notification.{ method_; params}
       | SearchResult params ->
         let method_ = "vscoq/searchResult" in
         let params = yojson_of_query_result params in

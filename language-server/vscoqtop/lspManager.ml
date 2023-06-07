@@ -51,6 +51,7 @@ type event =
  | DocumentManagerEvent of Uri.t * Dm.DocumentManager.event
  | Notification of notification
  | LogEvent of Dm.Log.event
+ | SendProofView of Uri.t 
 
 type events = event Sel.event list
 
@@ -76,8 +77,8 @@ let lsp : event Sel.event =
 let output_json obj =
   let msg  = Yojson.Safe.pretty_to_string ~std:true obj in
   let size = String.length msg in
-  let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in
-  log @@ "sent: " ^ msg;
+  let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in(* 
+  log @@ "sent: " ^ msg; *)
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
 let output_jsonrpc jsonrpc =
@@ -176,6 +177,11 @@ let send_highlights uri doc =
   in
   output_jsonrpc @@ Notification Notification.Server.(jsonrpc_of_t notification)
 
+let send_proof_view pv =
+  log "-------------------------- sending proof view ---------------------------------------";
+  let notification = Notification.Server.ProofView pv in
+  output_jsonrpc @@ Notification Notification.Server.(jsonrpc_of_t notification)
+
 let update_view uri st =
   send_highlights uri st;
   publish_diagnostics uri st
@@ -187,7 +193,7 @@ let textDocumentDidOpen params =
   let st = Dm.DocumentManager.validate_document st in
   let (st, events') = 
     if !check_mode = Settings.Mode.Continuous then 
-      Dm.DocumentManager.interpret_to_end st 
+      Dm.DocumentManager.interpret_in_background st 
     else 
       (st, [])
   in
@@ -207,7 +213,7 @@ let textDocumentDidChange params =
   let st = Dm.DocumentManager.validate_document st in
   let (st, events) = 
     if !check_mode = Settings.Mode.Continuous then 
-      Dm.DocumentManager.interpret_to_end st 
+      Dm.DocumentManager.interpret_in_background st 
     else 
       (st, [])
   in
@@ -238,6 +244,9 @@ let progress_hook uri () =
   let st = Hashtbl.find states (Uri.path uri) in
   update_view uri st
 
+let mk_proof_view_event uri = 
+  Sel.set_priority Dm.PriorityManager.notification @@ Sel.now @@ SendProofView uri
+
 let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
@@ -246,16 +255,17 @@ let coqtopInterpretToPoint params =
   let (st, events) = Dm.DocumentManager.interpret_to_position st position in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
-  inject_dm_events (uri, events)
-
+  let sel_events = inject_dm_events (uri, events) in
+  sel_events @ [ mk_proof_view_event uri ]
+ 
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (Uri.path uri) in
   let st = Dm.DocumentManager.validate_document st in
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
   Hashtbl.replace states (Uri.path uri) st;
-  update_view uri st;
-  inject_dm_events (uri,events)
+  update_view uri st; 
+  inject_dm_events (uri,events) @ [ mk_proof_view_event uri]
 
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
@@ -264,7 +274,7 @@ let coqtopStepForward params =
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
-  inject_dm_events (uri,events)
+  inject_dm_events (uri,events) @ [ mk_proof_view_event uri]
   
  let make_CompletionItem (label, typ, path) : CompletionItem.t = 
    {
@@ -295,7 +305,7 @@ let coqtopInterpretToEnd params =
   let (st, events) = Dm.DocumentManager.interpret_to_end st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
-  inject_dm_events (uri,events)
+  inject_dm_events (uri,events) @ [ mk_proof_view_event uri]
 
 let coqtopUpdateProofView ~id params =
   let Request.Client.UpdateProofViewParams.{ textDocument = { uri }; position } = params in
@@ -373,13 +383,13 @@ let dispatch_ext_request : type a. id:int -> a Request.Client.params -> (a,strin
 
 let dispatch_notification = 
   let open Protocol.Notification.Client in function 
-  | DidOpenTextDocument params ->
+  | DidOpenTextDocument params -> log "Recieved notification: textDocument/didOpen";
     textDocumentDidOpen params
-  | DidChangeTextDocument params ->
+  | DidChangeTextDocument params -> log "Recieved notification: textDocument/didChange";
     textDocumentDidChange params
-  | DidCloseTextDocument params ->
+  | DidCloseTextDocument params ->  log "Recieved notification: textDocument/didClose";
     textDocumentDidClose params
-  | DidChangeConfiguration params ->
+  | DidChangeConfiguration params -> log "Recieved notification: workspace/didChangeConfiguration";
     workspaceDidChangeConfiguration params
   | Initialized -> []
   | Exit ->
@@ -388,10 +398,10 @@ let dispatch_notification =
 
 let dispatch_ext_notification =
   let open Notification.Client in function
-  | InterpretToPoint params -> coqtopInterpretToPoint params
-  | InterpretToEnd params -> coqtopInterpretToEnd params
-  | StepBackward params -> coqtopStepBackward params
-  | StepForward params -> coqtopStepForward params
+  | InterpretToPoint params -> log "Received notification: vscoq/interpretToPoint"; coqtopInterpretToPoint params 
+  | InterpretToEnd params -> log "Received notification: vscoq/interpretToEnd"; coqtopInterpretToEnd params
+  | StepBackward params -> log "Received notification: vscoq/stepBackward"; coqtopStepBackward params
+  | StepForward params -> log "Received notification: vscoq/stepForward"; coqtopStepForward params
   | Std notif -> dispatch_notification notif
 
 let dispatch = Request.Client.{ dispatch_std = dispatch_request; dispatch_ext = dispatch_ext_request }
@@ -448,9 +458,16 @@ let handle_event = function
       inject_dm_events (uri, events)
     end
   | Notification notification ->
-    output_notification notification; [inject_notification Dm.SearchQuery.query_feedback]
+    begin match notification with 
+    | QueryResultNotification _ -> 
+      output_notification notification; [inject_notification Dm.SearchQuery.query_feedback]
+    end
   | LogEvent e ->
     Dm.Log.handle_event e; []
+  | SendProofView uri -> 
+    let st = Hashtbl.find states (Uri.path uri) in
+    let pv = Dm.DocumentManager.get_proof st None in
+    send_proof_view pv; []
 
 let pr_event = function
   | LspManagerEvent e -> pr_lsp_event e
@@ -458,6 +475,7 @@ let pr_event = function
     Pp.str @@ Format.asprintf "%a" Dm.DocumentManager.pp_event e
   | Notification _ -> Pp.str"notif"
   | LogEvent _ -> Pp.str"debug"
+  | SendProofView _ -> Pp.str"proofview"
 
 let init injections =
   init_state := Some (Vernacstate.freeze_full_state (), injections);

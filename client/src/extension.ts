@@ -16,7 +16,7 @@ import { checkVersion } from './utilities/versioning';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { SearchCoqResult, UpdateProofViewRequest } from './protocol/types';
+import { ProofViewNotification, SearchCoqResult, UpdateProofViewRequest } from './protocol/types';
 import { 
     sendInterpretToPoint,
     sendInterpretToEnd,
@@ -127,6 +127,11 @@ export function activate(context: ExtensionContext) {
 
         client.onNotification("vscoq/searchResult", (searchResult: SearchCoqResult) => {
             searchProvider.renderSearchResult(searchResult);
+        });
+
+        client.onNotification("vscoq/proofView", (proofView: ProofViewNotification) => {
+            const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
+            GoalPanel.proofViewNotification(context.extensionUri, editor, client, proofView);
         });
 
         let goalsHook = window.onDidChangeTextEditorSelection(

@@ -27,6 +27,14 @@ interface UpdateProofViewResponseType {
 
 export type UpdateProofViewResponse = Nullable<UpdateProofViewResponseType>;
 
+interface ProofViewNotificationType {
+    goals: Goal[];
+    shelvedGoals: Goal[];
+    givenUpGoals: Goal[];
+}
+
+export type ProofViewNotification = Nullable<ProofViewNotificationType>;
+
 export interface SearchCoqRequest {
     id: string;
     textDocument: VersionedTextDocumentIdentifier;

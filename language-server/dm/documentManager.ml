@@ -148,22 +148,24 @@ let reset { uri; opts; init_vs; document; execution_state } =
   let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ()) in
   { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
 
-let interpret_to state id : (state * event Sel.event list) =
+let interpret_to ~background state id : (state * event Sel.event list) =
   match Document.get_sentence state.document id with
   | None -> (state, []) (* TODO error? *)
   | Some { id } ->
-    let state = { state with observe_id = Some id } in
+    let state = if background then state else { state with observe_id = Some id } in
     let vst_for_next_todo, todo = ExecutionManager.build_tasks_for (Document.schedule state.document) state.execution_state id in
     if CList.is_empty todo then
       (state, [])
     else
-      (state, [Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () })])
+      let event = Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () }) in
+      let event = if background then event else Sel.set_priority PriorityManager.execution event in
+      (state, [ event ])
 
 let interpret_to_position st pos =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match Document.find_sentence_before st.document loc with
   | None -> (st, []) (* document is empty *)
-  | Some { id } -> interpret_to st id
+  | Some { id } -> interpret_to ~background:false st id
 
 let interpret_to_previous st =
   match st.observe_id with
@@ -176,14 +178,14 @@ let interpret_to_previous st =
       | None -> 
         Vernacstate.unfreeze_full_state st.init_vs; 
         { st with observe_id=None}, []
-      | Some { id } -> interpret_to st id
+      | Some { id } -> interpret_to ~background:false st id
 
 let interpret_to_next st =
   match st.observe_id with
   | None -> 
     begin match Document.get_first_sentence st.document with
     | None -> (st, []) (*The document is empty*)
-    | Some {id} -> interpret_to st id
+    | Some {id} -> interpret_to ~background:false st id
     end
   | Some id ->
     match Document.get_sentence st.document id with
@@ -191,12 +193,17 @@ let interpret_to_next st =
     | Some { stop } ->
       match Document.find_sentence_after st.document (stop+1) with
       | None -> (st, [])
-      | Some {id } -> interpret_to st id
+      | Some {id } -> interpret_to ~background:false st id
 
 let interpret_to_end st =
-  match Document.get_last_sentence st.document with (* FIXME last sentence should be computed after document validation *)
+  match Document.get_last_sentence st.document with 
   | None -> (st, [])
-  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to st id
+  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to ~background:false st id
+
+let interpret_in_background st =
+  match Document.get_last_sentence st.document with 
+  | None -> (st, [])
+  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to ~background:true st id
 
 let retract state loc =
   match Option.bind state.observe_id (Document.get_sentence state.document) with
@@ -233,7 +240,7 @@ let handle_event ev st =
       ExecutionManager.execute st.execution_state (vst_for_next_todo, [], false) task in
     (* We do not update the state here because we may have received feedback while
        executing *)
-    (Some {st with execution_state}, inject_em_events events @ [Sel.now (Execute {id; vst_for_next_todo; todo; started })])
+    (Some {st with execution_state}, inject_em_events events @ [Sel.set_priority PriorityManager.execution @@ Sel.now (Execute {id; vst_for_next_todo; todo; started })])
   | ExecutionManagerEvent ev ->
     let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)

@@ -1,5 +1,5 @@
 import { Disposable, Webview, WebviewPanel, window, workspace, Uri, ViewColumn, TextEditor, Position } from "vscode";
-import { UpdateProofViewRequest, UpdateProofViewResponse, } from '../protocol/types';
+import { ProofViewNotification, UpdateProofViewRequest, UpdateProofViewResponse, } from '../protocol/types';
 import {
   RequestType,
   VersionedTextDocumentIdentifier,
@@ -133,17 +133,36 @@ export default class GoalPanel {
   }
 
   // /////////////////////////////////////////////////////////////////////////////
+  // Create the goal panel if it doesn't exit and then 
+  // handle a proofview notification
+  // /////////////////////////////////////////////////////////////////////////////
+  public static proofViewNotification(extensionUri: Uri, editor: TextEditor, client: LanguageClient, pv: ProofViewNotification) {
+     
+    this._channel.appendLine("Recieved proofview notification");
+    if(!GoalPanel.currentPanel) {
+        GoalPanel.render(editor, extensionUri, (goalPanel) => {
+            goalPanel._handleProofViewResponseOrNotification(pv);
+        });
+    }
+    else {
+        GoalPanel.currentPanel._handleProofViewResponseOrNotification(pv);
+    }
+    
+  }
+
+
+  // /////////////////////////////////////////////////////////////////////////////
   // Send a request to the server to update the current goals
   // /////////////////////////////////////////////////////////////////////////////
   private _sendProofViewRequest(client: LanguageClient, params: UpdateProofViewRequest) {
     const req = new RequestType<UpdateProofViewRequest, UpdateProofViewResponse, void>("vscoq/updateProofView");
     client.sendRequest(req, params).then(
-      (response : UpdateProofViewResponse) => this._handleProofViewResponse(response)
+      (response : UpdateProofViewResponse) => this._handleProofViewResponseOrNotification(response)
     );
   }
 
-  private _handleProofViewResponse(response: UpdateProofViewResponse) {
-    this._panel.webview.postMessage({ "command": "renderProofView", "proofView": response });    
+  private _handleProofViewResponseOrNotification(pv: UpdateProofViewResponse | ProofViewNotification) {
+    this._panel.webview.postMessage({ "command": "renderProofView", "proofView": pv });    
   };
   
   /**
