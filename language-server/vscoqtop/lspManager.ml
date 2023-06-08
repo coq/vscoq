@@ -51,7 +51,7 @@ type event =
  | DocumentManagerEvent of Uri.t * Dm.DocumentManager.event
  | Notification of notification
  | LogEvent of Dm.Log.event
- | SendProofView of Uri.t 
+ | SendProofView of Uri.t * Position.t option
 
 type events = event Sel.event list
 
@@ -244,19 +244,19 @@ let progress_hook uri () =
   let st = Hashtbl.find states (Uri.path uri) in
   update_view uri st
 
-let mk_proof_view_event uri = 
-  Sel.set_priority Dm.PriorityManager.notification @@ Sel.now @@ SendProofView uri
+let mk_proof_view_event uri position = 
+  Sel.set_priority Dm.PriorityManager.proof_view @@ Sel.now @@ SendProofView (uri, position)
 
 let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
   let st = Hashtbl.find states (Uri.path uri) in
   let st = Dm.DocumentManager.validate_document st in
-  let (st, events) = Dm.DocumentManager.interpret_to_position st position in
+  let (st, events) = Dm.DocumentManager.interpret_to_position ~stateful:(!check_mode = Settings.Mode.Manual) st position in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
   let sel_events = inject_dm_events (uri, events) in
-  sel_events @ [ mk_proof_view_event uri ]
+  sel_events @ [ mk_proof_view_event uri (Some position)]
  
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
@@ -265,7 +265,7 @@ let coqtopStepBackward params =
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st; 
-  inject_dm_events (uri,events) @ [ mk_proof_view_event uri]
+  inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
 
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
@@ -274,7 +274,7 @@ let coqtopStepForward params =
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
-  inject_dm_events (uri,events) @ [ mk_proof_view_event uri]
+  inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
   
  let make_CompletionItem (label, typ, path) : CompletionItem.t = 
    {
@@ -305,7 +305,7 @@ let coqtopInterpretToEnd params =
   let (st, events) = Dm.DocumentManager.interpret_to_end st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
-  inject_dm_events (uri,events) @ [ mk_proof_view_event uri]
+  inject_dm_events (uri,events) @ [ mk_proof_view_event uri None]
 
 let coqtopUpdateProofView ~id params =
   let Request.Client.UpdateProofViewParams.{ textDocument = { uri }; position } = params in
@@ -464,9 +464,9 @@ let handle_event = function
     end
   | LogEvent e ->
     Dm.Log.handle_event e; []
-  | SendProofView uri -> 
+  | SendProofView (uri, position) -> 
     let st = Hashtbl.find states (Uri.path uri) in
-    let pv = Dm.DocumentManager.get_proof st None in
+    let pv = Dm.DocumentManager.get_proof st position in
     send_proof_view pv; []
 
 let pr_event = function

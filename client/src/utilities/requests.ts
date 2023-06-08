@@ -17,9 +17,9 @@ export const makeExecutionUpdateProofViewRequestParams = (editor: TextEditor) =>
     return {textDocument, position} as UpdateProofViewRequest;
 };
 
-const isMouseOrKeyboardEvent = (evt: TextEditorSelectionChangeEvent) => {
+export const isMouseOrKeyboardEvent = (evt: TextEditorSelectionChangeEvent) => {
     return evt.kind === TextEditorSelectionChangeKind.Mouse || evt.kind === TextEditorSelectionChangeKind.Keyboard;
-}
+};
 
 export const makeCursorPositionUpdateProofViewRequestParams = (evt: TextEditorSelectionChangeEvent) => {
 

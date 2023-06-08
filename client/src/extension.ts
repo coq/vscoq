@@ -23,7 +23,11 @@ import {
     sendStepForward,
     sendStepBackward
 } from './manualChecking';
-import { makeCursorPositionUpdateProofViewRequestParams, makeExecutionUpdateProofViewRequestParams } from './utilities/requests';
+import { 
+    makeExecutionUpdateProofViewRequestParams,
+    makeVersionedDocumentId,
+    isMouseOrKeyboardEvent
+} from './utilities/requests';
 import { DocumentStateViewProvider } from './panels/DocumentStateViewProvider';
 import VsCoqToolchainManager from './utilities/toolchain';
 
@@ -136,9 +140,13 @@ export function activate(context: ExtensionContext) {
 
         let goalsHook = window.onDidChangeTextEditorSelection(
             (evt: TextEditorSelectionChangeEvent) => {                    
-                const reqParams = makeCursorPositionUpdateProofViewRequestParams(evt);
-                if(reqParams !== null) {
-                    GoalPanel.refreshGoalPanel(context.extensionUri, evt.textEditor, client, reqParams);
+                if (evt.textEditor.document.languageId === "coq" 
+                    && workspace.getConfiguration('vscoq.proof').mode === 1
+                    && isMouseOrKeyboardEvent(evt)) 
+                {
+                    const textDocument = makeVersionedDocumentId(evt.textEditor); 
+                    const position = evt.textEditor.selection.active;
+                    client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position});
                 }
             }
         );

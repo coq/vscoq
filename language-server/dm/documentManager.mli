@@ -42,7 +42,7 @@ val validate_document : state -> state
     text of [doc] has not changed since the last call to [validate_document], it
     has no effect. *)
 
-val interpret_to_position : state -> Position.t -> (state * events)
+val interpret_to_position : stateful:bool -> state -> Position.t -> (state * events)
 (** [interpret_to_position doc pos] navigates to the last sentence ending
     before or at [pos] and returns the resulting state. *)
 
@@ -61,6 +61,9 @@ val interpret_to_end : state -> (state * events)
 val interpret_in_background : state -> (state * events)
 (** [interpret_in_background doc] same as [interpret_to_end] but computation 
     is done in background (with lower priority) *)
+
+val get_current_position : state -> Position.t
+(** returns the current position of the last executed sentence *)
 
 val reset : state -> state * events
 (** resets Coq *)
