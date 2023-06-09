@@ -184,23 +184,6 @@ module Request = struct
 
   end
 
-  module UpdateProofViewParams = struct
-
-    type t = {
-      textDocument : VersionedTextDocumentIdentifier.t;
-      position : Position.t option;
-    } [@@deriving yojson]
-
-  end
-
-  module UpdateProofViewResult = struct
-
-    type t = Proof.data option
-
-    let yojson_of_t pv = yojson_of_option LspEncode.mk_proofview pv
-
-  end
-
   module DocumentStateParams = struct 
 
     type t = {
@@ -218,7 +201,6 @@ module Request = struct
   end
 
   type 'rsp params =
-  | UpdateProofView : UpdateProofViewParams.t -> UpdateProofViewResult.t params
   | Reset : ResetParams.t -> unit params
   | About : AboutParams.t -> string params
   | Check : CheckParams.t -> string params
@@ -234,7 +216,6 @@ module Request = struct
   let t_of_jsonrpc (JsonRpc.Request.{ id; method_; params } as req) =
     match method_ with
     | "vscoq/resetCoq" -> Ext (id, Reset ResetParams.(t_of_yojson params))
-    | "vscoq/updateProofView" -> Ext (id, UpdateProofView UpdateProofViewParams.(t_of_yojson params))
     | "vscoq/search" -> Ext (id, Search SearchParams.(t_of_yojson params))
     | "vscoq/about" -> Ext (id, About AboutParams.(t_of_yojson params))
     | "vscoq/check" -> Ext (id, Check CheckParams.(t_of_yojson params))
@@ -248,7 +229,6 @@ module Request = struct
   let yojson_of_response : type a. a params -> a -> Yojson.Safe.t =
     fun req resp ->
       match req with
-      | UpdateProofView _ -> UpdateProofViewResult.(yojson_of_t resp)
       | Reset _ -> yojson_of_unit resp
       | About _ -> yojson_of_string resp
       | Check _ -> yojson_of_string resp

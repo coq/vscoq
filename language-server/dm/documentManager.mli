@@ -43,8 +43,9 @@ val validate_document : state -> state
     has no effect. *)
 
 val interpret_to_position : stateful:bool -> state -> Position.t -> (state * events)
-(** [interpret_to_position doc pos] navigates to the last sentence ending
-    before or at [pos] and returns the resulting state. *)
+(** [interpret_to_position stateful doc pos] navigates to the last sentence ending
+    before or at [pos] and returns the resulting state. The [stateful] flag 
+    determines if we record the resulting position in the state. *)
 
 val interpret_to_previous : state -> (state * events)
 (** [interpret_to_previous doc] navigates to the previous sentence in [doc]
@@ -61,9 +62,6 @@ val interpret_to_end : state -> (state * events)
 val interpret_in_background : state -> (state * events)
 (** [interpret_in_background doc] same as [interpret_to_end] but computation 
     is done in background (with lower priority) *)
-
-val get_current_position : state -> Position.t
-(** returns the current position of the last executed sentence *)
 
 val reset : state -> state * events
 (** resets Coq *)
@@ -109,6 +107,7 @@ val print : state -> Position.t -> pattern:string -> (string, string) Result.t
 module Internal : sig
 
   val document : state -> Document.document
+  val raw_document : state -> RawDocument.t
   val execution_state : state -> ExecutionManager.state
   val string_of_state : state -> string
   val observe_id : state -> Types.sentence_id option

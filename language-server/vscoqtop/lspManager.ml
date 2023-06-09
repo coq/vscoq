@@ -77,8 +77,8 @@ let lsp : event Sel.event =
 let output_json obj =
   let msg  = Yojson.Safe.pretty_to_string ~std:true obj in
   let size = String.length msg in
-  let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in(* 
-  log @@ "sent: " ^ msg; *)
+  let s = Printf.sprintf "Content-Length: %d\r\n\r\n%s" size msg in
+  log @@ "sent: " ^ msg;
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
 let output_jsonrpc jsonrpc =
@@ -307,11 +307,6 @@ let coqtopInterpretToEnd params =
   update_view uri st;
   inject_dm_events (uri,events) @ [ mk_proof_view_event uri None]
 
-let coqtopUpdateProofView ~id params =
-  let Request.Client.UpdateProofViewParams.{ textDocument = { uri }; position } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
-  Ok(Dm.DocumentManager.get_proof st position), []
-
 let coqtopLocate ~id params = 
   let Request.Client.LocateParams.{ textDocument = { uri }; position; pattern } = params in
   let st = Hashtbl.find states (Uri.path uri) in
@@ -372,7 +367,6 @@ let dispatch_request : type a. id:int -> a Protocol.Request.Client.params -> (a,
 let dispatch_ext_request : type a. id:int -> a Request.Client.params -> (a,string) result * events =
   fun ~id req ->
   match req with
-  | UpdateProofView params -> coqtopUpdateProofView ~id params
   | Reset params -> coqtopResetCoq ~id params
   | About params -> coqtopAbout ~id params
   | Check params -> coqtopCheck ~id params

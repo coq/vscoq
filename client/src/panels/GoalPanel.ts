@@ -1,9 +1,5 @@
 import { Disposable, Webview, WebviewPanel, window, workspace, Uri, ViewColumn, TextEditor, Position } from "vscode";
-import { ProofViewNotification, UpdateProofViewRequest, UpdateProofViewResponse, } from '../protocol/types';
-import {
-  RequestType,
-  VersionedTextDocumentIdentifier,
-} from "vscode-languageclient";
+import { ProofViewNotification } from '../protocol/types';
 import { LanguageClient } from "vscode-languageclient/node";
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
@@ -115,24 +111,6 @@ export default class GoalPanel {
   }
 
   // /////////////////////////////////////////////////////////////////////////////
-  // Create the goal panel if it doesn't exit and then send request
-  // /////////////////////////////////////////////////////////////////////////////
-  public static refreshGoalPanel(extensionUri: Uri, editor: TextEditor, client: LanguageClient, reqParams: UpdateProofViewRequest) {
-     
-    this._channel.appendLine("Refreshing goal panel");
-    if(!GoalPanel.currentPanel) {
-        GoalPanel.render(editor, extensionUri, (goalPanel) => {
-            this._channel.appendLine("Sending request with position: " + reqParams.position);
-            goalPanel._sendProofViewRequest(client, reqParams);
-        });
-    }
-    else {
-        GoalPanel.currentPanel._sendProofViewRequest(client, reqParams);
-    }
-
-  }
-
-  // /////////////////////////////////////////////////////////////////////////////
   // Create the goal panel if it doesn't exit and then 
   // handle a proofview notification
   // /////////////////////////////////////////////////////////////////////////////
@@ -150,18 +128,7 @@ export default class GoalPanel {
     
   }
 
-
-  // /////////////////////////////////////////////////////////////////////////////
-  // Send a request to the server to update the current goals
-  // /////////////////////////////////////////////////////////////////////////////
-  private _sendProofViewRequest(client: LanguageClient, params: UpdateProofViewRequest) {
-    const req = new RequestType<UpdateProofViewRequest, UpdateProofViewResponse, void>("vscoq/updateProofView");
-    client.sendRequest(req, params).then(
-      (response : UpdateProofViewResponse) => this._handleProofViewResponseOrNotification(response)
-    );
-  }
-
-  private _handleProofViewResponseOrNotification(pv: UpdateProofViewResponse | ProofViewNotification) {
+  private _handleProofViewResponseOrNotification(pv: ProofViewNotification) {
     this._panel.webview.postMessage({ "command": "renderProofView", "proofView": pv });    
   };
   

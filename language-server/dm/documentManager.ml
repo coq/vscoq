@@ -166,7 +166,7 @@ let interpret_to_position ~stateful st pos =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match Document.find_sentence_before st.document loc with
   | None -> (st, []) (* document is empty *)
-  | Some { id } -> interpret_to  ~stateful ~background:false st id
+  | Some { id } -> interpret_to ~stateful ~background:false st id
 
 let interpret_to_previous st =
   match st.observe_id with
@@ -205,14 +205,6 @@ let interpret_in_background st =
   match Document.get_last_sentence st.document with 
   | None -> (st, [])
   | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to ~stateful:true ~background:true st id
-
-let get_current_position st = 
-  match st.observe_id with 
-  | None -> RawDocument.position_of_loc (Document.raw_document st.document) 0
-  | Some id -> 
-    match Document.get_sentence st.document id with
-    | None -> RawDocument.position_of_loc (Document.raw_document st.document) 0 (* TODO error? *)
-    | Some { stop } -> RawDocument.position_of_loc (Document.raw_document st.document) stop
 
 let retract state loc =
   match Option.bind state.observe_id (Document.get_sentence state.document) with
@@ -349,6 +341,9 @@ module Internal = struct
 
   let document st =
     st.document
+
+  let raw_document st = 
+    Document.raw_document st.document
 
   let execution_state st =
     st.execution_state

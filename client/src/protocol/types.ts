@@ -13,20 +13,6 @@ export interface Goal {
     goal: string;
     hypotheses: Hypothesis[];
 }
-
-export interface UpdateProofViewRequest {
-    textDocument: VersionedTextDocumentIdentifier;
-    position: Nullable<Position>;
-}
-
-interface UpdateProofViewResponseType {
-    goals: Goal[];
-    shelvedGoals: Goal[];
-    givenUpGoals: Goal[];
-}
-
-export type UpdateProofViewResponse = Nullable<UpdateProofViewResponseType>;
-
 interface ProofViewNotificationType {
     goals: Goal[];
     shelvedGoals: Goal[];

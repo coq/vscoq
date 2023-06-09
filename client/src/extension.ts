@@ -16,7 +16,7 @@ import { checkVersion } from './utilities/versioning';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { ProofViewNotification, SearchCoqResult, UpdateProofViewRequest } from './protocol/types';
+import { ProofViewNotification, SearchCoqResult } from './protocol/types';
 import { 
     sendInterpretToPoint,
     sendInterpretToEnd,
@@ -24,10 +24,9 @@ import {
     sendStepBackward
 } from './manualChecking';
 import { 
-    makeExecutionUpdateProofViewRequestParams,
     makeVersionedDocumentId,
     isMouseOrKeyboardEvent
-} from './utilities/requests';
+} from './utilities/utils';
 import { DocumentStateViewProvider } from './panels/DocumentStateViewProvider';
 import VsCoqToolchainManager from './utilities/toolchain';
 
@@ -93,10 +92,6 @@ export function activate(context: ExtensionContext) {
     registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
     registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));
     registerVscoqTextCommand('stepBackward', (editor) => sendStepBackward(editor, client));
-    registerVscoqTextCommand('displayGoals', (editor) => {
-        const reqParams = makeExecutionUpdateProofViewRequestParams(editor);
-        GoalPanel.refreshGoalPanel(context.extensionUri, editor, client, reqParams);
-    });
     registerVscoqTextCommand('documentState', async (editor) => {
             
         documentStateProvider.setDocumentUri(editor.document.uri);
@@ -144,9 +139,7 @@ export function activate(context: ExtensionContext) {
                     && workspace.getConfiguration('vscoq.proof').mode === 1
                     && isMouseOrKeyboardEvent(evt)) 
                 {
-                    const textDocument = makeVersionedDocumentId(evt.textEditor); 
-                    const position = evt.textEditor.selection.active;
-                    client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position});
+                    sendInterpretToPoint(evt.textEditor, client);
                 }
             }
         );

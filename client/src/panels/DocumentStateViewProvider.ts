@@ -6,7 +6,6 @@ import {
     EventEmitter,
     Event
 } from "vscode";
-import { UpdateProofViewRequest, UpdateProofViewResponse, } from '../protocol/types';
 import {
   RequestType,
   TextDocumentIdentifier,
