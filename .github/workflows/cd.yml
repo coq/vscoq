@@ -1,0 +1,26 @@
+on:
+  release:
+    types:
+    - created
+
+jobs:
+  build-extension:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.x
+    - name: Publish
+      if: success() && startsWith(github.ref, 'refs/tags/')
+      run: |
+        cd client
+        yarn run package
+        yarn deploy
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
