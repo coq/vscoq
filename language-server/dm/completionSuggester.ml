@@ -45,6 +45,7 @@ let get_hyps sigma goal =
     hyps
 
 let get_goal_type_option st loc =
+  DocumentManager.unfreeze_interp_state st loc;
   let proof = DocumentManager.get_proof st loc in
   Option.bind proof (fun Proof.{ goals; sigma; _ } -> 
     List.nth_opt goals 0 

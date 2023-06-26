@@ -46,6 +46,7 @@ val shift_locs : state -> int -> int -> state
 val executed_ids : state -> sentence_id list
 val is_executed : state -> sentence_id -> bool
 val is_remotely_executed : state -> sentence_id -> bool
+val unfreeze_interp_state : state -> sentence_id -> unit
 val get_proof : state -> sentence_id -> Proof.t option
 val get_proofview : state -> sentence_id -> Proof.data option
 val get_context : state -> sentence_id -> (Evd.evar_map * Environ.env) option

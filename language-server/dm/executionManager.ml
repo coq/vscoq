@@ -531,6 +531,12 @@ let rec invalidate schedule id st =
   let deps = Scheduler.dependents schedule id in
   Stateid.Set.fold (invalidate schedule) deps { st with of_sentence }
 
+let unfreeze_interp_state st id =
+  match find_fulfilled_opt id st.of_sentence with
+  | Some (Success (Some { interp = st })) when Option.has_some st.lemmas ->
+    Vernacstate.Interp.unfreeze_interp_state st
+  | _ -> log "Cannot unfreeze state"
+
 let get_proof st id =
   match find_fulfilled_opt id st.of_sentence with
   | None -> log "Cannot find state for proof"; None

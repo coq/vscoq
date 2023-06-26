@@ -81,6 +81,8 @@ val diagnostics : state -> Diagnostic.t list
 (** diagnostics [doc] returns the diagnostics corresponding to the sentences
     that have been executed in [doc]. *)
 
+val unfreeze_interp_state : state -> Position.t option -> unit
+
 val get_proof : state -> Position.t option -> Proof.data option
 
 val get_lemmas : state -> Position.t -> completion_item list option
