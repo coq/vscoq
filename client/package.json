@@ -151,6 +151,19 @@
             "description": "Amount of workers assigned to proofs in delegation mode"
           }
         }
+      },
+      {
+        "title": "Code Completion",
+        "type": "object",
+        "properties": {
+          "vscoq.completion.unificationLimit": {
+            "scope": "window",
+            "type": "number",
+            "default": 100,
+            "minimum": 0,
+            "description": "Sets the limit for, how many theorems unification is attempted for when attempting code completion for the application of theorems. This detemines which theorems can be marked as applicable. The higher the limit, the better results will be, but the slower code completion will be."
+          }
+        }
       }
     ],
     "commands": [
@@ -218,7 +231,7 @@
         "category": "Coq"
       }
     ],
-    "keybindings":[
+    "keybindings": [
       {
         "key": "alt+down",
         "mac": "ctrl+alt+down",
