@@ -39,7 +39,7 @@ jobs:
         (lang dune 3.2)
         (display short)
         EOF
-    - uses: cachix/install-nix-action@v18
+    - uses: cachix/install-nix-action@v22
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - run: nix develop .#vscoq-language-server -c bash -c "cd language-server && dune build"
