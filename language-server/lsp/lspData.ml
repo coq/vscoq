@@ -281,50 +281,17 @@ end
 module RankingAlgoritm = struct
 
   type t = 
-  | Basic
-  | Shuffle
-  | SimpleTypeIntersection
   | SplitTypeIntersection
-  | StructuredTypeEvaluation
-  | StructuredUnification
   | StructuredSplitUnification
-  | SimpleUnification
-  | SimpleSplitUnification
-  | SplitTypeUnification
-  | SplitTypeSplitUnification
-  | ShuffleUnification
-  | ShuffleSplitUnification
   
 
-  let yojson_of_t = function
-  | Basic -> `Int 0
-  | Shuffle -> `Int 1
-  | SimpleTypeIntersection -> `Int 2
-  | SplitTypeIntersection -> `Int 3
-  | StructuredTypeEvaluation -> `Int 4
-  | StructuredUnification -> `Int 5
-  | StructuredSplitUnification -> `Int 6
-  | SimpleUnification -> `Int 7
-  | SimpleSplitUnification -> `Int 8
-  | SplitTypeUnification -> `Int 9
-  | SplitTypeSplitUnification -> `Int 10
-  | ShuffleUnification -> `Int 11
-  | ShuffleSplitUnification -> `Int 12
+  let yojson_of_t = function  
+  | SplitTypeIntersection -> `Int 0
+  | StructuredSplitUnification -> `Int 1
 
   let t_of_yojson = function
-  | `Int 0 -> Basic
-  | `Int 1 -> Shuffle
-  | `Int 2 -> SimpleTypeIntersection
-  | `Int 3 -> SplitTypeIntersection
-  | `Int 4 -> StructuredTypeEvaluation
-  | `Int 5 -> StructuredUnification
-  | `Int 6 -> StructuredSplitUnification
-  | `Int 7 -> SimpleUnification
-  | `Int 8 -> SimpleSplitUnification
-  | `Int 9 -> SplitTypeUnification
-  | `Int 10 -> SplitTypeSplitUnification
-  | `Int 11 -> ShuffleUnification
-  | `Int 12 -> ShuffleSplitUnification
+  | `Int 0 -> SplitTypeIntersection
+  | `Int 1 -> StructuredSplitUnification
   | _ -> Yojson.json_error @@ "invalid value "
 
 end
