@@ -276,19 +276,27 @@ let coqtopStepForward params =
   update_view uri st;
   inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
   
- let make_CompletionItem (label, typ, path) : CompletionItem.t = 
-   {
-     label;
-     detail = Some typ;
-     documentation = Some ("Path: " ^ path);
-   } 
+  let make_CompletionItem i (label, insertText, typ, path) : CompletionItem.t = 
+    {
+      label;
+      insertText = Some insertText;
+      detail = Some typ;
+      documentation = Some ("Path: " ^ path);
+      sortText = Some (Printf.sprintf "%5d" i);
+      filterText = (if label == insertText then None else Some (insertText));
+    } 
 
- let textDocumentCompletion ~id params =
-   let Request.Client.CompletionParams.{ textDocument = { uri }; position } = params in
-   let st = Hashtbl.find states (Uri.path uri) in
-   let completionItems = Dm.CompletionSuggester.get_completion_items st position in
-   let items = List.map make_CompletionItem completionItems in
-   Ok Request.Client.CompletionResult.{isIncomplete = false; items = items;}, []
+
+let textDocumentCompletion ~id params =
+  let Request.Client.CompletionParams.{ textDocument = { uri }; position } = params in
+  let st = Hashtbl.find states (Uri.path uri) in
+  match Dm.CompletionSuggester.get_completion_items st position RankingAlgoritm.StructuredSplitUnification (5., 5.) with
+  | Ok completionItems -> 
+    let items = List.mapi make_CompletionItem completionItems in
+    Ok Request.Client.CompletionResult.{isIncomplete = false; items = items;}, []
+  | Error e -> 
+    let message = e in
+    Error(message), []
 
 let coqtopResetCoq ~id params =
   let Request.Client.ResetParams.{ uri } = params in
