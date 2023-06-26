@@ -16,14 +16,17 @@ import { checkVersion } from './utilities/versioning';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { SearchCoqResult, UpdateProofViewRequest } from './protocol/types';
+import { ProofViewNotification, SearchCoqResult } from './protocol/types';
 import { 
     sendInterpretToPoint,
     sendInterpretToEnd,
     sendStepForward,
     sendStepBackward
 } from './manualChecking';
-import { makeCursorPositionUpdateProofViewRequestParams, makeExecutionUpdateProofViewRequestParams } from './utilities/requests';
+import { 
+    makeVersionedDocumentId,
+    isMouseOrKeyboardEvent
+} from './utilities/utils';
 import { DocumentStateViewProvider } from './panels/DocumentStateViewProvider';
 import VsCoqToolchainManager from './utilities/toolchain';
 
@@ -89,10 +92,6 @@ export function activate(context: ExtensionContext) {
     registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
     registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));
     registerVscoqTextCommand('stepBackward', (editor) => sendStepBackward(editor, client));
-    registerVscoqTextCommand('displayGoals', (editor) => {
-        const reqParams = makeExecutionUpdateProofViewRequestParams(editor);
-        GoalPanel.refreshGoalPanel(context.extensionUri, editor, client, reqParams);
-    });
     registerVscoqTextCommand('documentState', async (editor) => {
             
         documentStateProvider.setDocumentUri(editor.document.uri);
@@ -129,11 +128,18 @@ export function activate(context: ExtensionContext) {
             searchProvider.renderSearchResult(searchResult);
         });
 
+        client.onNotification("vscoq/proofView", (proofView: ProofViewNotification) => {
+            const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
+            GoalPanel.proofViewNotification(context.extensionUri, editor, client, proofView);
+        });
+
         let goalsHook = window.onDidChangeTextEditorSelection(
             (evt: TextEditorSelectionChangeEvent) => {                    
-                const reqParams = makeCursorPositionUpdateProofViewRequestParams(evt);
-                if(reqParams !== null) {
-                    GoalPanel.refreshGoalPanel(context.extensionUri, evt.textEditor, client, reqParams);
+                if (evt.textEditor.document.languageId === "coq" 
+                    && workspace.getConfiguration('vscoq.proof').mode === 1
+                    && isMouseOrKeyboardEvent(evt)) 
+                {
+                    sendInterpretToPoint(evt.textEditor, client);
                 }
             }
         );

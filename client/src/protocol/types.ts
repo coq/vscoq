@@ -13,19 +13,13 @@ export interface Goal {
     goal: string;
     hypotheses: Hypothesis[];
 }
-
-export interface UpdateProofViewRequest {
-    textDocument: VersionedTextDocumentIdentifier;
-    position: Nullable<Position>;
-}
-
-interface UpdateProofViewResponseType {
+interface ProofViewNotificationType {
     goals: Goal[];
     shelvedGoals: Goal[];
     givenUpGoals: Goal[];
 }
 
-export type UpdateProofViewResponse = Nullable<UpdateProofViewResponseType>;
+export type ProofViewNotification = Nullable<ProofViewNotificationType>;
 
 export interface SearchCoqRequest {
     id: string;

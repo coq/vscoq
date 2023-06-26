@@ -11,7 +11,7 @@ import {
 import GoalPanel from './panels/GoalPanel';
 
 import Client from './client';
-import { makeVersionedDocumentId } from './utilities/requests';
+import { makeVersionedDocumentId } from './utilities/utils';
 
 export const sendInterpretToPoint = (editor: TextEditor,  client: Client) => {
     const textDocument = makeVersionedDocumentId(editor);
