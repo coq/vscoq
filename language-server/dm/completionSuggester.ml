@@ -73,7 +73,7 @@ let type_size sigma t : int =
   in
   aux t
 
-module SimpleAtomics = struct
+module Split = struct
   let atomic_types sigma t: Atomics.t = 
     let rec aux t : types list = 
       match (type_kind_opt sigma t) with
@@ -97,44 +97,34 @@ module SimpleAtomics = struct
       (* Return the set with largest overlap, so we sort in increasing order swap the arguments *)
       compare (Atomics.cardinal r2) (Atomics.cardinal r1)
 
-  let rank (goal : Evd.econstr) sigma _ lemmas : CompletionItems.completion_item list =
-    let lemmaAtomics = List.map (fun (l : CompletionItems.completion_item) -> 
-      (atomic_types sigma (of_constr l.typ), l)
-    ) lemmas in
-    let goalAtomics = atomic_types sigma goal in
-    List.stable_sort (compare_atomics goalAtomics) lemmaAtomics |> 
-    List.map snd 
-end 
-
-module Split = struct
   let split_types sigma c =
     let (list, other_c) = decompose_prod sigma c in 
     list 
     |> List.map snd
     |> List.cons other_c
-    |> List.map (fun typ -> SimpleAtomics.atomic_types sigma typ)
+    |> List.map (fun typ -> atomic_types sigma typ)
     |> List.fold_left (fun (acc, result) item -> (Atomics.union acc item, Atomics.union acc item :: result)) (Atomics.empty, [])
     |> snd
 
   let best_subtype sigma goal c = 
-    c |> split_types sigma |> List.map (fun a -> (a, a)) |> List.stable_sort (SimpleAtomics.compare_atomics goal) |> List.hd |> fst
+    c |> split_types sigma |> List.map (fun a -> (a, a)) |> List.stable_sort (compare_atomics goal) |> List.hd |> fst
 
   let rank (goal : Evd.econstr) sigma _ (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
     (*Split type intersection: Split the lemmas by implications, compare the suffix to the goal, pick best match*)
-    let goal = SimpleAtomics.atomic_types sigma goal in
+    let goal = atomic_types sigma goal in
     let lemmaTypes = List.map (fun (l : CompletionItems.completion_item) -> 
       let best = best_subtype sigma goal (of_constr l.typ) in
       (best, l)
     ) lemmas in
-    List.stable_sort (SimpleAtomics.compare_atomics goal) lemmaTypes |> 
+    List.stable_sort (compare_atomics goal) lemmaTypes |> 
     List.map snd
 end
 
-type rev_bruijn_index = int
+type bruijn_level = int
 
 module Structured = struct
   type unifier = 
-    | SortUniType of ESorts.t * rev_bruijn_index
+    | SortUniType of ESorts.t * bruijn_level
     | AtomicUniType of types * unifier array
 
   let _print_unifier env sigma u =
@@ -193,10 +183,8 @@ module Structured = struct
     in
     aux 0 u
 
-
-
-  (* map from rev_bruijn_index to unifier *)
-  module UM = Map.Make(struct type t = rev_bruijn_index let compare = compare end)
+  (* map from bruijn_level to unifier *)
+  module UM = Map.Make(struct type t = bruijn_level let compare = compare end)
 
   (* This is extremely slow, we should not convert it to a list. *)
   let filter_options a = 
@@ -366,41 +354,6 @@ module Structured = struct
       *)
       List.map snd sorted
 end
-
-module SelectiveUnification = struct
-  let realRank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
-    let goal_size = type_size sigma goal in
-    let aux (lemma : CompletionItems.completion_item) =
-      if type_size sigma (of_constr lemma.typ) + goal_size > 500 then (lemma, 1)
-      else
-        try
-          let flags = Evarconv.default_flags_of TransparentState.full in
-          let res = Evarconv.evar_conv_x flags env sigma Conversion.CONV goal (of_constr lemma.typ) in
-          match res with 
-          | Success _ ->
-            ({lemma with completes = Some Fully}, 0)
-          | UnifFailure _ ->
-            (lemma, 1)
-        with e ->
-          Printf.eprintf "Error in Unification: %s for %s\n%!" (Printexc.to_string e) (Pp.string_of_ppcmds (pr_global lemma.ref));
-          (lemma, 1)
-     in
-      lemmas
-    |> List.map aux
-    |> List.stable_sort (fun a b -> compare (snd a) (snd b))
-    |> List.map fst
-  
-  let selectiveRank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
-    try 
-      let take, skip = takeSkip 100 lemmas in
-      List.append (realRank goal sigma env take) skip
-    with e ->
-      Printf.eprintf "Error in Unification: %s\n%!" (Printexc.to_string e);
-      lemmas
-
-  let rank = selectiveRank
-end
-
 module SelectiveSplitUnification = struct
   let realRank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
     let goal_size = type_size sigma goal in
@@ -441,28 +394,11 @@ module SelectiveSplitUnification = struct
   let rank = selectiveRank
 end
 
-let shuffle d =
-  let nd = List.map (fun c -> (Random.bits (), c)) d in
-  let sond = List.sort compare nd in
-  List.map snd sond
-
 let rank_choices algorithm algorithm_factor (goal, goal_evar) sigma env lemmas = 
   let open Lsp.LspData.RankingAlgoritm in
   match algorithm with
-  | SimpleTypeIntersection -> SimpleAtomics.rank goal sigma env lemmas
   | SplitTypeIntersection -> Split.rank goal sigma env lemmas
-  | StructuredTypeEvaluation -> Structured.rank true algorithm_factor (goal, goal_evar) sigma env lemmas
-  | StructuredUnification -> SelectiveUnification.rank goal sigma env (Structured.rank true algorithm_factor (goal, goal_evar) sigma env lemmas)
   | StructuredSplitUnification -> SelectiveSplitUnification.rank goal sigma env (Structured.rank true algorithm_factor (goal, goal_evar) sigma env lemmas)
-  | SimpleUnification -> SelectiveUnification.rank goal sigma env (SimpleAtomics.rank goal sigma env lemmas)
-  | SimpleSplitUnification -> SelectiveSplitUnification.rank goal sigma env (SimpleAtomics.rank goal sigma env lemmas)
-  | SplitTypeUnification -> SelectiveUnification.rank goal sigma env (Split.rank goal sigma env lemmas)
-  | SplitTypeSplitUnification -> SelectiveSplitUnification.rank goal sigma env (Split.rank goal sigma env lemmas)
-  | Shuffle -> shuffle lemmas
-  | ShuffleUnification -> SelectiveUnification.rank goal sigma env (shuffle lemmas)
-  | ShuffleSplitUnification -> SelectiveSplitUnification.rank goal sigma env (shuffle lemmas)
-  | Basic -> lemmas
-
 
 let get_completion_items st loc algorithm algorithm_factor =
   try 
