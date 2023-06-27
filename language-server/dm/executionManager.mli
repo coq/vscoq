@@ -27,7 +27,10 @@ type delegation_mode =
 type options = {
   delegation_mode : delegation_mode;
   completion_options : Lsp.LspData.Settings.Completion.t;
+  enableDiagnostics : bool;
 }
+
+val is_diagnostics_enabled: unit -> bool
 
 (** Execution state, includes the cache *)
 type state

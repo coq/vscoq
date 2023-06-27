@@ -42,13 +42,17 @@ type delegation_mode =
 type options = {
   delegation_mode : delegation_mode;
   completion_options : Lsp.LspData.Settings.Completion.t;
+  enableDiagnostics : bool
 }
-let default_options = { 
-  delegation_mode = CheckProofsInMaster; 
+let default_options = {
+  delegation_mode = CheckProofsInMaster;
   completion_options = {
-    algorithm = StructuredSplitUnification; 
-    unificationLimit = 100
-  }
+    algorithm = StructuredSplitUnification;
+    unificationLimit = 100;
+    atomicFactor = 5.;
+    sizeFactor = 5.
+  };
+  enableDiagnostics = true;
 }
 
 let doc_id = ref (-1)
@@ -73,6 +77,7 @@ let options = ref default_options
 
 let set_options o = options := o
 let set_default_options () = options := default_options
+let is_diagnostics_enabled () = !options.enableDiagnostics
 
 type prepared_task =
   | PSkip of sentence_id
