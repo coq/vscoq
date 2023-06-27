@@ -248,16 +248,6 @@ let handle_event ev st =
     let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
 
-let unfreeze_interp_state st pos =
-  let id_of_pos pos =
-    let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-    match Document.find_sentence_before st.document loc with
-    | None -> None
-    | Some { id } -> Some id
-  in
-  let oid = Option.cata id_of_pos st.observe_id pos in
-  Option.iter (ExecutionManager.unfreeze_interp_state st.execution_state) oid
-
 let get_proof st pos =
   let id_of_pos pos =
     let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
