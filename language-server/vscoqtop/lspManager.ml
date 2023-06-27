@@ -110,7 +110,7 @@ let do_configuration settings =
     | Skip     -> SkipProofs
     | Delegate -> DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers }
   in
-  Dm.ExecutionManager.set_options { delegation_mode; completion_options = { algorithm = LspData.Settings.Completion.RankingAlgoritm.StructuredSplitUnification }};
+  Dm.ExecutionManager.set_options { delegation_mode; completion_options = settings.completion};
   check_mode := settings.proof.mode
 
 let send_configuration_request () =

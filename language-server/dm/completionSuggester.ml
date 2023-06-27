@@ -278,7 +278,7 @@ module Structured = struct
         aux (Array.to_list ua1) (Array.to_list ua2)
       else false
   
-  let score_unifier use_um atomic_factor evd (goal : unifier) (u : unifier) : float =
+  let score_unifier atomic_factor evd (goal : unifier) (u : unifier) : float =
     let rec aux (um : unifier UM.t) g u  : (float * unifier UM.t) = 
     match (g, u) with
       | SortUniType (s1, _), SortUniType (s2, _) -> if ESorts.equal evd s1 s2 then (1., um) else (0., um)
@@ -288,7 +288,7 @@ module Structured = struct
         if UM.mem i um then 
           let u = UM.find i um in
           matches evd u (SortUniType (s, i)) |> Bool.to_float |> fun x -> (x, um)
-        else (1., if use_um then UM.add i u um else um)
+        else (1., UM.add i u um)
       | AtomicUniType (t1, ua1), AtomicUniType (t2, ua2) -> 
         let c = EConstr.compare_constr evd (EConstr.eq_constr evd) t1 t2 |> Bool.to_float |> (Float.mul atomic_factor) in
         let c = 
@@ -325,7 +325,9 @@ module Structured = struct
 
   (* A Lower score is better as we are sorting in ascending order *)
 
-  let rank use_um (size_impact, atomic_factor) (goal, goal_evar) sigma _ lemmas : CompletionItems.completion_item list =
+  let rank (_options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) sigma _ lemmas : CompletionItems.completion_item list =
+    let size_impact = 5.0 in
+    let atomic_factor = 5.0 in
     let finalScore score size = Float.sub size (Float.mul score size_impact) in
     let hyps = get_hyps sigma goal_evar in
     match (unifier_kind sigma hyps goal, unifier_kind sigma HypothesisMap.empty goal) with
@@ -339,8 +341,8 @@ module Structured = struct
         match (unifier_kind sigma HypothesisMap.empty (of_constr l.typ)) with
         | None -> ((Float.min_float), l)
         | Some unf -> 
-          let scores = List.map (score_unifier use_um atomic_factor sigma goalUnf) (unpack_unifier unf) in
-          let scores = scores @ (List.map (score_unifier use_um atomic_factor sigma goalUnfNoHypothesisSub) (unpack_unifier unf)) in
+          let scores = List.map (score_unifier atomic_factor sigma goalUnf) (unpack_unifier unf) in
+          let scores = scores @ (List.map (score_unifier atomic_factor sigma goalUnfNoHypothesisSub) (unpack_unifier unf)) in
           let size = size_unifier unf |> Int32.to_float in
           let maxScore = List.fold_left Float.max 0. scores in
           let final = finalScore maxScore size in
@@ -384,9 +386,9 @@ module SelectiveSplitUnification = struct
     |> List.stable_sort (fun a b -> compare (snd a) (snd b))
     |> List.map fst
 
-  let selectiveRank (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+  let selectiveRank (options: Lsp.LspData.Settings.Completion.t) (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
     try 
-      let take, skip = takeSkip 100 lemmas in
+      let take, skip = takeSkip options.unificationLimit lemmas in
       List.append (realRank goal sigma env take) skip
     with e ->
       log ("Error in Split Unification: %s" ^ (Printexc.to_string e));
@@ -399,7 +401,7 @@ let rank_choices (options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) 
   let open Lsp.LspData.Settings.Completion.RankingAlgoritm in
   match options.algorithm with
   | SplitTypeIntersection -> Split.rank goal sigma env lemmas
-  | StructuredSplitUnification -> SelectiveSplitUnification.rank goal sigma env (Structured.rank true (5.0, 5.0) (goal, goal_evar) sigma env lemmas)
+  | StructuredSplitUnification -> SelectiveSplitUnification.rank options goal sigma env (Structured.rank options (goal, goal_evar) sigma env lemmas)
 
 let get_completion_items proof lemmas options =
   try 

@@ -265,13 +265,14 @@ module Settings = struct
 
     type t = {
       algorithm: RankingAlgoritm.t;
+      unificationLimit: int;
     } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
   end
 
   type t = {
     proof: Proof.t;
-    algorithm: Completion.t;
+    completion: Completion.t;
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end
