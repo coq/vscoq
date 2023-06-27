@@ -2,6 +2,9 @@ module CompactedDecl = Context.Compacted.Declaration
 open Printer
 open EConstr
 open Names
+open Types
+
+let Log log = Log.mk_log "completionSuggester"
 
 module TypeCompare = struct
   type t = types
@@ -44,9 +47,7 @@ let get_hyps sigma goal =
         (Termops.compact_named_context sigma (EConstr.named_context env)) ~init:(min_env, HypothesisMap.empty) in
     hyps
 
-let get_goal_type_option st loc =
-  DocumentManager.unfreeze_interp_state st loc;
-  let proof = DocumentManager.get_proof st loc in
+let get_goal_type_option proof =
   Option.bind proof (fun Proof.{ goals; sigma; _ } -> 
     List.nth_opt goals 0 
     |> Option.map (fun goal ->
@@ -375,7 +376,7 @@ module SelectiveSplitUnification = struct
       try 
         aux 0 (of_constr lemma.typ)
       with e ->
-        Printf.eprintf "Error in Split Unification: %s for %s\n%!" (Printexc.to_string e) (Pp.string_of_ppcmds (pr_global lemma.ref));
+        Printf.sprintf "Error in Split Unification: %s for %s\n%!" (Printexc.to_string e) (Pp.string_of_ppcmds (pr_global lemma.ref)) |> log;
         (lemma, 1000)
      in
     lemmas
@@ -388,31 +389,24 @@ module SelectiveSplitUnification = struct
       let take, skip = takeSkip 100 lemmas in
       List.append (realRank goal sigma env take) skip
     with e ->
-      Printf.eprintf "Error in Split Unification: %s\n%!" (Printexc.to_string e);
+      log ("Error in Split Unification: %s" ^ (Printexc.to_string e));
       lemmas
 
   let rank = selectiveRank
 end
 
-let rank_choices algorithm algorithm_factor (goal, goal_evar) sigma env lemmas = 
-  let open Lsp.LspData.RankingAlgoritm in
-  match algorithm with
+let rank_choices (options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) sigma env lemmas = 
+  let open Lsp.LspData.Settings.Completion.RankingAlgoritm in
+  match options.algorithm with
   | SplitTypeIntersection -> Split.rank goal sigma env lemmas
-  | StructuredSplitUnification -> SelectiveSplitUnification.rank goal sigma env (Structured.rank true algorithm_factor (goal, goal_evar) sigma env lemmas)
+  | StructuredSplitUnification -> SelectiveSplitUnification.rank goal sigma env (Structured.rank true (5.0, 5.0) (goal, goal_evar) sigma env lemmas)
 
-let get_completion_items st loc algorithm algorithm_factor =
+let get_completion_items proof lemmas options =
   try 
-    match get_goal_type_option st (Some loc), DocumentManager.get_lemmas st loc with
-    | None, _ -> Error ("Error in creating completion items because GOAL could not be found")
-    | _ , None -> Error ("Error in creating completion items because LEMMAS could not be found")
-    | Some (goal, sigma, env, goal_evar), Some lemmas ->
-      let lemmas = try
-        rank_choices algorithm algorithm_factor (goal, goal_evar) sigma env lemmas
-      with e ->
-        Printf.eprintf "Ranking of lemmas failed: %s" (Printexc.to_string e);
-        lemmas
-      in
-      List.map (CompletionItems.pp_completion_item) lemmas |> Result.ok
+    match get_goal_type_option proof with
+    | None -> lemmas
+    | Some (goal, sigma, env, goal_evar) ->
+        rank_choices options (goal, goal_evar) sigma env lemmas
   with e -> 
-    Printf.eprintf "Error in creating completion items: %s" (Printexc.to_string e);
-    Error ("Error in creating completion items: " ^ (Printexc.to_string e))
+    log ("Ranking of lemmas failed: " ^ (Printexc.to_string e));
+    lemmas

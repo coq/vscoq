@@ -85,7 +85,7 @@ val unfreeze_interp_state : state -> Position.t option -> unit
 
 val get_proof : state -> Position.t option -> Proof.data option
 
-val get_lemmas : state -> Position.t -> completion_item list option
+val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 
 val handle_event : event -> state -> (state option * events)
 (** handles events and returns a new state if it was updated *)
