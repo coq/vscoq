@@ -41,8 +41,9 @@ type delegation_mode =
 
 type options = {
   delegation_mode : delegation_mode;
+  completion_options : Lsp.LspData.Settings.Completion.t;
 }
-let default_options = { delegation_mode = CheckProofsInMaster }
+let default_options = { delegation_mode = CheckProofsInMaster; completion_options = {algorithm = StructuredSplitUnification}}
 
 let doc_id = ref (-1)
 let fresh_doc_id () = incr doc_id; !doc_id
@@ -574,6 +575,15 @@ let get_context st id =
     let env = Global.env () in
     let sigma = Evd.from_env env in
     Some (sigma, env)
+
+let get_completions st pos =
+  unfreeze_interp_state st pos;
+  let proof = get_proofview st pos in
+  match get_context st pos with
+  | None -> None
+  | Some (sigma, env) -> 
+    let lemmas = get_lemmas sigma env in
+    Some (CompletionSuggester.get_completion_items proof lemmas !options.completion_options)
 
 module ProofWorkerProcess = struct
   type options = ProofWorker.options

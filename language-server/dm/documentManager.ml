@@ -265,11 +265,14 @@ let get_context st pos =
   | Some sentence ->
     ExecutionManager.get_context st.execution_state sentence.id
 
-let get_lemmas st pos =
-  match get_context st pos with
-  | None -> None
-  | Some (sigma, env) -> 
-    Some (ExecutionManager.get_lemmas sigma env)
+let get_completions st pos =
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
+  match Document.find_sentence_before st.document loc with
+  | None -> Error ("Can't get completions, no sentence found before the cursor")
+  | Some sentence ->
+    match ExecutionManager.get_completions st.execution_state sentence.id with
+    | None -> Error ("Can't get completions, no sentence found before the cursor")
+    | Some lemmas -> Ok (lemmas)
 
 let parse_entry st pos entry pattern =
   let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in

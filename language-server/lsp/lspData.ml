@@ -244,8 +244,34 @@ module Settings = struct
 
   end
 
+  module Completion = struct
+    
+    module RankingAlgoritm = struct
+
+      type t = 
+      | SplitTypeIntersection
+      | StructuredSplitUnification
+    
+      let yojson_of_t = function  
+      | SplitTypeIntersection -> `Int 0
+      | StructuredSplitUnification -> `Int 1
+    
+      let t_of_yojson = function
+      | `Int 0 -> SplitTypeIntersection
+      | `Int 1 -> StructuredSplitUnification
+      | _ -> Yojson.json_error @@ "invalid value "
+    
+    end
+
+    type t = {
+      algorithm: RankingAlgoritm.t;
+    } [@@deriving yojson] [@@yojson.allow_extra_fields]
+
+  end
+
   type t = {
     proof: Proof.t;
+    algorithm: Completion.t;
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end
@@ -275,24 +301,6 @@ module VersionedTextDocumentIdentifier = struct
     uri: Uri.t;
     version: int;
   } [@@deriving yojson]
-
-end
-
-module RankingAlgoritm = struct
-
-  type t = 
-  | SplitTypeIntersection
-  | StructuredSplitUnification
-  
-
-  let yojson_of_t = function  
-  | SplitTypeIntersection -> `Int 0
-  | StructuredSplitUnification -> `Int 1
-
-  let t_of_yojson = function
-  | `Int 0 -> SplitTypeIntersection
-  | `Int 1 -> StructuredSplitUnification
-  | _ -> Yojson.json_error @@ "invalid value "
 
 end
 
