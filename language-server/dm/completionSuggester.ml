@@ -325,9 +325,9 @@ module Structured = struct
 
   (* A Lower score is better as we are sorting in ascending order *)
 
-  let rank (_options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) sigma _ lemmas : CompletionItems.completion_item list =
-    let size_impact = 5.0 in
-    let atomic_factor = 5.0 in
+  let rank (options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) sigma _ lemmas : CompletionItems.completion_item list =
+    let size_impact = options.sizeFactor in
+    let atomic_factor = options.atomicFactor in
     let finalScore score size = Float.sub size (Float.mul score size_impact) in
     let hyps = get_hyps sigma goal_evar in
     match (unifier_kind sigma hyps goal, unifier_kind sigma HypothesisMap.empty goal) with

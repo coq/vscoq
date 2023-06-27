@@ -266,6 +266,8 @@ module Settings = struct
     type t = {
       algorithm: RankingAlgoritm.t;
       unificationLimit: int;
+      atomicFactor: float [@default 5.]; (** Controls how highly specific types are prioritised over generics *)
+      sizeFactor: float [@default 5.]; (** Controls how highly small types are prioritised over larger ones *)
     } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
   end
@@ -273,6 +275,7 @@ module Settings = struct
   type t = {
     proof: Proof.t;
     completion: Completion.t;
+    enableDiagnostics: bool [@default true]; (** Sets whether diagnostics like errors and highlighting are sent to the client at all. *)
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end

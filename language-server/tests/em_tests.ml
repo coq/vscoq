@@ -23,7 +23,7 @@ let uri = Uri.make ~scheme:"file" ~path:"foo" ()
 let init text = openDoc uri ~text
 
 let set_delegation_mode mode =
-  ExecutionManager.(set_options { delegation_mode = mode; completion_options = { unificationLimit = 100; algorithm = StructuredSplitUnification} })
+  ExecutionManager.(set_options { delegation_mode = mode; completion_options = { unificationLimit = 100; algorithm = StructuredSplitUnification; atomicFactor = 5.; sizeFactor = 5. }; enableDiagnostics = true })
 
 let%test_unit "exec: finished proof" =
   let st, init_events = init "Lemma x : True. trivial. Qed. Check x." in

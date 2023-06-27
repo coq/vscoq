@@ -111,7 +111,11 @@ let do_configuration settings =
     | Skip     -> SkipProofs
     | Delegate -> DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers }
   in
-  Dm.ExecutionManager.set_options { delegation_mode; completion_options = settings.completion};
+  Dm.ExecutionManager.set_options {
+    delegation_mode;
+    completion_options = settings.completion;
+    enableDiagnostics = settings.enableDiagnostics
+  };
   check_mode := settings.proof.mode
 
 let send_configuration_request () =
@@ -183,8 +187,10 @@ let send_proof_view pv =
   output_jsonrpc @@ Notification Notification.Server.(jsonrpc_of_t notification)
 
 let update_view uri st =
-  send_highlights uri st;
-  publish_diagnostics uri st
+  if (Dm.ExecutionManager.is_diagnostics_enabled ()) then (
+    send_highlights uri st;
+    publish_diagnostics uri st
+  )
 
 let textDocumentDidOpen params =
   let Notification.Client.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
