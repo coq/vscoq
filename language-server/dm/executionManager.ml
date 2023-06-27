@@ -538,12 +538,6 @@ let rec invalidate schedule id st =
   let deps = Scheduler.dependents schedule id in
   Stateid.Set.fold (invalidate schedule) deps { st with of_sentence }
 
-let unfreeze_interp_state st id =
-  match find_fulfilled_opt id st.of_sentence with
-  | Some (Success (Some { interp = st })) when Option.has_some st.lemmas ->
-    Vernacstate.Interp.unfreeze_interp_state st
-  | _ -> log "Cannot unfreeze state"
-
 let get_proof st id =
   match find_fulfilled_opt id st.of_sentence with
   | None -> log "Cannot find state for proof"; None
@@ -582,14 +576,32 @@ let get_context st id =
     let sigma = Evd.from_env env in
     Some (sigma, env)
 
-let get_completions st pos =
-  unfreeze_interp_state st pos;
-  let proof = get_proofview st pos in
-  match get_context st pos with
-  | None -> None
-  | Some (sigma, env) -> 
-    let lemmas = get_lemmas sigma env in
-    Some (CompletionSuggester.get_completion_items proof lemmas !options.completion_options)
+(*
+    match find_fulfilled_opt id st.of_sentence with
+    | Some (Success (Some { interp = ist; synterp = sst })) when Option.has_some ist.lemmas ->
+      Vernacstate.Interp.unfreeze_interp_state ist;
+      Vernacstate.Synterp.unfreeze sst;
+      let proof = get_proofview st pos in
+      None
+    | _ -> log "Cannot unfreeze state";
+    None   
+*)
+
+let get_completions st id =
+  let aux () = 
+    match find_fulfilled_opt id st.of_sentence with
+    | Some (Success (Some { interp = interp_state; synterp = synterp_state })) when Option.has_some interp_state.lemmas ->
+      Vernacstate.Interp.unfreeze_interp_state interp_state;
+      Vernacstate.Synterp.unfreeze synterp_state;
+      let proof = get_proofview st id in
+      (match get_context st id with
+      | None -> None
+      | Some (sigma, env) -> 
+        let lemmas = get_lemmas sigma env in
+        Some (CompletionSuggester.get_completion_items proof lemmas !options.completion_options))
+    | _ -> None
+    in
+  Vernacstate.System.protect aux ()
 
 module ProofWorkerProcess = struct
   type options = ProofWorker.options
