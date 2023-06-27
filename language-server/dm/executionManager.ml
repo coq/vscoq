@@ -43,7 +43,13 @@ type options = {
   delegation_mode : delegation_mode;
   completion_options : Lsp.LspData.Settings.Completion.t;
 }
-let default_options = { delegation_mode = CheckProofsInMaster; completion_options = {algorithm = StructuredSplitUnification}}
+let default_options = { 
+  delegation_mode = CheckProofsInMaster; 
+  completion_options = {
+    algorithm = StructuredSplitUnification; 
+    unificationLimit = 100
+  }
+}
 
 let doc_id = ref (-1)
 let fresh_doc_id () = incr doc_id; !doc_id
