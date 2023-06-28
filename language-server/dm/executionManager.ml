@@ -584,17 +584,6 @@ let get_context st id =
       lemmas |> LemmaStack.with_top ~f:Proof.get_current_context |> Option.make
     end
 
-(*
-    match find_fulfilled_opt id st.of_sentence with
-    | Some (Success (Some { interp = ist; synterp = sst })) when Option.has_some ist.lemmas ->
-      Vernacstate.Interp.unfreeze_interp_state ist;
-      Vernacstate.Synterp.unfreeze sst;
-      let proof = get_proofview st pos in
-      None
-    | _ -> log "Cannot unfreeze state";
-    None   
-*)
-
 let get_completions st id =
   let aux () = 
     match find_fulfilled_opt id st.of_sentence with
