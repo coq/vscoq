@@ -47,6 +47,38 @@ let range_of_loc raw loc =
     end_ = position_of_loc raw loc.Loc.ep;
   }
 
+let previous_white_space raw pos =
+  let r = Str.regexp "[ \n\r\x0c\t]" in
+  let start = ref (loc_of_position raw pos - 1) in
+  while (start.contents >= 0) && not (Str.string_match r raw.text start.contents) do
+    start := start.contents - 1;
+  done;
+  if (start.contents < 0) then None else
+    (Printf.eprintf "space-character: {%c}\n" (String.get raw.text start.contents);
+    Some (start.contents))
+
+let previous_non_white_space raw pos =
+  let r = Str.regexp "[ \n\r\x0c\t]" in
+  let start = ref (loc_of_position raw pos - 1) in
+  while (start.contents >= 0) && Str.string_match r raw.text start.contents do
+    start := start.contents - 1;
+  done;
+  if (start.contents < 0) then None else
+    (Printf.eprintf "non-space-character: {%c}\n" (String.get raw.text start.contents);
+    Some (start.contents))
+
+let previous_word raw pos : string option =
+  Printf.eprintf "character at loc: {%s}\n" (String.sub raw.text (loc_of_position raw pos) 1);
+  let a = previous_white_space raw pos in
+  let endo = Option.bind a (fun x -> previous_non_white_space raw (position_of_loc raw x)) in
+  Option.bind endo (fun endi -> 
+    let start = previous_white_space raw (position_of_loc raw endi) in 
+    Option.map (fun starti -> 
+      Printf.eprintf "starti: %d, endi: %d, prevSpace: %d, loc: %d\n" starti endi (Option.get a) (loc_of_position raw pos);
+      String.sub raw.text (starti + 1) (endi - starti)
+      ) start) 
+
+
 let word_at_position raw pos : string option =
   let r = Str.regexp {|\([a-zA-Z_][a-zA-Z_0-9]*\)|} in
   let start = ref (loc_of_position raw pos) in

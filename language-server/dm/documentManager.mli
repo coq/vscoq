@@ -99,6 +99,12 @@ val locate : state -> Position.t -> pattern:string -> (string, string) Result.t
 
 val print : state -> Position.t -> pattern:string -> (string, string) Result.t
 
+type context = 
+Proof |
+Specification |
+FunctionDefinition |
+TacticsDefinition
+
 
 module Internal : sig
 

@@ -255,7 +255,24 @@ let get_context st pos =
   | Some sentence ->
     ExecutionManager.get_context st.execution_state sentence.id
 
-let get_completions st pos =
+type context = 
+Proof |
+Specification |
+FunctionDefinition |
+TacticsDefinition
+    
+let get_writing_mode st loc = 
+  (*Currently only detects if the user is writing a proof, defaulting to specification otherwise*)
+  try 
+    let _ = get_proof st (Some loc) in
+    Proof
+  with _ ->
+    Specification 
+
+
+let no_completer = Result.ok []
+
+let get_completions_lemmas st pos =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match Document.find_sentence_before st.document loc with
   | None -> Error ("Can't get completions, no sentence found before the cursor")
@@ -263,6 +280,23 @@ let get_completions st pos =
     match ExecutionManager.get_completions st.execution_state sentence.id with
     | None -> Error ("Can't get completions, no sentence found before the cursor")
     | Some lemmas -> Ok (lemmas)
+
+let get_completions_tactics _st _loc : (CompletionItems.completion_item list, string) result= 
+  no_completer
+
+let get_completions st pos =
+  let context = get_writing_mode st pos in
+  let prevWord = RawDocument.previous_word (Document.raw_document st.document) pos in
+  Printf.eprintf "Previous word:\n{%s} \nEnd of previous word\n" (Option.default "None" prevWord);
+  match context with  
+  | Specification -> no_completer
+  | FunctionDefinition -> no_completer
+  | TacticsDefinition -> no_completer
+  | Proof -> match Option.default "" prevWord with
+    | "apply" -> get_completions_lemmas st pos
+    | s when String.get s (String.length s - 1) = '.' -> get_completions_tactics st pos
+    | _ -> no_completer
+
 
 let parse_entry st pos entry pattern =
   let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in

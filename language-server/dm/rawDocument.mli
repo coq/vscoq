@@ -26,6 +26,7 @@ val loc_of_position : t -> Position.t -> int
 val end_loc : t -> int
 
 val range_of_loc : t -> Loc.t -> Range.t
+val previous_word: t -> Position.t -> string option
 val word_at_position: t -> Position.t -> string option
 
 (** Applies a text edit, and returns start location *)
