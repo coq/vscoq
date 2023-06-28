@@ -16,7 +16,7 @@ let symbol_prefix (completes: completion_level option) =
     | Partially -> "☆ "
     | No_completion -> ""
 
-type completion_item = {
+type completion_item_lemma = {
   ref : Names.GlobRef.t;
   path : full_path;
   typ : types;
@@ -26,7 +26,7 @@ type completion_item = {
   mutable debug_info : string;
 }
 
-let mk_completion_item sigma ref env (c : constr) : completion_item = 
+let mk_completion_item_lemma sigma ref env (c : constr) : completion_item_lemma = 
   {
     ref = ref;
     path = path_of_global ref;
@@ -37,9 +37,18 @@ let mk_completion_item sigma ref env (c : constr) : completion_item =
     debug_info = "";
   }
 
-let pp_completion_item (item : completion_item) : (string * string * string * string) =
+let lemma_to_CompletionItem i (item: completion_item_lemma) : Lsp.LspData.CompletionItem.t = 
   let pr = pr_global item.ref in
   let name = Pp.string_of_ppcmds pr in
+  let label = (Printf.sprintf "%s%s" (symbol_prefix item.completes) name) in
   let path = string_of_path item.path ^ "\n" ^ item.debug_info in
   let typ = Pp.string_of_ppcmds (pr_ltype_env item.env item.sigma item.typ) in
-  (Printf.sprintf "%s%s" (symbol_prefix item.completes) name, name, typ, path)
+  let insertText = name in
+  {
+    label = label;
+    insertText = Some insertText;
+    detail = Some typ;
+    documentation = Some ("Path: " ^ path);
+    sortText = Some (Printf.sprintf "%5d" i);
+    filterText = (if label == insertText then None else Some (insertText));
+  } 

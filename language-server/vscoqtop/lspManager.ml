@@ -271,17 +271,6 @@ let coqtopStepForward params =
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st;
   inject_dm_events (uri,events)
-  
-  let make_CompletionItem i item : CompletionItem.t = 
-    let (label, insertText, typ, path) = Dm.CompletionItems.pp_completion_item item in
-    {
-      label;
-      insertText = Some insertText;
-      detail = Some typ;
-      documentation = Some ("Path: " ^ path);
-      sortText = Some (Printf.sprintf "%5d" i);
-      filterText = (if label == insertText then None else Some (insertText));
-    } 
 
 
 let textDocumentCompletion ~id params =
@@ -289,7 +278,7 @@ let textDocumentCompletion ~id params =
   let st = Hashtbl.find states (Uri.path uri) in
   match Dm.DocumentManager.get_completions st position with
   | Ok completionItems -> 
-    let items = List.mapi make_CompletionItem completionItems in
+    let items = completionItems in
     Ok Request.Client.CompletionResult.{isIncomplete = false; items = items;}, []
   | Error e -> 
     let message = e in

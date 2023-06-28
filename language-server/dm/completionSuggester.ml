@@ -110,10 +110,10 @@ module TypeIntersection = struct
   let best_subtype sigma goal c = 
     c |> split_types sigma |> List.map (fun a -> (a, a)) |> List.stable_sort (compare_atomics goal) |> List.hd |> fst
 
-  let rank (goal : Evd.econstr) sigma _ (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+  let rank (goal : Evd.econstr) sigma _ (lemmas : CompletionItems.completion_item_lemma list) : CompletionItems.completion_item_lemma list =
     (*Split type intersection: Split the lemmas by implications, compare the suffix to the goal, pick best match*)
     let goal = atomic_types sigma goal in
-    let lemmaTypes = List.map (fun (l : CompletionItems.completion_item) -> 
+    let lemmaTypes = List.map (fun (l : CompletionItems.completion_item_lemma) -> 
       let best = best_subtype sigma goal (of_constr l.typ) in
       (best, l)
     ) lemmas in
@@ -322,7 +322,7 @@ module Structured = struct
 
   (* A Lower score is better as we are sorting in ascending order *)
 
-  let rank (options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) sigma _ lemmas : CompletionItems.completion_item list =
+  let rank (options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) sigma _ lemmas : CompletionItems.completion_item_lemma list =
     let size_impact = options.sizeFactor in
     let atomic_factor = options.atomicFactor in
     let finalScore score size = Float.sub size (Float.mul score size_impact) in
@@ -330,7 +330,7 @@ module Structured = struct
     match (unifier_kind sigma hyps goal, unifier_kind sigma HypothesisMap.empty goal) with
     | None, _ | _, None -> lemmas
     | Some goalUnf, Some goalUnfNoHypothesisSub -> 
-      let lemmaUnfs = List.map (fun (l : CompletionItems.completion_item) -> 
+      let lemmaUnfs = List.map (fun (l : CompletionItems.completion_item_lemma) -> 
         match (unifier_kind sigma HypothesisMap.empty (of_constr l.typ)) with
         | None -> ((Float.min_float), l)
         | Some unf -> 
@@ -346,12 +346,12 @@ module Structured = struct
       List.map snd sorted
 end
 module SelectiveUnification = struct
-  let rankByUnifiability (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+  let rankByUnifiability (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item_lemma list) : CompletionItems.completion_item_lemma list =
     let goal_size = type_size sigma goal in
     let worst_value = 1000 in (* the worst value we expect to assign. This value is mostly arbitrary*)
-    let make_sortable (lemma : CompletionItems.completion_item) =
+    let make_sortable (lemma : CompletionItems.completion_item_lemma) =
       let flags = Evarconv.default_flags_of TransparentState.full in
-      let rec aux (iterations: int) (typ : types) : (CompletionItems.completion_item * int)=
+      let rec aux (iterations: int) (typ : types) : (CompletionItems.completion_item_lemma * int)=
         if type_size sigma typ + goal_size > 500 then (lemma, worst_value) (*The number 500 is an arbitrary limit on how big lemmas we are willing to look at*)
         else
         let res = Evarconv.evar_conv_x flags env sigma Conversion.CONV goal typ in
@@ -375,7 +375,7 @@ module SelectiveUnification = struct
     |> List.stable_sort (fun a b -> compare (snd a) (snd b))
     |> List.map fst
 
-  let selectiveRank (options: Lsp.LspData.Settings.Completion.t) (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+  let selectiveRank (options: Lsp.LspData.Settings.Completion.t) (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item_lemma list) : CompletionItems.completion_item_lemma list =
     try 
       let take, skip = takeSkip options.unificationLimit lemmas in
       List.append (rankByUnifiability goal sigma env take) skip

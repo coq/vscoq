@@ -279,12 +279,12 @@ let get_completions_lemmas st pos =
   | Some sentence ->
     match ExecutionManager.get_completions st.execution_state sentence.id with
     | None -> Error ("Can't get completions, no sentence found before the cursor")
-    | Some lemmas -> Ok (lemmas)
+    | Some lemmas -> Ok (List.mapi CompletionItems.lemma_to_CompletionItem lemmas)
 
-let get_completions_tactics _st _loc : (CompletionItems.completion_item list, string) result= 
+let get_completions_tactics _st _loc : (Lsp.LspData.CompletionItem.t list, string) result= 
   no_completer
 
-let get_completions st pos =
+let get_completions st pos : (Lsp.LspData.CompletionItem.t list, string) result=
   let context = get_writing_mode st pos in
   let prevWord = RawDocument.previous_word (Document.raw_document st.document) pos in
   Printf.eprintf "Previous word:\n{%s} \nEnd of previous word\n" (Option.default "None" prevWord);

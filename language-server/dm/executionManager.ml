@@ -561,7 +561,7 @@ let get_lemmas sigma env =
   let open CompletionItems in
   let results = ref [] in
   let display ref _kind env c =
-    results := mk_completion_item sigma ref env c :: results.contents;
+    results := mk_completion_item_lemma sigma ref env c :: results.contents;
   in
   Search.generic_search env display;
   results.contents

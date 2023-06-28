@@ -14,7 +14,6 @@
 
 open Types
 open Lsp.LspData
-open CompletionItems
 
 (** The document manager holds the view that Coq has of the currently open
     states. It makes it easy for IDEs to handle text edits, navigate
@@ -79,7 +78,7 @@ val diagnostics : state -> Diagnostic.t list
 
 val get_proof : state -> Position.t option -> Proof.data option
 
-val get_completions : state -> Position.t -> (completion_item list, string) Result.t
+val get_completions : state -> Position.t -> (Lsp.LspData.CompletionItem.t list, string) Result.t
 
 val handle_event : event -> state -> (state option * events)
 (** handles events and returns a new state if it was updated *)
