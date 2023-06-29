@@ -585,20 +585,12 @@ let get_context st id =
     end
 
 let get_completions st id =
-  let aux () = 
-    match find_fulfilled_opt id st.of_sentence with
-    | Some (Success (Some { interp = interp_state; synterp = synterp_state })) when Option.has_some interp_state.lemmas ->
-      Vernacstate.Interp.unfreeze_interp_state interp_state;
-      Vernacstate.Synterp.unfreeze synterp_state;
-      let proof = get_proofview st id in
-      (match get_context st id with
-      | None -> None
-      | Some (sigma, env) -> 
-        let lemmas = get_lemmas sigma env in
-        Some (CompletionSuggester.get_completion_items proof lemmas !options.completion_options))
-    | _ -> None
-    in
-  Vernacstate.System.protect aux ()
+  let proof = get_proofview st id in
+  (match get_context st id with
+  | None -> None
+  | Some (sigma, env) -> 
+    let lemmas = get_lemmas sigma env in
+    Some (CompletionSuggester.get_completion_items proof lemmas !options.completion_options))
 
 module ProofWorkerProcess = struct
   type options = ProofWorker.options
