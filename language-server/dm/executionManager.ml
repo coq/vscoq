@@ -559,15 +559,18 @@ let get_context st id =
   | None -> log "Cannot find state for get_context"; None
   | Some (Error _) -> log "Context requested in error state"; None
   | Some (Success None) -> log "Context requested in a remotely checked state"; None
-  | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = Some st; _ } })) ->
-    let open Declare in
-    let open Vernacstate in
-    st |> LemmaStack.with_top ~f:Proof.get_current_context |> Option.make
   | Some (Success (Some { interp = st })) ->
     Vernacstate.Interp.unfreeze_interp_state st;
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-    Some (sigma, env)
+    begin match st.lemmas with
+    | None ->
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
+      Some (sigma, env)
+    | Some lemmas ->
+      let open Declare in
+      let open Vernacstate in
+      lemmas |> LemmaStack.with_top ~f:Proof.get_current_context |> Option.make
+    end
 
 module ProofWorkerProcess = struct
   type options = ProofWorker.options
