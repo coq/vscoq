@@ -40,27 +40,60 @@ const resultTabs: FunctionComponent<ResultTabProps> = (props) => {
                 </VSCodePanelView>;
     });
 
-    const panelTabs = tabs.map((tab, index) => {
-        const id = "tab-" + index;
-        return <VSCodePanelTab 
-                    id={id} 
-                    key={id}
-                    onClick={
-                        () => changeTabHandler(index)
-                    }
-                    className={tabs.length > 1 ? "" : classes.HiddenTab} //hide the tabs if there is only one
-                >
-                    {"Query " + (tabs.length - index)}
-                    <VSCodeButton 
-                        className={classes.SmallButton}
-                        appearance={'icon'} 
-                        ariaLabel='Add Tab' 
-                        onClick={() => deleteTabHandler(index)}
-                    >
-                        <VscChromeClose />
-                    </VSCodeButton>
-                </VSCodePanelTab>;
-    });
+    useEffect(() => {
+        setActiveId('tab-'+currentTab);
+    }, [tabs.length]);
+
+    const view = useMemo(
+        () => {
+
+            console.log("RERENDEEEEER");
+
+            const panelViews = tabs.map((tab, index) => {
+                const id = "view-" + index;
+                return (
+                    <VSCodePanelView key={id} id={id} >
+                        <ResultSection 
+                            result={tab.result} 
+                            copyNameHandler={copyNameHandler}
+                        />
+                    </VSCodePanelView>
+                );
+            });
+
+            const panelTabs = tabs.map((tab, index) => {
+                const id = "tab-" + index;
+                return <VSCodePanelTab 
+                            id={id} 
+                            key={id}
+                            
+                            onClick={
+                                () => changeTabHandler(index)
+                            }
+                            aria-selected={currentTab === index}
+                            className={tabs.length > 1 ? "" : classes.HiddenTab} //hide the tabs if there is only one
+                        >
+                            {"Query " + (tabs.length - index)}
+                            <VSCodeButton 
+                                className={classes.SmallButton}
+                                appearance={'icon'} 
+                                ariaLabel='Add Tab' 
+                                onClick={() => deleteTabHandler(index)}
+                            >
+                                <VscChromeClose />
+                            </VSCodeButton>
+                        </VSCodePanelTab>;
+            });
+
+            return ( 
+                <VSCodePanels activeid={activeId} className={classes.Panels}>
+                    {panelTabs}
+                    {panelViews}
+                </VSCodePanels>
+            );
+        }, 
+        [tabs]
+    );
 
     return (
         <VSCodePanels className={classes.Panels} activeid={'tab-'+currentTab}>

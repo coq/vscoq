@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useEffect, KeyboardEventHandler, ChangeEventHandler, useRef} from 'react';
+import React, {useState, useCallback, useEffect, KeyboardEvent, ChangeEventHandler, useRef, ChangeEvent} from 'react';
 import { v4 as uuid } from 'uuid';
 
 import SearchPage from './components/templates/SearchPage';
@@ -81,6 +81,11 @@ const app = () => {
             case 'query':
                 handleImmediateQueryNotification(msg.data.query);
                 break;
+
+            case 'addTab': 
+                addTabHandler(); 
+                break;
+                
         }
       }, []);
     
@@ -233,16 +238,16 @@ const app = () => {
         if(state.historyIndex) {setHistoryIndex(state.historyIndex);}
     };
 
-    const launchQuery = () => {
+    const launchQuery = (index: number) => {
 
-        const {pattern, type} = queryPanelState.tabs[queryPanelState.currentTab];
+        const {pattern, type} = queryPanelState.tabs[index];
             
         setHistory(history => [pattern].concat(history));
             
         const id = uuid();
         setQueryPanelState(state => {
-            const newTabs = state.tabs.map((tab, index) => {
-                if(index === state.currentTab) {
+            const newTabs = state.tabs.map((tab, i) => {
+                if(index === i) {
                     return {...tab, id: id, result: initResult(type)};
                 }
                 return tab;
@@ -267,10 +272,10 @@ const app = () => {
         updateQueryString(e.target.value);
     };
 
-    const searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement> = (e) => {
+    const searchFieldKeyPressHandler: ((index:number, e: KeyboardEvent<HTMLInputElement>) => void) = (index, e) => {
             
         if(e.code === "Enter") {
-            launchQuery();
+            launchQuery(index);
         }
 
         if(e.code === "ArrowUp") {
@@ -295,6 +300,19 @@ const app = () => {
 
     };
 
+    const tabInputHandler: ((index: number, field: string) => (ChangeEventHandler<HTMLInputElement>)) = (index: number, field: string) => {
+        return (e: ChangeEvent<HTMLInputElement>) => {
+            setQueryPanelState(state => {
+                const newTabs = state.tabs.map((tab, i) => {
+                    if(index === i) {
+                        return {...tab, [field]: e.target.value};
+                    }
+                    return tab;
+                });
+                return {...state, tabs: newTabs};
+            });
+        };
+    };
     
     const updateQueryType = (type: QueryType) => {
         setQueryPanelState(state => {
@@ -375,6 +393,7 @@ const app = () => {
                 changeTabHandler={changeTabHandler}
                 deleteTabHandler={deleteTabHandler}
                 queryTypeSelectHandler={queryTypeSelectHandler}
+                tabInputHandler={tabInputHandler}
             />
         </main>
     );

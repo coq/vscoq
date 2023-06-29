@@ -1,0 +1,12 @@
+.QueryBar {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.Dropdown {
+    margin-left: 3px;
+}

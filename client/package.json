@@ -243,9 +243,24 @@
         "command": "vscoq.documentState",
         "title": "Get Document State",
         "category": "Coq"
+      }, 
+      {
+        "command": "vscoq.addQueryTab",
+        "title": "Add Tab",
+        "category": "Coq",
+        "icon": "$(add)"
       }
     ],
-    "keybindings": [
+    "menus": {
+        "view/title": [
+            {
+                "command": "vscoq.addQueryTab",
+                "group": "navigation",
+                "when": "view == vscoq.search"
+            }
+        ]
+    },
+    "keybindings":[
       {
         "key": "alt+down",
         "mac": "ctrl+alt+down",

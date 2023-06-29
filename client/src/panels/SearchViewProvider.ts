@@ -60,6 +60,10 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
 
     }
 
+    public addTab() {
+        this._view?.webview.postMessage({"command": "addTab"});
+    };
+
     public launchQuery(pattern: string, type: string) {
         const query = { "pattern": pattern, "type": type};
         this._view?.webview.postMessage({"command": "query", "query": query});
