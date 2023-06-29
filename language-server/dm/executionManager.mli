@@ -26,7 +26,11 @@ type delegation_mode =
 
 type options = {
   delegation_mode : delegation_mode;
+  completion_options : Lsp.LspData.Settings.Completion.t;
+  enableDiagnostics : bool;
 }
+
+val is_diagnostics_enabled: unit -> bool
 
 (** Execution state, includes the cache *)
 type state
@@ -50,6 +54,7 @@ val get_proof : state -> sentence_id -> Proof.t option
 val get_proofview : state -> sentence_id -> Proof.data option
 val get_context : state -> sentence_id -> (Evd.evar_map * Environ.env) option
 val get_lemmas : Evd.evar_map -> Environ.env -> completion_item list
+val get_completions : state -> sentence_id -> completion_item list option
 
 (** Events for the main loop *)
 val handle_event : event -> state -> (state option * events)

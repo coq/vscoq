@@ -58,10 +58,22 @@ module CompletionItem = struct
 
   type t = {
     label : string;
+    insertText : string option [@yojson.option];
     detail : string option [@yojson.option];
     documentation : string option [@yojson.option];
+    sortText : string option [@yojson.option];
+    filterText : string option [@yojson.option];
   } [@@deriving yojson]
 
+end
+
+module CompletionList = struct 
+
+  type t = {
+    isIncomplete : bool;
+    items : CompletionItem.t list;
+  } [@@deriving yojson]
+  
 end
 
 module Severity = struct
@@ -232,8 +244,38 @@ module Settings = struct
 
   end
 
+  module Completion = struct
+    
+    module RankingAlgoritm = struct
+
+      type t = 
+      | SplitTypeIntersection
+      | StructuredSplitUnification
+    
+      let yojson_of_t = function  
+      | SplitTypeIntersection -> `Int 0
+      | StructuredSplitUnification -> `Int 1
+    
+      let t_of_yojson = function
+      | `Int 0 -> SplitTypeIntersection
+      | `Int 1 -> StructuredSplitUnification
+      | _ -> Yojson.json_error @@ "invalid value "
+    
+    end
+
+    type t = {
+      algorithm: RankingAlgoritm.t;
+      unificationLimit: int;
+      atomicFactor: float [@default 5.]; (** Controls how highly specific types are prioritised over generics *)
+      sizeFactor: float [@default 5.]; (** Controls how highly small types are prioritised over larger ones *)
+    } [@@deriving yojson] [@@yojson.allow_extra_fields]
+
+  end
+
   type t = {
     proof: Proof.t;
+    completion: Completion.t;
+    enableDiagnostics: bool [@default true]; (** Sets whether diagnostics like errors and highlighting are sent to the client at all. *)
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end

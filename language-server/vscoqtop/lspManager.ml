@@ -105,13 +105,17 @@ let inject_debug_events l =
 let do_configuration settings = 
   let open Settings in
   let open Dm.ExecutionManager in
-  let options =
+  let delegation_mode =
     match settings.proof.delegation with
-    | None     -> { delegation_mode = CheckProofsInMaster }
-    | Skip     -> { delegation_mode = SkipProofs }
-    | Delegate -> { delegation_mode = DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers } }
+    | None     -> CheckProofsInMaster
+    | Skip     -> SkipProofs
+    | Delegate -> DelegateProofsToWorkers { number_of_workers = Option.get settings.proof.workers }
   in
-  Dm.ExecutionManager.set_options options;
+  Dm.ExecutionManager.set_options {
+    delegation_mode;
+    completion_options = settings.completion;
+    enableDiagnostics = settings.enableDiagnostics
+  };
   check_mode := settings.proof.mode
 
 let send_configuration_request () =
@@ -183,8 +187,10 @@ let send_proof_view pv =
   output_jsonrpc @@ Notification Notification.Server.(jsonrpc_of_t notification)
 
 let update_view uri st =
-  send_highlights uri st;
-  publish_diagnostics uri st
+  if (Dm.ExecutionManager.is_diagnostics_enabled ()) then (
+    send_highlights uri st;
+    publish_diagnostics uri st
+  )
 
 let textDocumentDidOpen params =
   let Notification.Client.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
@@ -276,19 +282,28 @@ let coqtopStepForward params =
   update_view uri st;
   inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
   
- let make_CompletionItem (label, typ, path) : CompletionItem.t = 
-   {
-     label;
-     detail = Some typ;
-     documentation = Some ("Path: " ^ path);
-   } 
+  let make_CompletionItem i item : CompletionItem.t = 
+    let (label, insertText, typ, path) = Dm.CompletionItems.pp_completion_item item in
+    {
+      label;
+      insertText = Some insertText;
+      detail = Some typ;
+      documentation = Some ("Path: " ^ path);
+      sortText = Some (Printf.sprintf "%5d" i);
+      filterText = (if label == insertText then None else Some (insertText));
+    } 
 
- let textDocumentCompletion ~id params =
-   let Request.Client.CompletionParams.{ textDocument = { uri }; position } = params in
-   let st = Hashtbl.find states (Uri.path uri) in
-   let completionItems = Dm.CompletionSuggester.get_completion_items st position in
-   let items = List.map make_CompletionItem completionItems in
-   Ok Request.Client.CompletionResult.{isIncomplete = false; items = items;}, []
+
+let textDocumentCompletion ~id params =
+  let Request.Client.CompletionParams.{ textDocument = { uri }; position } = params in
+  let st = Hashtbl.find states (Uri.path uri) in
+  match Dm.DocumentManager.get_completions st position with
+  | Ok completionItems -> 
+    let items = List.mapi make_CompletionItem completionItems in
+    Ok Request.Client.CompletionResult.{isIncomplete = false; items = items;}, []
+  | Error e -> 
+    let message = e in
+    Error(message), []
 
 let coqtopResetCoq ~id params =
   let Request.Client.ResetParams.{ uri } = params in

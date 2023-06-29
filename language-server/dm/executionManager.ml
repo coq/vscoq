@@ -41,8 +41,19 @@ type delegation_mode =
 
 type options = {
   delegation_mode : delegation_mode;
+  completion_options : Lsp.LspData.Settings.Completion.t;
+  enableDiagnostics : bool
 }
-let default_options = { delegation_mode = CheckProofsInMaster }
+let default_options = {
+  delegation_mode = CheckProofsInMaster;
+  completion_options = {
+    algorithm = StructuredSplitUnification;
+    unificationLimit = 100;
+    atomicFactor = 5.;
+    sizeFactor = 5.
+  };
+  enableDiagnostics = true;
+}
 
 let doc_id = ref (-1)
 let fresh_doc_id () = incr doc_id; !doc_id
@@ -66,6 +77,7 @@ let options = ref default_options
 
 let set_options o = options := o
 let set_default_options () = options := default_options
+let is_diagnostics_enabled () = !options.enableDiagnostics
 
 type prepared_task =
   | PSkip of sentence_id
@@ -571,6 +583,14 @@ let get_context st id =
       let open Vernacstate in
       lemmas |> LemmaStack.with_top ~f:Proof.get_current_context |> Option.make
     end
+
+let get_completions st id =
+  let proof = get_proofview st id in
+  (match get_context st id with
+  | None -> None
+  | Some (sigma, env) -> 
+    let lemmas = get_lemmas sigma env in
+    Some (CompletionSuggester.get_completion_items proof lemmas !options.completion_options))
 
 module ProofWorkerProcess = struct
   type options = ProofWorker.options

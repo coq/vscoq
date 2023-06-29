@@ -1,1 +1,0 @@
-val get_completion_items : DocumentManager.state -> Lsp.LspData.Position.t -> (string * string * string) list
