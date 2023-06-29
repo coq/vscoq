@@ -81,6 +81,8 @@ export default class GoalPanel {
           localResourceRoots: [Uri.joinPath(extensionUri, "out"), Uri.joinPath(extensionUri, "goal-view-ui/build")],
 
           retainContextWhenHidden: true,
+
+          enableFindWidget: true,
         }
       );
 
