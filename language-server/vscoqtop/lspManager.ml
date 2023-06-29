@@ -288,11 +288,16 @@ let coqtopStepForward params =
       label;
       insertText = Some insertText;
       detail = Some typ;
-      documentation = Some ("Path: " ^ path);
+      documentation = Some ({ kind = "plaintext"; value = "Path: " ^ path });
       sortText = Some (Printf.sprintf "%5d" i);
       filterText = (if label == insertText then None else Some (insertText));
+      kind = None;
     } 
 
+let make_static_CompletionItems () =
+  let open Data.Tactic in
+  let open Data.Command in
+  List.map CompletionItem.t_of_yojson (Tactic.tactic @ Command.command)
 
 let textDocumentCompletion ~id params =
   let Request.Client.CompletionParams.{ textDocument = { uri }; position } = params in
@@ -300,10 +305,10 @@ let textDocumentCompletion ~id params =
   match Dm.DocumentManager.get_completions st position with
   | Ok completionItems -> 
     let items = List.mapi make_CompletionItem completionItems in
+    Ok Request.Client.CompletionResult.{isIncomplete = false; items = items @ make_static_CompletionItems ();}, []
+  | Error e ->
+    let items = make_static_CompletionItems () in
     Ok Request.Client.CompletionResult.{isIncomplete = false; items = items;}, []
-  | Error e -> 
-    let message = e in
-    Error(message), []
 
 let coqtopResetCoq ~id params =
   let Request.Client.ResetParams.{ uri } = params in

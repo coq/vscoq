@@ -1,0 +1,4 @@
+(library
+ (name data)
+ (public_name vscoq-language-server.data)
+ (libraries base yojson))

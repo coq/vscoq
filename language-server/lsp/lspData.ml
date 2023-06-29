@@ -54,15 +54,23 @@ module Range = struct
 
 end 
 
+module Documentation = struct
+  type t = {
+    kind : string; (** 'plaintext' | 'markdown' *)
+    value : string;
+  } [@@deriving yojson]
+end
+
 module CompletionItem = struct 
 
   type t = {
     label : string;
     insertText : string option [@yojson.option];
     detail : string option [@yojson.option];
-    documentation : string option [@yojson.option];
+    documentation : Documentation.t option [@yojson.option];
     sortText : string option [@yojson.option];
     filterText : string option [@yojson.option];
+    kind : int option [@yojson.option];
   } [@@deriving yojson]
 
 end
