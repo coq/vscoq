@@ -104,22 +104,22 @@ let interp_par ~pstate ~info ast ~abstract ~with_end_tac : Declare.Proof.t =
      (Proof.data p).Proof.goals |> CList.map_i (fun goalno goal ->
        let job = { TacticJob.state; ast; goalno = goalno + 1; goal; name = string_of_int (Evar.repr goal)} in
        let job_id = DelegationManager.mk_job_handle !feedback_id in
-       let e, cancellation =
+       let e =
          TacticWorker.worker_available ~feedback_cleanup:(fun _ -> ()) (* not really correct, since there is a cleanup to be done, but it concern a sel loop which is dead (we don't come back to it), so we can ignore the problem *)
            ~jobs:queue ~fork_action:worker_solve_one_goal in
-       Queue.push (job_id, cancellation, job) queue;
+       Queue.push (job_id, Sel.Event.get_cancellation_handle e, job) queue;
         e, job_id
       ) 0) in
   let rec wait acc evs =
-    log @@ "waiting for events: " ^ string_of_int @@ Sel.size evs;
+    log @@ "waiting for events: " ^ string_of_int @@ Sel.Todo.size evs;
     let more_ready, evs = Sel.pop_opt evs in
     match more_ready with
     | None ->
-        if Sel.nothing_left_to_do evs then (log @@ "done waiting for tactic workers"; acc)
+        if Sel.Todo.is_empty evs then (log @@ "done waiting for tactic workers"; acc)
         else wait acc evs (* should be assert false *)
     | Some ev ->
       let result, more_events = TacticWorker.handle_event ev in
-      let evs = Sel.enqueue evs more_events in
+      let evs = Sel.Todo.add evs more_events in
       match result with
       | None -> wait acc evs
       | Some(TacticJob.UpdateSolution(ev,TacticJob.Solved(c,u))) ->
@@ -135,7 +135,7 @@ let interp_par ~pstate ~info ast ~abstract ~with_end_tac : Declare.Proof.t =
           log @@ "got error for " ^ Pp.string_of_ppcmds @@ Evar.print ev;
           List.iter DelegationManager.cancel_job job_ids;
           CErrors.user_err err in
-  let results = wait [] Sel.(enqueue empty events) in
+  let results = wait [] Sel.Todo.(add empty events) in
   Declare.Proof.map pstate ~f:(fun p ->
     let p,_,() = Proof.run_tactic (Global.env()) (assign_tac ~abstract results) p in
     p)

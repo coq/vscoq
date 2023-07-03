@@ -80,7 +80,7 @@ module type Worker = sig
   (** Event for the main loop *)
   type delegation
   val pr_event : delegation -> Pp.t
-  type events = delegation Sel.event list
+  type events = delegation Sel.Event.t list
   
   (** handling an event may require an update to a sentence in the exec state,
       e.g. when a feedback is received *)
@@ -91,10 +91,10 @@ module type Worker = sig
       - if we can fork, job is passed to fork_action
       - otherwise Job.binary_name is spawn and the job sent to it *)
   val worker_available :
-    jobs:((job_handle * Sel.cancellation_handle * job_t) Queue.t) ->
+    jobs:((job_handle * Sel.Event.cancellation_handle * job_t) Queue.t) ->
     fork_action:(job_t -> send_back:(job_update_request -> unit) -> unit) ->
     feedback_cleanup:(unit -> unit) ->
-    delegation Sel.event * Sel.cancellation_handle
+    delegation Sel.Event.t
   
   (* for worker toplevels *)
   type options
@@ -139,7 +139,7 @@ let install_debug_worker link =
   Log.worker_initialization_done
     ~fwd_event:(fun e -> write_value link (DebugMessage e))
 
-type events = delegation Sel.event list
+type events = delegation Sel.Event.t list
 
 type role = Master | Worker of link
 
@@ -161,21 +161,19 @@ let resize_pool new_pool_size =
 ;;
 
 (* In order to create a job we enqueue this event *)
-let worker_available ~jobs ~fork_action ~feedback_cleanup : delegation Sel.event * Sel.cancellation_handle =
-  Sel.on_queues jobs pool (fun (job_handle, _, job) () ->
+let worker_available ~jobs ~fork_action ~feedback_cleanup : delegation Sel.Event.t =
+  Sel.On.queues jobs pool (fun (job_handle, _, job) () ->
     WorkerStart (feedback_cleanup,job_handle,job,fork_action,Job.binary_name))
 
 (* When a worker is spawn, we enqueue this event, since eventually it will die *)
-let worker_ends pid : delegation Sel.event =
-  Sel.on_death_of ~pid (fun reason -> WorkerEnd(pid,reason))
-  |> Sel.uncancellable
+let worker_ends pid : delegation Sel.Event.t =
+  Sel.On.death_of ~pid (fun reason -> WorkerEnd(pid,reason))
 
 (* When a worker is spawn, we enqueue this event, since eventually will make progress *)
-let worker_progress link : delegation Sel.event =
-  Sel.on_ocaml_value link.read_from (function
+let worker_progress link : delegation Sel.Event.t =
+  Sel.On.ocaml_value link.read_from (function
     | Error e -> WorkerIOError e
     | Ok update_request -> WorkerProgress { link; update_request; })
-  |> Sel.uncancellable
 
 (* ************ spawning *************************************************** *)
 
@@ -326,7 +324,7 @@ let setup_plumbing port =
     let write_to = chan in
     let link = { read_from; write_to } in
     (* Unix.read_value does not exist, we use Sel *)
-    match Sel.(pop (enqueue empty [Sel.on_ocaml_value read_from (fun x -> x) |> Sel.uncancellable])) with
+    match Sel.(pop Todo.(add empty [Sel.On.ocaml_value read_from (fun x -> x)])) with
     | Ok (job : Job.t), _ -> (write_value link, job)
     | Error exn, _ ->
       log_worker @@ "error receiving job: " ^ Printexc.to_string exn;

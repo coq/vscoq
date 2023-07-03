@@ -19,17 +19,17 @@ let Dm.Types.Log log = Dm.Log.mk_log "top"
 
 let loop injections =
   let events = LspManager.init injections in
-  let rec loop (todo : LspManager.event Sel.todo) =
+  let rec loop (todo : LspManager.event Sel.Todo.t) =
     (*log @@ "looking for next step";*)
     flush_all ();
     let ready, todo = Sel.pop todo in
-    let nremaining = Sel.size todo in
+    let nremaining = Sel.Todo.size todo in
     log @@ "Main loop event ready: " ^ Pp.string_of_ppcmds (LspManager.pr_event ready) ^ " , " ^ string_of_int nremaining ^ " events waiting";
     let new_events = LspManager.handle_event ready in
-    let todo = Sel.enqueue todo new_events in
+    let todo = Sel.Todo.add todo new_events in
     loop todo
   in
-  let todo = Sel.enqueue Sel.empty events in
+  let todo = Sel.Todo.add Sel.Todo.empty events in
   try loop todo
   with exn ->
     let info = Exninfo.capture exn in

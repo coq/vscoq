@@ -54,10 +54,10 @@ type event =
  | SendProofView of DocumentUri.t * Position.t option
  | SendMoveCursor of DocumentUri.t * Range.t
 
-type events = event Sel.event list
+type events = event Sel.Event.t list
 
-let lsp : event Sel.event =
-  Sel.on_httpcle Unix.stdin (function
+let lsp : event Sel.Event.t =
+  Sel.On.httpcle ~priority:Dm.PriorityManager.lsp_message ~name:"lsp" Unix.stdin (function
     | Ok buff ->
       begin
         log "UI req ready";
@@ -70,10 +70,7 @@ let lsp : event Sel.event =
         log @@ ("failed to read message: " ^ Printexc.to_string exn);
         (* do not remove this line otherwise the server stays running in some scenarios *)
         exit 0)
-  |> fst
-  |> Sel.name "lsp"
-  |> Sel.make_recurring
-  |> Sel.set_priority Dm.PriorityManager.lsp_message
+
 
 let output_json obj =
   let msg  = Yojson.Safe.pretty_to_string ~std:true obj in
@@ -85,14 +82,14 @@ let output_json obj =
 let output_notification notif =
   output_json @@ Jsonrpc.Notification.yojson_of_t @@ Notification.Server.to_jsonrpc notif
 
-let inject_dm_event uri x : event Sel.event =
-  Sel.map (fun e -> DocumentManagerEvent(uri,e)) x
+let inject_dm_event uri x : event Sel.Event.t =
+  Sel.Event.map (fun e -> DocumentManagerEvent(uri,e)) x
 
-let inject_notification x : event Sel.event =
-  Sel.map (fun x -> Notification(x)) x
+let inject_notification x : event Sel.Event.t =
+  Sel.Event.map (fun x -> Notification(x)) x
 
-let inject_debug_event x : event Sel.event =
-  Sel.map (fun x -> LogEvent x) x
+let inject_debug_event x : event Sel.Event.t =
+  Sel.Event.map (fun x -> LogEvent x) x
 
 let inject_dm_events (uri,l) =
   List.map (inject_dm_event uri) l
@@ -256,10 +253,11 @@ let progress_hook uri () =
   update_view uri st
 
 let mk_proof_view_event uri position = 
-  Sel.set_priority Dm.PriorityManager.proof_view @@ Sel.now @@ SendProofView (uri, position)
+  Sel.now ~priority:Dm.PriorityManager.proof_view (SendProofView (uri, position))
 
 let mk_move_cursor_event uri range = 
-  Sel.set_priority Dm.PriorityManager.pre_execution @@ Sel.now @@ SendMoveCursor (uri, range)
+  let priority = Dm.PriorityManager.pre_execution in
+  Sel.now ~priority @@ SendMoveCursor (uri, range)
 
 let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
@@ -440,9 +438,9 @@ let dispatch_notification =
   | Std notif -> dispatch_std_notification notif
 
 let handle_lsp_event = function
-  | Receive None ->
-      []
+  | Receive None -> [lsp]
   | Receive (Some rpc) ->
+    lsp :: (* the event is recurrent *)
     begin try
       begin match rpc with
       | Request req ->

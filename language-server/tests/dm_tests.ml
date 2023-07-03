@@ -27,7 +27,7 @@ let edit_text st ~start ~stop ~text =
 
 let insert_text st ~loc ~text =
   edit_text st ~start:loc ~stop:loc ~text
-    
+
 let%test_unit "parse.init" =
   let st, events = init_test_doc ~text:"Definition x := true. Definition y := false." in
   let doc = Document.raw_document @@ DocumentManager.Internal.document st in
@@ -74,7 +74,7 @@ let%test_unit "parse.extensions" =
 let%test_unit "parse.validate_errors_twice" = 
   let st, events = init_test_doc ~text:"Lemma a : True. Proof. idtac (fun x -> x). Qed." in
   let st, (s1, (s2, (s3, (s4, ())))) = dm_parse st (P(P(E(P O)))) in
-  let todo = Sel.(enqueue empty events) in
+  let todo = Sel.Todo.(add empty events) in
   let st = handle_events todo st in 
   let st = DocumentManager.Internal.validate_document st in
   let doc = DocumentManager.Internal.document st in
@@ -87,8 +87,8 @@ let%test_unit "parse.invalidate_before_module" =
   let st, init_events = init_test_doc ~text:"Check nat. Module M := Nat." in
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
   let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.(enqueue empty init_events) in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add empty init_events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   check_no_diag st;
   let doc = DocumentManager.Internal.document st in
@@ -98,8 +98,8 @@ let%test_unit "parse.invalidate_before_module" =
 let%test_unit "exec.init" =
   let st, init_events = init_test_doc ~text:"Definition x := true. Definition y := false." in
   let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.(enqueue empty init_events) in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add empty init_events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   let ranges = (DocumentManager.executed_ranges st).checked in
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.start.character) ranges in
@@ -112,8 +112,8 @@ let%test_unit "exec.require_error" =
   let st, init_events = init_test_doc ~text:"Require fuhidkgjh. Definition x := true." in
   let st, (s1, (s2, ())) = dm_parse st (E(P O)) in
   let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.(enqueue empty init_events) in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add empty init_events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   let ranges = (DocumentManager.executed_ranges st).checked in
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.start.character) ranges in
@@ -122,12 +122,12 @@ let%test_unit "exec.require_error" =
 let%test_unit "step_forward.delete_observe_id" =
   let st, init_events = init_test_doc ~text:"Definition x := 3. Lemma foo : x = 3." in 
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
-  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.Todo.(add empty init_events) in
   let st, events = DocumentManager.interpret_to_next st in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   let st, events = DocumentManager.interpret_to_next st in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s2.id)) (DocumentManager.Internal.observe_id st);
   let doc = DocumentManager.Internal.document st in
@@ -137,12 +137,12 @@ let%test_unit "step_forward.delete_observe_id" =
 let%test_unit "step_forward.expand_sentence_observe_id" =
   let st, init_events = init_test_doc ~text:"Definition x := 3. P." in 
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
-  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.Todo.(add empty init_events) in
   let st, events = DocumentManager.interpret_to_next st in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   let st, events = DocumentManager.interpret_to_next st in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s2.id)) (DocumentManager.Internal.observe_id st);
   let doc = DocumentManager.Internal.document st in
@@ -154,12 +154,12 @@ let%test_unit "step_forward.expand_sentence_observe_id" =
 let%test_unit "step_forward.insert_space_after_sentence_observe_id" =
   let st, init_events = init_test_doc ~text:"Definition x := 3. P." in 
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
-  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.Todo.(add empty init_events) in
   let st, events = DocumentManager.interpret_to_next st in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   let st, events = DocumentManager.interpret_to_next st in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s2.id)) (DocumentManager.Internal.observe_id st);
   let doc = DocumentManager.Internal.document st in
@@ -171,15 +171,15 @@ let%test_unit "step_forward.insert_space_after_sentence_observe_id" =
 let%test_unit "step_forward.proof_view" =
   let st, init_events = init_test_doc ~text:"Definition x := 3. Lemma foo : x = 3." in 
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
-  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.Todo.(add empty init_events) in
   let st, events = DocumentManager.interpret_to_next st in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   let st, events = DocumentManager.interpret_to_next st in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   let st, events = DocumentManager.interpret_to_next st in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s2.id)) (DocumentManager.Internal.observe_id st);
   let data = DocumentManager.get_proof st None in
@@ -192,18 +192,19 @@ let%test_unit "step_forward.proof_view" =
 let%test_unit "step_forward.document_begin" =
   let st, init_events = init_test_doc ~text:"(* Some comment *)\nLemma foo : x = 3." in
   let st, (s1, ()) = dm_parse st (P O) in
-  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.Todo.(add empty init_events) in
   let st, events = DocumentManager.interpret_to_next st in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in 
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s1.id)) (DocumentManager.Internal.observe_id st)
 
 let%test_unit "step_backward.document_begin" =
   let st, init_events = init_test_doc ~text:"(* Some comment *)\nLemma foo : x = 3." in
   let st, (s1, ()) = dm_parse st (P O) in
-  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.Todo.(add empty init_events) in
   let st, events = DocumentManager.interpret_to_next st in
   let st = handle_events todo st in
-  let todo = Sel.(enqueue empty events) in
+  let todo = Sel.Todo.(add empty events) in
   let st, events = DocumentManager.interpret_to_previous st in
   let st = handle_events todo st in
   [%test_eq: bool] (Option.is_none (DocumentManager.Internal.observe_id st)) true
@@ -212,13 +213,13 @@ let%test_unit "step_backward.document_begin" =
 let%test_unit "interpret_in_background.interpret_to stateful" = 
   let st, init_events = init_test_doc ~text:"Definition x := true. Definition y := false. Definition z := 0." in
   let st, (s1, (s2, (s3, ()))) = dm_parse st (P (P (P O))) in
-  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.Todo.(add empty init_events) in
   let st = handle_events todo st in 
   let st1, events = DocumentManager.interpret_in_background st in
-  let todo = Sel.(enqueue empty events) in 
+  let todo = Sel.Todo.(add empty events) in 
   let position = RawDocument.position_of_loc (DocumentManager.Internal.raw_document st) s2.stop in
   let st2, events = DocumentManager.interpret_to_position ~stateful:true st1 position in 
-  let todo = Sel.(enqueue todo events) in 
+  let todo = Sel.Todo.(add todo events) in 
   let st = handle_events todo st1 in 
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s3.id)) (DocumentManager.Internal.observe_id st)
 
@@ -227,13 +228,13 @@ let%test_unit "interpret_in_background.interpret_to stateful" =
 let%test_unit "interpret_to_end.interpret_to stateful" = 
   let st, init_events = init_test_doc ~text:"Definition x := true. Definition y := false. Definition z := 0." in
   let st, (s1, (s2, (s3, ()))) = dm_parse st (P (P (P O))) in
-  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.Todo.(add empty init_events) in
   let st = handle_events todo st in 
   let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.(enqueue empty events) in 
+  let todo = Sel.Todo.(add empty events) in 
   let position = RawDocument.position_of_loc (DocumentManager.Internal.raw_document st) s2.stop in
   let st, events = DocumentManager.interpret_to_position ~stateful:true st position in 
-  let todo = Sel.(enqueue todo events) in 
+  let todo = Sel.Todo.(add todo events) in 
   let st = handle_events todo st in 
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s2.id)) (DocumentManager.Internal.observe_id st)
 
@@ -242,13 +243,13 @@ let%test_unit "interpret_to_end.interpret_to stateful" =
 let%test_unit "interpret_to_end.interpret_to not stateful" = 
   let st, init_events = init_test_doc ~text:"Definition x := true. Definition y := false. Definition z := 0." in
   let st, (s1, (s2, (s3, ()))) = dm_parse st (P (P (P O))) in
-  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.Todo.(add empty init_events) in
   let st = handle_events todo st in 
   let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.(enqueue empty events) in 
+  let todo = Sel.Todo.(add empty events) in 
   let position = RawDocument.position_of_loc (DocumentManager.Internal.raw_document st) s2.stop in
   let st, events = DocumentManager.interpret_to_position ~stateful:false st position in 
-  let todo = Sel.(enqueue todo events) in 
+  let todo = Sel.Todo.(add todo events) in 
   let st = handle_events todo st in 
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s3.id)) (DocumentManager.Internal.observe_id st)
 
@@ -271,8 +272,8 @@ let%test_unit "edit.shift_warning_in_sentence" =
   let st, init_events = init_test_doc ~text:"#[deprecated(note = \"foo\", since = \"foo\")] Definition x := true. Definition y := x." in
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
   let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.(enqueue empty init_events) in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add empty init_events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   check_diag st [
     D (s2.id,Warning,".*deprecated.*")
@@ -295,8 +296,8 @@ let%test_unit "edit.shift_warning_before_sentence" =
   let st, init_events = init_test_doc ~text:"#[deprecated(note = \"foo\", since = \"foo\")] Definition x := true. Definition y := x." in
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
   let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.(enqueue empty init_events) in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add empty init_events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   check_diag st [
     D (s2.id,Warning,".*deprecated.*")
@@ -316,8 +317,8 @@ let%test_unit "edit.shift_error_in_sentence" =
   let st, init_events = init_test_doc ~text:"Definition x := true. Definition y := z." in
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
   let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.(enqueue empty init_events) in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add empty init_events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   check_diag st [
     D (s2.id,Error,".*z was not found.*")
@@ -340,8 +341,8 @@ let%test_unit "edit.shift_error_before_sentence" =
   let st, init_events = init_test_doc ~text:"Definition x := true. Definition y := z." in
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
   let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.(enqueue empty init_events) in
-  let todo = Sel.(enqueue todo events) in
+  let todo = Sel.Todo.(add empty init_events) in
+  let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
   check_diag st [
     D (s2.id,Error,".*z was not found.*")

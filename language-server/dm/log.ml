@@ -64,7 +64,7 @@ let mk_log name =
 let logs () = List.sort String.compare !logs
 
 type event = string
-type events = event Sel.event list
+type events = event Sel.Event.t list
 
 let install_debug_feedback f =
   Feedback.add_feeder (fun fb ->
@@ -77,13 +77,9 @@ let install_debug_feedback f =
 let coq_debug_feedback_queue = Queue.create ()
 let main_debug_feeder = install_debug_feedback (fun txt -> Queue.push txt coq_debug_feedback_queue)
    
-let (debug, cancel_debug_event) : event Sel.event * Sel.cancellation_handle =
-  Sel.on_queue coq_debug_feedback_queue (fun x -> x) |>
-  fun (e, cancellation) ->
-    (e |> Sel.name "debug"
-       |> Sel.make_recurring
-       |> Sel.set_priority PriorityManager.feedback),
-    cancellation
+let debug : event Sel.Event.t =
+  Sel.On.queue ~name:"debug" ~priority:PriorityManager.feedback coq_debug_feedback_queue (fun x -> x)
+let cancel_debug_event = Sel.Event.get_cancellation_handle debug
 
 let lsp_initialization_done () =
   lsp_initialization_done := true;
@@ -93,7 +89,7 @@ let lsp_initialization_done () =
   [debug]
 
 let worker_initialization_begins () =
-  Sel.cancel cancel_debug_event;
+  Sel.Event.cancel cancel_debug_event;
   Feedback.del_feeder main_debug_feeder;
     (* We do not want to inherit master's Feedback reader (feeder), otherwise we
     would output on the worker's stderr.

@@ -13,11 +13,9 @@
 (**************************************************************************)
 
 type event
-type events = event Sel.event list
-
-val lsp : event Sel.event
+type events = event Sel.Event.t list
 
 val handle_event : event -> events
 val pr_event : event -> Pp.t
 
-val init : Coqargs.injection_command list -> event Sel.event list
+val init : Coqargs.injection_command list -> event Sel.Event.t list

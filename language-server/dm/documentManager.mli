@@ -28,7 +28,7 @@ type state
 type event
 val pp_event : Format.formatter -> event -> unit
 
-type events = event Sel.event list
+type events = event Sel.Event.t list
 
 val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> state * events
 (** [init st opts uri text] initializes the document manager with initial vernac state
@@ -92,7 +92,7 @@ val get_completions : state -> Position.t -> (completion_item list, string) Resu
 val handle_event : event -> state -> (state option * events)
 (** handles events and returns a new state if it was updated *)
 
-val search : state -> id:string -> Position.t -> string -> notification Sel.event list
+val search : state -> id:string -> Position.t -> string -> notification Sel.Event.t list
 
 val about : state -> Position.t -> pattern:string -> (string,string) Result.t
 

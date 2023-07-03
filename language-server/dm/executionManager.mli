@@ -35,10 +35,10 @@ val is_diagnostics_enabled: unit -> bool
 (** Execution state, includes the cache *)
 type state
 type event
-type events = event Sel.event list
+type events = event Sel.Event.t list
 val pr_event : event -> Pp.t
 
-val init : Vernacstate.t -> state * event Sel.event
+val init : Vernacstate.t -> state * event Sel.Event.t
 val destroy : state -> unit
 
 val get_options : unit -> options

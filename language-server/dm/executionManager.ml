@@ -73,7 +73,7 @@ type state = {
   doc_id : document_id; (* unique number used to interface with Coq's Feedback *)
   coq_feeder : coq_feedback_listener;
   sel_feedback_queue : (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)) Queue.t;
-  sel_cancellation_handle : Sel.cancellation_handle;
+  sel_cancellation_handle : Sel.Event.cancellation_handle;
 }
 
 let options = ref default_options
@@ -116,14 +116,14 @@ end
 module ProofWorker = DelegationManager.MakeWorker(ProofJob)
 
 type event =
-  | LocalFeedback of Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)
+  | LocalFeedback of (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)) Queue.t * Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)
   | ProofWorkerEvent of ProofWorker.delegation
-type events = event Sel.event list
+type events = event Sel.Event.t list
 let pr_event = function
   | LocalFeedback _ -> Pp.str "LocalFeedback"
   | ProofWorkerEvent event -> ProofWorker.pr_event event
 
-let inject_proof_event = Sel.map (fun x -> ProofWorkerEvent x)
+let inject_proof_event = Sel.Event.map (fun x -> ProofWorkerEvent x)
 let inject_proof_events st l =
   (st, List.map inject_proof_event l)
 
@@ -221,12 +221,8 @@ let update state id v =
   update_all id (Done v) fl state
 ;;
 
-let local_feedback feedback_queue : event Sel.event * Sel.cancellation_handle =
-  let e, c = Sel.on_queue feedback_queue (fun (rid,sid,msg) -> LocalFeedback(rid,sid,msg)) in
-  e |> Sel.name "feedback"
-    |> Sel.make_recurring
-    |> Sel.set_priority PriorityManager.feedback,
-  c
+let local_feedback feedback_queue : event Sel.Event.t =
+  Sel.On.queue ~name:"feedback" ~priority:PriorityManager.feedback feedback_queue (fun (rid,sid,msg) -> LocalFeedback(feedback_queue,rid,sid,msg))
 
 let install_feedback_listener doc_id send =
   let open Feedback in
@@ -239,7 +235,8 @@ let init vernac_state =
   let doc_id = fresh_doc_id () in
   let sel_feedback_queue = Queue.create () in
   let coq_feeder = install_feedback_listener doc_id (fun x -> Queue.push x sel_feedback_queue) in
-  let event, sel_cancellation_handle = local_feedback sel_feedback_queue in
+  let event = local_feedback sel_feedback_queue in
+  let sel_cancellation_handle = Sel.Event.get_cancellation_handle event in
   {
     initial = vernac_state;
     of_sentence = SM.empty;
@@ -255,7 +252,7 @@ let init vernac_state =
 let feedback_cleanup { coq_feeder; sel_feedback_queue; sel_cancellation_handle } =
   Feedback.del_feeder coq_feeder;
   Queue.clear sel_feedback_queue;
-  Sel.cancel sel_cancellation_handle
+  Sel.Event.cancel sel_cancellation_handle
 
 let handle_feedback id fb state =
   match fb with
@@ -270,8 +267,8 @@ let handle_feedback id fb state =
 
 let handle_event event state =
   match event with
-  | LocalFeedback (_,id,fb) ->
-      Some (handle_feedback id fb state), []
+  | LocalFeedback (q,_,id,fb) ->
+      Some (handle_feedback id fb state), [local_feedback q]
   | ProofWorkerEvent event ->
       let update, events = ProofWorker.handle_event event in
       let state =
@@ -302,12 +299,12 @@ let find_fulfilled_opt x m =
     | Delegated _ -> None
   with Not_found -> None
 
-let jobs : (DelegationManager.job_handle * Sel.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
+let jobs : (DelegationManager.job_handle * Sel.Event.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
 
 (* TODO: kill all Delegated... *)
 let destroy st =
   feedback_cleanup st;
-  Queue.iter (fun (h,c,_) -> DelegationManager.cancel_job h; Sel.cancel c) jobs
+  Queue.iter (fun (h,c,_) -> DelegationManager.cancel_job h; Sel.Event.cancel c) jobs
 
 
 let last_opt l = try Some (CList.last l).id with Failure _ -> None
@@ -447,12 +444,12 @@ let execute st (vs, events, interrupted) task =
                else
                  update_all id (Delegated (job_id,None)) [] st)
                st (List.map id_of_prepared_task tasks) in
-            let e, cancellation =
+            let e =
                 ProofWorker.worker_available ~jobs
                   ~fork_action:worker_main
                   ~feedback_cleanup:(fun () -> feedback_cleanup st)
                 in
-              Queue.push (job_id, cancellation, job) jobs;
+              Queue.push (job_id, Sel.Event.get_cancellation_handle e, job) jobs;
               (st, last_vs,events @ [inject_proof_event e] ,false)
           | _ ->
             (* If executing the proof opener failed, we skip the proof *)
@@ -564,7 +561,7 @@ let rec invalidate schedule id st =
     if terminator_id != id then
       Queue.push job jobs
     else begin
-      Sel.cancel cancellation;
+      Sel.Event.cancel cancellation;
       removed := tasks :: !removed
     end) old_jobs;
   let of_sentence = List.fold_left invalidate1 of_sentence

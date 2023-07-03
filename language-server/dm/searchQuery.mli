@@ -13,7 +13,7 @@
 (**************************************************************************)
 open Protocol.LspWrapper
 
-val query_feedback : notification Sel.event
+val query_feedback : notification Sel.Event.t
 
 val interp_search :
   id:string ->
@@ -21,4 +21,4 @@ val interp_search :
   Evd.evar_map ->
   (bool * Vernacexpr.search_request) list ->
   Vernacexpr.search_restriction ->
-  notification Sel.event list
+  notification Sel.Event.t list
