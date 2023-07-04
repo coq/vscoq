@@ -145,6 +145,7 @@ export class HtmlCoqView implements view.CoqView {
         },
         {
           enableScripts: true,
+          enableFindWidget: true
         }
       );
 
