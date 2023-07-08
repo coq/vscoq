@@ -92,6 +92,30 @@ jobs:
         VSCOQPATH: ${{ env.vscoqtop }}
         VSCOQARGS: "-bt"
 
+  install-windows:
+    runs-on: windows-latest
+    steps:
+    - name: Set git to use LF
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Build language server
+      run: .\language-server\build-windows-platform.bat
+
+    - run: C:\ci\cygwin64\bin\bash.exe --login -c 'echo vscoqtop=$(cygpath -m $(which vscoqtop))' >> $Env:GITHUB_ENV
+
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+
+    - run: cd client && yarn run package && yarn test
+      env:
+        VSCOQPATH: ${{ env.vscoqtop }}
+        VSCOQARGS: "-bt"
 
   dev-setup-opam:
     strategy:
