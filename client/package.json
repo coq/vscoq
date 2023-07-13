@@ -582,7 +582,7 @@
   },
   "scripts": {
     "install:all": "yarn install && cd goal-view-ui && yarn install && cd ../search-ui && yarn install",
-    "build:all": "cd goal-view-ui && yarn run build && cd ../search-ui && yarn run build && cd .. & yarn compile",
+    "build:all": "cd goal-view-ui && yarn run build && cd ../search-ui && yarn run build && cd .. && yarn compile",
     "start:goal-view-ui": "cd goal-view-ui && yarn run start",
     "build:goal-view-ui": "cd goal-view-ui && yarn run build",
     "build:dev:goal-view-ui": "cd goal-view-ui && yarn run build:dev",
