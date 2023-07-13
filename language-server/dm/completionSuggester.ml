@@ -1,3 +1,17 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 VSCoq                                  *)
+(*                                                                        *)
+(*                   Copyright INRIA and contributors                     *)
+(*       (see version control and README file for authors & dates)        *)
+(*                                                                        *)
+(**************************************************************************)
+(*                                                                        *)
+(*   This file is distributed under the terms of the MIT License.         *)
+(*   See LICENSE file.                                                    *)
+(*                                                                        *)
+(**************************************************************************)
+
 module CompactedDecl = Context.Compacted.Declaration
 open Printer
 open EConstr
@@ -38,24 +52,14 @@ let mk_hyp d (env,l) =
   let m = List.fold_right (fun id acc -> HypothesisMap.add id typ acc) ids' l in
   (env', m)
 
-let get_hyps sigma goal =
+let get_hyps env sigma goal =
     let EvarInfo evi = Evd.find sigma goal in
-    let env = Evd.evar_filtered_env (Global.env ()) evi in
+    let env = Evd.evar_filtered_env env evi in
     let min_env = Environ.reset_context env in
     let (_env, hyps) =
       Context.Compacted.fold (mk_hyp)
         (Termops.compact_named_context sigma (EConstr.named_context env)) ~init:(min_env, HypothesisMap.empty) in
     hyps
-
-let get_goal_type_option proof =
-  Option.bind proof (fun Proof.{ goals; sigma; _ } -> 
-    List.nth_opt goals 0 
-    |> Option.map (fun goal ->
-      let evi = Evd.find_undefined sigma goal in
-      let env = Evd.evar_filtered_env (Global.env ()) evi in
-      Evd.evar_concl evi, sigma, env, goal
-      )
-    )
 
 let type_kind_opt sigma t = try Some (kind_of_type sigma t) with _ -> None 
 
@@ -322,11 +326,11 @@ module Structured = struct
 
   (* A Lower score is better as we are sorting in ascending order *)
 
-  let rank (options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) sigma _ lemmas : CompletionItems.completion_item list =
+  let rank (options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) sigma env lemmas : CompletionItems.completion_item list =
     let size_impact = options.sizeFactor in
     let atomic_factor = options.atomicFactor in
     let finalScore score size = Float.sub size (Float.mul score size_impact) in
-    let hyps = get_hyps sigma goal_evar in
+    let hyps = get_hyps env sigma goal_evar in
     match (unifier_kind sigma hyps goal, unifier_kind sigma HypothesisMap.empty goal) with
     | None, _ | _, None -> lemmas
     | Some goalUnf, Some goalUnfNoHypothesisSub -> 
@@ -392,12 +396,40 @@ let rank_choices (options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) 
   | SplitTypeIntersection -> TypeIntersection.rank goal sigma env lemmas
   | StructuredSplitUnification -> SelectiveUnification.rank options goal sigma env (Structured.rank options (goal, goal_evar) sigma env lemmas)
 
-let get_completion_items proof lemmas options =
+let get_goal_type_opt env Proof.{ goals; sigma; _ } =
+  List.nth_opt goals 0
+  |> Option.map (fun goal ->
+    let evi = Evd.find_undefined sigma goal in
+    let env = Evd.evar_filtered_env env evi in
+    Evd.evar_concl evi, sigma, env, goal
+    )
+
+let get_completion_items env proof lemmas options =
   try 
-    match get_goal_type_option proof with
+    match get_goal_type_opt env proof with
     | None -> lemmas
     | Some (goal, sigma, env, goal_evar) ->
         rank_choices options (goal, goal_evar) sigma env lemmas
   with e -> 
     log ("Ranking of lemmas failed: " ^ (Printexc.to_string e));
     lemmas
+
+let get_lemmas sigma env =
+  let open CompletionItems in
+  let results = ref [] in
+  let display ref _kind env c =
+    results := mk_completion_item sigma ref env c :: results.contents;
+  in
+  Search.generic_search env display;
+  results.contents
+
+let get_completions options st =
+  Vernacstate.unfreeze_full_state st;
+  match st.interp.lemmas with
+  | None -> None
+  | Some lemmas ->
+    let proof = Proof.data (lemmas |> Vernacstate.LemmaStack.with_top ~f:Declare.Proof.get) in
+    let env = Global.env () in
+    let sigma = proof.sigma in
+    let lemmas = get_lemmas sigma env in
+    Some (get_completion_items env proof lemmas options)

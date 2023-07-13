@@ -79,6 +79,8 @@ let set_options o = options := o
 let set_default_options () = options := default_options
 let is_diagnostics_enabled () = !options.enableDiagnostics
 
+let get_options () = !options
+
 type prepared_task =
   | PSkip of sentence_id
   | PExec of executable_sentence
@@ -543,29 +545,6 @@ let rec invalidate schedule id st =
   let deps = Scheduler.dependents schedule id in
   Stateid.Set.fold (invalidate schedule) deps { st with of_sentence }
 
-let get_proof st id =
-  match find_fulfilled_opt id st.of_sentence with
-  | None -> log "Cannot find state for proof"; None
-  | Some (Error _) -> log "Proof requested in error state"; None
-  | Some (Success None) -> log "Proof requested in a remotely checked state"; None
-  | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = None; _ } })) -> log "Proof requested in a state with no proof"; None
-  | Some (Success (Some { interp = { Vernacstate.Interp.lemmas = Some st; _ } })) ->
-      log "Proof is there";
-      let open Declare in
-      let open Vernacstate in
-      st |> LemmaStack.with_top ~f:Proof.get |> Option.make
-
-let get_proofview st id = Option.map Proof.data (get_proof st id)
-
-let get_lemmas sigma env =
-  let open CompletionItems in
-  let results = ref [] in
-  let display ref _kind env c =
-    results := mk_completion_item sigma ref env c :: results.contents;
-  in
-  Search.generic_search env display;
-  results.contents
-
 let get_context st id =
   match find_fulfilled_opt id st.of_sentence with
   | None -> log "Cannot find state for get_context"; None
@@ -584,13 +563,14 @@ let get_context st id =
       lemmas |> LemmaStack.with_top ~f:Proof.get_current_context |> Option.make
     end
 
-let get_completions st id =
-  let proof = get_proofview st id in
-  (match get_context st id with
-  | None -> None
-  | Some (sigma, env) -> 
-    let lemmas = get_lemmas sigma env in
-    Some (CompletionSuggester.get_completion_items proof lemmas !options.completion_options))
+let get_vernac_state st id =
+  match find_fulfilled_opt id st.of_sentence with
+  | None -> log "Cannot find state for get_context"; None
+  | Some (Error (_,None)) -> log "State requested after error with no state"; None
+  | Some (Success None) -> log "State requested in a remotely checked state"; None
+  | Some (Success (Some st))
+  | Some (Error (_, Some st)) ->
+    Some st
 
 module ProofWorkerProcess = struct
   type options = ProofWorker.options

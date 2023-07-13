@@ -17,7 +17,6 @@
 
 open Printer
 open Lsp
-open LspEncode
 open LspData
 open ExtProtocol
 

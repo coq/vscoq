@@ -11,12 +11,31 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
+type hyp = {
+  identifiers: string list;
+  type_ : string;
+  diff: string;
+  body: string option; [@yojson.option]
+} [@@deriving yojson]
+
+type goal = {
+  id: int;
+  hypotheses: hyp list;
+  goal: string;
+} [@@deriving yojson]
+
+type t = {
+  goals: goal list;
+  shelvedGoals: goal list;
+  givenUpGoals: goal list;
+} [@@deriving yojson]
+
 open Printer
 module CompactedDecl = Context.Compacted.Declaration
 
-let mk_goal sigma g =
+let mk_goal env sigma g =
   let EvarInfo evi = Evd.find sigma g in
-  let env = Evd.evar_filtered_env (Global.env ()) evi in
+  let env = Evd.evar_filtered_env env evi in
   let min_env = Environ.reset_context env in
   let id = Evar.repr g in
   let concl = match Evd.evar_body evi with
@@ -35,33 +54,38 @@ let mk_goal sigma g =
     | CompactedDecl.LocalDef (ids,c,typ) ->
       ids, Some c, typ
     in
-  let ids = List.map (fun id -> `String (Names.Id.to_string id.Context.binder_name)) ids in
+  let ids = List.map (fun id -> (Names.Id.to_string id.Context.binder_name)) ids in
   let typ = pr_letype_env env sigma typ in
-    let hyp = `Assoc ([
-      "identifiers", `List ids;
-      "type", `String (Pp.string_of_ppcmds typ);
-      "diff", `String "None";
-    ] @ Option.cata (fun body -> ["body", `String (Pp.string_of_ppcmds @@ pr_leconstr_env ~inctx:true env sigma body)]) [] body) in
+    let hyp = {
+      identifiers = ids;
+      type_ = Pp.string_of_ppcmds typ;
+      diff = "None";
+      body = Option.map (fun body -> Pp.string_of_ppcmds @@ pr_leconstr_env ~inctx:true env sigma body) body;
+    } in
     (env', hyp :: l)
   in
   let (_env, hyps) =
     Context.Compacted.fold mk_hyp
       (Termops.compact_named_context sigma (EConstr.named_context env)) ~init:(min_env,[]) in
-  `Assoc [
-    "id", `Int id;
-    "hypotheses", `List (List.rev hyps);
-    "goal", `String (Pp.string_of_ppcmds ccl)
-  ]
+  {
+    id;
+    hypotheses = List.rev hyps;
+    goal = Pp.string_of_ppcmds ccl;
+  }
 
-  let mk_proofview Proof.{ goals; sigma; _ } =
-    let goals = List.map (mk_goal sigma) goals in
-    let shelved = List.map (mk_goal sigma) (Evd.shelf sigma) in
-    let given_up = List.map (mk_goal sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
-    `Assoc [
-      "isInProof", `Bool true;
-      "type", `String "proof-view";
-      "goals", `List goals;
-      "shelvedGoals", `List shelved;
-      "givenUpGoals", `List given_up
-    ]
-  
+  let get_proof st =
+    Vernacstate.unfreeze_full_state st;
+    match st.interp.lemmas with
+    | None -> None
+    | Some lemmas ->
+      let proof = Proof.data (lemmas |> Vernacstate.LemmaStack.with_top ~f:Declare.Proof.get) in
+      let env = Global.env () in
+      let sigma = proof.sigma in
+      let goals = List.map (mk_goal env sigma) proof.goals in
+      let shelvedGoals = List.map (mk_goal env sigma) (Evd.shelf sigma) in
+      let givenUpGoals = List.map (mk_goal env sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
+      Some {
+        goals;
+        shelvedGoals;
+        givenUpGoals;
+      }
