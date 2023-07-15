@@ -11,9 +11,6 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
-val mk_goal :
-  Evd.evar_map ->
-  Evar.t ->
-  Yojson.Safe.t
+type t [@@deriving yojson]
 
-val mk_proofview : Proof.data -> Yojson.Safe.t
+val get_proof : Vernacstate.t -> t option

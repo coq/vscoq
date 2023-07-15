@@ -256,7 +256,8 @@ let get_proof st pos =
     | Some { id } -> Some id
   in
   let oid = Option.cata id_of_pos st.observe_id pos in
-  Option.bind oid (ExecutionManager.get_proofview st.execution_state)
+  let ost = Option.bind oid (ExecutionManager.get_vernac_state st.execution_state) in
+  Option.bind ost Lsp.ProofState.get_proof
 
 let get_context st pos =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
@@ -270,8 +271,10 @@ let get_completions st pos =
   match Document.find_sentence_before st.document loc with
   | None -> Error ("Can't get completions, no sentence found before the cursor")
   | Some sentence ->
-    match ExecutionManager.get_completions st.execution_state sentence.id with
-    | None -> Error ("Can't get completions, no sentence found before the cursor")
+    let ost = ExecutionManager.get_vernac_state st.execution_state sentence.id in
+    let settings = ExecutionManager.get_options () in
+    match Option.bind ost @@ CompletionSuggester.get_completions settings.completion_options with
+    | None -> Error ("Can't get completions")
     | Some lemmas -> Ok (lemmas)
 
 let parse_entry st pos entry pattern =

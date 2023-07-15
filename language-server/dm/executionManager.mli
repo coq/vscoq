@@ -13,7 +13,6 @@
 (**************************************************************************)
 
 open Types
-open CompletionItems
 
 (** The event manager is in charge of the actual event of tasks (as
     defined by the scheduler), caching event states and invalidating
@@ -41,6 +40,7 @@ val pr_event : event -> Pp.t
 val init : Vernacstate.t -> state * event Sel.event
 val destroy : state -> unit
 
+val get_options : unit -> options
 val set_options : options -> unit
 val set_default_options : unit -> unit
 val invalidate : Scheduler.schedule -> sentence_id -> state -> state
@@ -50,11 +50,11 @@ val shift_locs : state -> int -> int -> state
 val executed_ids : state -> sentence_id list
 val is_executed : state -> sentence_id -> bool
 val is_remotely_executed : state -> sentence_id -> bool
-val get_proof : state -> sentence_id -> Proof.t option
-val get_proofview : state -> sentence_id -> Proof.data option
+
 val get_context : state -> sentence_id -> (Evd.evar_map * Environ.env) option
-val get_lemmas : Evd.evar_map -> Environ.env -> completion_item list
-val get_completions : state -> sentence_id -> completion_item list option
+
+(** Returns the vernac state after the sentence *)
+val get_vernac_state : state -> sentence_id -> Vernacstate.t option
 
 (** Events for the main loop *)
 val handle_event : event -> state -> (state option * events)

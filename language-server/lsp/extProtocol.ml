@@ -86,9 +86,9 @@ module Notification = struct
 
     module ProofViewParams = struct
 
-      type t = Proof.data option
+      type t = ProofState.t option
 
-      let yojson_of_t pv = yojson_of_option LspEncode.mk_proofview pv
+      let yojson_of_t v = yojson_of_option ProofState.yojson_of_t v
 
     end
 
