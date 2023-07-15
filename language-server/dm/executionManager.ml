@@ -47,6 +47,7 @@ type options = {
 let default_options = {
   delegation_mode = CheckProofsInMaster;
   completion_options = {
+    enable = false;
     algorithm = StructuredSplitUnification;
     unificationLimit = 100;
     atomicFactor = 5.;
