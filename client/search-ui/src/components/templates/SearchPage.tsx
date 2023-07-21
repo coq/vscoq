@@ -1,17 +1,7 @@
-import React, {FunctionComponent, KeyboardEvent, ChangeEventHandler} from 'react';
-import {
-    VSCodeButton, 
-    VSCodePanelView, 
-    VSCodePanelTab, 
-    VSCodePanels
-} from '@vscode/webview-ui-toolkit/react';
-import {VscAdd, VscChromeClose} from 'react-icons/vsc';
+import React, {FunctionComponent, KeyboardEvent, ChangeEventHandler, useMemo} from 'react';
 
-import SearchField from '../molecules/SearchField';
-import Dropdown from '../molecules/Dropdown';
-import ResultTabs from '../organisms/ResultTabs';
-import ResultSection from '../organisms/ResultSection';
 import ResultPage from '../organisms/ResultPage';
+import TabBar from '../molecules/TabBar';
 
 import classes from './SearchPage.module.css';
 
@@ -44,61 +34,33 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
 
     const {tabs, currentTab} = state;
 
-    const panelViews = tabs.map((tab, index) => {
-        const id = "view-" + index;
-        return (
-            <VSCodePanelView key={id} id={id} >
-                <ResultPage 
+    const panels = useMemo(() => {
+        return tabs.map((tab, index) => {
+            return (
+                <ResultPage
                     tab={tab}
                     queryTypeSelectHandler={tabInputHandler(index, "type")}
                     onTextInput={tabInputHandler(index, "pattern")}
                     searchFieldKeyPressHandler={(e) => searchFieldKeyPressHandler(index, e)}
                     copyNameHandler={copyNameHandler}
-                />
-            </VSCodePanelView>
-        );
-    });
+                /> 
+            );
+        });
+    }, tabs);
 
-    const panelTabs = tabs.map((tab, index) => {
-        const id = "tab-" + index;
-        return <VSCodePanelTab 
-                    id={id} 
-                    key={id}
-                    
-                    onClick={
-                        () => changeTabHandler(index)
-                    }
-                    aria-selected={currentTab === index}
-                    className={tabs.length > 1 ? "" : classes.HiddenTab} //hide the tabs if there is only one
-                >
-                    {"Query " + (tabs.length - index)}
-                    <VSCodeButton 
-                        className={classes.SmallButton}
-                        appearance={'icon'} 
-                        ariaLabel='Add Tab' 
-                        onClick={() => deleteTabHandler(index)}
-                    >
-                        <VscChromeClose />
-                    </VSCodeButton>
-                </VSCodePanelTab>;
-    });
+    const tabNames = tabs.map(tab => tab.pattern === "" ? 'New Query' : tab.type + ': ' + tab.pattern);
 
     return (
             <div className={classes.Page}>
-            <VSCodePanels className={classes.Panels}>
-                <div className={classes.PageHeader}>
-                    <VSCodeButton 
-                        className={classes.Button}
-                        appearance={'icon'} 
-                        ariaLabel='Add Tab' 
-                        onClick={() => addTabHandler()}
-                    >
-                        <VscAdd />
-                    </VSCodeButton>
+                <TabBar 
+                    selected={currentTab} 
+                    tabNames={tabNames} 
+                    tabClickHandler={changeTabHandler} 
+                    closeTabHandler={deleteTabHandler}
+                />
+                <div className={classes.Panel}>
+                    {panels ? panels[currentTab] : null}
                 </div>
-                {panelTabs}
-                {panelViews}
-            </VSCodePanels>
             </div>
     );
 };
