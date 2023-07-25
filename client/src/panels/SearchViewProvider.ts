@@ -64,6 +64,18 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
         this._view?.webview.postMessage({"command": "addTab"});
     };
 
+    public collapseAll() {
+        SearchViewProvider._channel.appendLine("COLLAPSE ALL");
+        vscode.commands.executeCommand('setContext', 'vscoq.expandedQueries', false);
+        this._view?.webview.postMessage({"command": "collapseAll"});
+    };
+
+    public expandAll() {
+        SearchViewProvider._channel.appendLine("EXPAND ALL");
+        vscode.commands.executeCommand('setContext', 'vscoq.expandedQueries', true);
+        this._view?.webview.postMessage({"command": "expandAll"});
+    };
+
     public launchQuery(pattern: string, type: string) {
         const query = { "pattern": pattern, "type": type};
         this._view?.webview.postMessage({"command": "query", "query": query});
@@ -200,7 +212,10 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                 vscode.window.showInformationMessage('Successfuly copied command ' + message.text + ' to clipboard.');
                 return;
 
-
+            case "toggleExpandButton": 
+                const flag = (message.text === 'true');
+                vscode.commands.executeCommand('setContext', 'vscoq.expandedQueries', flag);
+                return;
         }
       }
     );

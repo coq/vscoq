@@ -17,6 +17,7 @@ type ResultTabProps = {
     tabs: QueryTab[],
     currentTab: number,
     copyNameHandler: (name: string) => void,
+    toggleCollapsedHandler: (index: number) => void,
     changeTabHandler: (tabIndex: number) => void,
     deleteTabHandler: (tabIndex: number) => void,
     searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement>,
@@ -27,6 +28,7 @@ const resultTabs: FunctionComponent<ResultTabProps> = (props) => {
     const {
         tabs, currentTab, 
         copyNameHandler, changeTabHandler, deleteTabHandler, 
+        toggleCollapsedHandler,
         searchFieldKeyPressHandler
     } = props;
 
@@ -47,14 +49,13 @@ const resultTabs: FunctionComponent<ResultTabProps> = (props) => {
     const view = useMemo(
         () => {
 
-            console.log("RERENDEEEEER");
-
             const panelViews = tabs.map((tab, index) => {
                 const id = "view-" + index;
                 return (
                     <VSCodePanelView key={id} id={id} >
                         <ResultSection 
                             result={tab.result} 
+                            toggleCollapsedHandler={toggleCollapsedHandler}
                             copyNameHandler={copyNameHandler}
                         />
                     </VSCodePanelView>

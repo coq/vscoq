@@ -8,9 +8,9 @@ import classes from './SearchPage.module.css';
 import { QueryPanelState } from '../../types';
 
 type SearchPageProps = {
-
     state: QueryPanelState,
     copyNameHandler: (name: string) => void,
+    toggleCollapsedHandler: (index: number) => void,
     queryTypeSelectHandler: (e: any) => void;
     onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
     searchFieldKeyPressHandler: (index:number, e: KeyboardEvent<HTMLInputElement>) => void,
@@ -29,26 +29,26 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
         changeTabHandler, addTabHandler, 
         deleteTabHandler,
         queryTypeSelectHandler, 
+        toggleCollapsedHandler, 
         tabInputHandler
     } = props;
 
     const {tabs, currentTab} = state;
 
-    const panels = useMemo(() => {
-        return tabs.map((tab, index) => {
-            return (
-                <ResultPage
-                    tab={tab}
-                    queryTypeSelectHandler={tabInputHandler(index, "type")}
-                    onTextInput={tabInputHandler(index, "pattern")}
-                    searchFieldKeyPressHandler={(e) => searchFieldKeyPressHandler(index, e)}
-                    copyNameHandler={copyNameHandler}
-                /> 
-            );
-        });
-    }, tabs);
+    const panels = tabs.map((tab, index) => {
+        return (
+            <ResultPage
+                tab={tab}
+                queryTypeSelectHandler={tabInputHandler(index, "type")}
+                onTextInput={tabInputHandler(index, "pattern")}
+                searchFieldKeyPressHandler={(e) => searchFieldKeyPressHandler(index, e)}
+                copyNameHandler={copyNameHandler}
+                toggleCollapsedHandler={toggleCollapsedHandler}
+            /> 
+        );
+    });
 
-    const tabNames = tabs.map(tab => tab.pattern === "" ? 'New Query' : tab.type + ': ' + tab.pattern);
+    const tabNames = tabs.map(tab => tab.title);
 
     return (
             <div className={classes.Page}>

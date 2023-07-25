@@ -30,7 +30,8 @@
 .Panel {
     margin-top: 6px;
     width: 100%;
-    height: fit-content;
+    min-height: 100%;
+    height: min-content;
     overflow: hidden;
 }
 

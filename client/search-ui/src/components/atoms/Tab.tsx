@@ -29,7 +29,10 @@ const tab: FunctionComponent<TabProps> = (props) => {
                 className={classes.SmallButton}
                 appearance={'icon'} 
                 ariaLabel='Delete' 
-                onClick={closeTabHandler}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    closeTabHandler();
+                }}
             >
                 <VscChromeClose />
             </VSCodeButton>

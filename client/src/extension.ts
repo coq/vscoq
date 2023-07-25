@@ -88,6 +88,8 @@ export function activate(context: ExtensionContext) {
     registerVscoqTextCommand('locateCursor', (editor) => launchQuery(editor, "locate"));
     registerVscoqTextCommand('printCursor', (editor) => launchQuery(editor, "print"));
     registerVscoqTextCommand('addQueryTab', () => searchProvider.addTab());
+    registerVscoqTextCommand('collapseAllQueries', () => searchProvider.collapseAll());
+    registerVscoqTextCommand('expandAllQueries', () => searchProvider.expandAll());
     registerVscoqTextCommand('interpretToPoint', (editor) => sendInterpretToPoint(editor, client));
     registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
     registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));

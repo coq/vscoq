@@ -249,6 +249,18 @@
         "title": "Add Tab",
         "category": "Coq",
         "icon": "$(add)"
+      },
+      {
+        "command": "vscoq.collapseAllQueries", 
+        "title": "Collapse All", 
+        "category": "Coq", 
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "vscoq.expandAllQueries", 
+        "title": "Expand All", 
+        "category": "Coq", 
+        "icon": "$(expand-all)"
       }
     ],
     "menus": {
@@ -257,6 +269,16 @@
                 "command": "vscoq.addQueryTab",
                 "group": "navigation",
                 "when": "view == vscoq.search"
+            }, 
+            {
+                "command": "vscoq.collapseAllQueries", 
+                "group": "navigation", 
+                "when": "view == vscoq.search && vscoq.expandedQueries"
+            }, 
+            {
+                "command": "vscoq.expandAllQueries", 
+                "group": "navigation", 
+                "when": "view == vscoq.search && !vscoq.expandedQueries"
             }
         ]
     },

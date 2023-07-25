@@ -26,7 +26,8 @@ import {
 } from './types';
 
 const defaultTab = {
-    id: uuid(), 
+    id: uuid(),
+    title: "New Tab",
     pattern: "", 
     type: QueryType.search,
     result: {
@@ -85,6 +86,14 @@ const app = () => {
             case 'addTab': 
                 addTabHandler(); 
                 break;
+
+            case 'collapseAll': 
+                collapseAll();
+                break;
+
+            case 'expandAll': 
+                expandAll(); 
+                break;
                 
         }
       }, []);
@@ -108,7 +117,7 @@ const app = () => {
                 if(tab.id === notification.id) {
                     //Here this should always be the case since the tab was initialized as a search
                     if(tab.result.type === "search") {
-                        const data = tab.result.data.concat([{name: notification.name, statement: notification.statement}]);
+                        const data = tab.result.data.concat([{name: notification.name, statement: notification.statement, collapsed: true}]);
                         return {...tab, result: {...tab.result, data: data}};
                     }
                 }
@@ -213,7 +222,7 @@ const app = () => {
         const {pattern, type} = notification;
         const result = initResult(type);
         const id = uuid();
-        const newTab : QueryTab[] = [{id: id, pattern: pattern, result: result, type: type}];
+        const newTab : QueryTab[] = [{id: id, title: "New Tab", pattern: pattern, result: result, type: type}];
         setQueryPanelState(state => {
             const newTabs = newTab.concat(state.tabs);
             return {currentTab: 0, tabs: newTabs};
@@ -248,7 +257,7 @@ const app = () => {
         setQueryPanelState(state => {
             const newTabs = state.tabs.map((tab, i) => {
                 if(index === i) {
-                    return {...tab, id: id, result: initResult(type)};
+                    return {...tab, id: id, result: initResult(type), title: type + ": " + pattern};
                 }
                 return tab;
             });
@@ -349,8 +358,8 @@ const app = () => {
         setQueryPanelState(
             state => {
                 const result = {type: "search", data: []} as SearchResultType; 
-                const newTab : QueryTab[] = [{id: uuid(), pattern: "", result: result, type: QueryType.search}];
-                return {currentTab: 0, tabs: newTab.concat(state.tabs)};
+                const newTab : QueryTab[] = [{id: uuid(), title: "New Tab", pattern: "", result: result, type: QueryType.search}];
+                return {currentTab: state.tabs.length, tabs: state.tabs.concat(newTab)};
             }, 
             (state) => saveState({state, history, historyIndex})
         );
@@ -369,7 +378,9 @@ const app = () => {
                 }
                 
             }, 
-            (state) => saveState({state, history, historyIndex})
+            (state) => {
+                saveState({state, history, historyIndex});
+            }
         );
     };
     
@@ -382,6 +393,62 @@ const app = () => {
         );
     };
 
+    const collapseAll = () => {
+        setQueryPanelState(state => {
+            const newTabs = state.tabs.map((tab, index) => {
+                if(index === state.currentTab && tab.result.type === 'search') {
+                    const data = tab.result.data.map(r => {
+                        return {...r, collapsed: true};
+                    });
+                    const result = {
+                        type: "search", 
+                        data: data
+                    } as SearchResultType;
+                    return {...tab, result: result};
+                }
+                return tab;
+            });
+            return {...state, tabs: newTabs};
+        });
+    };
+    
+    const expandAll = () => {
+        setQueryPanelState(state => {
+            const newTabs = state.tabs.map((tab, index) => {
+                if(index === state.currentTab && tab.result.type === 'search') {
+                    const data = tab.result.data.map(r => {
+                        return {...r, collapsed: false};
+                    });
+                    const result = {
+                        type: "search", 
+                        data: data
+                    } as SearchResultType;
+                    return {...tab, result: result};
+                }
+                return tab;
+            });
+            return {...state, tabs: newTabs};
+        });
+    };
+
+    const toggleSearchResultDefinition = (index: number) => {
+        setQueryPanelState(state => {
+            const newTabs = state.tabs.map((tab, i) => {
+                if(i === state.currentTab && tab.result.type === 'search') {
+                    const data = tab.result.data.map((r,i) => {
+                        if(i === index) {
+                            return {...r, collapsed: !r.collapsed};
+                        }
+                        return r;
+                    });
+                    return {...tab, result: {...tab.result, data: data}};
+                }
+                return tab; 
+            });
+            return {...state, tabs: newTabs};
+        });
+    };
+    
     return (
         <main>
             <SearchPage
@@ -389,6 +456,7 @@ const app = () => {
                 onTextInput={searchFieldInputHandler} 
                 searchFieldKeyPressHandler={searchFieldKeyPressHandler} 
                 copyNameHandler={copyNameToClipboard}
+                toggleCollapsedHandler={toggleSearchResultDefinition}
                 addTabHandler={addTabHandler}
                 changeTabHandler={changeTabHandler}
                 deleteTabHandler={deleteTabHandler}

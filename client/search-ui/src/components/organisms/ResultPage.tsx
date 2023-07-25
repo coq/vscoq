@@ -10,6 +10,7 @@ type ResultPageProps = {
     queryTypeSelectHandler: (e: any) => void;
     onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
     searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement>,
+    toggleCollapsedHandler: (index: number) => void;
     copyNameHandler: (name: string) => void;
 };
 
@@ -19,7 +20,8 @@ const page: FunctionComponent<ResultPageProps> = (props) => {
         tab,
         queryTypeSelectHandler, 
         onTextInput, 
-        searchFieldKeyPressHandler, 
+        searchFieldKeyPressHandler,
+        toggleCollapsedHandler,
         copyNameHandler
     } = props;
 
@@ -38,6 +40,7 @@ const page: FunctionComponent<ResultPageProps> = (props) => {
             />
             <ResultSection 
                 result={result}
+                toggleCollapsedHandler={toggleCollapsedHandler}
                 copyNameHandler={copyNameHandler}
             />
         </div>
