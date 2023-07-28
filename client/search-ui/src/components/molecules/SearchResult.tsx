@@ -13,12 +13,13 @@ type SearchResultProps = {
     statement: string; 
     collapsed: boolean;
     toggleCollapsedHandler: () => void;
+    deleteResultHandler: () => void;
     copyNameHandler: (name: string) => void;
 };
 
 const searchResult: FunctionComponent<SearchResultProps> = (props) => {
     
-    const {name, statement, collapsed, toggleCollapsedHandler, copyNameHandler} = props;
+    const {name, statement, collapsed, toggleCollapsedHandler, deleteResultHandler, copyNameHandler} = props;
 
     const [hovered, setHovered] = useState(false);
 
@@ -49,6 +50,7 @@ const searchResult: FunctionComponent<SearchResultProps> = (props) => {
                     </VSCodeButton>
                     <VSCodeButton appearance={'icon'} ariaLabel='Remove' onClick={(event) => {
                         event.stopPropagation();
+                        deleteResultHandler();
                     }}>
                         <VscClose />
                     </VSCodeButton>    

@@ -11,8 +11,7 @@ type SearchPageProps = {
     state: QueryPanelState,
     copyNameHandler: (name: string) => void,
     toggleCollapsedHandler: (index: number) => void,
-    queryTypeSelectHandler: (e: any) => void;
-    onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
+    deleteSearchResultHander: (index: number) => void, 
     searchFieldKeyPressHandler: (index:number, e: KeyboardEvent<HTMLInputElement>) => void,
     addTabHandler: () => void,
     deleteTabHandler: (tabIndex: number) => void,
@@ -25,17 +24,17 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     const {
         state, 
         copyNameHandler, 
-        onTextInput, searchFieldKeyPressHandler,
-        changeTabHandler, addTabHandler, 
+        searchFieldKeyPressHandler,
+        changeTabHandler,
         deleteTabHandler,
-        queryTypeSelectHandler, 
         toggleCollapsedHandler, 
+        deleteSearchResultHander,
         tabInputHandler
     } = props;
 
     const {tabs, currentTab} = state;
 
-    const panels = tabs.map((tab, index) => {
+    const panels = useMemo(() => tabs.map((tab, index) => {
         return (
             <ResultPage
                 tab={tab}
@@ -44,9 +43,10 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
                 searchFieldKeyPressHandler={(e) => searchFieldKeyPressHandler(index, e)}
                 copyNameHandler={copyNameHandler}
                 toggleCollapsedHandler={toggleCollapsedHandler}
+                deleteSearchResultHandler={deleteSearchResultHander}
             /> 
         );
-    });
+    }), [tabs]);
 
     const tabNames = tabs.map(tab => tab.title);
 

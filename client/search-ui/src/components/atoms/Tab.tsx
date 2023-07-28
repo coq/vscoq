@@ -6,15 +6,17 @@ import { VscChromeClose } from 'react-icons/vsc';
 
 type TabProps = {
     isSelected: boolean;
+    noClose?: boolean;
     closeTabHandler: () => void;
     onClick: () => void;
 };
 
 const tab: FunctionComponent<TabProps> = (props) => {
     
-    const {isSelected, onClick, closeTabHandler} = props;
+    const {isSelected, onClick, closeTabHandler, noClose = false} = props;
 
-    let classNames = isSelected ? [classes.Tab, classes.Active] : [classes.Tab, classes.Inactive]; 
+    const classNames = isSelected ? [classes.Tab, classes.Active] : [classes.Tab, classes.Inactive]; 
+    const buttonClassNames = noClose ? [classes.SmallButton, classes.Hidden] : [classes.SmallButton];
 
     return (
         <div 
@@ -26,7 +28,8 @@ const tab: FunctionComponent<TabProps> = (props) => {
             </div>
             
             <VSCodeButton 
-                className={classes.SmallButton}
+                className={buttonClassNames.join(' ')}
+                disabled={noClose}
                 appearance={'icon'} 
                 ariaLabel='Delete' 
                 onClick={(event) => {

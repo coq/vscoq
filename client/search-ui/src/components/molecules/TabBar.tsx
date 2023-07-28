@@ -22,6 +22,7 @@ const tabBar: FunctionComponent<TabBarProps> = (props) => {
                 isSelected={index === selected}
                 closeTabHandler={() => closeTabHandler(index)}
                 onClick={() => tabClickHandler(index)}
+                noClose={tabNames.length === 1}
             >
                 {name}
             </Tab>

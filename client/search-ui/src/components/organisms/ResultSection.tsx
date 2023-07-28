@@ -13,12 +13,13 @@ import classes from './ResultSection.module.css';
 type SearchResultSectionProps = {
     result: QueryResult,
     toggleCollapsedHandler: (index: number) => void;
+    deleteSearchResultHandler: (index: number) => void;
     copyNameHandler: (name: string) => void;
 };
 
 const searchResultSection: FunctionComponent<SearchResultSectionProps> = (props) => {
 
-    const {result, toggleCollapsedHandler, copyNameHandler} = props;
+    const {result, toggleCollapsedHandler, deleteSearchResultHandler, copyNameHandler} = props;
 
     let resultComponent = null; 
 
@@ -33,6 +34,7 @@ const searchResultSection: FunctionComponent<SearchResultSectionProps> = (props)
                 collapsed={res.collapsed}
                 copyNameHandler={copyNameHandler}
                 toggleCollapsedHandler={() => toggleCollapsedHandler(index)}
+                deleteResultHandler={() => deleteSearchResultHandler(index)}
             />;
     
         });

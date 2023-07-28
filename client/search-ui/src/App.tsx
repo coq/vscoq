@@ -222,10 +222,10 @@ const app = () => {
         const {pattern, type} = notification;
         const result = initResult(type);
         const id = uuid();
-        const newTab : QueryTab[] = [{id: id, title: "New Tab", pattern: pattern, result: result, type: type}];
+        const newTab : QueryTab[] = [{id: id, title: type + ": " + pattern, pattern: pattern, result: result, type: type}];
         setQueryPanelState(state => {
-            const newTabs = newTab.concat(state.tabs);
-            return {currentTab: 0, tabs: newTabs};
+            const newTabs = state.tabs.concat(newTab);
+            return {currentTab: newTabs.length - 1, tabs: newTabs};
         }, () => {
             vscode.postMessage({
                 command: "coqQuery",
@@ -448,19 +448,31 @@ const app = () => {
             return {...state, tabs: newTabs};
         });
     };
+
+    const deleteSearchResultHandler = (index: number) => {
+        setQueryPanelState(state => {
+            const newTabs = state.tabs.map((tab, i) => {
+                if(i === state.currentTab && tab.result.type === 'search') {
+                    const data = tab.result.data.filter((r,i) => i !== index);
+                    return {...tab, result: {...tab.result, data: data}};
+                }
+                return tab; 
+            });
+            return {...state, tabs: newTabs};
+        });
+    };
     
     return (
         <main>
             <SearchPage
                 state={queryPanelState}
-                onTextInput={searchFieldInputHandler} 
                 searchFieldKeyPressHandler={searchFieldKeyPressHandler} 
                 copyNameHandler={copyNameToClipboard}
                 toggleCollapsedHandler={toggleSearchResultDefinition}
+                deleteSearchResultHander={deleteSearchResultHandler}
                 addTabHandler={addTabHandler}
                 changeTabHandler={changeTabHandler}
                 deleteTabHandler={deleteTabHandler}
-                queryTypeSelectHandler={queryTypeSelectHandler}
                 tabInputHandler={tabInputHandler}
             />
         </main>
