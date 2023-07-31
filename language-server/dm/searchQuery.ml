@@ -36,6 +36,6 @@ let interp_search ~id env sigma s =
     Queue.push { id; name; statement } query_results_queue
   in
   let no_restriction = [], true in
-  (Search.search env sigma [ComSearch.interp_search_request env Evd.(from_env env) s] no_restriction |>
+  (Search.search env sigma (List.map (ComSearch.interp_search_request env Evd.(from_env env)) s) no_restriction |>
     Search.prioritize_search) pr_search;
   [query_feedback]

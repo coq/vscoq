@@ -303,8 +303,8 @@ let search st ~id pos pattern =
   match get_context st pos with
   | None -> [] (* TODO execute? *)
   | Some (sigma, env) ->
-    let query = parse_entry st loc (G_vernac.search_query) pattern in
-    SearchQuery.interp_search ~id env sigma query
+    let query, _r = parse_entry st loc (G_vernac.search_queries) pattern in
+    SearchQuery.interp_search ~id env sigma query 
 
 let hover st pos = 
   let opattern = RawDocument.word_at_position (Document.raw_document st.document) pos in
