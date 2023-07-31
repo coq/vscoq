@@ -14,7 +14,8 @@
 open Util
 open Printer
 open Lsp.LspData
-
+open Vernacexpr
+open Pp
 (* Note: this queue is not very useful today, as we process results in the main
 vscoq process, which does not allow for real asynchronous processing of results. *)
 let query_results_queue = Queue.create ()
@@ -23,7 +24,16 @@ let query_feedback : notification Sel.event =
   Sel.on_queue query_results_queue (fun x -> QueryResultNotification x)
   |> Sel.uncancellable
 
-let interp_search ~id env sigma s =
+let global_module qid =
+    try Nametab.full_name_module qid
+    with Not_found ->  
+      CErrors.user_err ?loc:qid.CAst.loc
+       (str "Module/Section " ++ Ppconstr.pr_qualid qid ++ str " not found.")
+let interp_search_restriction = function
+  | SearchOutside l -> (List.map global_module l, true)
+  | SearchInside l -> (List.map global_module l, false)
+
+let interp_search ~id env sigma s r =
   let pr_search ref _kind env c =
     let pr = pr_global ref in
     let open Impargs in
@@ -35,7 +45,7 @@ let interp_search ~id env sigma s =
     let statement = Pp.string_of_ppcmds pc in
     Queue.push { id; name; statement } query_results_queue
   in
-  let no_restriction = [], true in
-  (Search.search env sigma (List.map (ComSearch.interp_search_request env Evd.(from_env env)) s) no_restriction |>
+  let r = interp_search_restriction r in
+  (Search.search env sigma (List.map (ComSearch.interp_search_request env Evd.(from_env env)) s) r |>
     Search.prioritize_search) pr_search;
   [query_feedback]
