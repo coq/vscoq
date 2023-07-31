@@ -36,7 +36,7 @@ let client: Client;
 export function activate(context: ExtensionContext) {
 
     function registerVscoqTextCommand(command: string, callback: (textEditor: TextEditor, ...args: any[]) => void) {
-        context.subscriptions.push(commands.registerTextEditorCommand('vscoq.' + command, callback));
+        context.subscriptions.push(commands.registerTextEditorCommand('extension.coq.' + command, callback));
     };
     
 	const config = workspace.getConfiguration('vscoq');
@@ -82,11 +82,11 @@ export function activate(context: ExtensionContext) {
         searchProvider.launchQuery(queryText, type);
     };
 
-    registerVscoqTextCommand('searchCursor', (editor) => launchQuery(editor, "search"));
-    registerVscoqTextCommand('aboutCursor', (editor) => launchQuery(editor, "about"));
-    registerVscoqTextCommand('checkCursor', (editor) => launchQuery(editor, "check"));
-    registerVscoqTextCommand('locateCursor', (editor) => launchQuery(editor, "locate"));
-    registerVscoqTextCommand('printCursor', (editor) => launchQuery(editor, "print"));
+    registerVscoqTextCommand('query.search', (editor) => launchQuery(editor, "search"));
+    registerVscoqTextCommand('query.about', (editor) => launchQuery(editor, "about"));
+    registerVscoqTextCommand('query.check', (editor) => launchQuery(editor, "check"));
+    registerVscoqTextCommand('query.locate', (editor) => launchQuery(editor, "locate"));
+    registerVscoqTextCommand('query.print', (editor) => launchQuery(editor, "print"));
     registerVscoqTextCommand('addQueryTab', () => searchProvider.addTab());
     registerVscoqTextCommand('collapseAllQueries', () => searchProvider.collapseAll());
     registerVscoqTextCommand('expandAllQueries', () => searchProvider.expandAll());
