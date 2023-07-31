@@ -35,6 +35,7 @@ export interface SearchResultType {
     data : {
         name: string; 
         statement: string;
+        collapsed: boolean;
     }[]
 };
 export interface CheckResultType {
@@ -68,6 +69,7 @@ export interface Query {
 
 export interface QueryTab {
     id: string, 
+    title: string, 
     pattern: string, 
     type: QueryType, 
     result: QueryResult,

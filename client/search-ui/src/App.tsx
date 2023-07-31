@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useEffect, KeyboardEventHandler, ChangeEventHandler, useRef} from 'react';
+import React, {useState, useCallback, useEffect, KeyboardEvent, ChangeEventHandler, useRef, ChangeEvent} from 'react';
 import { v4 as uuid } from 'uuid';
 
 import SearchPage from './components/templates/SearchPage';
@@ -26,7 +26,8 @@ import {
 } from './types';
 
 const defaultTab = {
-    id: uuid(), 
+    id: uuid(),
+    title: "New Tab",
     pattern: "", 
     type: QueryType.search,
     result: {
@@ -81,6 +82,19 @@ const app = () => {
             case 'query':
                 handleImmediateQueryNotification(msg.data.query);
                 break;
+
+            case 'addTab': 
+                addTabHandler(); 
+                break;
+
+            case 'collapseAll': 
+                collapseAll();
+                break;
+
+            case 'expandAll': 
+                expandAll(); 
+                break;
+                
         }
       }, []);
     
@@ -103,7 +117,7 @@ const app = () => {
                 if(tab.id === notification.id) {
                     //Here this should always be the case since the tab was initialized as a search
                     if(tab.result.type === "search") {
-                        const data = tab.result.data.concat([{name: notification.name, statement: notification.statement}]);
+                        const data = tab.result.data.concat([{name: notification.name, statement: notification.statement, collapsed: true}]);
                         return {...tab, result: {...tab.result, data: data}};
                     }
                 }
@@ -208,10 +222,10 @@ const app = () => {
         const {pattern, type} = notification;
         const result = initResult(type);
         const id = uuid();
-        const newTab : QueryTab[] = [{id: id, pattern: pattern, result: result, type: type}];
+        const newTab : QueryTab[] = [{id: id, title: type + ": " + pattern, pattern: pattern, result: result, type: type}];
         setQueryPanelState(state => {
-            const newTabs = newTab.concat(state.tabs);
-            return {currentTab: 0, tabs: newTabs};
+            const newTabs = state.tabs.concat(newTab);
+            return {currentTab: newTabs.length - 1, tabs: newTabs};
         }, () => {
             vscode.postMessage({
                 command: "coqQuery",
@@ -233,17 +247,17 @@ const app = () => {
         if(state.historyIndex) {setHistoryIndex(state.historyIndex);}
     };
 
-    const launchQuery = () => {
+    const launchQuery = (index: number) => {
 
-        const {pattern, type} = queryPanelState.tabs[queryPanelState.currentTab];
+        const {pattern, type} = queryPanelState.tabs[index];
             
         setHistory(history => [pattern].concat(history));
             
         const id = uuid();
         setQueryPanelState(state => {
-            const newTabs = state.tabs.map((tab, index) => {
-                if(index === state.currentTab) {
-                    return {...tab, id: id, result: initResult(type)};
+            const newTabs = state.tabs.map((tab, i) => {
+                if(index === i) {
+                    return {...tab, id: id, result: initResult(type), title: type + ": " + pattern};
                 }
                 return tab;
             });
@@ -267,10 +281,10 @@ const app = () => {
         updateQueryString(e.target.value);
     };
 
-    const searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement> = (e) => {
+    const searchFieldKeyPressHandler: ((index:number, e: KeyboardEvent<HTMLInputElement>) => void) = (index, e) => {
             
         if(e.code === "Enter") {
-            launchQuery();
+            launchQuery(index);
         }
 
         if(e.code === "ArrowUp") {
@@ -295,6 +309,19 @@ const app = () => {
 
     };
 
+    const tabInputHandler: ((index: number, field: string) => (ChangeEventHandler<HTMLInputElement>)) = (index: number, field: string) => {
+        return (e: ChangeEvent<HTMLInputElement>) => {
+            setQueryPanelState(state => {
+                const newTabs = state.tabs.map((tab, i) => {
+                    if(index === i) {
+                        return {...tab, [field]: e.target.value};
+                    }
+                    return tab;
+                });
+                return {...state, tabs: newTabs};
+            });
+        };
+    };
     
     const updateQueryType = (type: QueryType) => {
         setQueryPanelState(state => {
@@ -331,8 +358,8 @@ const app = () => {
         setQueryPanelState(
             state => {
                 const result = {type: "search", data: []} as SearchResultType; 
-                const newTab : QueryTab[] = [{id: uuid(), pattern: "", result: result, type: QueryType.search}];
-                return {currentTab: 0, tabs: newTab.concat(state.tabs)};
+                const newTab : QueryTab[] = [{id: uuid(), title: "New Tab", pattern: "", result: result, type: QueryType.search}];
+                return {currentTab: state.tabs.length, tabs: state.tabs.concat(newTab)};
             }, 
             (state) => saveState({state, history, historyIndex})
         );
@@ -351,7 +378,9 @@ const app = () => {
                 }
                 
             }, 
-            (state) => saveState({state, history, historyIndex})
+            (state) => {
+                saveState({state, history, historyIndex});
+            }
         );
     };
     
@@ -364,17 +393,87 @@ const app = () => {
         );
     };
 
+    const collapseAll = () => {
+        setQueryPanelState(state => {
+            const newTabs = state.tabs.map((tab, index) => {
+                if(index === state.currentTab && tab.result.type === 'search') {
+                    const data = tab.result.data.map(r => {
+                        return {...r, collapsed: true};
+                    });
+                    const result = {
+                        type: "search", 
+                        data: data
+                    } as SearchResultType;
+                    return {...tab, result: result};
+                }
+                return tab;
+            });
+            return {...state, tabs: newTabs};
+        });
+    };
+    
+    const expandAll = () => {
+        setQueryPanelState(state => {
+            const newTabs = state.tabs.map((tab, index) => {
+                if(index === state.currentTab && tab.result.type === 'search') {
+                    const data = tab.result.data.map(r => {
+                        return {...r, collapsed: false};
+                    });
+                    const result = {
+                        type: "search", 
+                        data: data
+                    } as SearchResultType;
+                    return {...tab, result: result};
+                }
+                return tab;
+            });
+            return {...state, tabs: newTabs};
+        });
+    };
+
+    const toggleSearchResultDefinition = (index: number) => {
+        setQueryPanelState(state => {
+            const newTabs = state.tabs.map((tab, i) => {
+                if(i === state.currentTab && tab.result.type === 'search') {
+                    const data = tab.result.data.map((r,i) => {
+                        if(i === index) {
+                            return {...r, collapsed: !r.collapsed};
+                        }
+                        return r;
+                    });
+                    return {...tab, result: {...tab.result, data: data}};
+                }
+                return tab; 
+            });
+            return {...state, tabs: newTabs};
+        });
+    };
+
+    const deleteSearchResultHandler = (index: number) => {
+        setQueryPanelState(state => {
+            const newTabs = state.tabs.map((tab, i) => {
+                if(i === state.currentTab && tab.result.type === 'search') {
+                    const data = tab.result.data.filter((r,i) => i !== index);
+                    return {...tab, result: {...tab.result, data: data}};
+                }
+                return tab; 
+            });
+            return {...state, tabs: newTabs};
+        });
+    };
+    
     return (
         <main>
             <SearchPage
                 state={queryPanelState}
-                onTextInput={searchFieldInputHandler} 
                 searchFieldKeyPressHandler={searchFieldKeyPressHandler} 
                 copyNameHandler={copyNameToClipboard}
+                toggleCollapsedHandler={toggleSearchResultDefinition}
+                deleteSearchResultHander={deleteSearchResultHandler}
                 addTabHandler={addTabHandler}
                 changeTabHandler={changeTabHandler}
                 deleteTabHandler={deleteTabHandler}
-                queryTypeSelectHandler={queryTypeSelectHandler}
+                tabInputHandler={tabInputHandler}
             />
         </main>
     );

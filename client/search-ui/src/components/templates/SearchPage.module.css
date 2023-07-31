@@ -1,6 +1,8 @@
 .Page {
+    height: 100%;
     width: 100%;
     display: block;
+    margin: 0;
 }
 
 .PageHeader {
@@ -25,10 +27,14 @@
     margin-left: 6px;
 }
 
-.Panels {
+.Panel {
+    margin-top: 6px;
     width: 100%;
+    min-height: 100%;
+    height: min-content;
+    overflow: hidden;
 }
 
-.HiddenTab {
+.Hidden {
     display: none;
 }

@@ -1,27 +1,22 @@
-import React, {FunctionComponent, KeyboardEventHandler} from 'react';
-import {
-    VSCodeButton
-} from '@vscode/webview-ui-toolkit/react';
-import {VscAdd, VscChromeClose} from 'react-icons/vsc';
+import React, {FunctionComponent, KeyboardEvent, ChangeEventHandler, useMemo} from 'react';
 
-import SearchField from '../molecules/SearchField';
-import Dropdown from '../molecules/Dropdown';
-import ResultTabs from '../organisms/ResultTabs';
+import ResultPage from '../organisms/ResultPage';
+import TabBar from '../molecules/TabBar';
 
 import classes from './SearchPage.module.css';
 
 import { QueryPanelState } from '../../types';
 
 type SearchPageProps = {
-
     state: QueryPanelState,
     copyNameHandler: (name: string) => void,
-    queryTypeSelectHandler: (e: any) => void;
-    onTextInput: (e: any) => void; //FormEventHandler<HTMLInputElement>
-    searchFieldKeyPressHandler: KeyboardEventHandler<HTMLInputElement>,
+    toggleCollapsedHandler: (index: number) => void,
+    deleteSearchResultHander: (index: number) => void, 
+    searchFieldKeyPressHandler: (index:number, e: KeyboardEvent<HTMLInputElement>) => void,
     addTabHandler: () => void,
     deleteTabHandler: (tabIndex: number) => void,
     changeTabHandler: (tabIndex: number) => void,
+    tabInputHandler: (index: number, field: string) => (ChangeEventHandler<HTMLInputElement>)
 };
 
 const searchPage: FunctionComponent<SearchPageProps> = (props) => {
@@ -29,50 +24,43 @@ const searchPage: FunctionComponent<SearchPageProps> = (props) => {
     const {
         state, 
         copyNameHandler, 
-        onTextInput, searchFieldKeyPressHandler,
-        changeTabHandler, addTabHandler, 
+        searchFieldKeyPressHandler,
+        changeTabHandler,
         deleteTabHandler,
-        queryTypeSelectHandler
+        toggleCollapsedHandler, 
+        deleteSearchResultHander,
+        tabInputHandler
     } = props;
 
     const {tabs, currentTab} = state;
-    // just handle the state update lag
-    const {pattern ="", type=""} = currentTab < tabs.length ? tabs[currentTab] : {};
+
+    const panels = useMemo(() => tabs.map((tab, index) => {
+        return (
+            <ResultPage
+                tab={tab}
+                queryTypeSelectHandler={tabInputHandler(index, "type")}
+                onTextInput={tabInputHandler(index, "pattern")}
+                searchFieldKeyPressHandler={(e) => searchFieldKeyPressHandler(index, e)}
+                copyNameHandler={copyNameHandler}
+                toggleCollapsedHandler={toggleCollapsedHandler}
+                deleteSearchResultHandler={deleteSearchResultHander}
+            /> 
+        );
+    }), [tabs]);
+
+    const tabNames = tabs.map(tab => tab.title);
 
     return (
             <div className={classes.Page}>
-                <div className={classes.PageHeader}>
-                    <SearchField 
-                        value={pattern} 
-                        onTextInput={onTextInput} 
-                        onKeyDown={searchFieldKeyPressHandler} 
-                    />
-                    
-                    <Dropdown 
-                        classes={[classes.Dropdown]} 
-                        selectedValue={type} 
-                        options={['search', 'check', 'about', 'locate', 'print']} 
-                        optionLabels={['Search', 'Check', 'About', 'Locate', 'Print']} 
-                        onChange={queryTypeSelectHandler}
-                    />
-
-                    <VSCodeButton 
-                        className={classes.Button}
-                        appearance={'icon'} 
-                        ariaLabel='Add Tab' 
-                        onClick={() => addTabHandler()}
-                    >
-                        <VscAdd />
-                    </VSCodeButton>
-                </div>
-                <ResultTabs 
-                    tabs={tabs}
-                    currentTab={currentTab}
-                    copyNameHandler={copyNameHandler}
-                    changeTabHandler={changeTabHandler}
-                    deleteTabHandler={deleteTabHandler}
-                    searchFieldKeyPressHandler={searchFieldKeyPressHandler}
+                <TabBar 
+                    selected={currentTab} 
+                    tabNames={tabNames} 
+                    tabClickHandler={changeTabHandler} 
+                    closeTabHandler={deleteTabHandler}
                 />
+                <div className={classes.Panel}>
+                    {panels ? panels[currentTab] : null}
+                </div>
             </div>
     );
 };

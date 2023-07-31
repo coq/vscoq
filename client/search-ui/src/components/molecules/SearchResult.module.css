@@ -6,10 +6,44 @@
     justify-content: space-between;
 }
 
+.Hovered {
+    background-color: var(--vscode-list-hoverBackground);
+    cursor: pointer;
+}
+
 .ResultBlock {
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: left;
     justify-content: space-evenly;
+}
+
+.Name {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    flex-shrink: 2;
+}
+
+.CollapseButton {
+    margin-right: 3px;
+}
+
+.Collapsed { 
+    display: none;
+}
+
+.ActionRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-left: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.Hidden {
+    visibility: hidden;
 }

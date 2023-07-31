@@ -1,4 +1,8 @@
 .ResultName {
     font-weight: bold;
+    width: 90%;
     color: var(--vscode-coq-tacticKeyword);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 }

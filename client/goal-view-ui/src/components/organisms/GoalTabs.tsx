@@ -24,13 +24,11 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     
     const {goals} = props;
 
-    const [activeId, setActiveId] = useState("tab-0");
-
     const goalPanelTabs = goals.map((goal, index) => {
         const tabName = "Goal " + (index + 1);
         const tabId = "tab-" + index;
         return (
-        <VSCodePanelTab id={tabId} key={tabId} onClick={() => setActiveId(tabId)}>
+        <VSCodePanelTab id={tabId} key={tabId}>
              {tabName} 
         </VSCodePanelTab>);
     });    
@@ -45,7 +43,7 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     });
 
     return (
-        <VSCodePanels activeid={activeId}>
+        <VSCodePanels>
             {goalPanelTabs}
             {goalPanelViews}
         </VSCodePanels>

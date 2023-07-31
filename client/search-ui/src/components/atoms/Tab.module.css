@@ -1,0 +1,42 @@
+.Tab {
+    height: 35;
+    width: 120px;
+    min-width: none;
+    font-size: 13px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+
+    cursor: pointer;
+    overflow: hidden;
+
+}
+
+.Text {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    margin-left: 6px;
+}
+
+.Active {
+    background-color: var(--vscode-tab-activeBackground); 
+    color: var(--vscode-tab-activeForeground);
+}
+
+.Inactive {
+    background-color: var(--vscode-tab-inactiveBackground);
+    color: var(--vscode-tab-inactiveForeground);
+}
+
+.SmallButton {
+    size: 20px;
+    padding: 2px;
+    z-index: 100;
+}
+
+.Hidden {
+    visibility: hidden;
+}
