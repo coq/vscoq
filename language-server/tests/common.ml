@@ -106,7 +106,7 @@ let task : type a. Scheduler.task -> a task_approx -> (a,string) Result.t =
   fun t spec ->
     match spec, t with
     | Exec, Exec { id } -> Ok id
-    | Skip, Skip id -> Ok id
+    | Skip, Skip { id } -> Ok id
     | Query, Query { id } -> Ok id
     | Proof c, OpaqueProof { tasks; opener_id; terminator } ->
         count (List.map ~f:(fun x -> x.id) tasks) c >>= (fun l ->

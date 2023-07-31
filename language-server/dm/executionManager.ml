@@ -82,7 +82,7 @@ let is_diagnostics_enabled () = !options.enableDiagnostics
 let get_options () = !options
 
 type prepared_task =
-  | PSkip of sentence_id
+  | PSkip of { id: sentence_id; error: string option }
   | PExec of executable_sentence
   | PQuery of executable_sentence
   | PDelegate of { terminator_id: sentence_id;
@@ -311,7 +311,7 @@ let last_opt l = try Some (CList.last l).id with Failure _ -> None
 
 let prepare_task task : prepared_task list =
   match task with
-  | Skip id -> [PSkip id]
+  | Skip { id; error } -> [PSkip { id; error }]
   | Exec e -> [PExec e]
   | Query e -> [PQuery e]
   | OpaqueProof { terminator; opener_id; tasks; proof_using} ->
@@ -329,7 +329,7 @@ let prepare_task task : prepared_task list =
           [PExec terminator]
 
 let id_of_prepared_task = function
-  | PSkip id -> id
+  | PSkip { id } -> id
   | PExec ex -> ex.id
   | PQuery ex -> ex.id
   | PDelegate { terminator_id } -> terminator_id
@@ -340,7 +340,12 @@ let purge_state = function
 
 (* TODO move to proper place *)
 let worker_execute ~doc_id ~send_back (vs,events) = function
-  | PSkip _id ->
+  | PSkip { id; error = err } ->
+    let v = match err with
+      | None -> success vs
+      | Some msg -> error None msg vs
+    in
+    send_back (ProofJob.UpdateExecStatus (id,purge_state v));
     (vs, events)
   | PExec { id; ast; synterp; error_recovery } ->
     let vs = { vs with Vernacstate.synterp } in
@@ -391,8 +396,12 @@ let execute st (vs, events, interrupted) task =
   end else
     try
       match task with
-      | PSkip id ->
-          let st = update st id (success vs) in
+      | PSkip { id; error = err } ->
+          let v = match err with
+            | None -> success vs
+            | Some msg -> error None msg vs
+          in
+          let st = update st id v in
           (st, vs, events, false)
       | PExec { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
