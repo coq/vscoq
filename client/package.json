@@ -188,82 +188,82 @@
     ],
     "commands": [
       {
-        "command": "vscoq.displayGoals",
+        "command": "extension.coq.displayGoals",
         "category": "Coq",
         "title": "Display Goals",
         "description": "Displays the goal view"
       },
       {
-        "command": "vscoq.searchCursor",
+        "command": "extension.coq.query.search",
         "category": "Coq",
-        "title": "Search on cursor",
-        "description": "Launches a search query for the word under the cursor"
+        "title": "Search",
+        "description": "Search for the term pattern at the cursor"
       },
       {
-        "command": "vscoq.aboutCursor",
+        "command": "extension.coq.query.about",
         "category": "Coq",
-        "title": "About on cursor",
-        "description": "Launches an about query for the word under the cursor"
+        "title": "About",
+        "description": "About the term pattern at the cursor"
       },
       {
-        "command": "vscoq.checkCursor",
+        "command": "extension.coq.query.check",
         "category": "Coq",
-        "title": "Check on cursor",
-        "description": "Launches a check query for the word under the cursor"
+        "title": "Check",
+        "description": "Check the type of term at the cursor"
       },
       {
-        "command": "vscoq.locateCursor",
-        "title": "Locate on cursor",
-        "description": "Launches a locate query for the word under the cursor",
+        "command": "extension.coq.query.locate",
+        "title": "Locate",
+        "description": "Locate the term at the cursor",
         "category": "Coq"
       },
       {
-        "command": "vscoq.printCursor",
-        "title": "Print on cursor",
-        "description": "Launches a print query for the word under the cursor",
+        "command": "extension.coq.query.print",
+        "title": "Print",
+        "description": "Print the definition of the term at the cursor",
         "category": "Coq"
       },
       {
-        "command": "vscoq.interpretToPoint",
+        "command": "extension.coq.interpretToPoint",
         "category": "Coq",
-        "title": "Interpret file to point",
+        "title": "Interpret to point",
         "description": "Interprets the current coq file until the given point"
       },
       {
-        "command": "vscoq.interpretToEnd",
+        "command": "extension.coq.interpretToEnd",
         "category": "Coq",
-        "title": "Interpret file to end",
+        "title": "Interpret to end",
         "description": "Interprets the current coq file until the end"
       },
       {
-        "command": "vscoq.stepForward",
+        "command": "extension.coq.stepForward",
         "title": "Step Forward",
         "category": "Coq"
       },
       {
-        "command": "vscoq.stepBackward",
+        "command": "extension.coq.stepBackward",
         "title": "Step Backward",
         "category": "Coq"
       },
       {
-        "command": "vscoq.documentState",
+        "command": "extension.coq.documentState",
         "title": "Get Document State",
         "category": "Coq"
       }, 
       {
-        "command": "vscoq.addQueryTab",
+        "command": "extension.coq.addQueryTab",
         "title": "Add Tab",
         "category": "Coq",
         "icon": "$(add)"
       },
       {
-        "command": "vscoq.collapseAllQueries", 
+        "command": "extension.coq.collapseAllQueries", 
         "title": "Collapse All", 
         "category": "Coq", 
         "icon": "$(collapse-all)"
       },
       {
-        "command": "vscoq.expandAllQueries", 
+        "command": "extension.coq.expandAllQueries", 
         "title": "Expand All", 
         "category": "Coq", 
         "icon": "$(expand-all)"
@@ -272,17 +272,17 @@
     "menus": {
         "view/title": [
             {
-                "command": "vscoq.addQueryTab",
+                "command": "extension.coq.addQueryTab",
                 "group": "navigation",
                 "when": "view == vscoq.search"
             }, 
             {
-                "command": "vscoq.collapseAllQueries", 
+                "command": "extension.coq.collapseAllQueries", 
                 "group": "navigation", 
                 "when": "view == vscoq.search && vscoq.expandedQueries"
             }, 
             {
-                "command": "vscoq.expandAllQueries", 
+                "command": "extension.coq.expandAllQueries", 
                 "group": "navigation", 
                 "when": "view == vscoq.search && !vscoq.expandedQueries"
             }
@@ -292,79 +292,79 @@
       {
         "key": "alt+down",
         "mac": "ctrl+alt+down",
-        "command": "vscoq.stepForward",
+        "command": "extension.coq.stepForward",
         "when": "editorTextFocus && editorLangId == coq"
       },
       {
         "key": "alt+down",
         "mac": "ctrl+alt+down",
-        "command": "vscoq.stepForward",
+        "command": "extension.coq.stepForward",
         "when": "resourceScheme==coq-view"
       },
       {
         "key": "alt+up",
         "mac": "ctrl+alt+up",
-        "command": "vscoq.stepBackward",
+        "command": "extension.coq.stepBackward",
         "when": "editorTextFocus && editorLangId == coq"
       },
       {
         "key": "alt+up",
         "mac": "ctrl+alt+up",
-        "command": "vscoq.stepBackward",
+        "command": "extension.coq.stepBackward",
         "when": "resourceScheme==coq-view"
       },
       {
         "key": "alt+right",
         "mac": "ctrl+alt+right",
-        "command": "vscoq.interpretToPoint",
+        "command": "extension.coq.interpretToPoint",
         "when": "editorTextFocus && editorLangId == coq"
       },
       {
         "key": "alt+right",
         "mac": "ctrl+alt+right",
-        "command": "vscoq.interpretToPoint",
+        "command": "extension.coq.interpretToPoint",
         "when": "resourceScheme==coq-view"
       },
       {
         "key": "alt+end",
         "mac": "ctrl+alt+end",
-        "command": "vscoq.interpretToEnd",
+        "command": "extension.coq.interpretToEnd",
         "when": "editorTextFocus && editorLangId == coq"
       },
       {
         "key": "alt+end",
         "mac": "ctrl+alt+end",
-        "command": "vscoq.interpretToEnd",
+        "command": "extension.coq.interpretToEnd",
         "when": "resourceScheme==coq-view"
       },
       {
         "key": "ctrl+alt+a",
         "mac": "cmd+ctrl+a",
-        "command": "vscoq.aboutCursor",
+        "command": "extension.coq.query.about",
         "when": "editorTextFocus && editorLangId == coq"
       },
       {
         "key": "ctrl+alt+k",
         "mac": "cmd+ctrl+k",
-        "command": "vscoq.searchCursor",
+        "command": "extension.coq.query.search",
         "when": "editorTextFocus && editorLangId == coq"
       },
       {
         "key": "ctrl+alt+c",
         "mac": "cmd+ctrl+c",
-        "command": "vscoq.checkCursor",
+        "command": "extension.coq.query.check",
         "when": "editorTextFocus && editorLangId == coq"
       },
       {
         "key": "ctrl+alt+l",
         "mac": "cmd+ctrl+l",
-        "command": "vscoq.locateCursor",
+        "command": "extension.coq.query.locate",
         "when": "editorTextFocus && editorLangId == coq"
       },
       {
         "key": "ctrl+alt+p",
         "mac": "cmd+ctrl+p",
-        "command": "vscoq.printCursor",
+        "command": "extension.coq.query.print",
         "when": "editorTextFocus && editorLangId == coq"
       }
     ],
