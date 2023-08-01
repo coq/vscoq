@@ -24,6 +24,8 @@ let query_feedback : notification Sel.event =
   Sel.on_queue query_results_queue (fun x -> QueryResultNotification x)
   |> Sel.uncancellable
 
+(* TODO : remove these two functions when interp_search_restriction is 
+  added in the comSearch.mli in Coq (they're simply copied here for now) *)
 let global_module qid =
     try Nametab.full_name_module qid
     with Not_found ->  
