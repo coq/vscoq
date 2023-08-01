@@ -2,7 +2,9 @@ import {workspace, window, commands, ExtensionContext,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
   TextEditor,
-  ViewColumn, 
+  ViewColumn,
+  TextEditorRevealType,
+  Selection, 
 } from 'vscode';
 
 import {
@@ -16,7 +18,7 @@ import { checkVersion } from './utilities/versioning';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { ProofViewNotification, SearchCoqResult } from './protocol/types';
+import { ProofViewNotification, SearchCoqResult, UpdateHightlightsNotification } from './protocol/types';
 import { 
     sendInterpretToPoint,
     sendInterpretToEnd,
@@ -121,9 +123,24 @@ export function activate(context: ExtensionContext) {
         // I think vscode should handle this automatically, TODO: try again after implemeting client capabilities
         context.subscriptions.push(workspace.onDidChangeConfiguration(event => updateServerOnConfigurationChange(event, context, client)));
 		
-        client.onNotification("vscoq/updateHighlights", ({uri, parsedRange, processingRange, processedRange}) => {
-            client.saveHighlights(uri, parsedRange, processingRange, processedRange);
+        client.onNotification("vscoq/updateHighlights", (notification) => {
+        
+            client.saveHighlights(
+                notification.uri, 
+                notification.parsedRange, 
+                notification.processingRange, 
+                notification.processedRange
+            );
+        
             client.updateHightlights();
+        
+            if(workspace.getConfiguration('vscoq.proof.cursor').sticky === true &&
+                workspace.getConfiguration('vscoq.proof').mode === 0) {
+                const range = notification.processedRange[notification.processedRange.length - 1];
+                const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
+                editor.selections = [new Selection(range.end, range.end)];
+                editor.revealRange(range, TextEditorRevealType.Default);
+            }
 		});
 
         client.onNotification("vscoq/searchResult", (searchResult: SearchCoqResult) => {

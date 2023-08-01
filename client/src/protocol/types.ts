@@ -1,5 +1,5 @@
 import { integer, TextDocumentIdentifier, VersionedTextDocumentIdentifier } from "vscode-languageclient";
-import { Position } from "vscode";
+import { Position, Range, Uri } from "vscode";
 
 type Nullable<T> = T | null;
 
@@ -17,6 +17,13 @@ interface ProofViewNotificationType {
     goals: Goal[];
     shelvedGoals: Goal[];
     givenUpGoals: Goal[];
+}
+
+export interface UpdateHightlightsNotification {
+    uri: Uri; 
+    parsedRange: Range[];
+    processingRange: Range[];
+    processedRange: Range[];
 }
 
 export type ProofViewNotification = Nullable<ProofViewNotificationType>;
