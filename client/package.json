@@ -156,6 +156,12 @@
         "title": "Code Completion",
         "type": "object",
         "properties": {
+          "vscoq.completion.enable": {
+            "scope": "window",
+            "type": "boolean",
+            "default": false,
+            "description": "Enable completion support from the VsCoq language server"
+          },
           "vscoq.completion.unificationLimit": {
             "scope": "window",
             "type": "number",

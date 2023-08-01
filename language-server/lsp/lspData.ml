@@ -264,6 +264,7 @@ module Settings = struct
     end
 
     type t = {
+      enable: bool;
       algorithm: RankingAlgoritm.t;
       unificationLimit: int;
       atomicFactor: float [@default 5.]; (** Controls how highly specific types are prioritised over generics *)

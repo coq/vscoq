@@ -292,8 +292,10 @@ let coqtopStepForward params =
       filterText = (if label == insertText then None else Some (insertText));
     } 
 
-
 let textDocumentCompletion ~id params =
+  if not (Dm.ExecutionManager.get_options ()).completion_options.enable then
+    Ok Request.Client.CompletionResult.{ isIncomplete = false; items = [] }, []
+  else
   let Request.Client.CompletionParams.{ textDocument = { uri }; position } = params in
   let st = Hashtbl.find states (Uri.path uri) in
   match Dm.DocumentManager.get_completions st position with
