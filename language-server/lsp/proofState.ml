@@ -13,7 +13,7 @@
 (**************************************************************************)
 type hyp = {
   identifiers: string list;
-  type_ : string;
+  type_ : string; [@key "type"]
   diff: string;
   body: string option; [@yojson.option]
 } [@@deriving yojson]
