@@ -280,14 +280,6 @@ const app = () => {
 
     };
 
-    const queryTypeSelectHandler: ChangeEventHandler<HTMLInputElement> = (e) => {
-        updateQueryType(QueryType[e.target.value as keyof typeof QueryType]);
-    };
-
-    const searchFieldInputHandler: ChangeEventHandler<HTMLInputElement> = (e) => {
-        updateQueryString(e.target.value);
-    };
-
     const searchFieldKeyPressHandler: ((index:number, e: KeyboardEvent<HTMLInputElement>) => void) = (index, e) => {
             
         if(e.code === "Enter") {
@@ -328,18 +320,6 @@ const app = () => {
                 return {...state, tabs: newTabs};
             });
         };
-    };
-    
-    const updateQueryType = (type: QueryType) => {
-        setQueryPanelState(state => {
-            const newTabs = state.tabs.map((tab, index) => {
-                if(index === state.currentTab) {
-                    return {...tab, type: type};
-                }
-                return tab;
-            });
-            return {...state, tabs: newTabs};
-        });
     };
 
     const updateQueryString = (pattern: string) => {
