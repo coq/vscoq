@@ -131,14 +131,6 @@ let diagnostics st =
     List.map mk_error_diag exec_errors @
     List.map mk_diag feedback
 
-let init init_vs ~opts uri ~text =
-  let document = Document.create_document text in
-  Vernacstate.unfreeze_full_state init_vs;
-  let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
-  Coqinit.start_library ~top opts;
-  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ()) in
-  { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
-
 let reset { uri; opts; init_vs; document; execution_state } =
   let text = RawDocument.text @@ Document.raw_document document in
   let document = Document.create_document text in
@@ -215,11 +207,6 @@ let retract state loc =
       { state with observe_id }
     else state
 
-let apply_text_edits state edits =
-  let document, loc = Document.apply_text_edits state.document edits in
-  let state = { state with document } in
-  retract state loc
-
 let validate_document state =
   let invalid_ids, document = Document.validate_document state.document in
   let execution_state =
@@ -227,6 +214,19 @@ let validate_document state =
       ExecutionManager.invalidate (Document.schedule state.document) id st
       ) state.execution_state (Stateid.Set.elements invalid_ids) in
   { state with document; execution_state }
+
+let init init_vs ~opts uri ~text =
+  let document = Document.create_document text in
+  Vernacstate.unfreeze_full_state init_vs;
+  let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
+  Coqinit.start_library ~top opts;
+  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ()) in
+  let st = { uri; opts; init_vs; document; execution_state; observe_id = None } in
+  validate_document st, [inject_em_event feedback]
+
+let apply_text_edits state edits =
+  let document, loc = Document.apply_text_edits state.document edits in
+  validate_document (retract { state with document } loc)
 
 let handle_event ev st =
   match ev with
@@ -356,6 +356,9 @@ module Internal = struct
 
   let observe_id st =
     st.observe_id
+
+  let validate_document st =
+    validate_document st
 
   let string_of_state st =
     let sentences = Document.sentences_sorted_by_loc st.document in

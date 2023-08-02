@@ -78,12 +78,6 @@ let range_of_id document id =
 let parse_errors parsed =
   List.map snd (LM.bindings parsed.parsing_errors_by_end)
 
-let set_parse_errors parsed errors =
-  let parsing_errors_by_end =
-    List.fold_left (fun acc error -> LM.add error.stop error acc) LM.empty errors
-  in
-  { parsed with parsing_errors_by_end }
-
 let add_sentence parsed start stop (ast: parsed_ast) synterp_state scheduler_state_before =
   let id = Stateid.fresh () in
   let ast' = (ast.ast, ast.classification, synterp_state) in
@@ -121,6 +115,9 @@ let sentences_after parsed loc =
   let (_before,ov,after) = LM.split loc parsed.sentences_by_end in
   let after = Option.cata (fun v -> LM.add loc v after) after ov in
   List.map (fun (_id,s) -> s) @@ LM.bindings after
+
+let parsing_errors_before parsed loc =
+  LM.filter (fun stop _v -> stop <= loc) parsed.parsing_errors_by_end
 
 let get_sentence parsed id =
   SM.find_opt id parsed.sentences_by_id
@@ -235,8 +232,6 @@ let rec junk_sentence_end stream =
   | [] -> ()
   | _ ->  Stream.junk () stream; junk_sentence_end stream
 
-
-(** TODO move inside ParsedDoc, remove set_parsing_errors *)
 let rec parse_more synterp_state stream raw parsed errors =
   let handle_parse_error start msg =
     log @@ "handling parse error at " ^ string_of_int start;
@@ -289,23 +284,6 @@ let parse_more synterp_state stream raw =
   parse_more synterp_state stream raw [] []
 
 let invalidate top_edit parsed_doc new_sentences =
-  (* Algo:
-  We parse the new doc from the topmost edit to the bottom one.
-  - If execution is required, we invalidate everything after the parsing
-  effect. Then we diff the truncated zone and invalidate execution states.
-  - If the previous doc contained a parsing effect in the editted zone, we also invalidate.
-  Otherwise, we diff the editted zone.
-  We invalidate dependents of changed/removed/added sentences (according to
-  both/old/new graphs). When we have to invalidate a parsing effect state, we
-  invalidate the parsing after it.
-   *)
-   (* TODO optimize by reducing the diff to the modified zone *)
-   (*
-  let text = RawDocument.text current.raw_doc in
-  let len = String.length text in
-  let stream = Stream.of_string text in
-  let parsed_current = parse_more len stream current.parsed_doc () in
-  *)
   let rec invalidate_diff parsed_doc scheduler_state invalid_ids = function
     | [] -> invalid_ids, parsed_doc
     | Equal s :: diffs ->
@@ -340,12 +318,15 @@ let validate_document ({ parsed_loc; raw_doc; } as document) =
   let stream = Stream.of_string text in
   while Stream.count stream < stop do Stream.junk () stream done;
   log @@ Format.sprintf "Parsing more from pos %i" stop;
-  let new_sentences, errors = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
+  let errors = parsing_errors_before document stop in
+  let new_sentences, new_errors = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
   log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
   let invalid_ids, document = invalidate (stop+1) document new_sentences in
-  let document = set_parse_errors document errors in
+  let parsing_errors_by_end =
+    List.fold_left (fun acc error -> LM.add error.stop error acc) errors new_errors
+  in
   let parsed_loc = pos_at_end document in
-  invalid_ids, { document with parsed_loc }
+  invalid_ids, { document with parsed_loc; parsing_errors_by_end }
 
 let create_document text =
   let raw_doc = RawDocument.create text in

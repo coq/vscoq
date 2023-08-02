@@ -35,7 +35,6 @@ let edit_text st ~start ~stop ~text =
     
 let%test_unit "parse.init" =
   let st, events = init "Definition x := true. Definition y := false." in
-  let st = DocumentManager.validate_document st in
   let doc = Document.raw_document @@ DocumentManager.Internal.document st in
   [%test_eq: int] (RawDocument.end_loc doc) 44;
   let sentences = Document.sentences @@ DocumentManager.Internal.document st in
@@ -46,7 +45,6 @@ let%test_unit "parse.init" =
 let%test_unit "parse.insert" =
   let st, events = init "Definition x := true. Definition y := false." in
   let st = insert_text st ~loc:0 ~text:"Definition z := 0. " in
-  let st = DocumentManager.validate_document st in
   let sentences = Document.sentences @@ DocumentManager.Internal.document st in
   let positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
   [%test_eq: int list] positions [ 0; 19; 41 ];
@@ -55,7 +53,6 @@ let%test_unit "parse.insert" =
 let%test_unit "parse.squash" =
   let st, events = init "Definition x := true. Definition y := false. Definition z := 0." in
   let st = edit_text st ~start:20 ~stop:21 ~text:"" in
-  let st = DocumentManager.validate_document st in
   let doc = DocumentManager.Internal.document st in
   let sentences = Document.sentences doc in
   let start_positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
@@ -66,7 +63,6 @@ let%test_unit "parse.squash" =
 
 let%test_unit "parse.error_recovery" =
   let st, events = init "## . Definition x := true. !! . Definition y := false." in
-  let st = DocumentManager.validate_document st in
   let doc = DocumentManager.Internal.document st in
   let sentences = Document.sentences doc in
   let start_positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
@@ -75,15 +71,25 @@ let%test_unit "parse.error_recovery" =
 
 let%test_unit "parse.extensions" =
   let st, events = init "Notation \"## x\" := x (at level 0). Definition f (x : nat) := ##xx." in
-  let st = DocumentManager.validate_document st in
   let sentences = Document.sentences @@ DocumentManager.Internal.document st in
   let start_positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
   [%test_eq: int list] start_positions [ 0; 35 ];
   check_no_diag st
 
+let%test_unit "parse.validate_errors_twice" = 
+  let st, events = init "Lemma a : True. Proof. idtac (fun x -> x). Qed." in
+  let st, (s1, (s2, (s3, (s4, ())))) = dm_parse st (P(P(E(P O)))) in
+  let todo = Sel.(enqueue empty events) in
+  let st = handle_events todo st in 
+  let st = DocumentManager.Internal.validate_document st in
+  let doc = DocumentManager.Internal.document st in
+  [%test_eq: int] (List.length (Document.parse_errors doc)) 1;
+  let st = DocumentManager.Internal.validate_document st in
+  let doc = DocumentManager.Internal.document st in
+  [%test_eq: int] (List.length (Document.parse_errors doc)) 1
+
 let%test_unit "exec.init" =
   let st, init_events = init "Definition x := true. Definition y := false." in
-  let st = DocumentManager.validate_document st in
   let st, events = DocumentManager.interpret_to_end st in
   let todo = Sel.(enqueue empty init_events) in
   let todo = Sel.(enqueue todo events) in
@@ -121,7 +127,7 @@ let%test_unit "step_forward.delete_observe_id" =
   let st = DocumentManager.apply_text_edits st [Document.range_of_id doc s2.id,""] in
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s1.id)) (DocumentManager.Internal.observe_id st)
 
-  let%test_unit "step_forward.proof_view" =
+let%test_unit "step_forward.proof_view" =
   let st, init_events = init "Definition x := 3. Lemma foo : x = 3." in 
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
   let todo = Sel.(enqueue empty init_events) in
@@ -142,7 +148,7 @@ let%test_unit "step_forward.delete_observe_id" =
   let st = DocumentManager.apply_text_edits st [Document.range_of_id doc s2.id,""] in 
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s1.id)) (DocumentManager.Internal.observe_id st) *)
 
-  let%test_unit "step_forward.document_begin" =
+let%test_unit "step_forward.document_begin" =
   let st, init_events = init "(* Some comment *)\nLemma foo : x = 3." in
   let st, (s1, ()) = dm_parse st (P O) in
   let todo = Sel.(enqueue empty init_events) in
@@ -150,7 +156,7 @@ let%test_unit "step_forward.delete_observe_id" =
   let st = handle_events todo st in 
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s1.id)) (DocumentManager.Internal.observe_id st)
 
-  let%test_unit "step_backward.document_begin" =
+let%test_unit "step_backward.document_begin" =
   let st, init_events = init "(* Some comment *)\nLemma foo : x = 3." in
   let st, (s1, ()) = dm_parse st (P O) in
   let todo = Sel.(enqueue empty init_events) in
@@ -161,8 +167,8 @@ let%test_unit "step_forward.delete_observe_id" =
   let st = handle_events todo st in
   [%test_eq: bool] (Option.is_none (DocumentManager.Internal.observe_id st)) true
 
-  (* With this test we can check that interpret_in_background has lower priority then interpret to *)
-  let%test_unit "interpret_in_background.interpret_to stateful" = 
+(* With this test we can check that interpret_in_background has lower priority then interpret to *)
+let%test_unit "interpret_in_background.interpret_to stateful" = 
   let st, init_events = init "Definition x := true. Definition y := false. Definition z := 0." in
   let st, (s1, (s2, (s3, ()))) = dm_parse st (P (P (P O))) in
   let todo = Sel.(enqueue empty init_events) in
@@ -175,9 +181,9 @@ let%test_unit "step_forward.delete_observe_id" =
   let st = handle_events todo st1 in 
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s3.id)) (DocumentManager.Internal.observe_id st)
 
-  (* With this test interpret_to_end and interpret_to have the same priority, and interpret to is stateful 
-     so it will modify observe id, they will get executed in order of insertion, hence observe_id = s2.id *)  
-  let%test_unit "interpret_to_end.interpret_to stateful" = 
+(* With this test interpret_to_end and interpret_to have the same priority, and interpret to is stateful 
+   so it will modify observe id, they will get executed in order of insertion, hence observe_id = s2.id *)  
+let%test_unit "interpret_to_end.interpret_to stateful" = 
   let st, init_events = init "Definition x := true. Definition y := false. Definition z := 0." in
   let st, (s1, (s2, (s3, ()))) = dm_parse st (P (P (P O))) in
   let todo = Sel.(enqueue empty init_events) in
@@ -190,9 +196,9 @@ let%test_unit "step_forward.delete_observe_id" =
   let st = handle_events todo st in 
   [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s2.id)) (DocumentManager.Internal.observe_id st)
 
-  (* With this test interpret_to_end and interpret_to have the same priority, and interpret to is not stateful 
-     so it will not modify observe id, they will get executed in order of insertion, hence observe_id = s3.id *) 
-  let%test_unit "interpret_to_end.interpret_to not stateful" = 
+(* With this test interpret_to_end and interpret_to have the same priority, and interpret to is not stateful 
+   so it will not modify observe id, they will get executed in order of insertion, hence observe_id = s3.id *) 
+let%test_unit "interpret_to_end.interpret_to not stateful" = 
   let st, init_events = init "Definition x := true. Definition y := false. Definition z := 0." in
   let st, (s1, (s2, (s3, ()))) = dm_parse st (P (P (P O))) in
   let todo = Sel.(enqueue empty init_events) in

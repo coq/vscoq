@@ -71,7 +71,6 @@ let d_sentences doc spec =
   r
 
 let dm_parse st spec =
-  let st = DocumentManager.validate_document st in
   let doc = DocumentManager.Internal.document st in
   st, d_sentences doc spec
 
