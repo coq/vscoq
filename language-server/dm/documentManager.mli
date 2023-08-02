@@ -33,14 +33,9 @@ val init : Vernacstate.t -> opts:Coqargs.injection_command list -> Uri.t -> text
     [st] on which command line opts will be set. *)
 
 val apply_text_edits : state -> text_edit list -> state
-(** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The
-    new text is not parsed or executed. *)
-
-val validate_document : state -> state
-(** [validate_document doc] reparses the text of [doc] and invalidates the
-    states impacted by the diff with the previously validated content. If the
-    text of [doc] has not changed since the last call to [validate_document], it
-    has no effect. *)
+(** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
+    document is parsed, outdated executions states are invalidated, and the observe
+    id is updated. *)
 
 val interpret_to_position : stateful:bool -> state -> Position.t -> (state * events)
 (** [interpret_to_position stateful doc pos] navigates to the last sentence ending
@@ -111,5 +106,12 @@ module Internal : sig
   val execution_state : state -> ExecutionManager.state
   val string_of_state : state -> string
   val observe_id : state -> Types.sentence_id option
+
+  val validate_document : state -> state
+  (** [validate_document doc] reparses the text of [doc] and invalidates the
+      states impacted by the diff with the previously validated content. If the
+      text of [doc] has not changed since the last call to [validate_document], it
+      has no effect. *)
+
 
 end

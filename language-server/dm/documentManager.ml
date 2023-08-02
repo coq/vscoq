@@ -23,7 +23,7 @@ type state = {
   opts : Coqargs.injection_command list;
   document : Document.document;
   execution_state : ExecutionManager.state;
-  observe_id : Types.sentence_id option; (* TODO materialize observed loc and line-by-line execution status *)
+  observe_id : Types.sentence_id option;
 }
 
 type event =
@@ -131,14 +131,6 @@ let diagnostics st =
     List.map mk_error_diag exec_errors @
     List.map mk_diag feedback
 
-let init init_vs ~opts uri ~text =
-  let document = Document.create_document text in
-  Vernacstate.unfreeze_full_state init_vs;
-  let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
-  Coqinit.start_library ~top opts;
-  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ()) in
-  { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
-
 let reset { uri; opts; init_vs; document; execution_state } =
   let text = RawDocument.text @@ Document.raw_document document in
   let document = Document.create_document text in
@@ -206,27 +198,31 @@ let interpret_in_background st =
   | None -> (st, [])
   | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to ~stateful:true ~background:true st id
 
-let retract state loc =
-  match Option.bind state.observe_id (Document.get_sentence state.document) with
-  | None -> state
-  | Some { stop } ->
-    if loc < stop then
-      let observe_id = Option.map (fun s -> s.Document.id) @@ Document.find_sentence_before state.document loc in
-      { state with observe_id }
-    else state
-
-let apply_text_edits state edits =
-  let document, loc = Document.apply_text_edits state.document edits in
-  let state = { state with document } in
-  retract state loc
-
 let validate_document state =
-  let invalid_ids, document = Document.validate_document state.document in
+  let unchanged_id, invalid_ids, document = Document.validate_document state.document in
+  let update_observe_id id =
+    if Stateid.Set.mem id invalid_ids then unchanged_id
+    else Some id
+  in
+  let observe_id = Option.bind state.observe_id update_observe_id in
   let execution_state =
     List.fold_left (fun st id ->
       ExecutionManager.invalidate (Document.schedule state.document) id st
       ) state.execution_state (Stateid.Set.elements invalid_ids) in
-  { state with document; execution_state }
+  { state with document; execution_state; observe_id }
+
+let init init_vs ~opts uri ~text =
+  let document = Document.create_document text in
+  Vernacstate.unfreeze_full_state init_vs;
+  let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
+  Coqinit.start_library ~top opts;
+  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ()) in
+  let st = { uri; opts; init_vs; document; execution_state; observe_id = None } in
+  validate_document st, [inject_em_event feedback]
+
+let apply_text_edits state edits =
+  let document = Document.apply_text_edits state.document edits in
+  validate_document { state with document }
 
 let handle_event ev st =
   match ev with
@@ -356,6 +352,9 @@ module Internal = struct
 
   let observe_id st =
     st.observe_id
+
+  let validate_document st =
+    validate_document st
 
   let string_of_state st =
     let sentences = Document.sentences_sorted_by_loc st.document in

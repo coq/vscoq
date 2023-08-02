@@ -78,12 +78,6 @@ let range_of_id document id =
 let parse_errors parsed =
   List.map snd (LM.bindings parsed.parsing_errors_by_end)
 
-let set_parse_errors parsed errors =
-  let parsing_errors_by_end =
-    List.fold_left (fun acc error -> LM.add error.stop error acc) LM.empty errors
-  in
-  { parsed with parsing_errors_by_end }
-
 let add_sentence parsed start stop (ast: parsed_ast) synterp_state scheduler_state_before =
   let id = Stateid.fresh () in
   let ast' = (ast.ast, ast.classification, synterp_state) in
@@ -122,6 +116,9 @@ let sentences_after parsed loc =
   let after = Option.cata (fun v -> LM.add loc v after) after ov in
   List.map (fun (_id,s) -> s) @@ LM.bindings after
 
+let parsing_errors_before parsed loc =
+  LM.filter (fun stop _v -> stop <= loc) parsed.parsing_errors_by_end
+
 let get_sentence parsed id =
   SM.find_opt id parsed.sentences_by_id
 
@@ -132,6 +129,11 @@ let find_sentence parsed loc =
 
 let find_sentence_before parsed loc =
   match LM.find_last_opt (fun k -> k <= loc) parsed.sentences_by_end with
+  | Some (_, sentence) -> Some sentence
+  | _ -> None
+
+let find_sentence_strictly_before parsed loc =
+  match LM.find_last_opt (fun k -> k < loc) parsed.sentences_by_end with
   | Some (_, sentence) -> Some sentence
   | _ -> None
 
@@ -151,10 +153,13 @@ let state_after_sentence = function
     (stop, synterp_state, scheduler_state_after)
   | None -> (-1, Vernacstate.Synterp.init (), Scheduler.initial_state)
 
-(** Returns the state at position [pos] if it does not require execution *)
 let state_at_pos parsed pos =
   state_after_sentence @@
     LM.find_last_opt (fun stop -> stop <= pos) parsed.sentences_by_end
+
+let state_strictly_before parsed pos =
+  state_after_sentence @@
+    LM.find_last_opt (fun stop -> stop < pos) parsed.sentences_by_end
 
 let pos_at_end parsed =
   match LM.max_binding_opt parsed.sentences_by_end with
@@ -235,8 +240,6 @@ let rec junk_sentence_end stream =
   | [] -> ()
   | _ ->  Stream.junk () stream; junk_sentence_end stream
 
-
-(** TODO move inside ParsedDoc, remove set_parsing_errors *)
 let rec parse_more synterp_state stream raw parsed errors =
   let handle_parse_error start msg =
     log @@ "handling parse error at " ^ string_of_int start;
@@ -288,29 +291,18 @@ let rec parse_more synterp_state stream raw parsed errors =
 let parse_more synterp_state stream raw =
   parse_more synterp_state stream raw [] []
 
-let invalidate top_edit parsed_doc new_sentences =
-  (* Algo:
-  We parse the new doc from the topmost edit to the bottom one.
-  - If execution is required, we invalidate everything after the parsing
-  effect. Then we diff the truncated zone and invalidate execution states.
-  - If the previous doc contained a parsing effect in the editted zone, we also invalidate.
-  Otherwise, we diff the editted zone.
-  We invalidate dependents of changed/removed/added sentences (according to
-  both/old/new graphs). When we have to invalidate a parsing effect state, we
-  invalidate the parsing after it.
-   *)
-   (* TODO optimize by reducing the diff to the modified zone *)
-   (*
-  let text = RawDocument.text current.raw_doc in
-  let len = String.length text in
-  let stream = Stream.of_string text in
-  let parsed_current = parse_more len stream current.parsed_doc () in
-  *)
+let rec unchanged_id id = function
+  | [] -> id
+  | Equal s :: diffs ->
+    unchanged_id (List.fold_left (fun _ (id,_) -> Some id) id s) diffs
+  | (Added _ | Deleted _) :: _ -> id
+
+let invalidate top_edit top_id parsed_doc new_sentences =
   let rec invalidate_diff parsed_doc scheduler_state invalid_ids = function
     | [] -> invalid_ids, parsed_doc
     | Equal s :: diffs ->
-      let patch_sentence (parsed_doc,scheduler_state) (old_s,new_s) =
-        patch_sentence parsed_doc scheduler_state old_s new_s
+      let patch_sentence (parsed_doc,scheduler_state) (id,new_s) =
+        patch_sentence parsed_doc scheduler_state id new_s
       in
       let parsed_doc, scheduler_state = List.fold_left patch_sentence (parsed_doc, scheduler_state) s in
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs
@@ -330,22 +322,30 @@ let invalidate top_edit parsed_doc new_sentences =
   let (_,_synterp_state,scheduler_state) = state_at_pos parsed_doc top_edit in
   let old_sentences = sentences_after parsed_doc top_edit in
   let diff = diff old_sentences new_sentences in
+  let unchanged_id = unchanged_id top_id diff in
   log @@ "diff:\n" ^ string_of_diff parsed_doc diff;
-  invalidate_diff parsed_doc scheduler_state Stateid.Set.empty diff
+  let invalid_ids, doc = invalidate_diff parsed_doc scheduler_state Stateid.Set.empty diff in
+  unchanged_id, invalid_ids, doc
 
 (** Validate document when raw text has changed *)
 let validate_document ({ parsed_loc; raw_doc; } as document) =
-  let (stop, parsing_state, _scheduler_state) = state_at_pos document parsed_loc in
+  (* We take the state strictly before parsed_loc to cover the case when the
+  end of the sentence is editted *)
+  let (stop, parsing_state, _scheduler_state) = state_strictly_before document parsed_loc in
+  let top_id = Option.map (fun sentence -> sentence.id) (find_sentence_strictly_before document parsed_loc) in
   let text = RawDocument.text raw_doc in
   let stream = Stream.of_string text in
   while Stream.count stream < stop do Stream.junk () stream done;
   log @@ Format.sprintf "Parsing more from pos %i" stop;
-  let new_sentences, errors = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
+  let errors = parsing_errors_before document stop in
+  let new_sentences, new_errors = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
   log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
-  let invalid_ids, document = invalidate (stop+1) document new_sentences in
-  let document = set_parse_errors document errors in
+  let unchanged_id, invalid_ids, document = invalidate (stop+1) top_id document new_sentences in
+  let parsing_errors_by_end =
+    List.fold_left (fun acc error -> LM.add error.stop error acc) errors new_errors
+  in
   let parsed_loc = pos_at_end document in
-  invalid_ids, { document with parsed_loc }
+  unchanged_id, invalid_ids, { document with parsed_loc; parsing_errors_by_end }
 
 let create_document text =
   let raw_doc = RawDocument.create text in
@@ -364,8 +364,7 @@ let apply_text_edit document edit =
 
 let apply_text_edits document edits =
   let doc' = { document with raw_doc = document.raw_doc } in
-  let doc = List.fold_left apply_text_edit doc' edits in
-  doc, doc.parsed_loc
+  List.fold_left apply_text_edit doc' edits
 
 module Internal = struct
 
