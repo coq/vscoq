@@ -7,6 +7,7 @@ import {
     SearchCoqHandshake, 
     SearchCoqRequest, 
     SearchCoqResult,
+    QueryError,
     CheckCoqRequest,
     CheckCoqResponse,
     LocateCoqRequest,
@@ -166,10 +167,11 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                         const req = new RequestType<SearchCoqRequest, SearchCoqHandshake, void>("vscoq/search");
                         client.sendRequest(req, params).then(
                             (handshake: SearchCoqHandshake) => {
-                                webview.postMessage({"command": "launchedSearch", "text": "Searching"});
+                                webview.postMessage({"command": "launchedSearch"});
                             }, 
-                            (error: Error) => {
-                                webview.postMessage({"command": "launchedSearch", "text": error.message});
+                            (err: QueryError) => {
+                                const error = {"code": err.code, "message": err.message};
+                                webview.postMessage({"command": "searchError", "error": error, "id": id});
                             }
                         );
                     }
@@ -182,6 +184,10 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                             (result: AboutCoqResponse) => {
                                 const notification = {"statement": result, "id": id};
                                 webview.postMessage({"command": "aboutResponse", "result": notification});
+                            }, 
+                            (err: QueryError) => {
+                                const error = {"code": err.code, "message": err.message};
+                                webview.postMessage({"command": "searchError", "error": error, "id": id});
                             }
                         );
                     }
@@ -194,6 +200,10 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                             (result: CheckCoqResponse) => {
                                 const notification = {"statement": result, "id": id};
                                 webview.postMessage({"command": "checkResponse", "result": notification});
+                            }, 
+                            (err: QueryError) => {
+                                const error = {"code": err.code, "message": err.message};
+                                webview.postMessage({"command": "searchError", "error": error, "id": id});
                             }
                         );
                     }
@@ -206,6 +216,10 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                             (result: LocateCoqResponse) => {
                                 const notification = {"statement": result, "id": id};
                                 webview.postMessage({"command": "locateResponse", "result": notification});
+                            }, 
+                            (err: QueryError) => {
+                                const error = {"code": err.code, "message": err.message};
+                                webview.postMessage({"command": "searchError", "error": error, "id": id});
                             }
                         );
                     }
@@ -218,6 +232,10 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                             (result: PrintCoqResponse) => {
                                 const notification = {"statement": result, "id": id};
                                 webview.postMessage({"command": "locateResponse", "result": notification});
+                            }, 
+                            (err: QueryError) => {
+                                const error = {"code": err.code, "message": err.message};
+                                webview.postMessage({"command": "searchError", "error": error, "id": id});
                             }
                         );
                     }

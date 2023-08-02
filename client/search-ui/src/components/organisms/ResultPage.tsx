@@ -4,6 +4,7 @@ import { QueryTab } from '../../types';
 
 import QueryBar from '../molecules/QueryBar';
 import ResultSection from './ResultSection';
+import Error from '../atoms/Error';
 
 type ResultPageProps = {
     tab: QueryTab;
@@ -27,7 +28,9 @@ const page: FunctionComponent<ResultPageProps> = (props) => {
         copyNameHandler
     } = props;
 
-    const {pattern, result, type} = tab;
+    const {pattern, error, result, type} = tab;
+
+    const errorSection = error ? <Error error={error} /> : null;
 
     return (
         <div>
@@ -40,6 +43,7 @@ const page: FunctionComponent<ResultPageProps> = (props) => {
                 onTextInput={onTextInput}
                 searchFieldKeyPressHandler={searchFieldKeyPressHandler}
             />
+            {errorSection}
             <ResultSection 
                 result={result}
                 toggleCollapsedHandler={toggleCollapsedHandler}

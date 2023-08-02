@@ -85,9 +85,9 @@ export interface SearchCoqHandshake {
     id: string;
 }
 
-export interface SearchCoqError {
-    id: string; 
-    error: Error; 
+export interface QueryError {
+    code: integer; 
+    message: string; 
 }
 
 export interface SearchCoqResult {
