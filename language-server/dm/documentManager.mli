@@ -77,6 +77,9 @@ val executed_ranges : state -> exec_overview
 (** returns the ranges corresponding to the sentences
     that have been executed and remotely executes *)
 
+val last_executed_range : state -> Lsp.LspData.Range.t option
+(** returns the last executed sentence as a range **)
+
 val diagnostics : state -> Diagnostic.t list
 (** diagnostics [doc] returns the diagnostics corresponding to the sentences
     that have been executed in [doc]. *)
