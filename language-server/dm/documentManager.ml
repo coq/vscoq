@@ -23,7 +23,7 @@ type state = {
   opts : Coqargs.injection_command list;
   document : Document.document;
   execution_state : ExecutionManager.state;
-  observe_id : Types.sentence_id option; (* TODO materialize observed loc and line-by-line execution status *)
+  observe_id : Types.sentence_id option;
 }
 
 type event =
@@ -198,22 +198,18 @@ let interpret_in_background st =
   | None -> (st, [])
   | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to ~stateful:true ~background:true st id
 
-let retract state loc =
-  match Option.bind state.observe_id (Document.get_sentence state.document) with
-  | None -> state
-  | Some { stop } ->
-    if loc < stop then
-      let observe_id = Option.map (fun s -> s.Document.id) @@ Document.find_sentence_before state.document loc in
-      { state with observe_id }
-    else state
-
 let validate_document state =
-  let invalid_ids, document = Document.validate_document state.document in
+  let unchanged_id, invalid_ids, document = Document.validate_document state.document in
+  let update_observe_id id =
+    if Stateid.Set.mem id invalid_ids then unchanged_id
+    else Some id
+  in
+  let observe_id = Option.bind state.observe_id update_observe_id in
   let execution_state =
     List.fold_left (fun st id ->
       ExecutionManager.invalidate (Document.schedule state.document) id st
       ) state.execution_state (Stateid.Set.elements invalid_ids) in
-  { state with document; execution_state }
+  { state with document; execution_state; observe_id }
 
 let init init_vs ~opts uri ~text =
   let document = Document.create_document text in
@@ -225,8 +221,8 @@ let init init_vs ~opts uri ~text =
   validate_document st, [inject_em_event feedback]
 
 let apply_text_edits state edits =
-  let document, loc = Document.apply_text_edits state.document edits in
-  validate_document (retract { state with document } loc)
+  let document = Document.apply_text_edits state.document edits in
+  validate_document { state with document }
 
 let handle_event ev st =
   match ev with

@@ -28,9 +28,10 @@ val create_document : string -> document
 (** [create_document text] creates a fresh document with content defined by
     [text]. *)
 
-val validate_document : document -> sentence_id_set * document
+val validate_document : document -> sentence_id option * sentence_id_set * document
 (** [validate_document doc] parses the document without forcing any execution
-    and returns the set of invalidated sentences *)
+    and returns the id of the bottommost sentence of the prefix which has not changed
+    since the previous validation, as well as the set of invalidated sentences *)
 
 type parsed_ast = {
   ast: Synterp.vernac_control_entry;
@@ -48,10 +49,9 @@ val parse_errors : document -> parsing_error list
 (** [parse_errors doc] returns the list of sentences which failed to parse
     (see validate_document) together with their error message *)
 
-val apply_text_edits : document -> text_edit list -> document * int
+val apply_text_edits : document -> text_edit list -> document
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
-    text is not parsed or executed. The returned int is the start loc of the topmost
-    edit. *)
+    text is not parsed or executed. *)
 
 type sentence = {
   start : int;
