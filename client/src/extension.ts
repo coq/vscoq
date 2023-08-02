@@ -18,7 +18,7 @@ import { checkVersion } from './utilities/versioning';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { ProofViewNotification, SearchCoqResult, UpdateHightlightsNotification } from './protocol/types';
+import { MoveCursorNotification, ProofViewNotification, SearchCoqResult, UpdateHightlightsNotification } from './protocol/types';
 import { 
     sendInterpretToPoint,
     sendInterpretToEnd,
@@ -133,15 +133,21 @@ export function activate(context: ExtensionContext) {
             );
         
             client.updateHightlights();
-        
-            if(workspace.getConfiguration('vscoq.proof.cursor').sticky === true &&
-                workspace.getConfiguration('vscoq.proof').mode === 0) {
-                const range = notification.processedRange[notification.processedRange.length - 1];
-                const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
-                editor.selections = [new Selection(range.end, range.end)];
-                editor.revealRange(range, TextEditorRevealType.Default);
-            }
 		});
+
+        client.onNotification("vscoq/moveCursor", (notification: MoveCursorNotification) => {
+            const {uri, range} = notification;
+            const editors = window.visibleTextEditors.filter(editor => {
+                return editor.document.uri.toString() === uri.toString();
+            });
+            if(workspace.getConfiguration('vscoq.proof.cursor').sticky === true &&
+            workspace.getConfiguration('vscoq.proof').mode === 0) {
+                editors.map(editor => {
+                    editor.selections = [new Selection(range.end, range.end)];
+                    editor.revealRange(range, TextEditorRevealType.Default);
+                });
+            }
+        });
 
         client.onNotification("vscoq/searchResult", (searchResult: SearchCoqResult) => {
             searchProvider.renderSearchResult(searchResult);

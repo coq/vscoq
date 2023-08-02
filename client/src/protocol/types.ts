@@ -19,6 +19,8 @@ interface ProofViewNotificationType {
     givenUpGoals: Goal[];
 }
 
+export type ProofViewNotification = Nullable<ProofViewNotificationType>;
+
 export interface UpdateHightlightsNotification {
     uri: Uri; 
     parsedRange: Range[];
@@ -26,7 +28,10 @@ export interface UpdateHightlightsNotification {
     processedRange: Range[];
 }
 
-export type ProofViewNotification = Nullable<ProofViewNotificationType>;
+export interface MoveCursorNotification {
+    uri: Uri; 
+    range: Range; 
+}
 
 export interface SearchCoqRequest {
     id: string;
