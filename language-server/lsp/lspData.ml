@@ -103,6 +103,34 @@ module Diagnostic = struct
 
 end
 
+module FeedbackChannel = struct
+  
+  type t = Feedback.level = 
+  | Debug 
+  | Info
+  | Notice
+  | Warning
+  | Error 
+  [@@deriving sexp, yojson]
+
+  let yojson_of_t = function
+  | Debug -> `Int 0
+  | Info -> `Int 1
+  | Notice -> `Int 2
+  | Warning | Error -> `Int 3
+
+end
+
+module CoqFeedback = struct 
+
+  type t = {
+    range: Range.t; 
+    message: string; 
+    level: FeedbackChannel.t;
+  } [@@deriving sexp, yojson]
+  
+end
+
 type query_result =
   { id : string;
     name : string;

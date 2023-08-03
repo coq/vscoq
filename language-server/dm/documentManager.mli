@@ -79,6 +79,10 @@ val diagnostics : state -> Diagnostic.t list
 (** diagnostics [doc] returns the diagnostics corresponding to the sentences
     that have been executed in [doc]. *)
 
+val feedback : state -> CoqFeedback.t list
+(** feedback [doc] returns all user feedback (Info, Debug, Notices) corresponding to the sentences
+    that have been executed in [doc]. *)
+
 val get_proof : state -> Position.t option -> Lsp.ProofState.t option
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
