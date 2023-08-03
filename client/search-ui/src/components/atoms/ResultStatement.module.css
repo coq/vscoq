@@ -1,4 +1,5 @@
 .ResultStatement {
+    font-family: var(--vscode-editor-font-family);
     font-style: italic;
     color: var(--vscode-coq-proofViewText);
 }

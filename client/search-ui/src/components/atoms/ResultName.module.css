@@ -1,4 +1,5 @@
 .ResultName {
+    font-family: var(--vscode-editor-font-family);
     font-weight: bold;
     width: 90%;
     color: var(--vscode-coq-tacticKeyword);
