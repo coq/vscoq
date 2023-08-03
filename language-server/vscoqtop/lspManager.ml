@@ -258,7 +258,7 @@ let mk_proof_view_event uri position =
   Sel.set_priority Dm.PriorityManager.proof_view @@ Sel.now @@ SendProofView (uri, position)
 
 let mk_move_cursor_event uri range = 
-  Sel.set_priority Dm.PriorityManager.feedback @@ Sel.now @@ SendMoveCursor (uri, range)
+  Sel.set_priority Dm.PriorityManager.pre_execution @@ Sel.now @@ SendMoveCursor (uri, range)
 
 let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
@@ -276,7 +276,7 @@ let coqtopStepBackward params =
   let st = Hashtbl.find states (Uri.path uri) in
   let st = Dm.DocumentManager.validate_document st in
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
-  let range = Dm.DocumentManager.last_executed_range st in
+  let range = Dm.DocumentManager.observe_id_range st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st; 
   if !check_mode = Settings.Mode.Manual then
@@ -284,7 +284,7 @@ let coqtopStepBackward params =
     | None ->
       inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
     | Some range -> 
-      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] @ [ mk_move_cursor_event uri range]
+      [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
   else 
     inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
 
@@ -293,7 +293,7 @@ let coqtopStepForward params =
   let st = Hashtbl.find states (Uri.path uri) in
   let st = Dm.DocumentManager.validate_document st in
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
-  let range = Dm.DocumentManager.last_executed_range st in
+  let range = Dm.DocumentManager.observe_id_range st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st; 
   if !check_mode = Settings.Mode.Manual then
@@ -301,7 +301,7 @@ let coqtopStepForward params =
     | None ->
       inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
     | Some range -> 
-      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] @ [ mk_move_cursor_event uri range]
+      [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
   else 
     inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
   
