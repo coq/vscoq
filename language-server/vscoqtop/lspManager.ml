@@ -169,6 +169,15 @@ let publish_diagnostics uri doc =
   in
   output_jsonrpc @@ Notification Protocol.Notification.Server.(jsonrpc_of_t notification)
 
+let publish_coq_feedback uri doc =
+  let feedback = Dm.DocumentManager.feedback doc in
+  let notification = ExtProtocol.Notification.Server.PublishCoqFeedback {
+    uri;
+    feedback
+  }
+  in
+  output_jsonrpc @@ Notification ExtProtocol.Notification.Server.(jsonrpc_of_t notification)
+
 let send_highlights uri doc =
   let { Dm.DocumentManager.parsed; checked; checked_by_delegate; legacy_highlight } =
     Dm.DocumentManager.executed_ranges doc in
@@ -193,7 +202,8 @@ let send_move_cursor uri range =
 let update_view uri st =
   if (Dm.ExecutionManager.is_diagnostics_enabled ()) then (
     send_highlights uri st;
-    publish_diagnostics uri st
+    publish_diagnostics uri st;
+    publish_coq_feedback uri st;
   )
 
 let textDocumentDidOpen params =
