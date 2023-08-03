@@ -1,0 +1,4 @@
+(library
+ (name language)
+ (public_name vscoq-language-server.language)
+ (libraries coq-core.sysinit))

@@ -240,7 +240,7 @@ let textDocumentHover ~id params =
   let open Yojson.Safe.Util in
   let st = Hashtbl.find states (Uri.path textDocument.uri) in 
   match Dm.DocumentManager.hover st position with
-  | Some (Ok contents) -> Ok (Some (Request.Client.HoverResult.{ contents }))
+  | Some contents -> Ok (Some (Request.Client.HoverResult.{ contents }))
   | _ -> Ok None (* FIXME handle error case properly *)
 
 let progress_hook uri () =

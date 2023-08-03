@@ -314,7 +314,21 @@ let search st ~id pos pattern =
 
 let hover st pos = 
   let opattern = RawDocument.word_at_position (Document.raw_document st.document) pos in
-  Option.map (fun pattern -> about st pos ~pattern) opattern
+  match opattern with
+  | None -> log "hover: no word found at cursor"; None
+  | Some pattern ->
+    log ("hover: found word at cursor: " ^ pattern);
+    let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
+    match get_context st pos with 
+    | None -> log "hover: no context found"; None
+    | Some (sigma, env) ->
+      try
+        let ref_or_by_not = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
+        Language.Hover.get_hover_contents env sigma ref_or_by_not
+      with e ->
+        let e, info = Exninfo.capture e in
+        log ("Exception while handling hover: " ^ (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)));
+        None
 
 let check st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
