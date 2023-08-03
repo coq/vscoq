@@ -101,6 +101,14 @@ module Notification = struct
 
     end
 
+    module PublishCoqFeedbackParams = struct
+      
+      type t = {
+        uri: Uri.t; 
+        feedback: CoqFeedback.t list
+      }[@@deriving yojson]
+
+    end
 
     type t =
     | Std of Protocol.Notification.Server.t
@@ -108,6 +116,7 @@ module Notification = struct
     | MoveCursor of MoveCursorParams.t
     | ProofView of ProofViewParams.t
     | SearchResult of query_result
+    | PublishCoqFeedback of PublishCoqFeedbackParams.t
 
     let jsonrpc_of_t = function
       | Std notification ->
@@ -127,6 +136,10 @@ module Notification = struct
       | MoveCursor params -> 
         let method_ = "vscoq/moveCursor" in 
         let params = MoveCursorParams.yojson_of_t params in 
+        JsonRpc.Notification.{ method_; params }   
+      | PublishCoqFeedback params -> 
+        let method_ = "vscoq/coqFeedback" in 
+        let params = PublishCoqFeedbackParams.yojson_of_t params in 
         JsonRpc.Notification.{ method_; params }
 
     end
