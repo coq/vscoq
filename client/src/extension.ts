@@ -5,6 +5,8 @@ import {workspace, window, commands, ExtensionContext,
   ViewColumn,
   TextEditorRevealType,
   Selection, 
+  languages, 
+  Uri
 } from 'vscode';
 
 import {
@@ -172,6 +174,17 @@ export function activate(context: ExtensionContext) {
         window.onDidChangeActiveTextEditor(editor => {
             client.updateHightlights();
         });
+
+        languages.onDidChangeDiagnostics((event) => {
+            event.uris.map(uri => {
+                const diagnostics = languages.getDiagnostics(uri);
+                diagnostics.map(d => {
+                    client.writeToChannel("Diag, message: " + d.message + " severity:" + d.severity.toString());
+                });
+            });
+        }
+            
+        );
 
 	});
     

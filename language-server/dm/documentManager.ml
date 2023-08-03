@@ -124,7 +124,12 @@ let diagnostics st =
   (* we are resilient to a state where invalidate was not called yet *)
   let exists (id,_) = Option.has_some (Document.get_sentence st.document id) in
   let exec_errors = all_exec_errors |> List.filter exists in
-  let feedback = all_feedback |> List.filter exists in
+  let warnings_and_errors (_, f) = match f with
+    | (Feedback.Error, _, _) -> true
+    | (Feedback.Warning, _, _) -> true
+    | _ -> false 
+  in
+  let feedback = all_feedback |> List.filter exists |> List.filter warnings_and_errors in
   let mk_diag (id,(lvl,oloc,msg)) =
     make_diagnostic st.document (Document.range_of_id st.document id) oloc msg lvl
   in
@@ -140,6 +145,11 @@ let diagnostics st =
   List.map mk_parsing_error_diag parse_errors @
     List.map mk_error_diag exec_errors @
     List.map mk_diag feedback
+
+(* let feedback st = 
+  let all_feedback = ExecutionManager.feedback st.execution_state in 
+  let exists (id, _) = Option.has_some (Document.get_sentence st.document id) in 
+  let feedback = all_feedback |> List.filter exists in  *)
 
 let reset { uri; opts; init_vs; document; execution_state } =
   let text = RawDocument.text @@ Document.raw_document document in
