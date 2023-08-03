@@ -59,6 +59,7 @@ type document = {
   schedule : Scheduler.schedule;
   parsed_loc : int;
   raw_doc : RawDocument.t;
+  init_synterp_state : Vernacstate.Synterp.t;
 }
 
 let schedule doc = doc.schedule
@@ -148,17 +149,17 @@ let get_first_sentence parsed =
 let get_last_sentence parsed = 
   Option.map snd @@ LM.find_last_opt (fun _ -> true) parsed.sentences_by_end
 
-let state_after_sentence = function
+let state_after_sentence parsed = function
   | Some (stop, { synterp_state; scheduler_state_after }) ->
     (stop, synterp_state, scheduler_state_after)
-  | None -> (-1, Vernacstate.Synterp.init (), Scheduler.initial_state)
+  | None -> (-1, parsed.init_synterp_state, Scheduler.initial_state)
 
 let state_at_pos parsed pos =
-  state_after_sentence @@
+  state_after_sentence parsed @@
     LM.find_last_opt (fun stop -> stop <= pos) parsed.sentences_by_end
 
 let state_strictly_before parsed pos =
-  state_after_sentence @@
+  state_after_sentence parsed @@
     LM.find_last_opt (fun stop -> stop < pos) parsed.sentences_by_end
 
 let pos_at_end parsed =
@@ -331,14 +332,14 @@ let invalidate top_edit top_id parsed_doc new_sentences =
 let validate_document ({ parsed_loc; raw_doc; } as document) =
   (* We take the state strictly before parsed_loc to cover the case when the
   end of the sentence is editted *)
-  let (stop, parsing_state, _scheduler_state) = state_strictly_before document parsed_loc in
+  let (stop, synterp_state, _scheduler_state) = state_strictly_before document parsed_loc in
   let top_id = Option.map (fun sentence -> sentence.id) (find_sentence_strictly_before document parsed_loc) in
   let text = RawDocument.text raw_doc in
   let stream = Stream.of_string text in
   while Stream.count stream < stop do Stream.junk () stream done;
   log @@ Format.sprintf "Parsing more from pos %i" stop;
   let errors = parsing_errors_before document stop in
-  let new_sentences, new_errors = parse_more parsing_state stream raw_doc (* TODO invalidate first *) in
+  let new_sentences, new_errors = parse_more synterp_state stream raw_doc (* TODO invalidate first *) in
   log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
   let unchanged_id, invalid_ids, document = invalidate (stop+1) top_id document new_sentences in
   let parsing_errors_by_end =
@@ -347,7 +348,7 @@ let validate_document ({ parsed_loc; raw_doc; } as document) =
   let parsed_loc = pos_at_end document in
   unchanged_id, invalid_ids, { document with parsed_loc; parsing_errors_by_end }
 
-let create_document text =
+let create_document init_synterp_state text =
   let raw_doc = RawDocument.create text in
     { parsed_loc = -1;
       raw_doc;
@@ -355,6 +356,7 @@ let create_document text =
       sentences_by_end = LM.empty;
       parsing_errors_by_end = LM.empty;
       schedule = initial_schedule;
+      init_synterp_state;
     }
 
 let apply_text_edit document edit =

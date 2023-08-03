@@ -30,8 +30,8 @@ let edit_text st ~start ~stop ~text =
   let range = LspData.Range.{ start; end_ } in
   DocumentManager.apply_text_edits st [(range, text)]
 
-  let insert_text st ~loc ~text =
-    edit_text st ~start:loc ~stop:loc ~text
+let insert_text st ~loc ~text =
+  edit_text st ~start:loc ~stop:loc ~text
     
 let%test_unit "parse.init" =
   let st, events = init "Definition x := true. Definition y := false." in
@@ -87,6 +87,18 @@ let%test_unit "parse.validate_errors_twice" =
   let st = DocumentManager.Internal.validate_document st in
   let doc = DocumentManager.Internal.document st in
   [%test_eq: int] (List.length (Document.parse_errors doc)) 1
+
+let%test_unit "parse.invalidate_before_module" =
+  let st, init_events = init "Check nat. Module M := Nat." in
+  let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
+  let st, events = DocumentManager.interpret_to_end st in
+  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.(enqueue todo events) in
+  let st = handle_events todo st in
+  check_no_diag st;
+  let doc = DocumentManager.Internal.document st in
+  let st = DocumentManager.apply_text_edits st [Document.range_of_id doc s1.id,""] in
+  check_no_diag st
 
 let%test_unit "exec.init" =
   let st, init_events = init "Definition x := true. Definition y := false." in

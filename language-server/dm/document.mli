@@ -24,9 +24,9 @@ type document
 
 val raw_document : document -> RawDocument.t
 
-val create_document : string -> document
-(** [create_document text] creates a fresh document with content defined by
-    [text]. *)
+val create_document : Vernacstate.Synterp.t -> string -> document
+(** [create_document init_synterp_state text] creates a fresh document with content defined by
+    [text] under [init_synterp_state]. *)
 
 val validate_document : document -> sentence_id option * sentence_id_set * document
 (** [validate_document doc] parses the document without forcing any execution

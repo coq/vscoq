@@ -143,12 +143,10 @@ let diagnostics st =
 
 let reset { uri; opts; init_vs; document; execution_state } =
   let text = RawDocument.text @@ Document.raw_document document in
-  let document = Document.create_document text in
   Vernacstate.unfreeze_full_state init_vs;
-  let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
-  Coqinit.start_library ~top opts;
+  let document = Document.create_document init_vs.synterp text in
   ExecutionManager.destroy execution_state;
-  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ()) in
+  let execution_state, feedback = ExecutionManager.init init_vs in
   { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
 
 let interpret_to ~stateful ~background state id : (state * event Sel.event list) =
@@ -222,11 +220,12 @@ let validate_document state =
   { state with document; execution_state; observe_id }
 
 let init init_vs ~opts uri ~text =
-  let document = Document.create_document text in
   Vernacstate.unfreeze_full_state init_vs;
   let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
   Coqinit.start_library ~top opts;
-  let execution_state, feedback = ExecutionManager.init (Vernacstate.freeze_full_state ()) in
+  let init_vs = Vernacstate.freeze_full_state () in 
+  let document = Document.create_document init_vs.Vernacstate.synterp text in
+  let execution_state, feedback = ExecutionManager.init init_vs in
   let st = { uri; opts; init_vs; document; execution_state; observe_id = None } in
   validate_document st, [inject_em_event feedback]
 
