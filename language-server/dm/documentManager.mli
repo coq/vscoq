@@ -90,7 +90,7 @@ val search : state -> id:string -> Position.t -> string -> notification Sel.even
 
 val about : state -> Position.t -> pattern:string -> (string,string) Result.t
 
-val hover : state -> Position.t -> (string,string) Result.t option
+val hover : state -> Position.t -> (string list) option
 (** Returns an optional Result:
     if None, the position did not have a word,
     if Some, an Ok/Error result is returned. *)

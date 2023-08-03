@@ -140,7 +140,7 @@ module Request = struct
     module HoverResult = struct
 
       type t = {
-        contents : string;
+        contents : string list;
       } [@@deriving yojson]
 
     end
