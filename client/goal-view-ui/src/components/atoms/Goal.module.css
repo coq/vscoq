@@ -1,4 +1,5 @@
 .Goal {
+  font-family: var(--vscode-editor-font-family);
   color: var(--vscode-editor-foreground);
   width: 100%;
 }

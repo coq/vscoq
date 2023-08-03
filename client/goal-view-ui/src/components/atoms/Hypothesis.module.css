@@ -1,5 +1,6 @@
 .Hypothesis {
     margin-top: 6px;
+    font-family: var(--vscode-editor-font-family);
 }
 
 .Identifier {
