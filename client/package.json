@@ -87,9 +87,7 @@
           },
           "vscoq.args": {
             "type": "array",
-            "default": [
-              "-bt"
-            ],
+            "default": [],
             "description": "vscoqtop arguments"
           }
         }
