@@ -20,7 +20,13 @@ import { checkVersion } from './utilities/versioning';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { MoveCursorNotification, ProofViewNotification, SearchCoqResult, UpdateHightlightsNotification } from './protocol/types';
+import { 
+    CoqFeedback, 
+    CoqFeedbackNotification, 
+    MoveCursorNotification, 
+    ProofViewNotification, 
+    SearchCoqResult
+} from './protocol/types';
 import { 
     sendInterpretToPoint,
     sendInterpretToEnd,
@@ -160,6 +166,12 @@ export function activate(context: ExtensionContext) {
             GoalPanel.proofViewNotification(context.extensionUri, editor, client, proofView);
         });
 
+        client.onNotification("vscoq/coqFeedback", (notification: CoqFeedbackNotification) => {
+            notification.feedback.map((f: CoqFeedback) => {
+                client.writeToFeedbackChannel(f.channel, f.message);
+            });
+        });
+
         let goalsHook = window.onDidChangeTextEditorSelection(
             (evt: TextEditorSelectionChangeEvent) => {                    
                 if (evt.textEditor.document.languageId === "coq" 
@@ -174,17 +186,6 @@ export function activate(context: ExtensionContext) {
         window.onDidChangeActiveTextEditor(editor => {
             client.updateHightlights();
         });
-
-        languages.onDidChangeDiagnostics((event) => {
-            event.uris.map(uri => {
-                const diagnostics = languages.getDiagnostics(uri);
-                diagnostics.map(d => {
-                    client.writeToChannel("Diag, message: " + d.message + " severity:" + d.severity.toString());
-                });
-            });
-        }
-            
-        );
 
 	});
     

@@ -117,14 +117,14 @@ let make_diagnostic doc range oloc message severity =
   in
   Diagnostic.{ range; message; severity }
 
-let make_coq_feedback doc range oloc message level = 
+let make_coq_feedback doc range oloc message channel = 
   let range =
     match oloc with
     | None -> range
     | Some loc ->
       RawDocument.range_of_loc (Document.raw_document doc) loc
   in
-  CoqFeedback.{ range; message; level }
+  CoqFeedback.{ range; message; channel }
 
 let diagnostics st =
   let parse_errors = Document.parse_errors st.document in

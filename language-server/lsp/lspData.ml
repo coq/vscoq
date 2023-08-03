@@ -126,7 +126,7 @@ module CoqFeedback = struct
   type t = {
     range: Range.t; 
     message: string; 
-    level: FeedbackChannel.t;
+    channel: FeedbackChannel.t;
   } [@@deriving sexp, yojson]
   
 end
