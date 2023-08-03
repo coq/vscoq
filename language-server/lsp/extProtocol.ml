@@ -84,6 +84,15 @@ module Notification = struct
 
     end
 
+    module MoveCursorParams = struct
+      
+      type t = {
+        uri: Uri.t; 
+        range: Range.t;
+      } [@@deriving yojson]
+
+    end
+
     module ProofViewParams = struct
 
       type t = ProofState.t option
@@ -96,6 +105,7 @@ module Notification = struct
     type t =
     | Std of Protocol.Notification.Server.t
     | UpdateHighlights of UpdateHighlightsParams.t
+    | MoveCursor of MoveCursorParams.t
     | ProofView of ProofViewParams.t
     | SearchResult of query_result
 
@@ -114,6 +124,10 @@ module Notification = struct
         let method_ = "vscoq/searchResult" in
         let params = yojson_of_query_result params in
         JsonRpc.Notification.{ method_; params }      
+      | MoveCursor params -> 
+        let method_ = "vscoq/moveCursor" in 
+        let params = MoveCursorParams.yojson_of_t params in 
+        JsonRpc.Notification.{ method_; params }
 
     end
 

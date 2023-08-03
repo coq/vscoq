@@ -98,6 +98,16 @@ let executed_ranges st =
   in
   executed_ranges st.document st.execution_state loc
 
+let observe_id_range st = 
+  let doc = Document.raw_document st.document in
+  match Option.bind st.observe_id (Document.get_sentence st.document) with 
+    | None -> None
+    | Some { start; stop} -> 
+      let start = RawDocument.position_of_loc doc start in 
+      let end_ = RawDocument.position_of_loc doc stop in 
+      let range = Range.{ start; end_ } in 
+      Some range
+
 let make_diagnostic doc range oloc message severity =
   let range =
     match oloc with

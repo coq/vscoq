@@ -51,6 +51,7 @@ type event =
  | Notification of notification
  | LogEvent of Dm.Log.event
  | SendProofView of Uri.t * Position.t option
+ | SendMoveCursor of Uri.t * Range.t
 
 type events = event Sel.event list
 
@@ -185,6 +186,10 @@ let send_proof_view pv =
   let notification = Notification.Server.ProofView pv in
   output_jsonrpc @@ Notification Notification.Server.(jsonrpc_of_t notification)
 
+let send_move_cursor uri range = 
+  let notification = Notification.Server.MoveCursor {uri;range} in 
+  output_jsonrpc @@ Notification Notification.Server.(jsonrpc_of_t notification)
+
 let update_view uri st =
   if (Dm.ExecutionManager.is_diagnostics_enabled ()) then (
     send_highlights uri st;
@@ -245,6 +250,9 @@ let progress_hook uri () =
 let mk_proof_view_event uri position = 
   Sel.set_priority Dm.PriorityManager.proof_view @@ Sel.now @@ SendProofView (uri, position)
 
+let mk_move_cursor_event uri range = 
+  Sel.set_priority Dm.PriorityManager.pre_execution @@ Sel.now @@ SendMoveCursor (uri, range)
+
 let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
@@ -259,17 +267,33 @@ let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (Uri.path uri) in
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
+  let range = Dm.DocumentManager.observe_id_range st in
   Hashtbl.replace states (Uri.path uri) st;
   update_view uri st; 
-  inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+  if !check_mode = Settings.Mode.Manual then
+    match range with 
+    | None ->
+      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+    | Some range -> 
+      [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
+  else 
+    inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
 
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (Uri.path uri) in
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
+  let range = Dm.DocumentManager.observe_id_range st in
   Hashtbl.replace states (Uri.path uri) st;
-  update_view uri st;
-  inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+  update_view uri st; 
+  if !check_mode = Settings.Mode.Manual then
+    match range with 
+    | None ->
+      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+    | Some range -> 
+      [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
+  else 
+    inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
   
   let make_CompletionItem i item : CompletionItem.t = 
     let (label, insertText, typ, path) = Dm.CompletionItems.pp_completion_item item in
@@ -467,6 +491,9 @@ let handle_event = function
     let st = Hashtbl.find states (Uri.path uri) in
     let pv = Dm.DocumentManager.get_proof st position in
     send_proof_view pv; []
+  | SendMoveCursor (uri, range) -> 
+    send_move_cursor uri range; []
+
 
 let pr_event = function
   | LspManagerEvent e -> pr_lsp_event e
@@ -475,6 +502,7 @@ let pr_event = function
   | Notification _ -> Pp.str"notif"
   | LogEvent _ -> Pp.str"debug"
   | SendProofView _ -> Pp.str"proofview"
+  | SendMoveCursor _ -> Pp.str"move cursor"
 
 let init injections =
   init_state := Some (Vernacstate.freeze_full_state (), injections);

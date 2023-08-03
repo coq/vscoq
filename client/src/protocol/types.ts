@@ -1,5 +1,5 @@
 import { integer, TextDocumentIdentifier, VersionedTextDocumentIdentifier } from "vscode-languageclient";
-import { Position } from "vscode";
+import { Position, Range, Uri } from "vscode";
 
 type Nullable<T> = T | null;
 
@@ -20,6 +20,18 @@ interface ProofViewNotificationType {
 }
 
 export type ProofViewNotification = Nullable<ProofViewNotificationType>;
+
+export interface UpdateHightlightsNotification {
+    uri: Uri; 
+    parsedRange: Range[];
+    processingRange: Range[];
+    processedRange: Range[];
+}
+
+export interface MoveCursorNotification {
+    uri: Uri; 
+    range: Range; 
+}
 
 export interface SearchCoqRequest {
     id: string;
