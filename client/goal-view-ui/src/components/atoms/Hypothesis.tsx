@@ -16,12 +16,12 @@ const hypothesis: FunctionComponent<HypothesisProps> = (props) => {
     }, identifiers[0]);
 
     return (
-        <div className={classes.Hypothesis}>
-            <label className={classes.Identifier}>{idString}</label>
-            <label className={classes.Separator}> : </label>
+        <li className={classes.Hypothesis}>
+            <span className={classes.Identifier}>{idString}</span>
+            <span className={classes.Separator}> : </span>
             <span className={classes.Type}>{type}</span>
             <br/>
-        </div>
+        </li>
     );
 };
 

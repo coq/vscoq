@@ -20,9 +20,9 @@ const hypothesesBlock: FunctionComponent<HypothesesBlockProps> = (props) => {
     });
 
     return (
-        <div className={classes.Block}>
+        <ul className={classes.Block}>
             {hypothesesComponents}
-        </div>
+        </ul>
     );
 };
 
