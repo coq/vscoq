@@ -3,7 +3,12 @@
     font-family: var(--vscode-editor-font-family);
     font-weight: var(--vscode-editor-font-weight);
     font-size: var(--vscode-editor-font-size);
-    white-space: pre;
+    display: flex;
+}
+
+.IdentifierBlock {
+    width: max-content;
+    display: flex;
 }
 
 .Identifier {

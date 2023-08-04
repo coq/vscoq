@@ -17,8 +17,10 @@ const hypothesis: FunctionComponent<HypothesisProps> = (props) => {
 
     return (
         <li className={classes.Hypothesis}>
-            <span className={classes.Identifier}>{idString}</span>
-            <span className={classes.Separator}> : </span>
+            <span className={classes.IdentifierBlock}>
+                <span className={classes.Identifier}>{idString}</span>
+                <span className={classes.Separator}> : </span>
+            </span>
             <span className={classes.Type}>{type}</span>
             <br/>
         </li>
