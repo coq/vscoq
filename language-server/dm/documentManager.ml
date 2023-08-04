@@ -231,7 +231,14 @@ let init init_vs ~opts uri ~text =
 
 let apply_text_edits state edits =
   let document = Document.apply_text_edits state.document edits in
-  validate_document { state with document }
+  let shift_diagnostics_locs exec_st (range, new_text) =
+    let edit_start = RawDocument.loc_of_position (Document.raw_document state.document) range.Range.start in
+    let edit_stop = RawDocument.loc_of_position (Document.raw_document state.document) range.Range.end_ in
+    let edit_length = edit_stop - edit_start in
+    ExecutionManager.shift_diagnostics_locs exec_st ~start:edit_stop ~offset:(String.length new_text - edit_length)
+  in
+  let execution_state = List.fold_left shift_diagnostics_locs state.execution_state edits in
+  validate_document { state with document; execution_state }
 
 let handle_event ev st =
   match ev with

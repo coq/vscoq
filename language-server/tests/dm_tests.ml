@@ -271,3 +271,93 @@ let%test_unit "exec.insert" =
   check_no_diag st;
   [%test_eq: int list] positions [ 0; 22 ]
   *)
+
+let%test_unit "edit.shift_warning_in_sentence" =
+  let st, init_events = init "#[deprecated(note = \"foo\", since = \"foo\")] Definition x := true. Definition y := x." in
+  let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
+  let st, events = DocumentManager.interpret_to_end st in
+  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.(enqueue todo events) in
+  let st = handle_events todo st in
+  check_diag st [
+    D (s2.id,Warning,".*deprecated.*")
+  ];
+  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  [%test_eq: int] 81 (warning.range.start.character);
+  [%test_eq: int] 82 (warning.range.end_.character);
+  let doc = DocumentManager.Internal.document st in
+  let start = (Document.range_of_id doc s2.id).start in
+  let range = Lsp.LspData.Range.{ start; end_ = start } in
+  let st = DocumentManager.apply_text_edits st [range,"   "] in
+  check_diag st [
+    D (s2.id,Warning,".*deprecated.*")
+  ];
+  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  [%test_eq: int] 84 (warning.range.start.character);
+  [%test_eq: int] 85 (warning.range.end_.character)
+
+let%test_unit "edit.shift_warning_before_sentence" =
+  let st, init_events = init "#[deprecated(note = \"foo\", since = \"foo\")] Definition x := true. Definition y := x." in
+  let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
+  let st, events = DocumentManager.interpret_to_end st in
+  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.(enqueue todo events) in
+  let st = handle_events todo st in
+  check_diag st [
+    D (s2.id,Warning,".*deprecated.*")
+  ];
+  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  [%test_eq: int] 81 (warning.range.start.character);
+  [%test_eq: int] 82 (warning.range.end_.character);
+  let st = edit_text st ~start:0 ~stop:0 ~text:"   " in
+  check_diag st [
+    D (s2.id,Warning,".*deprecated.*")
+  ];
+  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  [%test_eq: int] 84 (warning.range.start.character);
+  [%test_eq: int] 85 (warning.range.end_.character)
+
+let%test_unit "edit.shift_error_in_sentence" =
+  let st, init_events = init "Definition x := true. Definition y := z." in
+  let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
+  let st, events = DocumentManager.interpret_to_end st in
+  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.(enqueue todo events) in
+  let st = handle_events todo st in
+  check_diag st [
+    D (s2.id,Error,".*z was not found.*")
+  ];
+  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  [%test_eq: int] 38 (warning.range.start.character);
+  [%test_eq: int] 39 (warning.range.end_.character);
+  let doc = DocumentManager.Internal.document st in
+  let start = (Document.range_of_id doc s2.id).start in
+  let range = Lsp.LspData.Range.{ start; end_ = start } in
+  let st = DocumentManager.apply_text_edits st [range,"   "] in
+  check_diag st [
+    D (s2.id,Error,".*z was not found.*")
+  ];
+  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  [%test_eq: int] 41 (warning.range.start.character);
+  [%test_eq: int] 42 (warning.range.end_.character)
+
+let%test_unit "edit.shift_error_before_sentence" =
+  let st, init_events = init "Definition x := true. Definition y := z." in
+  let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
+  let st, events = DocumentManager.interpret_to_end st in
+  let todo = Sel.(enqueue empty init_events) in
+  let todo = Sel.(enqueue todo events) in
+  let st = handle_events todo st in
+  check_diag st [
+    D (s2.id,Error,".*z was not found.*")
+  ];
+  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  [%test_eq: int] 38 (warning.range.start.character);
+  [%test_eq: int] 39 (warning.range.end_.character);
+  let st = edit_text st ~start:0 ~stop:0 ~text:"   " in
+  check_diag st [
+    D (s2.id,Error,".*z was not found.*")
+  ];
+  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  [%test_eq: int] 41 (warning.range.start.character);
+  [%test_eq: int] 42 (warning.range.end_.character)
