@@ -52,6 +52,7 @@ val is_executed : state -> sentence_id -> bool
 val is_remotely_executed : state -> sentence_id -> bool
 
 val get_context : state -> sentence_id -> (Evd.evar_map * Environ.env) option
+val get_initial_context : state -> Evd.evar_map * Environ.env
 
 (** Returns the vernac state after the sentence *)
 val get_vernac_state : state -> sentence_id -> Vernacstate.t option

@@ -571,23 +571,29 @@ let rec invalidate schedule id st =
   let deps = Scheduler.dependents schedule id in
   Stateid.Set.fold (invalidate schedule) deps { st with of_sentence }
 
+let context_of_state st =
+    Vernacstate.Interp.unfreeze_interp_state st;
+    begin match st.lemmas with
+    | None ->
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
+      sigma, env
+    | Some lemmas ->
+      let open Declare in
+      let open Vernacstate in
+      lemmas |> LemmaStack.with_top ~f:Proof.get_current_context
+    end
+
 let get_context st id =
   match find_fulfilled_opt id st.of_sentence with
   | None -> log "Cannot find state for get_context"; None
   | Some (Error _) -> log "Context requested in error state"; None
   | Some (Success None) -> log "Context requested in a remotely checked state"; None
   | Some (Success (Some { interp = st })) ->
-    Vernacstate.Interp.unfreeze_interp_state st;
-    begin match st.lemmas with
-    | None ->
-      let env = Global.env () in
-      let sigma = Evd.from_env env in
-      Some (sigma, env)
-    | Some lemmas ->
-      let open Declare in
-      let open Vernacstate in
-      lemmas |> LemmaStack.with_top ~f:Proof.get_current_context |> Option.make
-    end
+    Some (context_of_state st)
+
+let get_initial_context st =
+  context_of_state st.initial.Vernacstate.interp
 
 let get_vernac_state st id =
   match find_fulfilled_opt id st.of_sentence with
