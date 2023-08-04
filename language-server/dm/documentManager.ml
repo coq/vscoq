@@ -133,29 +133,17 @@ let feedbacks_and_diagnostics st =
   (* we are resilient to a state where invalidate was not called yet *)
   let exists (id,_) = Option.has_some (Document.get_sentence st.document id) in
   let exec_errors = all_exec_errors |> List.filter exists in
-  let notices_debug_info_feedbacks (_, f) = match f with
-    | (Feedback.Error, _, _) | (Feedback.Warning, _, _)  -> false
-    | _ -> true 
-  in
-  let warnings_and_errors (_, f) = match f with
-    | (Feedback.Error, _, _) | (Feedback.Warning, _, _) -> true
-    | _ -> false 
-  in
-  let diags = all_feedback |> List.filter exists |> List.filter warnings_and_errors in
-  let feedbacks = all_feedback |> List.filter exists |> List.filter notices_debug_info_feedbacks in
-  let mk_diag (id,(lvl,oloc,msg)) =
-    match lvl with 
-    | Feedback.Warning | Feedback.Error -> 
-      make_diagnostic st.document (Document.range_of_id st.document id) oloc msg (Severity.t_of_feedback_level lvl)
-    | _ -> raise Severity.IncompatibleFeedback (* Putting this here for the sake of explicity, would be raised anyways *)
+  let notices_debugs_infos (id, (lvl, oloc, msg)) = Option.map (fun lvl -> id, (lvl, oloc, msg)) (FeedbackChannel.t_of_feedback_level lvl) in
+  let warnings_and_errors  (id, (lvl, oloc, msg)) = Option.map (fun lvl -> id, (lvl, oloc, msg)) (Severity.t_of_feedback_level lvl) in
+  let diags = all_feedback |> List.filter exists |> List.filter_map warnings_and_errors in
+  let feedbacks = all_feedback |> List.filter exists |> List.filter_map notices_debugs_infos in
+  let mk_diag (id,(lvl,oloc,msg)) = 
+      make_diagnostic st.document (Document.range_of_id st.document id) oloc msg lvl
   in
   let mk_coq_fb (id, (lvl, oloc, msg)) = 
-    match lvl with 
-    | Feedback.Debug | Feedback.Info | Feedback.Notice -> 
-      make_coq_feedback st.document (Document.range_of_id st.document id) oloc msg (FeedbackChannel.t_of_feedback_level lvl)
-    | _ -> raise FeedbackChannel.IncompatibleFeedback
+      make_coq_feedback st.document (Document.range_of_id st.document id) oloc msg lvl
   in
-  let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(Feedback.Error,oloc,msg)) in
+  let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(Severity.Error,oloc,msg)) in
   let mk_parsing_error_diag Document.{ msg = (oloc,msg); start; stop } =
     let doc = Document.raw_document st.document in
     let severity = Severity.Error in

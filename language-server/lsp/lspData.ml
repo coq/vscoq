@@ -78,8 +78,6 @@ end
 
 module Severity = struct
 
-  exception IncompatibleFeedback
-
   type t = 
   | Warning
   | Error
@@ -89,10 +87,10 @@ module Severity = struct
   | Error -> `Int 1
   | Warning -> `Int 2
 
-  let t_of_feedback_level = function 
-  | Feedback.Error -> Error 
-  | Feedback.Warning -> Warning
-  | _ -> raise IncompatibleFeedback
+  let t_of_feedback_level = function
+  | Feedback.Error -> Some Error
+  | Feedback.Warning -> Some Warning
+  | Feedback.(Info | Debug | Notice) -> None
 
 end
 
@@ -107,8 +105,6 @@ module Diagnostic = struct
 end
 
 module FeedbackChannel = struct
-  
-  exception IncompatibleFeedback
 
   type t = 
   | Debug 
@@ -122,10 +118,10 @@ module FeedbackChannel = struct
   | Notice -> `Int 2
 
   let t_of_feedback_level = function 
-  | Feedback.Debug -> Debug
-  | Feedback.Info -> Info 
-  | Feedback.Notice -> Notice 
-  | _ -> raise IncompatibleFeedback
+  | Feedback.Debug -> Some Debug
+  | Feedback.Info -> Some Info 
+  | Feedback.Notice -> Some Notice 
+  | Feedback.(Error | Warning) -> None
 
 end
 
