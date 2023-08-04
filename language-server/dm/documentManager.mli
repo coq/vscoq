@@ -75,9 +75,13 @@ val executed_ranges : state -> exec_overview
 val observe_id_range : state -> Lsp.LspData.Range.t option
 (** returns the range of the sentence referenced by observe_id **)
 
-val feedbacks_and_diagnostics : state -> Diagnostic.t list * CoqFeedback.t list
+val diagnostics : state -> Diagnostic.t list
 (** diagnostics [doc] returns the diagnostics corresponding to the sentences
     that have been executed in [doc]. *)
+
+val feedbacks : state -> CoqFeedback.t list
+(** feedback [doc] returns notice, info and debug level feedbacks from coq corresponding
+    to the sentences that have been executed in [doc]. *)
 
 val get_proof : state -> Position.t option -> Lsp.ProofState.t option
 

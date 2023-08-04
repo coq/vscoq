@@ -161,7 +161,8 @@ let parse_loc json =
   Position.{ line ; character }
 
 let publish_feedbacks_and_diagnostics uri doc =
-  let diagnostics, feedback = Dm.DocumentManager.feedbacks_and_diagnostics doc in
+  let diagnostics = Dm.DocumentManager.diagnostics doc in
+  let feedbacks = Dm.DocumentManager.feedbacks doc in
   let diag_notification = Protocol.Notification.Server.PublishDiagnostics {
     uri;
     diagnostics
@@ -169,7 +170,7 @@ let publish_feedbacks_and_diagnostics uri doc =
   in
   let fb_notification = ExtProtocol.Notification.Server.PublishCoqFeedback {
     uri; 
-    feedback
+    feedbacks
   }
   in
   output_jsonrpc @@ Notification Protocol.Notification.Server.(jsonrpc_of_t diag_notification);

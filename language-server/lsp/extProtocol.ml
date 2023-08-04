@@ -105,7 +105,7 @@ module Notification = struct
       
       type t = {
         uri: Uri.t; 
-        feedback: CoqFeedback.t list
+        feedbacks: CoqFeedback.t list
       }[@@deriving yojson]
 
     end
