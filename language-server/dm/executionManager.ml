@@ -498,15 +498,31 @@ let mk_feedback id (lvl,loc,msg) = (id,(lvl,loc,Pp.string_of_ppcmds msg))
 let feedback st =
   List.fold_left (fun acc (id, (_,l)) -> List.map (mk_feedback id) l @ acc) [] @@ SM.bindings st.of_sentence
 
-let shift_locs st pos offset =
-  (* FIXME shift loc in feedback *)
-  let shift_error (p,r as orig) = match p with
-  | Done (Error ((Some loc,e),st)) ->
-    let (start,stop) = Loc.unloc loc in
-    if start >= pos then ((Done (Error ((Some (Loc.shift_loc offset offset loc),e),st))),r)
-    else if stop >= pos then ((Done (Error ((Some (Loc.shift_loc 0 offset loc),e),st))),r)
-    else orig
-  | _ -> orig
+let shift_diagnostics_locs st ~start ~offset =
+  let shift_loc loc =
+    let (loc_start, loc_stop) = Loc.unloc loc in
+    if loc_start >= start then Loc.shift_loc offset offset loc
+    else if loc_stop > start then Loc.shift_loc 0 offset loc
+    else loc
+  in
+  let shift_feedback (level, oloc, msg as feedback) =
+    match oloc with
+    | None -> feedback
+    | Some loc ->
+      let loc' = shift_loc loc in
+      if loc' == loc then feedback else (level, Some loc', msg)
+  in
+  let shift_error (sentence_state, feedbacks as orig) =
+    let sentence_state' = match sentence_state with
+      | Done (Error ((Some loc,e),st)) ->
+        let loc' = shift_loc loc in
+        if loc' == loc then sentence_state else
+        Done (Error ((Some loc',e),st))
+      | _ -> sentence_state
+    in
+    let feedbacks' = CList.Smart.map shift_feedback feedbacks in
+    if sentence_state' == sentence_state && feedbacks' == feedbacks then orig else
+    (sentence_state', feedbacks')
   in
   { st with of_sentence = SM.map shift_error st.of_sentence }
 

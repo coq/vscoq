@@ -46,7 +46,7 @@ val set_default_options : unit -> unit
 val invalidate : Scheduler.schedule -> sentence_id -> state -> state
 val errors : state -> (sentence_id * (Loc.t option * string)) list
 val feedback : state -> (sentence_id * (Feedback.level * Loc.t option * string)) list
-val shift_locs : state -> int -> int -> state
+val shift_diagnostics_locs : state -> start:int -> offset:int -> state
 val executed_ids : state -> sentence_id list
 val is_executed : state -> sentence_id -> bool
 val is_remotely_executed : state -> sentence_id -> bool
