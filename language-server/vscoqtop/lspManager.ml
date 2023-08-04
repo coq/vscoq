@@ -38,7 +38,7 @@ let conf_request_id = 3456736879
 
 let server_info = ServerInfo.{
   name = "vscoq-language-server";
-  version = "2.0.0";
+  version = "1.9.0";
 } 
 
 type lsp_event = 
