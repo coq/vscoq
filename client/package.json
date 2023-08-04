@@ -2,9 +2,13 @@
   "name": "vscoq",
   "displayName": "VsCoq",
   "description": "VsCoq is an extension for Visual Studio Code with support for the Coq Proof Assistant",
-  "publisher": "coq-community",
+  "publisher": "maximedenes",
   "license": "MIT",
-  "version": "2.0.0",
+  "version": "2.0.0-beta1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coq-community/vscoq.git"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -253,7 +257,7 @@
         "command": "extension.coq.documentState",
         "title": "Get Document State",
         "category": "Coq"
-      }, 
+      },
       {
         "command": "extension.coq.addQueryTab",
         "title": "Add Tab",
@@ -261,38 +265,38 @@
         "icon": "$(add)"
       },
       {
-        "command": "extension.coq.collapseAllQueries", 
-        "title": "Collapse All", 
-        "category": "Coq", 
+        "command": "extension.coq.collapseAllQueries",
+        "title": "Collapse All",
+        "category": "Coq",
         "icon": "$(collapse-all)"
       },
       {
-        "command": "extension.coq.expandAllQueries", 
-        "title": "Expand All", 
-        "category": "Coq", 
+        "command": "extension.coq.expandAllQueries",
+        "title": "Expand All",
+        "category": "Coq",
         "icon": "$(expand-all)"
       }
     ],
     "menus": {
-        "view/title": [
-            {
-                "command": "extension.coq.addQueryTab",
-                "group": "navigation",
-                "when": "view == vscoq.search"
-            }, 
-            {
-                "command": "extension.coq.collapseAllQueries", 
-                "group": "navigation", 
-                "when": "view == vscoq.search && vscoq.expandedQueries"
-            }, 
-            {
-                "command": "extension.coq.expandAllQueries", 
-                "group": "navigation", 
-                "when": "view == vscoq.search && !vscoq.expandedQueries"
-            }
-        ]
+      "view/title": [
+        {
+          "command": "extension.coq.addQueryTab",
+          "group": "navigation",
+          "when": "view == vscoq.search"
+        },
+        {
+          "command": "extension.coq.collapseAllQueries",
+          "group": "navigation",
+          "when": "view == vscoq.search && vscoq.expandedQueries"
+        },
+        {
+          "command": "extension.coq.expandAllQueries",
+          "group": "navigation",
+          "when": "view == vscoq.search && !vscoq.expandedQueries"
+        }
+      ]
     },
-    "keybindings":[
+    "keybindings": [
       {
         "key": "alt+down",
         "mac": "ctrl+alt+down",
@@ -637,7 +641,7 @@
     "build:search-ui": "cd search-ui && yarn run build",
     "build:dev:search-ui": "cd search-ui && yarn run build:dev",
     "vscode:prepublish": "yarn run package",
-    "deploy": "vsce publish --yarn",
+    "deploy": "cp ../LICENSE . && cp ../README.md . && vsce publish --pre-release --yarn",
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "yarn run install:all && yarn run build:all && webpack --mode production --devtool hidden-source-map",
@@ -664,6 +668,7 @@
     "tmp-promise": "^3.0.3",
     "ts-loader": "^9.4.1",
     "typescript": "^4.9.3",
+    "vsce": "^2.15.0",
     "webpack": "^5.76.0",
     "webpack-cli": "^5.0.0"
   }
