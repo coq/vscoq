@@ -149,11 +149,11 @@ type feedback_spec =
   | F of sentence_id * Lsp.LspData.FeedbackChannel.t * string
 
 let check_no_diag st =
-  let diagnostics, _ = DocumentManager.feedbacks_and_diagnostics st in
+  let diagnostics = DocumentManager.diagnostics st in
   [%test_pred: Lsp.LspData.Diagnostic.t list] List.is_empty diagnostics
 
 let check_no_feedback st =
-  let _, feedbacks = DocumentManager.feedbacks_and_diagnostics st in
+  let feedbacks = DocumentManager.feedbacks st in
   [%test_pred: Lsp.LspData.CoqFeedback.t list] List.is_empty feedbacks
 
 let check_diag st specl =
@@ -168,7 +168,7 @@ let check_diag st specl =
     Caml.(=) severity s &&
     Str.string_match (Str.regexp rex) message 0
   in
-  let diagnostics, _ = DocumentManager.feedbacks_and_diagnostics st in
+  let diagnostics = DocumentManager.diagnostics st in
   let diagnostics = List.map ~f:fix_diagnostic diagnostics in
   run @@ map_error
     ~f:(fun s -> Printf.sprintf "%s\n\nDiagnostics: %s" s (
@@ -197,7 +197,7 @@ let check_feedback st specl =
     Caml.(=) channel s &&
     Str.string_match (Str.regexp rex) message 0
   in
-  let _, feedbacks = DocumentManager.feedbacks_and_diagnostics st in
+  let feedbacks = DocumentManager.feedbacks st in
   let feedbacks = List.map ~f:fix_feedback feedbacks in
   run @@ map_error
     ~f:(fun s -> Printf.sprintf "%s\n\nCoq Feedbacks: %s" s (
