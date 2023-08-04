@@ -5,6 +5,8 @@ import {workspace, window, commands, ExtensionContext,
   ViewColumn,
   TextEditorRevealType,
   Selection, 
+  languages, 
+  Uri
 } from 'vscode';
 
 import {
@@ -18,7 +20,13 @@ import { checkVersion } from './utilities/versioning';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { MoveCursorNotification, ProofViewNotification, SearchCoqResult, UpdateHightlightsNotification } from './protocol/types';
+import { 
+    CoqFeedback, 
+    CoqFeedbackNotification, 
+    MoveCursorNotification, 
+    ProofViewNotification, 
+    SearchCoqResult
+} from './protocol/types';
 import { 
     sendInterpretToPoint,
     sendInterpretToEnd,
@@ -156,6 +164,12 @@ export function activate(context: ExtensionContext) {
         client.onNotification("vscoq/proofView", (proofView: ProofViewNotification) => {
             const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
             GoalPanel.proofViewNotification(context.extensionUri, editor, client, proofView);
+        });
+
+        client.onNotification("vscoq/coqFeedback", (notification: CoqFeedbackNotification) => {
+            notification.feedback.map((f: CoqFeedback) => {
+                client.writeToFeedbackChannel(f.channel, f.message);
+            });
         });
 
         let goalsHook = window.onDidChangeTextEditorSelection(

@@ -117,21 +117,36 @@ let make_diagnostic doc range oloc message severity =
   in
   Diagnostic.{ range; message; severity }
 
-let diagnostics st =
+let make_coq_feedback doc range oloc message channel = 
+  let range =
+    match oloc with
+    | None -> range
+    | Some loc ->
+      RawDocument.range_of_loc (Document.raw_document doc) loc
+  in
+  CoqFeedback.{ range; message; channel }
+
+let feedbacks_and_diagnostics st =
   let parse_errors = Document.parse_errors st.document in
   let all_exec_errors = ExecutionManager.errors st.execution_state in
   let all_feedback = ExecutionManager.feedback st.execution_state in
   (* we are resilient to a state where invalidate was not called yet *)
   let exists (id,_) = Option.has_some (Document.get_sentence st.document id) in
   let exec_errors = all_exec_errors |> List.filter exists in
-  let feedback = all_feedback |> List.filter exists in
-  let mk_diag (id,(lvl,oloc,msg)) =
-    make_diagnostic st.document (Document.range_of_id st.document id) oloc msg lvl
+  let notices_debugs_infos (id, (lvl, oloc, msg)) = Option.map (fun lvl -> id, (lvl, oloc, msg)) (FeedbackChannel.t_of_feedback_level lvl) in
+  let warnings_and_errors  (id, (lvl, oloc, msg)) = Option.map (fun lvl -> id, (lvl, oloc, msg)) (Severity.t_of_feedback_level lvl) in
+  let diags = all_feedback |> List.filter exists |> List.filter_map warnings_and_errors in
+  let feedbacks = all_feedback |> List.filter exists |> List.filter_map notices_debugs_infos in
+  let mk_diag (id,(lvl,oloc,msg)) = 
+      make_diagnostic st.document (Document.range_of_id st.document id) oloc msg lvl
   in
-  let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(Feedback.Error,oloc,msg)) in
+  let mk_coq_fb (id, (lvl, oloc, msg)) = 
+      make_coq_feedback st.document (Document.range_of_id st.document id) oloc msg lvl
+  in
+  let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(Severity.Error,oloc,msg)) in
   let mk_parsing_error_diag Document.{ msg = (oloc,msg); start; stop } =
     let doc = Document.raw_document st.document in
-    let severity = Feedback.Error in
+    let severity = Severity.Error in
     let start = RawDocument.position_of_loc doc start in
     let end_ = RawDocument.position_of_loc doc stop in
     let range = Range.{ start; end_ } in
@@ -139,7 +154,8 @@ let diagnostics st =
   in
   List.map mk_parsing_error_diag parse_errors @
     List.map mk_error_diag exec_errors @
-    List.map mk_diag feedback
+    List.map mk_diag diags,
+  List.map mk_coq_fb feedbacks
 
 let reset { uri; opts; init_vs; document; execution_state } =
   let text = RawDocument.text @@ Document.raw_document document in

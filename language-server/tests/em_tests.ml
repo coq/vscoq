@@ -32,8 +32,8 @@ let%test_unit "exec: finished proof" =
   let todo = Sel.(enqueue empty init_events) in
   let todo = Sel.(enqueue todo exec_events) in
   let st = handle_events todo st in
-  check_diag st [
-    D (s4.id,Notice,".*True.*")
+  check_feedback st [
+    F (s4.id,Notice,".*True.*")
   ]
 
 let%test_unit "exec: finished proof skip" =
@@ -44,8 +44,8 @@ let%test_unit "exec: finished proof skip" =
   let todo = Sel.(enqueue empty init_events) in
   let todo = Sel.(enqueue todo exec_events) in
   let st = handle_events todo st in
-  check_diag st [
-    D (s4.id,Notice,".*True.*")
+  check_feedback st [
+    F (s4.id,Notice,".*True.*")
   ];
   ExecutionManager.set_default_options ()
 
@@ -60,7 +60,9 @@ let%test_unit "exec: unfinished proof" =
   [%test_eq: int] 1 (List.length errors);
   check_diag st [
     D (s2.id,Error,".*incomplete proof.*");
-    D (s3.id,Notice,".*True.*")
+  ];
+  check_feedback st [
+    F (s3.id,Notice,".*True.*")
   ]
 
 let%test_unit "exec: unfinished proof skip" =
@@ -72,8 +74,10 @@ let%test_unit "exec: unfinished proof skip" =
   let todo = Sel.(enqueue todo exec_events) in
   let st = handle_events todo st in
   check_diag st [
-    D (s2.id,Error,".*incomplete proof.*");
-    D (s3.id,Notice,".*True.*")
+    D (s2.id,Error,".*incomplete proof.*")
+  ];
+  check_feedback st [
+    F (s3.id,Notice,".*True.*")
   ];
   ExecutionManager.set_default_options ()
 
@@ -86,8 +90,10 @@ let%test_unit "exec: unfinished proof delegate" =
   let todo = Sel.(enqueue todo exec_events) in
   let st = handle_events todo st in
   check_diag st [
-    D (s2.id,Error,".*incomplete proof.*");
-    D (s3.id,Notice,".*True.*")
+    D (s2.id,Error,".*incomplete proof.*")
+  ];
+  check_feedback st [
+    F (s3.id,Notice,".*True.*")
   ];
   ExecutionManager.set_default_options ()
 
@@ -101,5 +107,7 @@ let%test_unit "exec: unstarted proof" =
   let st = handle_events todo st in
   check_diag st [
     D (s1.id,Error,".*No proof-editing in progress.*");
-    D (s2.id,Notice,".*Set.*")
+  ];
+  check_feedback st [
+    F (s2.id,Notice,".*Set.*")
   ]

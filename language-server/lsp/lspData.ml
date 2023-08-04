@@ -78,10 +78,7 @@ end
 
 module Severity = struct
 
-  type t = Feedback.level =
-  | Debug
-  | Info
-  | Notice
+  type t = 
   | Warning
   | Error
   [@@deriving sexp, yojson]
@@ -89,7 +86,11 @@ module Severity = struct
   let yojson_of_t = function
   | Error -> `Int 1
   | Warning -> `Int 2
-  | Debug | Info | Notice -> `Int 3
+
+  let t_of_feedback_level = function
+  | Feedback.Error -> Some Error
+  | Feedback.Warning -> Some Warning
+  | Feedback.(Info | Debug | Notice) -> None
 
 end
 
@@ -101,6 +102,37 @@ module Diagnostic = struct
     severity : Severity.t;
   } [@@deriving sexp, yojson]
 
+end
+
+module FeedbackChannel = struct
+
+  type t = 
+  | Debug 
+  | Info
+  | Notice
+  [@@deriving sexp, yojson]
+
+  let yojson_of_t = function
+  | Debug -> `Int 0
+  | Info -> `Int 1
+  | Notice -> `Int 2
+
+  let t_of_feedback_level = function 
+  | Feedback.Debug -> Some Debug
+  | Feedback.Info -> Some Info 
+  | Feedback.Notice -> Some Notice 
+  | Feedback.(Error | Warning) -> None
+
+end
+
+module CoqFeedback = struct 
+
+  type t = {
+    range: Range.t; 
+    message: string; 
+    channel: FeedbackChannel.t;
+  } [@@deriving sexp, yojson]
+  
 end
 
 type query_result =

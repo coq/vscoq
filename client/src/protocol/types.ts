@@ -3,6 +3,24 @@ import { Position, Range, Uri } from "vscode";
 
 type Nullable<T> = T | null;
 
+export enum FeedbackChannel {
+    debug, 
+    info, 
+    notice, 
+    ignore
+} 
+
+export interface CoqFeedback {
+    range: Range;
+    message: string;
+    channel: FeedbackChannel;
+}
+
+export interface CoqFeedbackNotification {
+    uri: Uri; 
+    feedback: CoqFeedback[]
+}
+
 export interface Hypothesis {
     identifiers: string[];
     type: string;
