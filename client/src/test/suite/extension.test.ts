@@ -10,7 +10,7 @@ suite('Should get diagnostics', function () {
 
 	test('Diagnoses an undefined ref error', async () => {
 
-		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
+		const ext = vscode.extensions.getExtension('maximedenes.vscoq')!;
 		await ext.activate();
         
         const doc = await common.openTextFile('basic.v');
@@ -32,7 +32,7 @@ suite('Should get diagnostics', function () {
 
 	test('Opens two files and gets feedback', async () => {
 
-		const ext = vscode.extensions.getExtension('coq-community.vscoq')!;
+		const ext = vscode.extensions.getExtension('maximedenes.vscoq')!;
 		await ext.activate();
 
         const doc1 = await common.openTextFile('basic.v');
