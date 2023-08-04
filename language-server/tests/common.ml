@@ -145,6 +145,9 @@ let handle_events e st = handle_events 100 e st
 type diag_spec =
   | D of sentence_id * Lsp.LspData.Severity.t * string
 
+type feedback_spec = 
+  | F of sentence_id * Lsp.LspData.FeedbackChannel.t * string
+
 let check_no_diag st =
   let diagnostics = DocumentManager.diagnostics st in
   [%test_pred: Lsp.LspData.Diagnostic.t list] List.is_empty diagnostics
@@ -170,6 +173,34 @@ let check_diag st specl =
       | D(id,s,rex) ->
           let range = Document.range_of_id (DocumentManager.Internal.document st) id in
           match List.find ~f:(match_diagnostic range s rex) diagnostics with
+          | Some _ -> Ok ()
+          | None -> Error (Printf.sprintf "no %s diagnostic on %s matching %s"
+                             (Sexp.to_string (Lsp.LspData.Severity.sexp_of_t s))
+                             (Sexp.to_string (Lsp.LspData.Range.sexp_of_t range))
+                             rex)   
+    )) ~init:(Ok ()) specl)
+
+let check_feedback st specl =
+  let open Result in
+  let open Lsp.LspData.CoqFeedback in
+  let fix_feedback { range; message; channel } =
+    let message = Str.global_replace (Str.regexp_string "\n") " " message in
+    let message = Str.global_replace (Str.regexp " Raised at .*$") "" message in
+    { range; message; channel } in
+  let match_diagnostic r s rex { range; message; channel } = 
+    Lsp.LspData.Range.included ~in_:r range &&
+    Caml.(=) channel s &&
+    Str.string_match (Str.regexp rex) message 0
+  in
+  let feedbacks = List.map ~f:fix_feedback (DocumentManager.feedback st) in
+  run @@ map_error
+    ~f:(fun s -> Printf.sprintf "%s\n\nCoq Feedbacks: %s" s (
+         String.concat ~sep:"\n" (List.map ~f:(fun x -> Sexp.to_string (sexp_of_t x)) feedbacks)))
+    (List.fold_left ~f:(fun e c -> e >>= (fun () ->
+      match c with
+      | F(id,s,rex) ->
+          let range = Document.range_of_id (DocumentManager.Internal.document st) id in
+          match List.find ~f:(match_diagnostic range s rex) feedbacks with
           | Some _ -> Ok ()
           | None -> Error (Printf.sprintf "no %s diagnostic on %s matching %s"
                              (Sexp.to_string (Lsp.LspData.Severity.sexp_of_t s))
