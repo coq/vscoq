@@ -78,10 +78,9 @@ end
 
 module Severity = struct
 
-  type t = Feedback.level =
-  | Debug
-  | Info
-  | Notice
+  exception IncompatibleFeedback
+
+  type t = 
   | Warning
   | Error
   [@@deriving sexp, yojson]
@@ -89,7 +88,11 @@ module Severity = struct
   let yojson_of_t = function
   | Error -> `Int 1
   | Warning -> `Int 2
-  | Debug | Info | Notice -> `Int 3
+
+  let t_of_feedback_level = function 
+  | Feedback.Error -> Error 
+  | Feedback.Warning -> Warning
+  | _ -> raise IncompatibleFeedback
 
 end
 
@@ -105,19 +108,24 @@ end
 
 module FeedbackChannel = struct
   
-  type t = Feedback.level = 
+  exception IncompatibleFeedback
+
+  type t = 
   | Debug 
   | Info
   | Notice
-  | Warning
-  | Error 
   [@@deriving sexp, yojson]
 
   let yojson_of_t = function
   | Debug -> `Int 0
   | Info -> `Int 1
   | Notice -> `Int 2
-  | Warning | Error -> `Int 3
+
+  let t_of_feedback_level = function 
+  | Feedback.Debug -> Debug
+  | Feedback.Info -> Info 
+  | Feedback.Notice -> Notice 
+  | _ -> raise IncompatibleFeedback
 
 end
 

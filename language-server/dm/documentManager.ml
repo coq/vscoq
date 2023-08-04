@@ -126,25 +126,39 @@ let make_coq_feedback doc range oloc message channel =
   in
   CoqFeedback.{ range; message; channel }
 
-let diagnostics st =
+let feedbacks_and_diagnostics st =
   let parse_errors = Document.parse_errors st.document in
   let all_exec_errors = ExecutionManager.errors st.execution_state in
   let all_feedback = ExecutionManager.feedback st.execution_state in
   (* we are resilient to a state where invalidate was not called yet *)
   let exists (id,_) = Option.has_some (Document.get_sentence st.document id) in
   let exec_errors = all_exec_errors |> List.filter exists in
+  let notices_debug_info_feedbacks (_, f) = match f with
+    | (Feedback.Error, _, _) | (Feedback.Warning, _, _)  -> false
+    | _ -> true 
+  in
   let warnings_and_errors (_, f) = match f with
     | (Feedback.Error, _, _) | (Feedback.Warning, _, _) -> true
     | _ -> false 
   in
-  let feedback = all_feedback |> List.filter exists |> List.filter warnings_and_errors in
+  let diags = all_feedback |> List.filter exists |> List.filter warnings_and_errors in
+  let feedbacks = all_feedback |> List.filter exists |> List.filter notices_debug_info_feedbacks in
   let mk_diag (id,(lvl,oloc,msg)) =
-    make_diagnostic st.document (Document.range_of_id st.document id) oloc msg lvl
+    match lvl with 
+    | Feedback.Warning | Feedback.Error -> 
+      make_diagnostic st.document (Document.range_of_id st.document id) oloc msg (Severity.t_of_feedback_level lvl)
+    | _ -> raise Severity.IncompatibleFeedback (* Putting this here for the sake of explicity, would be raised anyways *)
+  in
+  let mk_coq_fb (id, (lvl, oloc, msg)) = 
+    match lvl with 
+    | Feedback.Debug | Feedback.Info | Feedback.Notice -> 
+      make_coq_feedback st.document (Document.range_of_id st.document id) oloc msg (FeedbackChannel.t_of_feedback_level lvl)
+    | _ -> raise FeedbackChannel.IncompatibleFeedback
   in
   let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(Feedback.Error,oloc,msg)) in
   let mk_parsing_error_diag Document.{ msg = (oloc,msg); start; stop } =
     let doc = Document.raw_document st.document in
-    let severity = Feedback.Error in
+    let severity = Severity.Error in
     let start = RawDocument.position_of_loc doc start in
     let end_ = RawDocument.position_of_loc doc stop in
     let range = Range.{ start; end_ } in
@@ -152,20 +166,8 @@ let diagnostics st =
   in
   List.map mk_parsing_error_diag parse_errors @
     List.map mk_error_diag exec_errors @
-    List.map mk_diag feedback
-
-let feedback st = 
-  let all_feedback = ExecutionManager.feedback st.execution_state in 
-  let exists (id, _) = Option.has_some (Document.get_sentence st.document id) in 
-  let notices_debug_info_feedbacks (_, f) = match f with
-    | (Feedback.Error, _, _) | (Feedback.Warning, _, _)  -> false
-    | _ -> true 
-  in
-  let feedback = all_feedback |> List.filter exists |> List.filter notices_debug_info_feedbacks in 
-  let mk_coq_fb (id,(lvl,oloc,msg)) =
-    make_coq_feedback st.document (Document.range_of_id st.document id) oloc msg lvl
-  in
-  List.map mk_coq_fb feedback
+    List.map mk_diag diags,
+  List.map mk_coq_fb feedbacks
 
 let reset { uri; opts; init_vs; document; execution_state } =
   let text = RawDocument.text @@ Document.raw_document document in

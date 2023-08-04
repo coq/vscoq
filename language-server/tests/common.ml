@@ -149,8 +149,12 @@ type feedback_spec =
   | F of sentence_id * Lsp.LspData.FeedbackChannel.t * string
 
 let check_no_diag st =
-  let diagnostics = DocumentManager.diagnostics st in
+  let diagnostics, _ = DocumentManager.feedbacks_and_diagnostics st in
   [%test_pred: Lsp.LspData.Diagnostic.t list] List.is_empty diagnostics
+
+let check_no_feedback st =
+  let _, feedbacks = DocumentManager.feedbacks_and_diagnostics st in
+  [%test_pred: Lsp.LspData.CoqFeedback.t list] List.is_empty feedbacks
 
 let check_diag st specl =
   let open Result in
@@ -164,7 +168,8 @@ let check_diag st specl =
     Caml.(=) severity s &&
     Str.string_match (Str.regexp rex) message 0
   in
-  let diagnostics = List.map ~f:fix_diagnostic (DocumentManager.diagnostics st) in
+  let diagnostics, _ = DocumentManager.feedbacks_and_diagnostics st in
+  let diagnostics = List.map ~f:fix_diagnostic diagnostics in
   run @@ map_error
     ~f:(fun s -> Printf.sprintf "%s\n\nDiagnostics: %s" s (
          String.concat ~sep:"\n" (List.map ~f:(fun x -> Sexp.to_string (sexp_of_t x)) diagnostics)))
@@ -192,7 +197,8 @@ let check_feedback st specl =
     Caml.(=) channel s &&
     Str.string_match (Str.regexp rex) message 0
   in
-  let feedbacks = List.map ~f:fix_feedback (DocumentManager.feedback st) in
+  let _, feedbacks = DocumentManager.feedbacks_and_diagnostics st in
+  let feedbacks = List.map ~f:fix_feedback feedbacks in
   run @@ map_error
     ~f:(fun s -> Printf.sprintf "%s\n\nCoq Feedbacks: %s" s (
          String.concat ~sep:"\n" (List.map ~f:(fun x -> Sexp.to_string (sexp_of_t x)) feedbacks)))
@@ -203,7 +209,7 @@ let check_feedback st specl =
           match List.find ~f:(match_diagnostic range s rex) feedbacks with
           | Some _ -> Ok ()
           | None -> Error (Printf.sprintf "no %s diagnostic on %s matching %s"
-                             (Sexp.to_string (Lsp.LspData.Severity.sexp_of_t s))
+                             (Sexp.to_string (Lsp.LspData.FeedbackChannel.sexp_of_t s))
                              (Sexp.to_string (Lsp.LspData.Range.sexp_of_t range))
                              rex)   
     )) ~init:(Ok ()) specl)

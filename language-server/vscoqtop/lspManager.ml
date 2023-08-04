@@ -160,23 +160,20 @@ let parse_loc json =
   let character = json |> member "character" |> to_int in
   Position.{ line ; character }
 
-let publish_diagnostics uri doc =
-  let diagnostics = Dm.DocumentManager.diagnostics doc in
-  let notification = Protocol.Notification.Server.PublishDiagnostics {
+let publish_feedbacks_and_diagnostics uri doc =
+  let diagnostics, feedback = Dm.DocumentManager.feedbacks_and_diagnostics doc in
+  let diag_notification = Protocol.Notification.Server.PublishDiagnostics {
     uri;
     diagnostics
   }
   in
-  output_jsonrpc @@ Notification Protocol.Notification.Server.(jsonrpc_of_t notification)
-
-let publish_coq_feedback uri doc =
-  let feedback = Dm.DocumentManager.feedback doc in
-  let notification = ExtProtocol.Notification.Server.PublishCoqFeedback {
-    uri;
+  let fb_notification = ExtProtocol.Notification.Server.PublishCoqFeedback {
+    uri; 
     feedback
   }
   in
-  output_jsonrpc @@ Notification ExtProtocol.Notification.Server.(jsonrpc_of_t notification)
+  output_jsonrpc @@ Notification Protocol.Notification.Server.(jsonrpc_of_t diag_notification);
+  output_jsonrpc @@ Notification ExtProtocol.Notification.Server.(jsonrpc_of_t fb_notification)
 
 let send_highlights uri doc =
   let { Dm.DocumentManager.parsed; checked; checked_by_delegate; legacy_highlight } =
@@ -202,8 +199,7 @@ let send_move_cursor uri range =
 let update_view uri st =
   if (Dm.ExecutionManager.is_diagnostics_enabled ()) then (
     send_highlights uri st;
-    publish_diagnostics uri st;
-    publish_coq_feedback uri st;
+    publish_feedbacks_and_diagnostics uri st;
   )
 
 let textDocumentDidOpen params =
