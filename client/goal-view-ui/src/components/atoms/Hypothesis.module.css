@@ -1,7 +1,14 @@
 .Hypothesis {
-    margin-top: 6px;
+    list-style: none;
     font-family: var(--vscode-editor-font-family);
-    white-space: pre-wrap;
+    font-weight: var(--vscode-editor-font-weight);
+    font-size: var(--vscode-editor-font-size);
+    display: flex;
+}
+
+.IdentifierBlock {
+    width: max-content;
+    display: flex;
 }
 
 .Identifier {
@@ -10,6 +17,8 @@
 
 .Separator {
     color: var(--vscode-coq-hypothesisSeparator);
+    margin-right: 1ex;
+    margin-left: 3pt;
 }
 
 .Type {

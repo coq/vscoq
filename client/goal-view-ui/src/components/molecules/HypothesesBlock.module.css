@@ -1,5 +1,7 @@
 .Block {
-    display: inline-block; 
-    width: 100%;
-    margin-bottom: 0;
+    border-bottom: 2pt solid;
+    padding: 0pt;
+    padding-bottom: 1em;
+    margin: 0;
+    border-bottom-color: var(--vscode-coq-hypothesesSeparator);
 }

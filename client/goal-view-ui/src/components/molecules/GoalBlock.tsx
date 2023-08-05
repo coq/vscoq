@@ -26,7 +26,6 @@ const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {
     return (
         <div className={classes.Block}>
             <HypothesesBlock hypotheses={goal.hypotheses}/>
-            <Separator />
             <Goal goal={goal.goal}/>
         </div>
     );
