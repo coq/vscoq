@@ -295,7 +295,7 @@ let get_proof st pos =
 let get_context st pos =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match Document.find_sentence_before st.document loc with
-  | None -> None
+  | None -> Some (ExecutionManager.get_initial_context st.execution_state)
   | Some sentence ->
     ExecutionManager.get_context st.execution_state sentence.id
 
