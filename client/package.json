@@ -9,6 +9,7 @@
     "type": "git",
     "url": "https://github.com/coq-community/vscoq.git"
   },
+  "icon": "assets/logo.png",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -17,8 +18,16 @@
     "vscode-languageclient": "^7.0.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages"
   ],
+  "keywords": [
+    "coq",
+    "theorem prover",
+    "proof assistant"
+  ],
+  "readme": "https://github.com/coq-community/vscoq/blob/master/README.md",
+  "bugs": "https://github.com/coq-community/vscoq/issues",
+  "homepage": "https://github.com/coq-community/vscoq/blob/master/README.md",
   "activationEvents": [
     "onLanguage:coq"
   ],
