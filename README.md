@@ -19,19 +19,22 @@ VsCoq is an extension for [Visual Studio Code](https://code.visualstudio.com/)
 (VS Code) and [VSCodium](https://vscodium.com/) with support for the [Coq Proof
 Assistant](https://coq.inria.fr/).
 
-This extension is currently developed as part of
-[Coq Community](https://github.com/coq-community/manifesto) by [Maxime Dénès](https://github.com/maximedenes),
-[Enrico Tassi](https://github.com/gares), [Romain Tetley](https://github.com/rtetley), and
-contributors.
-
-**This branch contains the VsCoq 2 language server and extension**. It is a full
-reimplementation (based on a different architecture and design) of a previous
-version of VsCoq, whose original author was @siegebell. See [the VsCoq 1
-branch](https://github.com/coq-community/vscoq/tree/master) for the version of VsCoq that is on the Market Place.
+This extension is currently developed and maintained as part of
+[Coq Community](https://github.com/coq-community/manifesto) by
+[Maxime Dénès](https://github.com/maximedenes),
+[Paolo G. Giarrusso](https://github.com/Blaisorblade),
+[Huỳnh Trần Khanh](https://github.com/huynhtrankhanh),
+[Enrico Tassi](https://github.com/gares),
+[Romain Tetley](https://github.com/rtetley),
+[Laurent Théry](https://github.com/thery),
+and contributors.
 
 ## Status
-VsCoq 2 is under heavy development and not ready for production use yet. It is
-not yet released nor published on the VsCode marketplace.
+
+- Versions 0.x.y are based on the original VsCoq implementation by [C.J. Bell](https://github.com/siegebell)
+  and compatible with Coq 8.7 or more recent.
+- Versions 1.9.x are beta releases for VsCoq 2, which is a full reimplementation
+(based on a different architecture and design). They are compatible with Coq 8.18 or more recent.
 
 ## Features
 * Syntax highlighting
@@ -61,8 +64,8 @@ to add more in the future.
 * Supports \_CoqProject
 
 ## Requirements
-* VS Code or VSCodium 1.38.0, or more recent
-* VsCoq 2 currently ships with a custom Coq version, and will later require Coq 8.18
+* VS Code or VSCodium 1.74.0, or more recent
+* Coq 8.18 or more recent
 
 ## Settings
 (Press `F1` and start typing "settings" to open either workspace/project or user settings.)
