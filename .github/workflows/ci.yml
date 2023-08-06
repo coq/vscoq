@@ -48,6 +48,8 @@ jobs:
       if: runner.os == 'Linux'
     - run: nix develop .#vscoq-client -c bash -c "cd client && yarn test"
       if: runner.os != 'Linux'
+    - if: ${{ failure() }}
+      run: cat /tmp/vscoq_init_log.*
 
   install-opam:
     strategy:
@@ -91,6 +93,8 @@ jobs:
       env:
         VSCOQPATH: ${{ env.vscoqtop }}
         VSCOQARGS: "-bt"
+    - if: ${{ failure() }}
+      run: cat /tmp/vscoq_init_log.*
 
   install-windows:
     runs-on: windows-latest
@@ -161,6 +165,8 @@ jobs:
 
     - run: cd client && yarn run install:all && yarn run build:all && yarn run compile
     - run: cd client && xvfb-run yarn test
+    - if: ${{ failure() }}
+      run: cat /tmp/vscoq_init_log.*
 
 
   release-opam:
@@ -215,3 +221,5 @@ jobs:
       env:
         VSCOQPATH: ${{ env.vscoqtop }}
         VSCOQARGS: "-bt"
+    - if: ${{ failure() }}
+      run: cat /tmp/vscoq_init_log.*

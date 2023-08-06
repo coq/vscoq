@@ -80,3 +80,19 @@ To launch the extension in debug mode, assuming you have built the language-serv
 
 Note that you need to set the path to vscoqtop in the VSCode user settings (just search for vscoq).
 
+## E2E tests
+
+From the client folder run `yarn test`. To pass arguments to the language
+server you can use the `VSCOQARGS` env variable, e.g.
+
+```shell
+VSCOQARGS='-vscoq-d all' yarn test
+```
+Remember that if the language server fails to initialize, the log is not
+displayed in the output panel as usual, but rather written to a file named
+like `/tmp/vscoq_init_log.xxx`.
+
+To run the tests on a language server not in a standard location (not in
+the language-server folder nor in PATH), set `VSCOQPATH` to the binary you
+want to be run by the test.
+
