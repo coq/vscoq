@@ -1,0 +1,44 @@
+on:
+  release:
+    types:
+    - created
+  workflow_dispatch:
+    inputs:
+      extra_options:
+        description: "Arguments to dune-release"
+        required: true
+        default: '--dry-run -t TAG -v OPAM_VERSION'
+
+env:
+  OPTIONS: --skip-build -p vscoq-language-server --no-auto-open --draft --dry-run
+
+jobs:
+  publish:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        ocaml-compiler: [4.14.x]
+    runs-on: ${{ matrix.os }}
+    steps:q
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Use OCaml ${{ matrix.ocaml-compiler }}
+      uses: avsm/setup-ocaml@v2
+      with:
+        ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+    - name: Install dune-release
+      run: opma install dune-release
+
+    - name: Set EXTRA_OPTIONS
+      if: ${{ github.event.inputs.extra_options != '' }}
+      run: echo "EXTRA_OPTIONS=${{ github.event.inputs.options }}" >> $GITHUB_ENV
+
+    - name: Publish
+      #if: success() && startsWith(github.ref, 'refs/tags/')
+      run: |
+        cd language-server
+        dune-release $OPTIONS $EXTRA_OPTIONS
+      env:
+        DUNE_RELEASE_GITHUB_TOKEN: ${{ secrets.DUNE_GH_TOKEN }}
