@@ -3,11 +3,12 @@ import React, {FunctionComponent} from 'react';
 import Hypothesis from '../atoms/Hypothesis';
 
 import classes from './HypothesesBlock.module.css';
+import { PpString } from '../../types';
 
 type HypothesesBlockProps = {
     hypotheses: {
         identifiers: string[], 
-        type: string,
+        type: PpString,
     }[];
 };
 

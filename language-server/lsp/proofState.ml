@@ -11,17 +11,20 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
+
+open Printing
+
 type hyp = {
   identifiers: string list;
-  type_ : string; [@key "type"]
+  type_ : pp; [@key "type"]
   diff: string;
-  body: string option; [@yojson.option]
+  body: pp option; [@yojson.option]
 } [@@deriving yojson]
 
 type goal = {
   id: int;
   hypotheses: hyp list;
-  goal: string;
+  goal: pp;
 } [@@deriving yojson]
 
 type t = {
@@ -58,9 +61,9 @@ let mk_goal env sigma g =
   let typ = pr_letype_env env sigma typ in
     let hyp = {
       identifiers = ids;
-      type_ = Pp.string_of_ppcmds typ;
+      type_ = pp_of_coqpp typ;
       diff = "None";
-      body = Option.map (fun body -> Pp.string_of_ppcmds @@ pr_leconstr_env ~inctx:true env sigma body) body;
+      body = Option.map (fun body -> pp_of_coqpp @@ pr_leconstr_env ~inctx:true env sigma body) body;
     } in
     (env', hyp :: l)
   in
@@ -70,7 +73,7 @@ let mk_goal env sigma g =
   {
     id;
     hypotheses = List.rev hyps;
-    goal = Pp.string_of_ppcmds ccl;
+    goal = pp_of_coqpp ccl;
   }
 
   let get_proof st =

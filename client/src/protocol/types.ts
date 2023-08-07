@@ -8,7 +8,25 @@ export enum FeedbackChannel {
     info, 
     notice, 
     ignore
-} 
+}
+
+export type PpTag = string;
+
+export type BlockType =
+  | ["Pp_hbox"]
+  | ["Pp_vbox", integer]
+  | ["Pp_hvbox", integer]
+  | ["Pp_hovbox", integer];
+
+export type PpString =
+  | ["Ppcmd_empty"]
+  | ["Ppcmd_string", string]
+  | ["Ppcmd_glue", PpString[]]
+  | ["Ppcmd_box", BlockType, PpString]
+  | ["Ppcmd_tag", PpTag, PpString]
+  | ["Ppcmd_print_break", integer, integer]
+  | ["Ppcmd_force_newline"]
+  | ["Ppcmd_comment", string[]];
 
 export interface CoqFeedback {
     range: Range;
@@ -23,12 +41,12 @@ export interface CoqFeedbackNotification {
 
 export interface Hypothesis {
     identifiers: string[];
-    type: string;
+    type: PpString;
 }
 
 export interface Goal {
     id: integer;
-    goal: string;
+    goal: PpString;
     hypotheses: Hypothesis[];
 }
 interface ProofViewNotificationType {

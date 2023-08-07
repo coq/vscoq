@@ -5,14 +5,15 @@ import {VscChevronDown} from 'react-icons/vsc';
 import GoalBlock from './GoalBlock';
 
 import classes from './GoalBlock.module.css';
+import { PpString } from '../../types';
 
 type CollapsibleGoalBlockProps = {
     goal: {
         id: string, 
-        goal: string, 
+        goal: PpString, 
         hypotheses: {
             identifiers: string[],
-            type: string, 
+            type: PpString, 
         }[]
     },
     collapseHandler: (id: string) => void, 
