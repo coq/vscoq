@@ -30,7 +30,7 @@ jobs:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
     - name: Install dune-release
-      run: opma install dune-release
+      run: opam install dune-release
 
     - name: Set EXTRA_OPTIONS
       if: ${{ github.event.inputs.extra_options != '' }}
