@@ -1,9 +1,11 @@
 import React, {FunctionComponent} from 'react';
 
 import classes from './Goal.module.css';
+import { PpString } from '../../types';
+import { fragmentOfPpString } from '../../utilities/pp';
 
 type GoalProps = {
-    goal: string, 
+    goal: PpString, 
 };
 
 const goal : FunctionComponent<GoalProps> = (props) => {
@@ -12,7 +14,7 @@ const goal : FunctionComponent<GoalProps> = (props) => {
 
     return (
         <div className={classes.Goal}>
-            {goal}
+            {fragmentOfPpString(goal, classes)}
         </div>
     );
 };

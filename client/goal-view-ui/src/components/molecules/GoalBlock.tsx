@@ -7,14 +7,15 @@ import Goal from '../atoms/Goal';
 import Separator from '../atoms/Separator';
 
 import classes from './GoalBlock.module.css';
+import { PpString } from '../../types';
 
 type GoalBlockProps = {
     goal: {
         id: string, 
-        goal: string, 
+        goal: PpString, 
         hypotheses: {
             identifiers: string[],
-            type: string, 
+            type: PpString, 
         }[]
     }
 };

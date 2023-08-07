@@ -8,14 +8,15 @@ import { VscPass } from 'react-icons/vsc';
 
 import GoalBlock from '../molecules/GoalBlock';
 import EmptyState from '../atoms/EmptyState';
+import { PpString } from '../../types';
 
 type GoalSectionProps = {
     goals: {
         id: string,
-        goal: string, 
+        goal: PpString, 
         hypotheses: {
             identifiers: string[],
-            type: string
+            type: PpString
         }[]
     }[];
 };
