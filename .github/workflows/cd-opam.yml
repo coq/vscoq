@@ -11,7 +11,7 @@ on:
         default: '--dry-run -t TAG -v OPAM_VERSION'
 
 env:
-  OPTIONS: -v -C language-server --skip-build -p vscoq-language-server --no-auto-open --draft --dry-run
+  OPTIONS: -v -C language-server --skip-build -p vscoq-language-server --no-auto-open --dry-run
 
 jobs:
   publish:
