@@ -25,6 +25,7 @@ type error_recovery_strategy =
 type executable_sentence = {
   id : sentence_id;
   ast : Synterp.vernac_control_entry;
+  classif : Vernacextend.vernac_classification;
   synterp : Vernacstate.Synterp.t;
   error_recovery : error_recovery_strategy;
 }
@@ -118,22 +119,22 @@ let flatten_proof_block st =
     { st with proof_blocks = block2 :: tl }
 
 (*
-Lemma foo : XX.
-Proof.
-Definition y := True.
-Lemma bar : y.
-Proof.
-exact I.
-Qed.
+[1] Lemma foo : XX.
+[2] Proof.
+[3] Definition y := True.
+[4] Lemma bar : y.
+[5] Proof.
+[6] exact I.
+[7] Qed.
 
-apply bar.
+[8] apply bar.
 
-Qed.
+[9] Qed.
 
 -> We don't delegate
 
-129: Exec(127, Qed)
-122: Exec(121, Lemma bar : XX)
+8: Exec(127, Qed)
+2: Exec(1, Lemma foo : XX)
 
 --> We delegate only pure proofs
 *)
@@ -159,7 +160,12 @@ let find_proof_using_annotation { proof_sentences } =
 
 let is_opaque_flat_proof terminator section_depth block =
   let open Vernacextend in
-  match terminator with
+  let has_side_effect { classif } = match classif with
+    | VtStartProof _ | VtSideff _ | VtQed _ | VtProofMode _ | VtMeta -> true
+    | VtProofStep _ | VtQuery -> false
+  in
+  if List.exists has_side_effect block.proof_sentences then None
+  else match terminator with
   | VtDrop -> Some Vernacexpr.SsEmpty
   | VtKeep VtKeepDefined -> None
   | VtKeep (VtKeepAxiom | VtKeepOpaque) ->
@@ -168,7 +174,7 @@ let is_opaque_flat_proof terminator section_depth block =
 
 let push_state id ast synterp classif st =
   let open Vernacextend in
-  let ex_sentence = { id; ast; synterp; error_recovery = RSkip } in
+  let ex_sentence = { id; ast; classif; synterp; error_recovery = RSkip } in
   match classif with
   | VtStartProof _ ->
     base_id st, open_proof_block ex_sentence st, Exec ex_sentence
@@ -200,16 +206,14 @@ let push_state id ast synterp classif st =
   | VtMeta -> base_id st, push_ex_sentence ex_sentence st, Skip { id; error = Some "Unsupported command" }
   | VtProofMode _ -> base_id st, push_ex_sentence ex_sentence st, Skip { id; error = Some "Unsupported command" }
 
-  (*
 let string_of_task (task_id,(base_id,task)) =
   let s = match task with
-  | Skip id -> "Skip " ^ Stateid.to_string id
-  | Exec (id, ast) -> "Exec " ^ Stateid.to_string id ^ " (" ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^ ")"
-  | OpaqueProof { terminator_id; tasks_ids } -> "OpaqueProof [" ^ Stateid.to_string terminator_id ^ " | " ^ String.concat "," (List.map Stateid.to_string tasks_ids) ^ "]"
-  | Query(id,ast) -> "Query " ^ Stateid.to_string id
+  | Skip { id } -> Format.sprintf "Skip %s" (Stateid.to_string id)
+  | Exec { id } -> Format.sprintf "Exec %s" (Stateid.to_string id)
+  | OpaqueProof { terminator; tasks } -> Format.sprintf "OpaqueProof [%s | %s]" (Stateid.to_string terminator.id) (String.concat "," (List.map (fun task -> Stateid.to_string task.id) tasks))
+  | Query { id } -> Format.sprintf "Query %s" (Stateid.to_string id)
   in
   Format.sprintf "[%s] : [%s] -> %s" (Stateid.to_string task_id) (Option.cata Stateid.to_string "init" base_id) s
-  *)
 
 let _string_of_state st =
   let scopes = (List.map (fun b -> List.map (fun x -> x.id) b.proof_sentences) st.proof_blocks) @ [st.document_scope] in
@@ -272,8 +276,6 @@ let dependents schedule id =
 7. Check x.
 *)
 
-(*
 let string_of_schedule schedule =
   "Task\n" ^
   String.concat "\n" @@ List.map string_of_task @@ SM.bindings schedule.tasks
-  *)
