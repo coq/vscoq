@@ -40,6 +40,7 @@ jobs:
       #if: success() && startsWith(github.ref, 'refs/tags/')
       run: |
         cd language-server
+        eval $(opam env)
         dune-release $OPTIONS $EXTRA_OPTIONS
       env:
         DUNE_RELEASE_GITHUB_TOKEN: ${{ secrets.DUNE_GH_TOKEN }}
