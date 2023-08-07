@@ -30,6 +30,7 @@ type error_recovery_strategy =
 type executable_sentence = {
   id : sentence_id;
   ast : Synterp.vernac_control_entry;
+  classif : Vernacextend.vernac_classification;
   synterp : Vernacstate.Synterp.t;
   error_recovery : error_recovery_strategy;
 }
@@ -61,6 +62,4 @@ val task_for_sentence : schedule -> sentence_id -> sentence_id option * task
 val dependents : schedule -> sentence_id -> sentence_id_set
 (** Computes what should be invalidated *)
 
-(*
 val string_of_schedule : schedule -> string
-*)
