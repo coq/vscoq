@@ -11,7 +11,7 @@ on:
         default: '--dry-run -t TAG -v OPAM_VERSION'
 
 env:
-  OPTIONS: --skip-build -p vscoq-language-server --no-auto-open --draft --dry-run
+  OPTIONS: -v -C language-server --skip-build -p vscoq-language-server --no-auto-open --draft --dry-run
 
 jobs:
   publish:
@@ -39,7 +39,6 @@ jobs:
     - name: Publish
       #if: success() && startsWith(github.ref, 'refs/tags/')
       run: |
-        cd language-server
         eval $(opam env)
         dune-release $OPTIONS $EXTRA_OPTIONS
       env:
