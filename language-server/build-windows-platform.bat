@@ -31,13 +31,13 @@ call coq_platform_make_windows.bat ^
   -jobs=2 ^
   -switch=d ^
   -set-switch=y ^
-  -override-dev-pkg="coq-core=https://github.com/coq/coq/archive/%PIN_COQ%.tar.gz" ^
-  -override-dev-pkg="coq-stdlib=https://github.com/coq/coq/archive/%PIN_COQ%.tar.gz" ^
-  -override-dev-pkg="coq=https://github.com/coq/coq/archive/%PIN_COQ%.tar.gz" ^
+  -override-dev-pkg="coq-core=https://github.com/coq/coq/archive/%COQ_VERSION%.tar.gz" ^
+  -override-dev-pkg="coq-stdlib=https://github.com/coq/coq/archive/%COQ_VERSION%.tar.gz" ^
+  -override-dev-pkg="coq=https://github.com/coq/coq/archive/%COQ_VERSION%.tar.gz" ^
   || GOTO ErrorExit
 
 SET OPAMYES=yes
-C:\ci\cygwin64\bin\bash.exe --login -c "opam pin add vscoq-language-server $(cygpath -m '%GITHUB_WORKSPACE%\language-server') --with-doc --with-test -y" || GOTO ErrorExit
+C:\ci\cygwin64\bin\bash.exe --login -c "opam pin add --ignore-constraints-on=coq-core,coq-stdlib vscoq-language-server $(cygpath -m '%GITHUB_WORKSPACE%\language-server') --with-doc --with-test -y" || GOTO ErrorExit
 
 
 GOTO :EOF

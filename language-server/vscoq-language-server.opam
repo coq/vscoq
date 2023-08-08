@@ -1,19 +1,19 @@
 opam-version: "2.0"
 name: "vscoq-language-server"
 maintainer: "Enrico Tassi <enrico.tassi@inria.fr>"
-authors: [ "Enrico Tassi" "Maxime Denes" ]
-license: "LGPL-2.1-or-later"
+authors: [ "Enrico Tassi" "Maxime Dénès" "Romain Tetley" ]
+license: "MIT"
 homepage: "https://github.com/coq-community/vscoq"
 bug-reports: "https://github.com/coq-community/vscoq/issues"
 dev-repo: "git+https://github.com/coq-community/vscoq"
 
 build: [
-  [ "sed" "-e" "/vendored_dirs coq/d" "-ibak" "dune" ]
-  [ "dune" "build" "-p" "vscoq-language-server" "--display=short"] 
+  [ "dune" "build" "-p" name "-j" jobs ]
 ]
 depends: [
-  "coq-core" {= "dev"}
-  "coq-stdlib" {= "dev"}
+  "ocaml" { >= "4.14.0" }
+  "coq-core" { >= "8.18" < "8.19" }
+  "coq-stdlib" { >= "8.18" < "8.19" }
   "yojson"
   "ocamlfind"
   "ppx_inline_test"
