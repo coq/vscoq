@@ -21,7 +21,7 @@
     margin-left: 3pt;
 }
 
-.Type {
+.Content {
     color: var(--vscode-editor-foreground);
 }
 
@@ -68,4 +68,22 @@
 }
 .tactic-string {
   color: var(--vscode-coq-tacticString);
+}
+
+.diff-added {
+  background-color: var(--vscode-coq-addedCharacter);
+  text-decoration: underline;
+}
+
+.diff-added-bg {
+  background-color: var(--vscode-coq-addedCharacterBackground);
+}
+
+.diff-removed {
+  background-color: var(--vscode-coq-removedCharacter);
+  text-decoration: line-through;
+}
+
+.diff-removed-bg {
+  background-color: var(--vscode-coq-removedCharacterBackground);
 }

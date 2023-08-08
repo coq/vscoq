@@ -33,6 +33,8 @@ let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
 let check_mode = ref Settings.Mode.Continuous
 
+let diff_mode = ref Settings.Goals.Diff.Mode.Off
+
 let Dm.Types.Log log = Dm.Log.mk_log "lspManager"
 
 let conf_request_id = 3456736879
@@ -114,7 +116,8 @@ let do_configuration settings =
     completion_options = settings.completion;
     enableDiagnostics = settings.enableDiagnostics
   };
-  check_mode := settings.proof.mode
+  check_mode := settings.proof.mode;
+  diff_mode := settings.goals.diff.mode
 
 let send_configuration_request () =
   let id = `Int conf_request_id in
@@ -512,7 +515,7 @@ let handle_event = function
     Dm.Log.handle_event e; []
   | SendProofView (uri, position) -> 
     let st = Hashtbl.find states (DocumentUri.to_path uri) in
-    let pv = Dm.DocumentManager.get_proof st position in
+    let pv = Dm.DocumentManager.get_proof st !diff_mode position in
     send_proof_view pv; []
   | SendMoveCursor (uri, range) -> 
     send_move_cursor uri range; []

@@ -14,16 +14,9 @@
 
 open Printing
 
-type hyp = {
-  identifiers: string list;
-  type_ : pp; [@key "type"]
-  diff: string;
-  body: pp option; [@yojson.option]
-} [@@deriving yojson]
-
 type goal = {
   id: int;
-  hypotheses: hyp list;
+  hypotheses: pp list;
   goal: pp;
 } [@@deriving yojson]
 
@@ -51,20 +44,7 @@ let mk_goal env sigma g =
   let mk_hyp d (env,l) =
     let d' = CompactedDecl.to_named_context d in
     let env' = List.fold_right EConstr.push_named d' env in
-    let ids, body, typ = match d with
-    | CompactedDecl.LocalAssum (ids, typ) ->
-       ids, None, typ
-    | CompactedDecl.LocalDef (ids,c,typ) ->
-      ids, Some c, typ
-    in
-  let ids = List.map (fun id -> (Names.Id.to_string id.Context.binder_name)) ids in
-  let typ = pr_letype_env env sigma typ in
-    let hyp = {
-      identifiers = ids;
-      type_ = pp_of_coqpp typ;
-      diff = "None";
-      body = Option.map (fun body -> pp_of_coqpp @@ pr_leconstr_env ~inctx:true env sigma body) body;
-    } in
+    let hyp = pr_ecompacted_decl env sigma d in
     (env', hyp :: l)
   in
   let (_env, hyps) =
@@ -72,23 +52,64 @@ let mk_goal env sigma g =
       (Termops.compact_named_context sigma (EConstr.named_context env)) ~init:(min_env,[]) in
   {
     id;
-    hypotheses = List.rev hyps;
+    hypotheses = List.rev_map pp_of_coqpp hyps;
     goal = pp_of_coqpp ccl;
   }
 
-  let get_proof st =
-    Vernacstate.unfreeze_full_state st;
-    match st.interp.lemmas with
-    | None -> None
-    | Some lemmas ->
-      let proof = Proof.data (lemmas |> Vernacstate.LemmaStack.with_top ~f:Declare.Proof.get) in
-      let env = Global.env () in
-      let sigma = proof.sigma in
-      let goals = List.map (mk_goal env sigma) proof.goals in
-      let shelvedGoals = List.map (mk_goal env sigma) (Evd.shelf sigma) in
-      let givenUpGoals = List.map (mk_goal env sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
-      Some {
-        goals;
-        shelvedGoals;
-        givenUpGoals;
-      }
+let mk_goal_diff diff_goal_map env sigma g =
+  let id = Evar.repr g in
+  let og_s = Proof_diffs.map_goal g diff_goal_map in
+  let (hyps, ccl) = Proof_diffs.diff_goal ?og_s (Proof_diffs.make_goal env sigma g) in
+  {
+    id;
+    hypotheses = List.rev_map pp_of_coqpp hyps;
+    goal = pp_of_coqpp ccl;
+  }
+
+let proof_of_state st =
+  match st.Vernacstate.interp.lemmas with
+  | None -> None
+  | Some lemmas ->
+    Some (lemmas |> Vernacstate.LemmaStack.with_top ~f:Declare.Proof.get)
+
+(* The Coq diff API is so poorly designed that we have to imperatively set a
+   string option to control the behavior of `mk_goal_diff`. We do the required
+   plumbing here. *)
+let string_of_diff_mode = function
+  | Settings.Goals.Diff.Mode.Off -> "off"
+  | On -> "on"
+  | Removed -> "removed"
+
+let set_diff_mode diff_mode =
+  Goptions.set_string_option_value Proof_diffs.opt_name @@ string_of_diff_mode diff_mode
+
+let get_proof ~previous diff_mode st =
+  Vernacstate.unfreeze_full_state st;
+  match proof_of_state st with
+  | None -> None
+  | Some proof ->
+    let mk_goal env sigma g =
+      match diff_mode with
+      | Settings.Goals.Diff.Mode.Off ->
+        mk_goal env sigma g
+      | _ ->
+        begin
+          set_diff_mode diff_mode;
+          match Option.bind previous proof_of_state with
+          | None -> mk_goal env sigma g
+          | Some old_proof ->
+            let diff_goal_map = Proof_diffs.make_goal_map old_proof proof in
+            mk_goal_diff diff_goal_map env sigma g
+        end
+    in
+    let env = Global.env () in
+    let proof_data = Proof.data proof in
+    let sigma = proof_data.sigma in
+    let goals = List.map (mk_goal env sigma) proof_data.goals in
+    let shelvedGoals = List.map (mk_goal env sigma) (Evd.shelf sigma) in
+    let givenUpGoals = List.map (mk_goal env sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
+    Some {
+      goals;
+      shelvedGoals;
+      givenUpGoals;
+    }

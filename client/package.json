@@ -118,6 +118,16 @@
             ],
             "default": "List",
             "description": "Determines wether multiple goals should be displayed in different tabs or as a list of collapsible items."
+          },
+          "vscoq.goals.diff.mode": {
+            "type": "string",
+            "enum": [
+              "off",
+              "on",
+              "removed"
+            ],
+            "default": "off",
+            "markdownDescription": "Controls VsCoq's diff mode. If `on`, only added characters are displayed. If `removed` is selected, both added and removed characters are shown."
           }
         }
       },
@@ -498,16 +508,34 @@
         "id": "coq.addedCharacter",
         "description": "Color of added characters (in diffs).",
         "defaults": {
-          "dark": "#00fa001a",
+          "dark": "#00fa0033",
           "light": "#00fa0033",
           "highContrast": "#00fa0033"
+        }
+      },
+      {
+        "id": "coq.addedCharacterBackground",
+        "description": "Color of added characters (in diffs).",
+        "defaults": {
+          "dark": "#00fa000f",
+          "light": "#00fa000f",
+          "highContrast": "#00fa000f"
         }
       },
       {
         "id": "coq.removedCharacter",
         "description": "Color of removed characters (in diffs).",
         "defaults": {
-          "dark": "#fa000099",
+          "dark": "#fa000066",
+          "light": "#fa000066",
+          "highContrast": "#fa000066"
+        }
+      },
+      {
+        "id": "coq.removedCharacterBackground",
+        "description": "Color of removed characters (in diffs).",
+        "defaults": {
+          "dark": "#fa000033",
           "light": "#fa000033",
           "highContrast": "#fa000033"
         }

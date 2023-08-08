@@ -11,10 +11,7 @@ type CollapsibleGoalBlockProps = {
     goal: {
         id: string, 
         goal: PpString, 
-        hypotheses: {
-            identifiers: string[],
-            type: PpString, 
-        }[]
+        hypotheses: PpString[]
     },
     collapseHandler: (id: string) => void, 
     isOpen: boolean,

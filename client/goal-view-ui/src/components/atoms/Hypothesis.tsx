@@ -5,27 +5,18 @@ import { PpString } from '../../types';
 import { fragmentOfPpString } from '../../utilities/pp';
 
 type HypothesisProps = {
-    identifiers: string[], 
-    type: PpString,
+    content: PpString,
 };
 
 const hypothesis: FunctionComponent<HypothesisProps> = (props) => {
     
-    const {identifiers, type} = props;
-
-    const idString = identifiers.slice(1).reduce((pre, curr) => {
-        return pre + ", " + curr;
-    }, identifiers[0]);
+    const {content} = props;
 
     return (
-        <li className={classes.Hypothesis}>
-            <span className={classes.IdentifierBlock}>
-                <span className={classes.Identifier}>{idString}</span>
-                <span className={classes.Separator}> : </span>
-            </span>
-            <span className={classes.Type}>{fragmentOfPpString(type, classes)}</span>
+        <div className={classes.Hypothesis}>
+            <span className={classes.Content}>{fragmentOfPpString(content, classes)}</span>
             <br/>
-        </li>
+        </div>
     );
 };
 
