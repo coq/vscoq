@@ -11,7 +11,7 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
-open Lsp.LspData
+open Lsp.Types
 
 type sentence_id = Stateid.t
 type sentence_id_set = Stateid.Set.t

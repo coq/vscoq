@@ -23,7 +23,8 @@ depends: [
   "ppx_deriving"
   "sexplib"
   "ppx_yojson_conv"
-  "uri"
+  "ppx_import"
+  "lsp"
 ]
 synopsis: "VSCoq language server"
 description: """

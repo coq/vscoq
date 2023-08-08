@@ -11,6 +11,7 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
+open Protocol
 
 module CompactedDecl = Context.Compacted.Declaration
 open Printer
@@ -326,7 +327,7 @@ module Structured = struct
 
   (* A Lower score is better as we are sorting in ascending order *)
 
-  let rank (options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) sigma env lemmas : CompletionItems.completion_item list =
+  let rank (options: Settings.Completion.t) (goal, goal_evar) sigma env lemmas : CompletionItems.completion_item list =
     let size_impact = options.sizeFactor in
     let atomic_factor = options.atomicFactor in
     let finalScore score size = Float.sub size (Float.mul score size_impact) in
@@ -379,7 +380,7 @@ module SelectiveUnification = struct
     |> List.stable_sort (fun a b -> compare (snd a) (snd b))
     |> List.map fst
 
-  let selectiveRank (options: Lsp.LspData.Settings.Completion.t) (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
+  let selectiveRank (options: Settings.Completion.t) (goal : Evd.econstr) sigma env (lemmas : CompletionItems.completion_item list) : CompletionItems.completion_item list =
     try 
       let take, skip = takeSkip options.unificationLimit lemmas in
       List.append (rankByUnifiability goal sigma env take) skip
@@ -390,8 +391,8 @@ module SelectiveUnification = struct
   let rank = selectiveRank
 end
 
-let rank_choices (options: Lsp.LspData.Settings.Completion.t) (goal, goal_evar) sigma env lemmas = 
-  let open Lsp.LspData.Settings.Completion.RankingAlgoritm in
+let rank_choices (options: Settings.Completion.t) (goal, goal_evar) sigma env lemmas = 
+  let open Settings.Completion.RankingAlgoritm in
   match options.algorithm with
   | SplitTypeIntersection -> TypeIntersection.rank goal sigma env lemmas
   | StructuredSplitUnification -> SelectiveUnification.rank options goal sigma env (Structured.rank options (goal, goal_evar) sigma env lemmas)

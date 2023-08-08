@@ -18,14 +18,10 @@ open Types
 
 [@@@warning "-27"]
 
-let uri = Uri.make ~scheme:"file" ~path:"foo" ()
-
-let init text = openDoc uri ~text
-
 (* ********************************************************** *)
 
 let %test_unit "schedule: parse error in proof step becomes skipped" =
-  let st, _ = init "Lemma a : True. Proof. idtac (fun x -> x). Qed." in
+  let st, _ = init_test_doc ~text:"Lemma a : True. Proof. idtac (fun x -> x). Qed." in
   let st, (s1, (s2, (s3, (s4, ())))) = dm_parse st (P(P(E(P O)))) in
   let init, (o, (p1,()), t) = task st s4.id (Proof(S O)) in
   [%test_eq: sentence_id option] (Some s1.id) init;
@@ -36,7 +32,7 @@ let %test_unit "schedule: parse error in proof step becomes skipped" =
 
 
 let %test_unit "schedule: no section no proof using" =
-  let st, _ = init "Lemma a : True. Proof. idtac. Qed." in
+  let st, _ = init_test_doc ~text:"Lemma a : True. Proof. idtac. Qed." in
   let st, (s1, (s2, (s3, (s4, ())))) = dm_parse st (P(P(P(P O)))) in
   let init, (o, (p1,(p2,())), t) = task st s4.id (Proof(S(S O))) in
   [%test_eq: sentence_id option] (Some s1.id) init;
@@ -47,7 +43,7 @@ let %test_unit "schedule: no section no proof using" =
   ()
 
 let %test_unit "schedule: transparent lemma" =
-  let st, _ = init "Lemma a : True. Proof. idtac. Defined." in
+  let st, _ = init_test_doc ~text:"Lemma a : True. Proof. idtac. Defined." in
   let st, (s1, (s2, (s3, (s4, ())))) = dm_parse st (P(P(P(P O)))) in
   let init, e = task st s4.id Exec in
   [%test_eq: sentence_id option] (Some s3.id) init;
@@ -55,7 +51,7 @@ let %test_unit "schedule: transparent lemma" =
   ()
  
 let %test_unit "schedule: section with proof using" =
-  let st, _ = init "Section A. Variable x : Prop. Lemma a : True. Proof. idtac. Qed." in
+  let st, _ = init_test_doc ~text:"Section A. Variable x : Prop. Lemma a : True. Proof. idtac. Qed." in
   let st, (s1, (s2, (s3, (s4, (s5, (s6, ())))))) = dm_parse st (P(P(P(P(P(P O)))))) in
   let init, q = task st s6.id Exec in
   [%test_eq: sentence_id option] (Some s5.id) init;
@@ -63,7 +59,7 @@ let %test_unit "schedule: section with proof using" =
   ()
   
 let %test_unit "schedule: section closed" =
-  let st, _ = init "Section A. End A. Lemma a : True. Proof. idtac. Qed." in
+  let st, _ = init_test_doc ~text:"Section A. End A. Lemma a : True. Proof. idtac. Qed." in
   let st, (s1, (s2, (s3, (s4, (s5, (s6, ())))))) = dm_parse st (P(P(P(P(P(P O)))))) in
   let init, (o, (p1,(p2,())), t) = task st s6.id (Proof(S(S O))) in
   [%test_eq: sentence_id option] (Some s3.id) init;
@@ -74,7 +70,7 @@ let %test_unit "schedule: section closed" =
   ()
 
 let %test_unit "schedule: empty proof" =
-  let st, _ = init "Lemma a : True. Qed." in
+  let st, _ = init_test_doc ~text:"Lemma a : True. Qed." in
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
   let init, (o, (), t) = task st s2.id (Proof O) in
   [%test_eq: sentence_id option] (Some s1.id) init;

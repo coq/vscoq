@@ -12,6 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Protocol
 open Scheduler
 open Types
 
@@ -41,9 +42,10 @@ type delegation_mode =
 
 type options = {
   delegation_mode : delegation_mode;
-  completion_options : Lsp.LspData.Settings.Completion.t;
+  completion_options : Settings.Completion.t;
   enableDiagnostics : bool
 }
+
 let default_options = {
   delegation_mode = CheckProofsInMaster;
   completion_options = {

@@ -47,9 +47,10 @@
           ppx_assert
           ppx_sexp_conv
           ppx_deriving
+          ppx_import
           sexplib
           ppx_yojson_conv
-          uri
+          lsp
         ]);
       };
 

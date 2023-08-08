@@ -12,9 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 open Gramlib
-open Lsp
-open LspData
 open Types
+open Lsp.Types
 open Scheduler
 
 let Log log = Log.mk_log "document"

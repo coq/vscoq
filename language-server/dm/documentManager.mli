@@ -13,7 +13,9 @@
 (**************************************************************************)
 
 open Types
-open Lsp.LspData
+open Lsp.Types
+open Protocol
+open Protocol.LspWrapper
 open CompletionItems
 
 (** The document manager holds the view that Coq has of the currently open
@@ -28,7 +30,7 @@ val pp_event : Format.formatter -> event -> unit
 
 type events = event Sel.event list
 
-val init : Vernacstate.t -> opts:Coqargs.injection_command list -> Uri.t -> text:string -> state * events
+val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> state * events
 (** [init st opts uri text] initializes the document manager with initial vernac state
     [st] on which command line opts will be set. *)
 
@@ -72,7 +74,7 @@ val executed_ranges : state -> exec_overview
 (** returns the ranges corresponding to the sentences
     that have been executed and remotely executes *)
 
-val observe_id_range : state -> Lsp.LspData.Range.t option
+val observe_id_range : state -> Range.t option
 (** returns the range of the sentence referenced by observe_id **)
 
 val diagnostics : state -> Diagnostic.t list
@@ -83,7 +85,7 @@ val feedbacks : state -> CoqFeedback.t list
 (** feedback [doc] returns notice, info and debug level feedbacks from coq corresponding
     to the sentences that have been executed in [doc]. *)
 
-val get_proof : state -> Position.t option -> Lsp.ProofState.t option
+val get_proof : state -> Position.t option -> ProofState.t option
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 
@@ -94,7 +96,7 @@ val search : state -> id:string -> Position.t -> string -> notification Sel.even
 
 val about : state -> Position.t -> pattern:string -> (string,string) Result.t
 
-val hover : state -> Position.t -> (string list) option
+val hover : state -> Position.t -> MarkupContent.t option
 (** Returns an optional Result:
     if None, the position did not have a word,
     if Some, an Ok/Error result is returned. *)

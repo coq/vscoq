@@ -16,9 +16,10 @@
     used by the VsCoq extension. *)
 
 open Printer
-open Lsp
-open LspData
-open ExtProtocol
+open Lsp.Types
+open Protocol
+open Protocol.LspWrapper
+open Protocol.ExtProtocol
 
 module CompactedDecl = Context.Compacted.Declaration
 
@@ -36,22 +37,22 @@ let Dm.Types.Log log = Dm.Log.mk_log "lspManager"
 
 let conf_request_id = 3456736879
 
-let server_info = ServerInfo.{
-  name = "vscoq-language-server";
-  version = "1.9.0";
-} 
+let server_info = InitializeResult.create_serverInfo
+  ~name:"vscoq-language-server"
+  ~version:"1.9.0"
+  ()
 
 type lsp_event = 
-  | Receive of JsonRpc.t option
-  | Send of JsonRpc.t
+  | Receive of Jsonrpc.Packet.t option
+  | Send of Jsonrpc.Packet.t
 
 type event =
  | LspManagerEvent of lsp_event
- | DocumentManagerEvent of Uri.t * Dm.DocumentManager.event
+ | DocumentManagerEvent of DocumentUri.t * Dm.DocumentManager.event
  | Notification of notification
  | LogEvent of Dm.Log.event
- | SendProofView of Uri.t * Position.t option
- | SendMoveCursor of Uri.t * Range.t
+ | SendProofView of DocumentUri.t * Position.t option
+ | SendMoveCursor of DocumentUri.t * Range.t
 
 type events = event Sel.event list
 
@@ -60,7 +61,7 @@ let lsp : event Sel.event =
     | Ok buff ->
       begin
         log "UI req ready";
-        try LspManagerEvent (Receive (Some (JsonRpc.t_of_yojson (Yojson.Safe.from_string (Bytes.to_string buff)))))
+        try LspManagerEvent (Receive (Some (Jsonrpc.Packet.t_of_yojson (Yojson.Safe.from_string (Bytes.to_string buff)))))
         with exn ->
           log @@ "failed to decode json";
           LspManagerEvent (Receive None)
@@ -81,8 +82,8 @@ let output_json obj =
   log @@ "sent: " ^ msg;
   ignore(Unix.write_substring Unix.stdout s 0 (String.length s)) (* TODO ERROR *)
 
-let output_jsonrpc jsonrpc =
-  output_json @@ JsonRpc.yojson_of_t jsonrpc
+let output_notification notif =
+  output_json @@ Jsonrpc.Notification.yojson_of_t @@ Notification.Server.to_jsonrpc notif
 
 let inject_dm_event uri x : event Sel.event =
   Sel.map (fun e -> DocumentManagerEvent(uri,e)) x
@@ -119,36 +120,39 @@ let do_configuration settings =
   check_mode := settings.proof.mode
 
 let send_configuration_request () =
-  let id = conf_request_id in
+  let id = `Int conf_request_id in
   let mk_configuration_item section =
     ConfigurationItem.({ scopeUri = None; section = Some section })
   in
   let items = List.map mk_configuration_item ["vscoq"] in
-  let req = Request.Server.(jsonrpc_of_t @@ Configuration (id, { items })) in
+  let req = Lsp.Server_request.(to_jsonrpc_request (WorkspaceConfiguration { items }) ~id) in
   Send (Request req)
 
-let do_initialize ~id params =
-  let Request.Client.InitializeParams.{ initializationOptions } = params in
-  do_configuration initializationOptions;
-  let capabilities = ServerCapabilities.{
-    textDocumentSync = Incremental;
-    completionProvider = { 
-      resolveProvider = Some false; 
-      triggerCharacters = None; 
-      allCommitCharacters = None; 
-      completionItem = None 
-    };
-    hoverProvider = true;
-  } in
-  let initialize_result = Request.Client.InitializeResult.{
+let do_initialize id params =
+  let Lsp.Types.InitializeParams.{ initializationOptions } = params in
+  begin match initializationOptions with
+  | None -> log "Failed to decode initialization options"
+  | Some initializationOptions ->
+    do_configuration @@ Settings.t_of_yojson initializationOptions;
+  end;
+  let textDocumentSync = `TextDocumentSyncKind TextDocumentSyncKind.Incremental in
+  let completionProvider = CompletionOptions.create ~resolveProvider:false () in
+  let hoverProvider = `Bool true in
+  let capabilities = ServerCapabilities.create
+    ~textDocumentSync
+    ~completionProvider
+    ~hoverProvider
+  ()
+  in
+  let initialize_result = Lsp.Types.InitializeResult.{
     capabilities = capabilities; 
-    serverInfo = server_info;
+    serverInfo = Some server_info;
   } in
   log "---------------- initialized --------------";
   let debug_events = Dm.Log.lsp_initialization_done () |> inject_debug_events in
   Ok initialize_result, debug_events@[Sel.now @@ LspManagerEvent (send_configuration_request ())]
 
-let do_shutdown ~id params =
+let do_shutdown id params =
   Ok(()), []
 
 let do_exit () =
@@ -163,18 +167,15 @@ let parse_loc json =
 let publish_feedbacks_and_diagnostics uri doc =
   let diagnostics = Dm.DocumentManager.diagnostics doc in
   let feedbacks = Dm.DocumentManager.feedbacks doc in
-  let diag_notification = Protocol.Notification.Server.PublishDiagnostics {
-    uri;
-    diagnostics
-  }
-  in
-  let fb_notification = ExtProtocol.Notification.Server.PublishCoqFeedback {
+  let params = Lsp.Types.PublishDiagnosticsParams.create ~diagnostics ~uri () in
+  let diag_notification = Lsp.Server_notification.PublishDiagnostics params in
+  let fb_notification = Notification.Server.PublishCoqFeedback {
     uri; 
     feedbacks
   }
   in
-  output_jsonrpc @@ Notification Protocol.Notification.Server.(jsonrpc_of_t diag_notification);
-  output_jsonrpc @@ Notification ExtProtocol.Notification.Server.(jsonrpc_of_t fb_notification)
+  output_notification (Std diag_notification);
+  output_notification fb_notification
 
 let send_highlights uri doc =
   let { Dm.DocumentManager.parsed; checked; checked_by_delegate; legacy_highlight } =
@@ -186,16 +187,16 @@ let send_highlights uri doc =
     processedRange = legacy_highlight;
   }
   in
-  output_jsonrpc @@ Notification Notification.Server.(jsonrpc_of_t notification)
+  output_json @@ Jsonrpc.Notification.yojson_of_t @@ Notification.Server.to_jsonrpc notification
 
 let send_proof_view pv =
   log "-------------------------- sending proof view ---------------------------------------";
   let notification = Notification.Server.ProofView pv in
-  output_jsonrpc @@ Notification Notification.Server.(jsonrpc_of_t notification)
+  output_json @@ Jsonrpc.Notification.yojson_of_t @@ Notification.Server.to_jsonrpc notification
 
 let send_move_cursor uri range = 
   let notification = Notification.Server.MoveCursor {uri;range} in 
-  output_jsonrpc @@ Notification Notification.Server.(jsonrpc_of_t notification)
+  output_notification notification
 
 let update_view uri st =
   if (Dm.ExecutionManager.is_diagnostics_enabled ()) then (
@@ -204,7 +205,7 @@ let update_view uri st =
   )
 
 let textDocumentDidOpen params =
-  let Notification.Client.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
+  let Lsp.Types.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
   let vst, opts = get_init_state () in
   let st, events = Dm.DocumentManager.init vst ~opts uri ~text in
   let (st, events') = 
@@ -213,14 +214,14 @@ let textDocumentDidOpen params =
     else 
       (st, [])
   in
-  Hashtbl.add states (Uri.path uri) st;
+  Hashtbl.add states (DocumentUri.to_path uri) st;
   update_view uri st;
   inject_dm_events (uri, events@events')
 
 let textDocumentDidChange params =
-  let Notification.Client.DidChangeTextDocumentParams.{ textDocument; contentChanges } = params in
+  let Lsp.Types.DidChangeTextDocumentParams.{ textDocument; contentChanges } = params in
   let uri = textDocument.uri in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let mk_text_edit TextDocumentContentChangeEvent.{ range; text } =
     Option.get range, text
   in
@@ -232,7 +233,7 @@ let textDocumentDidChange params =
     else 
       (st, [])
   in
-  Hashtbl.replace states (Uri.path uri) st;
+  Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st;
   inject_dm_events (uri, events)
 
@@ -242,16 +243,16 @@ let textDocumentDidSave params =
 let textDocumentDidClose params =
   [] (* TODO handle properly *)
 
-let textDocumentHover ~id params = 
-  let Request.Client.HoverParams.{ textDocument; position } = params in
+let textDocumentHover id params = 
+  let Lsp.Types.HoverParams.{ textDocument; position } = params in
   let open Yojson.Safe.Util in
-  let st = Hashtbl.find states (Uri.path textDocument.uri) in 
+  let st = Hashtbl.find states (DocumentUri.to_path textDocument.uri) in 
   match Dm.DocumentManager.hover st position with
-  | Some contents -> Ok (Some (Request.Client.HoverResult.{ contents }))
+  | Some contents -> Ok (Some (Hover.create ~contents:(`MarkupContent contents) ()))
   | _ -> Ok None (* FIXME handle error case properly *)
 
 let progress_hook uri () =
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   update_view uri st
 
 let mk_proof_view_event uri position = 
@@ -263,19 +264,19 @@ let mk_move_cursor_event uri range =
 let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let (st, events) = Dm.DocumentManager.interpret_to_position ~stateful:(!check_mode = Settings.Mode.Manual) st position in
-  Hashtbl.replace states (Uri.path uri) st;
+  Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st;
   let sel_events = inject_dm_events (uri, events) in
   sel_events @ [ mk_proof_view_event uri (Some position)]
  
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let (st, events) = Dm.DocumentManager.interpret_to_previous st in
   let range = Dm.DocumentManager.observe_id_range st in
-  Hashtbl.replace states (Uri.path uri) st;
+  Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st; 
   if !check_mode = Settings.Mode.Manual then
     match range with 
@@ -288,10 +289,10 @@ let coqtopStepBackward params =
 
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let (st, events) = Dm.DocumentManager.interpret_to_next st in
   let range = Dm.DocumentManager.observe_id_range st in
-  Hashtbl.replace states (Uri.path uri) st;
+  Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st; 
   if !check_mode = Settings.Mode.Manual then
     match range with 
@@ -304,68 +305,71 @@ let coqtopStepForward params =
   
   let make_CompletionItem i item : CompletionItem.t = 
     let (label, insertText, typ, path) = Dm.CompletionItems.pp_completion_item item in
-    {
-      label;
-      insertText = Some insertText;
-      detail = Some typ;
-      documentation = Some ("Path: " ^ path);
-      sortText = Some (Printf.sprintf "%5d" i);
-      filterText = (if label == insertText then None else Some (insertText));
-    } 
+    CompletionItem.create
+      ~label
+      ~insertText
+      ~detail:typ
+      ~documentation:(`String ("Path: " ^ path))
+      ~sortText:(Printf.sprintf "%5d" i)
+      ?filterText:(if label == insertText then None else Some (insertText))
+      ()
 
-let textDocumentCompletion ~id params =
+let textDocumentCompletion id params =
+  let return_completion ~isIncomplete ~items =
+    Ok (Some (`CompletionList (Lsp.Types.CompletionList.create ~isIncomplete ~items ())))
+  in
   if not (Dm.ExecutionManager.get_options ()).completion_options.enable then
-    Ok Request.Client.CompletionResult.{ isIncomplete = false; items = [] }, []
+    return_completion ~isIncomplete:false ~items:[], []
   else
-  let Request.Client.CompletionParams.{ textDocument = { uri }; position } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let Lsp.Types.CompletionParams.{ textDocument = { uri }; position } = params in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   match Dm.DocumentManager.get_completions st position with
   | Ok completionItems -> 
     let items = List.mapi make_CompletionItem completionItems in
-    Ok Request.Client.CompletionResult.{isIncomplete = false; items = items;}, []
+    return_completion ~isIncomplete:false ~items, []
   | Error e -> 
     let message = e in
     Error(message), []
 
-let coqtopResetCoq ~id params =
+let coqtopResetCoq id params =
   let Request.Client.ResetParams.{ uri } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let st, events = Dm.DocumentManager.reset st in
-  Hashtbl.replace states (Uri.path uri) st;
+  Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st;
   Ok(()), (uri,events) |> inject_dm_events
 
 let coqtopInterpretToEnd params =
   let Notification.Client.InterpretToEndParams.{ textDocument = { uri } } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let (st, events) = Dm.DocumentManager.interpret_to_end st in
-  Hashtbl.replace states (Uri.path uri) st;
+  Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st;
   inject_dm_events (uri,events) @ [ mk_proof_view_event uri None]
 
-let coqtopLocate ~id params = 
+let coqtopLocate id params = 
   let Request.Client.LocateParams.{ textDocument = { uri }; position; pattern } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   Dm.DocumentManager.locate st position ~pattern, []
 
-let coqtopPrint ~id params = 
+let coqtopPrint id params = 
   let Request.Client.PrintParams.{ textDocument = { uri }; position; pattern } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   Dm.DocumentManager.print st position ~pattern, []
 
-let coqtopAbout ~id params =
+let coqtopAbout id params =
   let Request.Client.AboutParams.{ textDocument = { uri }; position; pattern } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   Dm.DocumentManager.about st position ~pattern, []
 
-let coqtopCheck ~id params =
+let coqtopCheck id params =
   let Request.Client.CheckParams.{ textDocument = { uri }; position; pattern } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   Dm.DocumentManager.check st position ~pattern, []
 
-let coqtopSearch ~id params =
+let coqtopSearch id params =
   let Request.Client.SearchParams.{ textDocument = { uri }; id; position; pattern } = params in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   try
     let notifications = Dm.DocumentManager.search st ~id position pattern in
     Ok(()), inject_notifications notifications
@@ -374,67 +378,66 @@ let coqtopSearch ~id params =
     let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
     Error(message), []
 
-let sendDocumentState ~id params = 
+let sendDocumentState id params = 
   let Request.Client.DocumentStateParams.{ textDocument } = params in
   let uri = textDocument.uri in
-  let st = Hashtbl.find states (Uri.path uri) in
+  let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let document = Dm.DocumentManager.Internal.string_of_state st in
   Ok Request.Client.DocumentStateResult.{ document }, []
 
 let workspaceDidChangeConfiguration params = 
-  let Protocol.Notification.Client.DidChangeConfigurationParams.{ settings } = params in
+  let Lsp.Types.DidChangeConfigurationParams.{ settings } = params in
   let settings = Settings.t_of_yojson settings in
   do_configuration settings;
   []
 
-let dispatch_request : type a. id:int -> a Protocol.Request.Client.params -> (a,string) result * events =
-  fun ~id req ->
+let dispatch_std_request : type a. Jsonrpc.Id.t -> a Lsp.Client_request.t -> (a,string) result * events =
+  fun id req ->
   match req with
   | Initialize params ->
-    do_initialize ~id params
+    do_initialize id params
   | Shutdown ->
-    do_shutdown ~id ()
-  | Completion params ->
-    textDocumentCompletion ~id params
-  | Hover params ->
-    textDocumentHover ~id params, []
-  | UnknownRequest -> log "Received unknown request"; Ok(()), []
+    do_shutdown id ()
+  | TextDocumentCompletion params ->
+    textDocumentCompletion id params
+  | TextDocumentHover params ->
+    textDocumentHover id params, []
+  | UnknownRequest _ | _  -> Error "Received unknown request", []
 
-let dispatch_ext_request : type a. id:int -> a Request.Client.params -> (a,string) result * events =
-  fun ~id req ->
+let dispatch_request : type a. Jsonrpc.Id.t -> a Request.Client.t -> (a,string) result * events =
+  fun id req ->
   match req with
-  | Reset params -> coqtopResetCoq ~id params
-  | About params -> coqtopAbout ~id params
-  | Check params -> coqtopCheck ~id params
-  | Locate params -> coqtopLocate ~id params
-  | Print params -> coqtopPrint ~id params
-  | Search params -> coqtopSearch ~id params
-  | DocumentState params -> sendDocumentState ~id params
+  | Std req -> dispatch_std_request id req
+  | Reset params -> coqtopResetCoq id params
+  | About params -> coqtopAbout id params
+  | Check params -> coqtopCheck id params
+  | Locate params -> coqtopLocate id params
+  | Print params -> coqtopPrint id params
+  | Search params -> coqtopSearch id params
+  | DocumentState params -> sendDocumentState id params
 
-let dispatch_notification = 
-  let open Protocol.Notification.Client in function 
-  | DidOpenTextDocument params -> log "Recieved notification: textDocument/didOpen";
+let dispatch_std_notification = 
+  let open Lsp.Client_notification in function
+  | TextDocumentDidOpen params -> log "Recieved notification: textDocument/didOpen";
     textDocumentDidOpen params
-  | DidChangeTextDocument params -> log "Recieved notification: textDocument/didChange";
+  | TextDocumentDidChange params -> log "Recieved notification: textDocument/didChange";
     textDocumentDidChange params
-  | DidCloseTextDocument params ->  log "Recieved notification: textDocument/didClose";
+  | TextDocumentDidClose params ->  log "Recieved notification: textDocument/didClose";
     textDocumentDidClose params
-  | DidChangeConfiguration params -> log "Recieved notification: workspace/didChangeConfiguration";
+  | ChangeConfiguration params -> log "Recieved notification: workspace/didChangeConfiguration";
     workspaceDidChangeConfiguration params
   | Initialized -> []
   | Exit ->
     do_exit ()
-  | UnknownNotification -> log "Received unknown notification"; []
+  | UnknownNotification _ | _ -> log "Received unknown notification"; []
 
-let dispatch_ext_notification =
+let dispatch_notification =
   let open Notification.Client in function
   | InterpretToPoint params -> log "Received notification: vscoq/interpretToPoint"; coqtopInterpretToPoint params 
   | InterpretToEnd params -> log "Received notification: vscoq/interpretToEnd"; coqtopInterpretToEnd params
   | StepBackward params -> log "Received notification: vscoq/stepBackward"; coqtopStepBackward params
   | StepForward params -> log "Received notification: vscoq/stepForward"; coqtopStepForward params
-  | Std notif -> dispatch_notification notif
-
-let dispatch = Request.Client.{ dispatch_std = dispatch_request; dispatch_ext = dispatch_ext_request }
+  | Std notif -> dispatch_std_notification notif
 
 let handle_lsp_event = function
   | Receive None ->
@@ -444,21 +447,36 @@ let handle_lsp_event = function
       begin match rpc with
       | Request req ->
           log @@ "ui request: " ^ req.method_;
-          let resp, events = Request.Client.yojson_of_result req dispatch in
-          output_json resp;
-          events
+          begin match Request.Client.t_of_jsonrpc req with
+          | Error(e) -> log @@ "Error decoding request: " ^ e; []
+          | Ok(Pack r) ->
+            let resp, events = dispatch_request req.id r in
+            begin match resp with
+            | Error message ->
+              output_json @@ Jsonrpc.Response.(yojson_of_t @@ error req.id (Error.make ~code:RequestFailed ~message ()))
+            | Ok resp ->
+              let resp = Request.Client.yojson_of_result r resp in
+              output_json @@ Jsonrpc.Response.(yojson_of_t @@ ok req.id resp)
+            end;
+            events
+          end
       | Notification notif ->
-        dispatch_ext_notification @@ Notification.Client.t_of_jsonrpc notif
+        begin match Notification.Client.of_jsonrpc notif with
+        | Ok notif -> dispatch_notification notif
+        | Error e -> log @@ "error decoding notification: " ^ e; []
+        end
       | Response resp ->
           log @@ "got unknown response";
           []
+      | Batch_response _ -> log "Unsupported batch response received"; []
+      | Batch_call _ -> log "Unsupported batch call received"; []
       end
     with Ppx_yojson_conv_lib__Yojson_conv.Of_yojson_error(exn,json) ->
       log @@ "error parsing json: " ^ Yojson.Safe.pretty_to_string json;
       []
     end
   | Send jsonrpc ->
-    output_json (JsonRpc.yojson_of_t jsonrpc); []
+    output_json (Jsonrpc.Packet.yojson_of_t jsonrpc); []
 
 let pr_lsp_event = function
   | Receive jsonrpc ->
@@ -468,12 +486,12 @@ let pr_lsp_event = function
 
 let output_notification = function
 | QueryResultNotification params ->
-  output_jsonrpc @@ Notification Notification.Server.(jsonrpc_of_t @@ SearchResult params)
+  output_notification @@ SearchResult params
 
 let handle_event = function
   | LspManagerEvent e -> handle_lsp_event e
   | DocumentManagerEvent (uri, e) ->
-    begin match Hashtbl.find_opt states (Uri.path uri) with
+    begin match Hashtbl.find_opt states (DocumentUri.to_path uri) with
     | None ->
       log @@ "ignoring event on non-existing document";
       []
@@ -482,7 +500,7 @@ let handle_event = function
       begin match ost with
         | None -> ()
         | Some st ->
-          Hashtbl.replace states (Uri.path uri) st;
+          Hashtbl.replace states (DocumentUri.to_path uri) st;
           update_view uri st
       end;
       inject_dm_events (uri, events)
@@ -495,7 +513,7 @@ let handle_event = function
   | LogEvent e ->
     Dm.Log.handle_event e; []
   | SendProofView (uri, position) -> 
-    let st = Hashtbl.find states (Uri.path uri) in
+    let st = Hashtbl.find states (DocumentUri.to_path uri) in
     let pv = Dm.DocumentManager.get_proof st position in
     send_proof_view pv; []
   | SendMoveCursor (uri, range) -> 

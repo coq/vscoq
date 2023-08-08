@@ -13,7 +13,7 @@
 (**************************************************************************)
 open Util
 open Printer
-open Lsp.LspData
+open Protocol.LspWrapper
 open Vernacexpr
 open Pp
 (* Note: this queue is not very useful today, as we process results in the main

@@ -15,6 +15,7 @@
 open Dm
 open Base
 open Types
+open Protocol.LspWrapper
 
 let injections =
   Coqinit.init_ocaml ();
@@ -143,36 +144,39 @@ let rec handle_events n (events : DocumentManager.event Sel.todo) st =
 let handle_events e st = handle_events 100 e st
   
 type diag_spec =
-  | D of sentence_id * Lsp.LspData.Severity.t * string
+  | D of sentence_id * Lsp.Types.DiagnosticSeverity.t * string
 
 type feedback_spec = 
-  | F of sentence_id * Lsp.LspData.FeedbackChannel.t * string
+  | F of sentence_id * FeedbackChannel.t * string
 
 let check_no_diag st =
   let diagnostics = DocumentManager.diagnostics st in
-  [%test_pred: Lsp.LspData.Diagnostic.t list] List.is_empty diagnostics
+  let diagnostics = List.map ~f:Lsp.Types.Diagnostic.(fun d -> d.range, d.message, d.severity) diagnostics in
+  [%test_pred: (Range.t * string * DiagnosticSeverity.t option) list] List.is_empty diagnostics
 
 let check_no_feedback st =
   let feedbacks = DocumentManager.feedbacks st in
-  [%test_pred: Lsp.LspData.CoqFeedback.t list] List.is_empty feedbacks
+  [%test_pred: Protocol.LspWrapper.CoqFeedback.t list] List.is_empty feedbacks
+
+type diagnostic_summary = Range.t * string * DiagnosticSeverity.t option [@@deriving sexp]
 
 let check_diag st specl =
   let open Result in
-  let open Lsp.LspData.Diagnostic in
-  let fix_diagnostic { range; message; severity } =
+  let open Lsp.Types.Diagnostic in
+  let diagnostic_summary { range; message; severity } =
     let message = Str.global_replace (Str.regexp_string "\n") " " message in
     let message = Str.global_replace (Str.regexp " Raised at .*$") "" message in
-    { range; message; severity } in
-  let match_diagnostic r s rex { range; message; severity } =
-    Lsp.LspData.Range.included ~in_:r range &&
-    Caml.(=) severity s &&
+    (range, message, severity) in
+  let match_diagnostic r s rex (range, message, severity) =
+    Range.included ~in_:r range &&
+    Caml.(=) severity (Some s) &&
     Str.string_match (Str.regexp rex) message 0
   in
   let diagnostics = DocumentManager.diagnostics st in
-  let diagnostics = List.map ~f:fix_diagnostic diagnostics in
+  let diagnostics = List.map ~f:diagnostic_summary diagnostics in
   run @@ map_error
     ~f:(fun s -> Printf.sprintf "%s\n\nDiagnostics: %s" s (
-         String.concat ~sep:"\n" (List.map ~f:(fun x -> Sexp.to_string (sexp_of_t x)) diagnostics)))
+         String.concat ~sep:"\n" (List.map ~f:(fun x -> Sexp.to_string (sexp_of_diagnostic_summary x)) diagnostics)))
     (List.fold_left ~f:(fun e c -> e >>= (fun () ->
       match c with
       | D(id,s,rex) ->
@@ -180,20 +184,20 @@ let check_diag st specl =
           match List.find ~f:(match_diagnostic range s rex) diagnostics with
           | Some _ -> Ok ()
           | None -> Error (Printf.sprintf "no %s diagnostic on %s matching %s"
-                             (Sexp.to_string (Lsp.LspData.Severity.sexp_of_t s))
-                             (Sexp.to_string (Lsp.LspData.Range.sexp_of_t range))
+                             (Sexp.to_string (DiagnosticSeverity.sexp_of_t s))
+                             (Sexp.to_string (Range.sexp_of_t range))
                              rex)   
     )) ~init:(Ok ()) specl)
 
 let check_feedback st specl =
   let open Result in
-  let open Lsp.LspData.CoqFeedback in
+  let open Protocol.LspWrapper.CoqFeedback in
   let fix_feedback { range; message; channel } =
     let message = Str.global_replace (Str.regexp_string "\n") " " message in
     let message = Str.global_replace (Str.regexp " Raised at .*$") "" message in
     { range; message; channel } in
   let match_diagnostic r s rex { range; message; channel } = 
-    Lsp.LspData.Range.included ~in_:r range &&
+    Protocol.LspWrapper.Range.included ~in_:r range &&
     Caml.(=) channel s &&
     Str.string_match (Str.regexp rex) message 0
   in
@@ -209,7 +213,11 @@ let check_feedback st specl =
           match List.find ~f:(match_diagnostic range s rex) feedbacks with
           | Some _ -> Ok ()
           | None -> Error (Printf.sprintf "no %s diagnostic on %s matching %s"
-                             (Sexp.to_string (Lsp.LspData.FeedbackChannel.sexp_of_t s))
-                             (Sexp.to_string (Lsp.LspData.Range.sexp_of_t range))
+                             (Sexp.to_string (Protocol.LspWrapper.FeedbackChannel.sexp_of_t s))
+                             (Sexp.to_string (Protocol.LspWrapper.Range.sexp_of_t range))
                              rex)   
     )) ~init:(Ok ()) specl)
+
+let test_uri = Lsp.Types.DocumentUri.of_path "foo.v"
+
+let init_test_doc ~text = openDoc test_uri ~text

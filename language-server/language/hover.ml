@@ -224,22 +224,22 @@ let ref_info env _sigma ref udecl =
   let path = Libnames.pr_path (Nametab.path_of_global ref) ++ canonical_name_info ref in
   let args = print_arguments ref in
   let args = if Pp.ismt args then [] else ["**Args:** " ^ (Pp.string_of_ppcmds (print_arguments ref))] in
-  [md_code_block @@ compactify @@ Pp.string_of_ppcmds typ]@args@
+  String.concat "\n" @@ [md_code_block @@ compactify @@ Pp.string_of_ppcmds typ]@args@
   [Format.sprintf "**%s** %s" (pr_globref_kind ref) (Pp.string_of_ppcmds path)]
 
 let mod_info mp =
-  [md_code_block @@ Format.sprintf "Module %s" (DirPath.to_string (Nametab.dirpath_of_module mp))]
+  md_code_block @@ Format.sprintf "Module %s" (DirPath.to_string (Nametab.dirpath_of_module mp))
 
 let modtype_info mp =
-  [md_code_block @@ Format.sprintf "Module Type %s" (Libnames.string_of_path (Nametab.path_of_modtype mp))]
+  md_code_block @@ Format.sprintf "Module Type %s" (Libnames.string_of_path (Nametab.path_of_modtype mp))
 
 let syndef_info kn =
-  [md_code_block @@ Format.sprintf "Notation %s" (Libnames.string_of_path (Nametab.path_of_abbreviation kn))]
+  md_code_block @@ Format.sprintf "Notation %s" (Libnames.string_of_path (Nametab.path_of_abbreviation kn))
 
 let get_hover_contents env sigma ref_or_by_not =
   match ref_or_by_not.CAst.v with
   | Constrexpr.AN qid ->
-    begin try
+    let r = begin try
       let udecl = None in
       let ref = Nametab.locate qid in
       Some (ref_info env sigma ref udecl)
@@ -258,4 +258,6 @@ let get_hover_contents env sigma ref_or_by_not =
     with Not_found ->
       None
     end
+    in
+    Option.map Lsp.Types.(fun value -> MarkupContent.create ~kind:MarkupKind.Markdown ~value) r
   | Constrexpr.ByNotation (_ntn,_sc) -> assert false

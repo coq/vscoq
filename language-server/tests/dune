@@ -1,6 +1,6 @@
 (library
   (name tests)
-  (libraries base dm lsp)
+  (libraries base dm protocol)
   (preprocess
     (pps ppx_sexp_conv ppx_inline_test ppx_assert))
   (inline_tests))

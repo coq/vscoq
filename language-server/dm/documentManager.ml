@@ -12,13 +12,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Lsp.Types
+open Protocol
+open Protocol.LspWrapper
 open Types
-open Lsp.LspData
 
 let Log log = Log.mk_log "documentManager"
 
 type state = {
-  uri : Uri.t;
+  uri : DocumentUri.t;
   init_vs : Vernacstate.t;
   opts : Coqargs.injection_command list;
   document : Document.document;
@@ -115,7 +117,7 @@ let make_diagnostic doc range oloc message severity =
     | Some loc ->
       RawDocument.range_of_loc (Document.raw_document doc) loc
   in
-  Diagnostic.{ range; message; severity }
+  Diagnostic.create ~range ~message ~severity ()
 
 let make_coq_feedback doc range oloc message channel = 
   let range =
@@ -144,15 +146,15 @@ let diagnostics st =
   (* we are resilient to a state where invalidate was not called yet *)
   let exists (id,_) = Option.has_some (Document.get_sentence st.document id) in
   let exec_errors = all_exec_errors |> List.filter exists in
-  let warnings_and_errors  (id, (lvl, oloc, msg)) = Option.map (fun lvl -> id, (lvl, oloc, msg)) (Severity.t_of_feedback_level lvl) in
+  let warnings_and_errors  (id, (lvl, oloc, msg)) = Option.map (fun lvl -> id, (lvl, oloc, msg)) (DiagnosticSeverity.of_feedback_level lvl) in
   let diags = all_feedback |> List.filter exists |> List.filter_map warnings_and_errors in
   let mk_diag (id,(lvl,oloc,msg)) = 
       make_diagnostic st.document (Document.range_of_id st.document id) oloc msg lvl
   in
-  let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(Severity.Error,oloc,msg)) in
+  let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(DiagnosticSeverity.Error,oloc,msg)) in
   let mk_parsing_error_diag Document.{ msg = (oloc,msg); start; stop } =
     let doc = Document.raw_document st.document in
-    let severity = Severity.Error in
+    let severity = DiagnosticSeverity.Error in
     let start = RawDocument.position_of_loc doc start in
     let end_ = RawDocument.position_of_loc doc stop in
     let range = Range.{ start; end_ } in
@@ -242,7 +244,7 @@ let validate_document state =
 
 let init init_vs ~opts uri ~text =
   Vernacstate.unfreeze_full_state init_vs;
-  let top = Coqargs.(dirpath_of_top (TopPhysical (Uri.path uri))) in
+  let top = Coqargs.(dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) in
   Coqinit.start_library ~top opts;
   let init_vs = Vernacstate.freeze_full_state () in 
   let document = Document.create_document init_vs.Vernacstate.synterp text in
@@ -290,7 +292,7 @@ let get_proof st pos =
   in
   let oid = Option.cata id_of_pos st.observe_id pos in
   let ost = Option.bind oid (ExecutionManager.get_vernac_state st.execution_state) in
-  Option.bind ost Lsp.ProofState.get_proof
+  Option.bind ost ProofState.get_proof
 
 let get_context st pos =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
