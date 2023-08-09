@@ -13,6 +13,7 @@
 (**************************************************************************)
 
 open Types
+open Protocol
 
 (** The event manager is in charge of the actual event of tasks (as
     defined by the scheduler), caching event states and invalidating
@@ -25,7 +26,7 @@ type delegation_mode =
 
 type options = {
   delegation_mode : delegation_mode;
-  completion_options : Lsp.LspData.Settings.Completion.t;
+  completion_options : Settings.Completion.t;
   enableDiagnostics : bool;
 }
 

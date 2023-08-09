@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Lsp.LspData
+open Protocol
 open CompletionItems
 
 val get_completions : Settings.Completion.t -> Vernacstate.t -> completion_item list option

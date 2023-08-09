@@ -11,7 +11,7 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
-open Lsp.LspData
+open Protocol.LspWrapper
 
 val query_feedback : notification Sel.event
 

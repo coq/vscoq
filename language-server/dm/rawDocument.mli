@@ -11,8 +11,7 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
-open Lsp
-open LspData
+open Lsp.Types
 
 type text_edit = Range.t * string
 

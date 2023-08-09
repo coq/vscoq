@@ -18,4 +18,4 @@ val get_hover_contents :
   env ->
   evar_map ->
   Libnames.qualid Constrexpr.or_by_notation ->
-  (string list) option
+  Lsp.Types.MarkupContent.t option

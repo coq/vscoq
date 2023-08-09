@@ -14,19 +14,14 @@
 open Base
 open Dm
 open Common
-open Lsp.LspData.Severity
 
 [@@@warning "-27"]
-
-let uri = Uri.make ~scheme:"file" ~path:"foo" ()
-
-let init text = openDoc uri ~text
 
 let set_delegation_mode mode =
   ExecutionManager.(set_options { delegation_mode = mode; completion_options = { enable = false; unificationLimit = 100; algorithm = StructuredSplitUnification; atomicFactor = 5.; sizeFactor = 5. }; enableDiagnostics = true })
 
 let%test_unit "exec: finished proof" =
-  let st, init_events = init "Lemma x : True. trivial. Qed. Check x." in
+  let st, init_events = init_test_doc ~text:"Lemma x : True. trivial. Qed. Check x." in
   let st, (s1, (s2, (s3, (s4, ())))) = dm_parse st (P(P(P(P O)))) in
   let st, exec_events = DocumentManager.interpret_to_end st in
   let todo = Sel.(enqueue empty init_events) in
@@ -37,7 +32,7 @@ let%test_unit "exec: finished proof" =
   ]
 
 let%test_unit "exec: finished proof skip" =
-  let st, init_events = init "Lemma x : True. trivial. Qed. Check x." in
+  let st, init_events = init_test_doc ~text:"Lemma x : True. trivial. Qed. Check x." in
   let st, (s1, (s2, (s3, (s4, ())))) = dm_parse st (P(P(P(P O)))) in
   set_delegation_mode SkipProofs;
   let st, exec_events = DocumentManager.interpret_to_end st in
@@ -50,7 +45,7 @@ let%test_unit "exec: finished proof skip" =
   ExecutionManager.set_default_options ()
 
 let%test_unit "exec: unfinished proof" =
-  let st, init_events = init "Lemma x : True. Qed. Check x." in
+  let st, init_events = init_test_doc ~text:"Lemma x : True. Qed. Check x." in
   let st, (s1, (s2, (s3, ()))) = dm_parse st (P(P(P O))) in
   let st, exec_events = DocumentManager.interpret_to_end st in
   let todo = Sel.(enqueue empty init_events) in
@@ -66,7 +61,7 @@ let%test_unit "exec: unfinished proof" =
   ]
 
 let%test_unit "exec: unfinished proof skip" =
-  let st, init_events = init "Lemma x : True. Qed. Check x." in
+  let st, init_events = init_test_doc ~text:"Lemma x : True. Qed. Check x." in
   let st, (s1, (s2, (s3, ()))) = dm_parse st (P(P(P O))) in
   set_delegation_mode SkipProofs;
   let st, exec_events = DocumentManager.interpret_to_end st in
@@ -82,7 +77,7 @@ let%test_unit "exec: unfinished proof skip" =
   ExecutionManager.set_default_options ()
 
 let%test_unit "exec: unfinished proof delegate" =
-  let st, init_events = init "Lemma x : True. Qed. Check x." in
+  let st, init_events = init_test_doc ~text:"Lemma x : True. Qed. Check x." in
   let st, (s1, (s2, (s3, ()))) = dm_parse st (P(P(P O))) in
   set_delegation_mode (DelegateProofsToWorkers { number_of_workers = 1 });
   let st, exec_events = DocumentManager.interpret_to_end st in
@@ -99,7 +94,7 @@ let%test_unit "exec: unfinished proof delegate" =
 
 
 let%test_unit "exec: unstarted proof" =
-  let st, init_events = init "Qed. Check nat." in
+  let st, init_events = init_test_doc ~text:"Qed. Check nat." in
   let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
   let st, exec_events = DocumentManager.interpret_to_end st in
   let todo = Sel.(enqueue empty init_events) in
