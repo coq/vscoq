@@ -1,10 +1,10 @@
 on:
   release:
     types:
-    - created
+    - published
 
 jobs:
-  build-extension:
+  publish-extension:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
