@@ -4,7 +4,7 @@
   "description": "VsCoq is an extension for Visual Studio Code with support for the Coq Proof Assistant",
   "publisher": "maximedenes",
   "license": "MIT",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/coq-community/vscoq.git"

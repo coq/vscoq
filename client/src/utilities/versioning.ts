@@ -11,8 +11,8 @@ export const checkVersion = (client: Client, context: ExtensionContext) => {
         if(serverInfo !== undefined) {
             const {name, version} = serverInfo;
             client.writeToVscoq2Channel("Intialized server " + name + " [" + version + "]");
-            if(!checkCompat(extensionVersion, version)) {
-                window.showErrorMessage(name + ' ' + version + ' and vscoq ' + extensionVersion + ' are not compatible.'); 
+            if(extensionVersion !== version) {
+                window.showErrorMessage('This version of VsCoq requires version ' + extensionVersion + ' of ' + name);
             }
         } else {
             client.writeToVscoq2Channel("Could not run compatibility tests: failed to get serverInfo");
