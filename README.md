@@ -31,10 +31,14 @@ and contributors.
 
 ## Status
 
-- Versions 0.x.y are based on the original VsCoq implementation by [C.J. Bell](https://github.com/siegebell)
-  and compatible with Coq 8.7 or more recent.
-- Versions 1.9.x are beta releases for VsCoq 2, which is a full reimplementation
-(based on a different architecture and design). They are compatible with Coq 8.18 or more recent.
+- VsCoq 1 (versions 0.x.y) is based on the original VsCoq implementation by [C.J. Bell](https://github.com/siegebell)
+  and compatible with Coq 8.7 or more recent. It uses the legacy XML protocol
+  spoken by CoqIDE. For more information, see the
+  [VsCoq 1 branch](https://github.com/coq-community/vscoq/tree/vscoq1).
+- VsCoq 2 (beta releases versions 1.9.x) is a full reimplementation around a
+  language server which natively speaks the LSP protocol. VsCoq 2 is
+  compatible with Coq 8.18 or more recent, and supports manual or continuous mode
+  checking.
 
 ## Features
 * Syntax highlighting
@@ -63,11 +67,34 @@ to add more in the future.
 
 * Supports \_CoqProject
 
-## Requirements
-* VS Code or VSCodium 1.74.0, or more recent
-* Coq 8.18 or more recent
+## Installation
 
-## Settings
+In order to use VsCoq 2, you will need to install both the VS Code (or VSCodium) extension and the language server.
+
+### Requirements
+* VS Code or VSCodium 1.74.0, or more recent
+* Coq 8.18 or more recent. If you wish to use VsCoq with older Coq versions, please have a look at the
+[VsCoq 1 branch](https://github.com/coq-community/vscoq/tree/vscoq1).
+
+### Language server installation
+
+The VsCoq 2 language server is currently published as a beta version on the `extra-dev` Coq OPAM repository. The recommended way to install it is through OPAM, by running :
+
+```
+opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
+opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+opam install vscoq-language-server
+```
+
+Note: VsCoq 2 currently requires Coq 8.18+rc1 as a dependency.
+
+### Extension installation
+
+The recommended way to install VsCoq is via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq) or [Open VSX](https://open-vsx.org/extension/maximedenes/vscoq).
+
+### Settings
+After installation and activation of the extension:
+
 (Press `F1` and start typing "settings" to open either workspace/project or user settings.)
 * `"vscoq.path": ""` -- specify the path to `vscoqtop` (e.g. `path/to/vscoq/bin/vscoqtop`)
 * `"vscoq.args": []` -- an array of strings specifying additional command line arguments for `vscoqtop` (typically accepts the same flags as `coqtop`)
