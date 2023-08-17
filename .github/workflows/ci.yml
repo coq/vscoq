@@ -6,9 +6,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-env:
-  PIN_COQ: 51814505fdeb5bc9f11fc7bd95493f0e7397509f
-
 jobs:
   build-extension:
     strategy:
@@ -57,7 +54,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        ocaml-compiler: [4.14.x]
+        ocaml-compiler: [4.13.x]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -68,17 +65,11 @@ jobs:
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-    - name: Pin Coq
-      env:
-        OPAMYES: true
-      run: |
-        opam pin add coq-core.dev "https://github.com/coq/coq.git#$PIN_COQ"
-        opam pin add coq-stdlib.dev "https://github.com/coq/coq.git#$PIN_COQ"
-
     - name: Install vscoq-language-server
       env:
         OPAMYES: true
       run: |
+        opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
         opam pin add vscoq-language-server ./language-server/ --with-doc --with-test -y
 
     - run: |
@@ -111,6 +102,8 @@ jobs:
 
     - name: Build language server
       run: .\language-server\build-windows-platform.bat
+      env:
+        COQ_VERSION: V8.18+rc1
 
     - run: C:\ci\cygwin64\bin\bash.exe --login -c 'echo vscoqtop=$(cygpath -m $(which vscoqtop))' >> $Env:GITHUB_ENV
 
@@ -127,7 +120,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        ocaml-compiler: [4.14.x]
+        ocaml-compiler: [4.13.x]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -138,17 +131,11 @@ jobs:
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-    - name: Pin Coq
-      env:
-        OPAMYES: true
-      run: |
-        opam pin add coq-core.dev "https://github.com/coq/coq.git#$PIN_COQ"
-        opam pin add coq-stdlib.dev "https://github.com/coq/coq.git#$PIN_COQ"
-
     - name: Install deps
       env:
         OPAMYES: true
       run: |
+        opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
         opam install ./language-server/vscoq-language-server.opam --deps-only --with-doc --with-test
       
     - name: Build vscoq-language-server
@@ -170,61 +157,6 @@ jobs:
     - if: ${{ failure() }}
       run: cat /tmp/vscoq_init_log.*
 
-
-  release-opam:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        ocaml-compiler: [4.14.x]
-    runs-on: ${{ matrix.os }}
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-
-    - name: Use OCaml ${{ matrix.ocaml-compiler }}
-      uses: avsm/setup-ocaml@v2
-      with:
-        ocaml-compiler: ${{ matrix.ocaml-compiler }}
-
-    - name: Build release
-      run: |
-        eval $(opam env)
-        cd language-server
-        ./make-release.sh
-      
-    - name: Add released repo
-      run: |
-        eval $(opam env)
-        opam repo add release file://$PWD/language-server/_build/opam-repository
-
-    - name: Pin Coq
-      env:
-        OPAMYES: true
-      run: |
-        opam pin add coq-core.dev "https://github.com/coq/coq.git#$PIN_COQ"
-        opam pin add coq-stdlib.dev "https://github.com/coq/coq.git#$PIN_COQ"
-
-    - name: Install
-      run: |
-        eval $(opam env)
-        opam install vscoq-language-server
-
-    - run: |
-        eval $(opam env)
-        echo "vscoqtop=`which vscoqtop`" >> $GITHUB_ENV
-        vscoqtop -v
-
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 16
-
-    - run: cd client && yarn run package
-    - run: eval $(opam env) && cd client && xvfb-run yarn test
-      env:
-        VSCOQPATH: ${{ env.vscoqtop }}
-        VSCOQARGS: "-bt"
-    - if: ${{ failure() }}
-      run: cat /tmp/vscoq_init_log.*
 
   create-release:
     runs-on: ubuntu-latest
