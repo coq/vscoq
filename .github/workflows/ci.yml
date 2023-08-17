@@ -54,7 +54,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        ocaml-compiler: [4.14.x]
+        ocaml-compiler: [4.13.x]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -120,7 +120,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        ocaml-compiler: [4.14.x]
+        ocaml-compiler: [4.13.x]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout

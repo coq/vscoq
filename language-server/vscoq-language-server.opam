@@ -11,7 +11,7 @@ build: [
   [ "dune" "build" "-p" name "-j" jobs ]
 ]
 depends: [
-  "ocaml" { >= "4.14.0" }
+  "ocaml" { >= "4.13.1" }
   "coq-core" { >= "8.18" < "8.19" }
   "coq-stdlib" { >= "8.18" < "8.19" }
   "yojson"
