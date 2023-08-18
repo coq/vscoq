@@ -171,7 +171,7 @@ jobs:
       - name: Create language-server archive
         run: |
           cd language-server
-          VERSION="${GITHUB_REF_SLUG#v}"
+          VERSION="${GITHUB_REF_NAME_SLUG#v}"
           git archive -o ../vscoq-language-server-$VERSION.tar.gz --prefix=vscoq-language-server-$VERSION/ $GITHUB_SHA .
 
       - name: Release
