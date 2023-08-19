@@ -23,12 +23,14 @@ jobs:
       id: publishToOpenVSX
       with:
         pat: ${{ secrets.OVSX_PAT }}
+        packagePath: ./client/
         yarn: true
         preRelease: true
     - name: Publish to Visual Studio Marketplace
       uses: HaaLeo/publish-vscode-extension@v1
       with:
         pat: ${{ secrets.VSCE_PAT }}
+        packagePath: ./client/
         registryUrl: https://marketplace.visualstudio.com
         extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
         yarn: true
@@ -55,10 +57,23 @@ jobs:
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v4
 
+    - uses: webfactory/ssh-agent@v0.8.0
+      with:
+          ssh-private-key: ${{ secrets.BOT_SSH_KEY }}
+
+    - name: Write PAT
+      env:
+        OPAM_PUBLISH_TOKEN: ${{ secrets.OPAM_PUBLISH_TOKEN }}
+      run: |
+        mkdir -p ~/.opam/plugins/opam-publish
+        printf "$OPAM_PUBLISH_TOKEN" > ~/.opam/plugins/opam-publish/vscoqbot.token
+
     - name: Publish
       run: |
         eval $(opam env)
-        VERSION_SLUG="${GITHUB_REF_SLUG#v}"
-        VERSION="${GITHUB_REF#v}"
+        VERSION_SLUG="${GITHUB_REF_NAME_SLUG#v}"
+        VERSION="${GITHUB_REF_NAME#v}"
         cd language-server
-        opam publish --no-browser --repo=coq/opam-coq-archive --packages-directory=extra-dev/packages -v $VERSION https://github.com/coq-community/vscoq/releases/download/$GITHUB_REF/vscoq-language-server-$VERSION_SLUG.tar.gz vscoq-language-server.opam
+        git config --global user.name vscoqbot
+        git config --global user.email vscoqbot@inria.fr
+        opam publish --no-browser --repo=coq/opam-coq-archive --packages-directory=extra-dev/packages -v $VERSION https://github.com/coq-community/vscoq/releases/download/$GITHUB_REF_NAME/vscoq-language-server-$VERSION_SLUG.tar.gz vscoq-language-server.opam
