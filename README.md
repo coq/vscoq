@@ -40,6 +40,44 @@ and contributors.
   compatible with Coq 8.18 or more recent, and supports manual or continuous mode
   checking.
 
+## Installing a VsCoq 2 beta release
+
+To use a beta release of VsCoq 2, you need to (1) install the VsCoq 2 language server
+and (2) install and configure the VsCoq extension in either VS Code or VSCodium.
+
+### Installing the language server
+
+The beta releases of the language server are available in the
+`extra-dev` [Coq opam repository](https://github.com/coq/opam#usage),
+and relies on Coq 8.18+rc1 from the `core-dev` Coq opam repository.
+
+After creating an opam switch, activate these repositories, pin Coq,
+and install the `vscoq-language-server` package:
+```shell
+$ opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
+$ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+$ opam pin add coq 8.18+rc1
+$ opam install vscoq-language-server
+```
+
+After installation, check that you have `vscoqtop` in your shell
+and note the path to this executable:
+```shell
+$ which vscoqtop
+```
+
+### Installing and configuring the extension
+
+To install the [VS Code](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq)
+or [VSCodium extension](https://open-vsx.org/extension/maximedenes/vscoq), first run `code`
+or `codium`. Then press F1 to open the command palette, start typing
+"Extensions: Install Extension", press enter, and search for "vscoq". Switch to
+the **pre-release version** of the extension and enable it. Finally, go to the extension
+settings and enter the `vscoqtop` full path from above in the field "Vscoq: Path".
+
+If you want top-down processing of Coq files as in VsCoq1, you can go to
+the "Proof: Mode" and select "Manual". Otherwise, processing will asynchronous.
+
 ## Features
 * Syntax highlighting
 * Asynchronous proof checking
@@ -66,31 +104,6 @@ to add more in the future.
 ![](gif/query-panel.gif)
 
 * Supports \_CoqProject
-
-## Installation
-
-In order to use VsCoq 2, you will need to install both the VS Code (or VSCodium) extension and the language server.
-
-### Requirements
-* VS Code or VSCodium 1.74.0, or more recent
-* Coq 8.18 or more recent. If you wish to use VsCoq with older Coq versions, please have a look at the
-[VsCoq 1 branch](https://github.com/coq-community/vscoq/tree/vscoq1).
-
-### Language server installation
-
-The VsCoq 2 language server is currently published as a beta version on the `extra-dev` Coq OPAM repository. The recommended way to install it is through OPAM, by running :
-
-```
-opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
-opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
-opam install vscoq-language-server
-```
-
-Note: VsCoq 2 currently requires Coq 8.18+rc1 as a dependency.
-
-### Extension installation
-
-The recommended way to install VsCoq is via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq) or [Open VSX](https://open-vsx.org/extension/maximedenes/vscoq).
 
 ### Settings
 After installation and activation of the extension:
