@@ -38,7 +38,7 @@ import {
     isMouseOrKeyboardEvent
 } from './utilities/utils';
 import { DocumentStateViewProvider } from './panels/DocumentStateViewProvider';
-import VsCoqToolchainManager from './utilities/toolchain';
+import VsCoqToolchainManager, {ToolchainError, ToolChainErrorCode} from './utilities/toolchain';
 
 let client: Client;
 
@@ -46,32 +46,32 @@ export function activate(context: ExtensionContext) {
     
     const coqTM = new VsCoqToolchainManager();
     coqTM.intialize().then(
-        res => {
+        () => {
             const serverOptions = coqTM.getServerConfiguration(); 
             intializeExtension(serverOptions);
         }, 
-        err => {
-            if(err.status === 1) {
+        (err: ToolchainError) => {
+            switch(err.status) {
 
-                window.showErrorMessage("vscoq2 requires an installation of vscoqtop. ", {title: "Get vscoqtop", id: 0})
+                case ToolChainErrorCode.notFound: 
+                    window.showErrorMessage(err.message, {title: "Install the VsCoq language server", id: 0})
                     .then(act => {
                         if(act?.id === 0) {
                             commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#installing-the-language-server'));
                         }
                     });
+                    break;
 
-            } else if (err.status === 2) {
-                window.showErrorMessage(err.errorMessage, {title: "Get Coq", id: 0})
+                case ToolChainErrorCode.launchError: 
+                    window.showErrorMessage(err.message, {title: "Get Coq", id: 0})
                     .then(act => {
                         if(act?.id === 0) {
                             commands.executeCommand("vscode.open", Uri.parse('https://coq.inria.fr/download'));
                         }
                         
                     });
-            } else {
-                window.showErrorMessage("vscoq2 could not start for an unknown reason");
+                    
             }
-
         }
     );
 

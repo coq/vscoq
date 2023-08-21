@@ -6,9 +6,14 @@ import { isFileInFolder } from './fileHelper';
 import { ServerSessionOptions } from 'http2';
 import { ServerOptions } from 'vscode-languageclient/node';
 
-interface ToolchainResponse {
-    status: number; 
-    errorMessage?: string; 
+export enum ToolChainErrorCode {
+    notFound = 1, 
+    launchError = 2
+}
+
+export interface ToolchainError {
+    status: ToolChainErrorCode; 
+    message: string; 
 }
 
 export default class VsCoqToolchainManager implements Disposable {
@@ -20,34 +25,30 @@ export default class VsCoqToolchainManager implements Disposable {
         
     }
 
-
-
-    public intialize() : Promise<ToolchainResponse> {
-        VsCoqToolchainManager._channel.appendLine("SEARCHING");
-        return new Promise((resolve, reject) => {
+    public intialize() : Promise<void> {
+        VsCoqToolchainManager._channel.appendLine("Searching for vscoqtop");
+        return new Promise((resolve, reject: ((reason: ToolchainError) => void)) => {
             this.vscoqtopPath().then(vscoqtopPath => {
                 if(vscoqtopPath) {
                     VsCoqToolchainManager._channel.appendLine("Found path: " + vscoqtopPath);
                     this._vscoqtopPath = vscoqtopPath;
-                    this.findCoq().then(
-                        res => {
-                            resolve({
-                                status: 0
-                            });
+                    this.vscoqtopWhere().then(
+                        () => {
+                            resolve();
                         }, 
-                        err => {
+                        (err: ToolchainError) => {
                             reject(err);
                         }
                     );
 
                 } else {
-                    VsCoqToolchainManager._channel.appendLine("Did not find path");
+                    VsCoqToolchainManager._channel.appendLine("Did not find vscoqtop path");
                     reject({
-                        status: 1, 
-                        errorMessage: "Could not find vscoqtop"
+                        status: ToolChainErrorCode.notFound, 
+                        message: "VsCoq couldn't launch because no language server was found."
                     });
                 }
-            })
+            });
         });
         
     };
@@ -70,20 +71,8 @@ export default class VsCoqToolchainManager implements Disposable {
         }
     }
 
-    private setEnvPath(value: string) {
-        if(process.platform === 'win32') {
-            process.env.Path = value;
-        } else {
-            process.env.PATH = value;
-        }
-    }
-
     private splitEnvPath(value: string) : string[] {
         return value.split(path.delimiter);
-    }
-
-    private joinEnvPath(value: string[]) : string {
-        return value.join(path.delimiter);
     }
 
     private async vscoqtopPath () : Promise<string> {
@@ -107,29 +96,24 @@ export default class VsCoqToolchainManager implements Disposable {
         return "";
     }
 
-    //Check if vscoqtop can load the prelude at its expected installation site, 
-    //or wherever the user specified by passing -coqlib. 
-    //(since 8.18 -where does not only print where the prelude is expected to be, 
-    //but also checks it exists).
-    private findCoq() : Promise<ToolchainResponse> {
+    // Launch the vscoqtop -where command with the found exec and provided args
+    private vscoqtopWhere() : Promise<void> {
         
         const config = workspace.getConfiguration('vscoq').get('args') as string[];
         const options = ["-where"].concat(config);
         const cmd = [this._vscoqtopPath].concat(options).join(' ');
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, reject: ((reason: ToolchainError) => void)) => {
             exec(cmd, (error, stdout, stderr) => {
 
                 if(error) {
                     reject({
-                        status: 2, 
-                        errorMessage: `${this._vscoqtopPath} cannot run properly since the installation of coq standard library seems broken: ${stderr}\n
-                        If this is not the coq installation you wish to use , set the right path in the settings panel.`
+                        status: ToolChainErrorCode.launchError, 
+                        message: `${this._vscoqtopPath} crashed with the following message: ${stderr}\n
+                        This could be due to a bad coq installation.`
                     });
                 } else {
-                    resolve({
-                        status: 0
-                    });
+                    resolve();
                 }
                 
             });
