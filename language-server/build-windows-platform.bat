@@ -31,9 +31,9 @@ call coq_platform_make_windows.bat ^
   -jobs=2 ^
   -switch=d ^
   -set-switch=y ^
-  -override-dev-pkg="coq-core=https://github.com/coq/coq/archive/%COQ_VERSION%.tar.gz" ^
-  -override-dev-pkg="coq-stdlib=https://github.com/coq/coq/archive/%COQ_VERSION%.tar.gz" ^
-  -override-dev-pkg="coq=https://github.com/coq/coq/archive/%COQ_VERSION%.tar.gz" ^
+  -override-dev-pkg="coq-core=https://github.com/coq/coq/archive/%PIN_COQ%.tar.gz" ^
+  -override-dev-pkg="coq-stdlib=https://github.com/coq/coq/archive/%PIN_COQ%.tar.gz" ^
+  -override-dev-pkg="coq=https://github.com/coq/coq/archive/%PIN_COQ%.tar.gz" ^
   || GOTO ErrorExit
 
 SET OPAMYES=yes
