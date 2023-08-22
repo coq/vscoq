@@ -5,15 +5,21 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
-    coq-master = { url = "github:coq/coq/master"; };
-    coq-master.inputs.nixpkgs.follows = "nixpkgs";
+    coq-8_18 = {
+      type = "github";
+      owner = "coq";
+      repo = "coq";
+      ref = "V8.18+rc1";
+    };
+
+    coq-8_18.inputs.nixpkgs.follows = "nixpkgs";
 
   };
 
-  outputs = { self, nixpkgs, flake-utils, coq-master }:
+  outputs = { self, nixpkgs, flake-utils, coq-8_18 }:
     flake-utils.lib.eachDefaultSystem (system:
   
-   let coq = coq-master.defaultPackage.${system}; in
+   let coq = coq-8_18.defaultPackage.${system}; in
    rec {
 
     packages.default = self.packages.${system}.vscoq-language-server;
