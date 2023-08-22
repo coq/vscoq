@@ -123,23 +123,25 @@ let task st id spec =
   init, run (task t spec)
 
 
-let rec handle_events n (events : DocumentManager.event Sel.todo) st =
-  if n <= 0 then (Stdlib.Format.eprintf "handle_events run out of steps\n"; Caml.exit 1)
-  else if Sel.only_recurring_events events then st
+let rec handle_events n (events : DocumentManager.event Sel.Todo.t) st =
+  if n <= 0 then (Stdlib.Format.eprintf "handle_events run out of steps:\nTodo = %a\n" (Sel.Todo.pp DocumentManager.pp_event) events; Caml.exit 1)
+  else if Sel.Todo.is_empty events then st
+    
   else begin
     (*Stdlib.Format.eprintf "waiting %a\n%!" Sel.(pp_todo DocumentManager.pp_event) events;*)
     Caml.flush_all ();
-    let (ready, remaining) = Sel.pop_timeout ~stop_after_being_idle_for:1.0 events in
-    let st, new_events =
-      match ready with
-      | None -> st, []
-      | Some ev ->
+    let (ready, remaining) = Sel.pop_timeout ~stop_after_being_idle_for:0.1 events in
+    match ready with
+    | None -> 
+      st
+    | Some ev ->
+      let st, new_events =
         match DocumentManager.handle_event ev st with
         | None, events' -> st, events'
         | Some st, events' -> st, events'
-    in
-    let todo = Sel.enqueue remaining new_events in
-    handle_events (n-1) todo st
+      in
+      let todo = Sel.Todo.add remaining new_events in
+      handle_events (n-1) todo st
   end
 let handle_events e st = handle_events 100 e st
   

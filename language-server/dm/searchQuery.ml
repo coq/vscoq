@@ -20,9 +20,8 @@ open Pp
 vscoq process, which does not allow for real asynchronous processing of results. *)
 let query_results_queue = Queue.create ()
 
-let query_feedback : notification Sel.event =
-  Sel.on_queue query_results_queue (fun x -> QueryResultNotification x)
-  |> Sel.uncancellable
+let query_feedback : notification Sel.Event.t =
+  Sel.On.queue query_results_queue (fun x -> QueryResultNotification x)
 
 (* TODO : remove these two functions when interp_search_restriction is 
   added in the comSearch.mli in Coq (they're simply copied here for now) *)

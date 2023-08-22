@@ -57,6 +57,7 @@
           sexplib
           ppx_yojson_conv
           lsp
+          sel
         ]);
       };
 

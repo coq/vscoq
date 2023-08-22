@@ -1,4 +1,0 @@
-(library
- (name sel)
- (preprocess (pps ppx_deriving.std))
- (public_name vscoq-language-server.sel))

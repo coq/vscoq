@@ -45,10 +45,10 @@ let pp_event fmt = function
       Stdlib.Format.fprintf fmt "ExecuteToLoc %d (%d tasks left, started %2.3f ago)" (Stateid.to_int id) (List.length todo) time
   | ExecutionManagerEvent _ -> Stdlib.Format.fprintf fmt "ExecutionManagerEvent"
 
-let inject_em_event x = Sel.map (fun e -> ExecutionManagerEvent e) x
+let inject_em_event x = Sel.Event.map (fun e -> ExecutionManagerEvent e) x
 let inject_em_events events = List.map inject_em_event events
 
-type events = event Sel.event list
+type events = event Sel.Event.t list
 
 type exec_overview = {
   parsed : Range.t list;
@@ -172,7 +172,7 @@ let reset { uri; opts; init_vs; document; execution_state } =
   let execution_state, feedback = ExecutionManager.init init_vs in
   { uri; opts; init_vs; document; execution_state; observe_id = None }, [inject_em_event feedback]
 
-let interpret_to ~stateful ~background state id : (state * event Sel.event list) =
+let interpret_to ~stateful ~background state id : (state * event Sel.Event.t list) =
   match Document.get_sentence state.document id with
   | None -> (state, []) (* TODO error? *)
   | Some { id } ->
@@ -181,8 +181,8 @@ let interpret_to ~stateful ~background state id : (state * event Sel.event list)
     if CList.is_empty todo then
       (state, [])
     else
-      let event = Sel.now (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday (); background }) in
-      let event = if background then event else Sel.set_priority PriorityManager.execution event in
+      let priority = if background then None else Some PriorityManager.execution in
+      let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday (); background }) in
       (state, [ event ])
 
 let interpret_to_position ~stateful st pos =
@@ -276,8 +276,8 @@ let handle_event ev st =
       ExecutionManager.execute st.execution_state (vst_for_next_todo, [], false) task in
     (* We do not update the state here because we may have received feedback while
        executing *)
-    let event = Sel.now (Execute {id; vst_for_next_todo; todo; started; background }) in
-    let event = if background then event else Sel.set_priority PriorityManager.execution @@ event in
+    let priority = if background then None else Some PriorityManager.execution in
+    let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started; background }) in
     (Some {st with execution_state}, inject_em_events events @ [event])
   | ExecutionManagerEvent ev ->
     let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
