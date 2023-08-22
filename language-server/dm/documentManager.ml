@@ -65,17 +65,20 @@ let merge_ranges doc (r1,l) r2 =
   else
     r2, r1 :: l
 
-let compress_ranges doc = function
+let compress_sorted_ranges doc = function
   | [] -> []
   | range :: tl ->
     let r, l = List.fold_left (merge_ranges doc) (range,[]) tl in
     r :: l
 
+let compress_ranges doc ranges =
+  let ranges = List.sort (fun { Range.start = s1 } { Range.start = s2 } -> Position.compare s1 s2) ranges in
+  compress_sorted_ranges doc ranges
+
 let executed_ranges doc execution_state loc =
   let ranges_of l =
-    compress_ranges (Document.raw_document doc) @@
-    List.sort (fun { Range.start = s1 } { Range.start = s2 } -> compare s1 s2) @@
-    List.map (Document.range_of_id doc) l in
+    compress_ranges (Document.raw_document doc) @@ List.map (Document.range_of_id doc) l
+  in
   let ids_before_loc = List.map (fun s -> s.Document.id) @@ Document.sentences_before doc loc in
   let ids = List.map (fun s -> s.Document.id) @@ Document.sentences doc in
   let executed_ids = List.filter (ExecutionManager.is_executed execution_state) ids in
