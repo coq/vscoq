@@ -287,6 +287,33 @@
       }
     ],
     "menus": {
+       "editor/context": [
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.interpretToPoint",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.query.check",
+          "group": "queries"
+        },
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.query.print",
+          "group": "queries"
+        },
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.query.search",
+          "group": "queries"
+        },
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.query.locate",
+          "group": "queries"
+        }
+      ], 
       "view/title": [
         {
           "command": "extension.coq.addQueryTab",
