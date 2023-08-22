@@ -108,7 +108,14 @@ const app = () => {
     //this will only run on initial render
     useEffect(() => {
         restoreState();
+        ready();
     }, []);
+
+    const ready = () => {
+        vscode.postMessage({
+            command: "ready",
+        });
+    };
 
     const handleSearchNotification = (notification : SearchNotification) => {        
         setQueryPanelState(state => {       
