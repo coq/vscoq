@@ -20,6 +20,11 @@ import {
 } from 'vscode-languageclient';
 
 import Client from '../client';
+
+interface Query {
+    type: string; 
+    pattern: string; 
+}
         
 export default class SearchViewProvider implements vscode.WebviewViewProvider {
 
@@ -27,6 +32,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
     private static _channel: any = vscode.window.createOutputChannel('vscoq-query-panel');
 
     private _view?: vscode.WebviewView; 
+    private _queries: Query[] = [];
 
     constructor(
         private _extensionUri: vscode.Uri,
@@ -65,21 +71,30 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
     };
 
     public collapseAll() {
-        SearchViewProvider._channel.appendLine("COLLAPSE ALL");
         vscode.commands.executeCommand('setContext', 'vscoq.expandedQueries', false);
         this._view?.webview.postMessage({"command": "collapseAll"});
     };
 
     public expandAll() {
-        SearchViewProvider._channel.appendLine("EXPAND ALL");
         vscode.commands.executeCommand('setContext', 'vscoq.expandedQueries', true);
         this._view?.webview.postMessage({"command": "expandAll"});
     };
 
     public launchQuery(pattern: string, type: string) {
         const query = { "pattern": pattern, "type": type};
-        this._view?.webview.postMessage({"command": "query", "query": query});
+        if(this._view && this._queries.length === 0) {
+            this._view?.webview.postMessage({"command": "query", "query": query});
+        } else {
+            this._queries.push(query);
+        }
     };
+
+    public dequeueQueries() {
+        while(this._queries.length > 0) {
+            const query = this._queries.shift();
+            this._view?.webview.postMessage({"command": "query", "query": query});
+        }
+    }
 
     public renderSearchResult(searchResult: SearchCoqResult) {
         this._view?.webview.postMessage({"command": "searchResponse", "result": searchResult});
@@ -131,6 +146,9 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
         switch (command) {
             // Add more switch case statements here as more webview message commands
             // are created within the webview context (i.e. inside media/main.js)
+            case "ready": 
+                this.dequeueQueries();
+
             case "coqQuery":
 
                 if(version && uri && position) {
