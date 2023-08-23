@@ -13,6 +13,7 @@
 (**************************************************************************)
 open Util
 open Printer
+open Protocol.Printing
 open Protocol.LspWrapper
 open Vernacexpr
 open Pp
@@ -36,14 +37,14 @@ let interp_search_restriction = function
 
 let interp_search ~id env sigma s r =
   let pr_search ref _kind env c =
-    let pr = pr_global ref in
+    let name = pr_global ref in
     let open Impargs in
     let impls = implicits_of_global ref in
     let impargs = select_stronger_impargs impls in
     let impargs = List.map binding_kind_of_status impargs in
-    let pc = pr_ltype_env env Evd.(from_env env) ~impargs c in
-    let name = Pp.string_of_ppcmds pr in
-    let statement = Pp.string_of_ppcmds pc in
+    let statement = pr_ltype_env env Evd.(from_env env) ~impargs c in
+    let name = pp_of_coqpp name in
+    let statement = pp_of_coqpp statement in
     Queue.push { id; name; statement } query_results_queue
   in
   let r = interp_search_restriction r in

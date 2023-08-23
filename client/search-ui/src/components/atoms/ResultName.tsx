@@ -1,16 +1,19 @@
 import React, {FunctionComponent} from 'react';
 
+import { fragmentOfPpString } from '../../utilities/pp';
+import { PpString } from '../../types';
+
 import classes from './ResultName.module.css';
 
 type ResultNameProps = {
-    name: string; 
+    name: PpString; 
 };
 
 const resultName: FunctionComponent<ResultNameProps> = (props) => {
     
     const {name} = props;
     
-    return <span className={classes.ResultName}> {name} </span>;
+    return <>{fragmentOfPpString(name, classes)}</>;
     
 };
 

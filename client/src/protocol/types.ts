@@ -92,8 +92,8 @@ export interface QueryError {
 
 export interface SearchCoqResult {
     id: string;
-    name: string; 
-    statement: string;
+    name: PpString; 
+    statement: PpString;
 }
 
 export interface AboutCoqRequest {

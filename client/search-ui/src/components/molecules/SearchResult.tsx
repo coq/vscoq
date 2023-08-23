@@ -1,17 +1,18 @@
 import React, {FunctionComponent, useState} from 'react';
 
+import { stringOfPpString } from '../../utilities/pp';
+
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import {VscCopy, VscChevronDown, VscChevronRight, VscTrash, VscClose} from 'react-icons/vsc';
 
+import { CollapsibleSearchResult } from '../../types';
 import ResultName from '../atoms/ResultName';
 import ResultStatement from '../atoms/ResultStatement';
 
 import classes from './SearchResult.module.css';
 
 type SearchResultProps = {
-    name: string;
-    statement: string; 
-    collapsed: boolean;
+    result: CollapsibleSearchResult;
     toggleCollapsedHandler: () => void;
     deleteResultHandler: () => void;
     copyNameHandler: (name: string) => void;
@@ -19,7 +20,8 @@ type SearchResultProps = {
 
 const searchResult: FunctionComponent<SearchResultProps> = (props) => {
     
-    const {name, statement, collapsed, toggleCollapsedHandler, deleteResultHandler, copyNameHandler} = props;
+    const {result, toggleCollapsedHandler, deleteResultHandler, copyNameHandler} = props;
+    const {name, statement, collapsed} = result;
 
     const [hovered, setHovered] = useState(false);
 
@@ -44,7 +46,7 @@ const searchResult: FunctionComponent<SearchResultProps> = (props) => {
                 <div className={actionRowClasses.join(' ')}>   
                     <VSCodeButton appearance={'icon'} ariaLabel='Copy' onClick={(event) => {
                         event.stopPropagation();
-                        copyNameHandler(name);
+                        copyNameHandler(stringOfPpString(name));
                     }}>
                         <VscCopy />
                     </VSCodeButton>
