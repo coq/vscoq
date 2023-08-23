@@ -103,7 +103,7 @@ export interface AboutCoqRequest {
     goalIndex?: number;
 }
 
-export type AboutCoqResponse = string;
+export type AboutCoqResponse = PpString;
 
 export interface CheckCoqRequest {
     textDocument: VersionedTextDocumentIdentifier;
@@ -112,7 +112,7 @@ export interface CheckCoqRequest {
     goalIndex?: number;
 };
 
-export type CheckCoqResponse = string; 
+export type CheckCoqResponse = PpString; 
 
 export interface LocateCoqRequest {
     textDocument: VersionedTextDocumentIdentifier;
@@ -120,7 +120,7 @@ export interface LocateCoqRequest {
     position: Position;
 };
 
-export type LocateCoqResponse = string; 
+export type LocateCoqResponse = PpString; 
 
 export interface PrintCoqRequest {
     textDocument: VersionedTextDocumentIdentifier;
@@ -128,7 +128,7 @@ export interface PrintCoqRequest {
     position: Position;
 };
 
-export type PrintCoqResponse = string; 
+export type PrintCoqResponse = PpString; 
 
 export interface DocumentStateRequest {
     textDocument: TextDocumentIdentifier;

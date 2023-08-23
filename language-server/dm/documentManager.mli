@@ -16,6 +16,7 @@ open Types
 open Lsp.Types
 open Protocol
 open Protocol.LspWrapper
+open Protocol.Printing
 open CompletionItems
 
 (** The document manager holds the view that Coq has of the currently open
@@ -94,18 +95,18 @@ val handle_event : event -> state -> (state option * events)
 
 val search : state -> id:string -> Position.t -> string -> notification Sel.Event.t list
 
-val about : state -> Position.t -> pattern:string -> (string,string) Result.t
+val about : state -> Position.t -> pattern:string -> (pp,string) Result.t
 
 val hover : state -> Position.t -> MarkupContent.t option
 (** Returns an optional Result:
     if None, the position did not have a word,
     if Some, an Ok/Error result is returned. *)
 
-val check : state -> Position.t -> pattern:string -> (string,string) Result.t
+val check : state -> Position.t -> pattern:string -> (pp,string) Result.t
 
-val locate : state -> Position.t -> pattern:string -> (string, string) Result.t
+val locate : state -> Position.t -> pattern:string -> (pp, string) Result.t
 
-val print : state -> Position.t -> pattern:string -> (string, string) Result.t
+val print : state -> Position.t -> pattern:string -> (pp, string) Result.t
 
 
 module Internal : sig
