@@ -1,3 +1,5 @@
+import { integer } from "vscode-languageclient";
+
 export interface SearchNotification {
     id: string; 
     name: string; 
@@ -30,7 +32,7 @@ export enum QueryType {
 }
 
 export interface SearchResultType {
-    type: "search";
+    type: QueryType.search;
 
     data : {
         name: string; 
@@ -39,27 +41,31 @@ export interface SearchResultType {
     }[]
 };
 export interface CheckResultType {
-    type: "check";
+    type: QueryType.check;
     statement: string;
 }
 export interface AboutResultType {
-    type: "about"; 
+    type: QueryType.about;
     statement: string; 
 }
 export interface LocateResultType {
-    type: "locate"; 
+    type: QueryType.locate;
     statement: string;
 }
 export interface PrintResultType {
-    type: "print"; 
+    type: QueryType.print;
     statement: string;
+}
+export interface QueryError {
+    code: integer; 
+    message: string;
 }
 
 export type QueryResult = 
-    SearchResultType 
-    | CheckResultType 
-    | AboutResultType 
-    | LocateResultType 
+    SearchResultType
+    | CheckResultType
+    | AboutResultType
+    | LocateResultType
     | PrintResultType;
 
 export interface Query {
@@ -67,12 +73,14 @@ export interface Query {
     type: QueryType; 
 };
 
+
 export interface QueryTab {
     id: string, 
     title: string, 
     pattern: string, 
     type: QueryType, 
     result: QueryResult,
+    error?: QueryError
 };
 
 export type QueryPanelState = {

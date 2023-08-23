@@ -39,6 +39,11 @@ export interface CoqFeedbackNotification {
     feedback: CoqFeedback[]
 }
 
+interface Error {
+    code: integer; 
+    message: string; 
+}
+
 export interface Hypothesis {
     identifiers: string[];
     type: PpString;
@@ -78,9 +83,11 @@ export interface SearchCoqRequest {
 
 export interface SearchCoqHandshake {
     id: string;
-    result?: boolean;
-    error?: any;
+}
 
+export interface QueryError {
+    code: integer; 
+    message: string; 
 }
 
 export interface SearchCoqResult {
