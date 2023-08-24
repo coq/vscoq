@@ -278,7 +278,7 @@ let%test_unit "edit.shift_warning_in_sentence" =
   check_diag st [
     D (s2.id,Warning,".*deprecated.*")
   ];
-  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  let warning = Stdlib.List.hd @@ DocumentManager.all_diagnostics st in
   [%test_eq: int] 81 (warning.range.start.character);
   [%test_eq: int] 82 (warning.range.end_.character);
   let doc = DocumentManager.Internal.document st in
@@ -288,7 +288,7 @@ let%test_unit "edit.shift_warning_in_sentence" =
   check_diag st [
     D (s2.id,Warning,".*deprecated.*")
   ];
-  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  let warning = Stdlib.List.hd @@ DocumentManager.all_diagnostics st in
   [%test_eq: int] 84 (warning.range.start.character);
   [%test_eq: int] 85 (warning.range.end_.character)
 
@@ -302,14 +302,14 @@ let%test_unit "edit.shift_warning_before_sentence" =
   check_diag st [
     D (s2.id,Warning,".*deprecated.*")
   ];
-  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  let warning = Stdlib.List.hd @@ DocumentManager.all_diagnostics st in
   [%test_eq: int] 81 (warning.range.start.character);
   [%test_eq: int] 82 (warning.range.end_.character);
   let st = edit_text st ~start:0 ~stop:0 ~text:"   " in
   check_diag st [
     D (s2.id,Warning,".*deprecated.*")
   ];
-  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  let warning = Stdlib.List.hd @@ DocumentManager.all_diagnostics st in
   [%test_eq: int] 84 (warning.range.start.character);
   [%test_eq: int] 85 (warning.range.end_.character)
 
@@ -323,7 +323,7 @@ let%test_unit "edit.shift_error_in_sentence" =
   check_diag st [
     D (s2.id,Error,".*z was not found.*")
   ];
-  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  let warning = Stdlib.List.hd @@ DocumentManager.all_diagnostics st in
   [%test_eq: int] 38 (warning.range.start.character);
   [%test_eq: int] 39 (warning.range.end_.character);
   let doc = DocumentManager.Internal.document st in
@@ -333,7 +333,7 @@ let%test_unit "edit.shift_error_in_sentence" =
   check_diag st [
     D (s2.id,Error,".*z was not found.*")
   ];
-  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  let warning = Stdlib.List.hd @@ DocumentManager.all_diagnostics st in
   [%test_eq: int] 41 (warning.range.start.character);
   [%test_eq: int] 42 (warning.range.end_.character)
 
@@ -347,13 +347,13 @@ let%test_unit "edit.shift_error_before_sentence" =
   check_diag st [
     D (s2.id,Error,".*z was not found.*")
   ];
-  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  let warning = Stdlib.List.hd @@ DocumentManager.all_diagnostics st in
   [%test_eq: int] 38 (warning.range.start.character);
   [%test_eq: int] 39 (warning.range.end_.character);
   let st = edit_text st ~start:0 ~stop:0 ~text:"   " in
   check_diag st [
     D (s2.id,Error,".*z was not found.*")
   ];
-  let warning = Stdlib.List.hd @@ DocumentManager.diagnostics st in
+  let warning = Stdlib.List.hd @@ DocumentManager.all_diagnostics st in
   [%test_eq: int] 41 (warning.range.start.character);
   [%test_eq: int] 42 (warning.range.end_.character)

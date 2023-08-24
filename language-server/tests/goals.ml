@@ -30,7 +30,8 @@ let%test_unit "goals: encoding after replay from top" =
   let todo = Sel.Todo.(add empty exec_events) in
   let st = handle_events todo st in
   let proof = Stdlib.Option.get (DocumentManager.get_proof st Protocol.Settings.Goals.Diff.Mode.Off None) in
-  let _json = Protocol.ExtProtocol.Notification.Server.ProofViewParams.yojson_of_t (Some proof) in
+  let messages = DocumentManager.get_messages st None in
+  let _json = Protocol.ExtProtocol.Notification.Server.ProofViewParams.yojson_of_t { proof = Some proof; messages } in
   ()
 
 let%test_unit "goals: proof is available after error" =

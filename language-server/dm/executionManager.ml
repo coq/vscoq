@@ -20,7 +20,7 @@ let Log log = Log.mk_log "executionManager"
 
 type execution_status =
   | Success of Vernacstate.t option
-  | Error of string Loc.located * Vernacstate.t option (* State to use for resiliency *)
+  | Error of Pp.t Loc.located * Vernacstate.t option (* State to use for resiliency *)
 
 let success vernac_st = Success (Some vernac_st)
 let error loc msg vernac_st = Error ((loc,msg),(Some vernac_st))
@@ -85,7 +85,7 @@ let is_diagnostics_enabled () = !options.enableDiagnostics
 let get_options () = !options
 
 type prepared_task =
-  | PSkip of { id: sentence_id; error: string option }
+  | PSkip of { id: sentence_id; error: Pp.t option }
   | PExec of executable_sentence
   | PQuery of executable_sentence
   | PDelegate of { terminator_id: sentence_id;
@@ -177,7 +177,7 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
         *)
         let loc = Loc.get_loc info in
         let msg = CErrors.iprint (e, info) in
-        let status = error loc (Pp.string_of_ppcmds msg) st in
+        let status = error loc msg st in
         let st = interp_error_recovery error_recovery st in
         st, status, []
 
@@ -372,7 +372,7 @@ let worker_ensure_proof_is_over vs send_back terminator_id =
         let e, info = Exninfo.capture e in
         let loc = Loc.get_loc info in
         let msg = CErrors.iprint (e, info) in
-        let status = error loc (Pp.string_of_ppcmds msg) vs in
+        let status = error loc msg vs in
         send_back (ProofJob.UpdateExecStatus (terminator_id,status))
 
 let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id } ~send_back =
@@ -391,7 +391,7 @@ let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_
 
 let execute st (vs, events, interrupted) task =
   if interrupted then begin
-    let st = update st (id_of_prepared_task task) (Error ((None,"interrupted"),None)) in
+    let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None)) in
     (st, vs, events, true)
   end else
     try
@@ -433,7 +433,7 @@ let execute st (vs, events, interrupted) task =
                 Vernacstate.LemmaStack.with_top (Option.get @@ vernac_st.Vernacstate.interp.lemmas) ~f
               | Error ((loc,err),_) ->
                   log "Aborted future";
-                  assign (`Exn (CErrors.UserError(Pp.str err), Option.fold_left Loc.add_loc Exninfo.null loc))
+                  assign (`Exn (CErrors.UserError err, Option.fold_left Loc.add_loc Exninfo.null loc))
               with exn when CErrors.noncritical exn ->
                 assign (`Exn (CErrors.UserError(Pp.str "error closing proof"), Exninfo.null))
             in
@@ -457,7 +457,7 @@ let execute st (vs, events, interrupted) task =
             (st, vs,events,false)
           end
     with Sys.Break ->
-      let st = update st (id_of_prepared_task task) (Error ((None,"interrupted"),None)) in
+      let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None)) in
       (st, vs, events, true)
 
 let build_tasks_for sch st id =
@@ -485,17 +485,25 @@ let build_tasks_for sch st id =
   let vs, tasks = build_tasks id [] in
   vs, List.concat_map prepare_task tasks
 
-let errors st =
+let all_errors st =
   List.fold_left (fun acc (id, (p,_)) ->
     match p with
     | Done (Error ((loc,e),_st)) -> (id,(loc,e)) :: acc
     | _ -> acc)
     [] @@ SM.bindings st.of_sentence
 
-let mk_feedback id (lvl,loc,msg) = (id,(lvl,loc,Pp.string_of_ppcmds msg))
+let error st id =
+  match SM.find_opt id st.of_sentence with
+  | Some (Done (Error (err,_st)), _) -> Some err
+  | _ -> None
 
-let feedback st =
-  List.fold_left (fun acc (id, (_,l)) -> List.map (mk_feedback id) l @ acc) [] @@ SM.bindings st.of_sentence
+let feedback st id =
+  match SM.find_opt id st.of_sentence with
+  | None -> []
+  | Some (_st, l) -> l
+
+let all_feedback st =
+  List.fold_left (fun acc (id, (_,l)) -> List.map (fun x -> (id, x)) l @ acc) [] @@ SM.bindings st.of_sentence
 
 let shift_diagnostics_locs st ~start ~offset =
   let shift_loc loc =

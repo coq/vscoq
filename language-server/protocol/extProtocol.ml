@@ -104,18 +104,10 @@ module Notification = struct
 
     module ProofViewParams = struct
 
-      type t = ProofState.t option
-
-      let yojson_of_t v = yojson_of_option ProofState.yojson_of_t v
-
-    end
-
-    module PublishCoqFeedbackParams = struct
-      
       type t = {
-        uri: DocumentUri.t; 
-        feedbacks: CoqFeedback.t list
-      }[@@deriving yojson]
+        proof: ProofState.t option;
+        messages: (DiagnosticSeverity.t * pp) list;
+      } [@@deriving yojson]
 
     end
 
@@ -125,7 +117,6 @@ module Notification = struct
     | MoveCursor of MoveCursorParams.t
     | ProofView of ProofViewParams.t
     | SearchResult of query_result
-    | PublishCoqFeedback of PublishCoqFeedbackParams.t
 
     let to_jsonrpc = function
       | Std notification ->
@@ -137,8 +128,8 @@ module Notification = struct
         Jsonrpc.Notification.{ method_; params }
       | ProofView params -> 
         let method_ = "vscoq/proofView" in
-        let params = Option.map ProofState.yojson_of_t params in 
-        let params = Option.map Jsonrpc.Structured.t_of_yojson params in
+        let params = ProofViewParams.yojson_of_t params in
+        let params = Some (Jsonrpc.Structured.t_of_yojson params) in
         Jsonrpc.Notification.{ method_; params }
       | SearchResult params ->
         let method_ = "vscoq/searchResult" in
@@ -150,11 +141,6 @@ module Notification = struct
         let params = MoveCursorParams.yojson_of_t params in 
         let params = Some (Jsonrpc.Structured.t_of_yojson params) in
         Jsonrpc.Notification.{ method_; params }   
-      | PublishCoqFeedback params -> 
-        let method_ = "vscoq/coqFeedback" in 
-        let params = PublishCoqFeedbackParams.yojson_of_t params in 
-        let params = Some (Jsonrpc.Structured.t_of_yojson params) in
-        Jsonrpc.Notification.{ method_; params }
 
     end
 

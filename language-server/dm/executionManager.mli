@@ -36,6 +36,9 @@ val is_diagnostics_enabled: unit -> bool
 type state
 type event
 type events = event Sel.Event.t list
+
+type feedback_message = Feedback.level * Loc.t option * Pp.t
+
 val pr_event : event -> Pp.t
 
 val init : Vernacstate.t -> state * event Sel.Event.t
@@ -45,8 +48,12 @@ val get_options : unit -> options
 val set_options : options -> unit
 val set_default_options : unit -> unit
 val invalidate : Scheduler.schedule -> sentence_id -> state -> state
-val errors : state -> (sentence_id * (Loc.t option * string)) list
-val feedback : state -> (sentence_id * (Feedback.level * Loc.t option * string)) list
+
+val error : state -> sentence_id -> (Loc.t option * Pp.t) option
+val feedback :  state -> sentence_id -> feedback_message list
+val all_errors : state -> (sentence_id * (Loc.t option * Pp.t)) list
+val all_feedback : state -> (sentence_id * feedback_message) list
+
 val shift_diagnostics_locs : state -> start:int -> offset:int -> state
 val executed_ids : state -> sentence_id list
 val is_executed : state -> sentence_id -> bool

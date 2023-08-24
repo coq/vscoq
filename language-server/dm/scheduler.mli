@@ -36,7 +36,7 @@ type executable_sentence = {
 }
 
 type task =
-  | Skip of { id: sentence_id; error: string option }
+  | Skip of { id: sentence_id; error: Pp.t option }
   | Exec of executable_sentence
   | OpaqueProof of { terminator: executable_sentence;
                      opener_id: sentence_id;

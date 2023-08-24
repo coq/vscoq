@@ -123,50 +123,48 @@ let make_diagnostic doc range oloc message severity =
   in
   Diagnostic.create ~range ~message ~severity ()
 
-let make_coq_feedback doc range oloc message channel = 
-  let range =
-    match oloc with
-    | None -> range
-    | Some loc ->
-      RawDocument.range_of_loc (Document.raw_document doc) loc
-  in
-  CoqFeedback.{ range; message; channel }
+let mk_diag st (id,(lvl,oloc,msg)) =
+  let lvl = DiagnosticSeverity.of_feedback_level lvl in
+  make_diagnostic st.document (Document.range_of_id st.document id) oloc (Pp.string_of_ppcmds msg) lvl
 
-let feedbacks st =
-  let all_feedback = ExecutionManager.feedback st.execution_state in
-  (* we are resilient to a state where invalidate was not called yet *)
-  let exists (id,_) = Option.has_some (Document.get_sentence st.document id) in
-  let notices_debugs_infos (id, (lvl, oloc, msg)) = Option.map (fun lvl -> id, (lvl, oloc, msg)) (FeedbackChannel.t_of_feedback_level lvl) in
-  let feedbacks = all_feedback |> List.filter exists |> List.filter_map notices_debugs_infos in
-  let mk_coq_fb (id, (lvl, oloc, msg)) = 
-      make_coq_feedback st.document (Document.range_of_id st.document id) oloc msg lvl
-  in
-  List.map mk_coq_fb feedbacks
+let mk_error_diag st (id,(oloc,msg)) = mk_diag st (id,(Feedback.Error,oloc, msg))
 
-let diagnostics st =
+let mk_parsing_error_diag st Document.{ msg = (oloc,msg); start; stop } =
+  let doc = Document.raw_document st.document in
+  let severity = DiagnosticSeverity.Error in
+  let start = RawDocument.position_of_loc doc start in
+  let end_ = RawDocument.position_of_loc doc stop in
+  let range = Range.{ start; end_ } in
+  make_diagnostic st.document range oloc msg severity
+
+let all_diagnostics st =
   let parse_errors = Document.parse_errors st.document in
-  let all_exec_errors = ExecutionManager.errors st.execution_state in
-  let all_feedback = ExecutionManager.feedback st.execution_state in
+  let all_exec_errors = ExecutionManager.all_errors st.execution_state in
+  let all_feedback = ExecutionManager.all_feedback st.execution_state in
   (* we are resilient to a state where invalidate was not called yet *)
   let exists (id,_) = Option.has_some (Document.get_sentence st.document id) in
   let exec_errors = all_exec_errors |> List.filter exists in
-  let warnings_and_errors  (id, (lvl, oloc, msg)) = Option.map (fun lvl -> id, (lvl, oloc, msg)) (DiagnosticSeverity.of_feedback_level lvl) in
-  let diags = all_feedback |> List.filter exists |> List.filter_map warnings_and_errors in
-  let mk_diag (id,(lvl,oloc,msg)) = 
-      make_diagnostic st.document (Document.range_of_id st.document id) oloc msg lvl
-  in
-  let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(DiagnosticSeverity.Error,oloc,msg)) in
-  let mk_parsing_error_diag Document.{ msg = (oloc,msg); start; stop } =
-    let doc = Document.raw_document st.document in
-    let severity = DiagnosticSeverity.Error in
-    let start = RawDocument.position_of_loc doc start in
-    let end_ = RawDocument.position_of_loc doc stop in
-    let range = Range.{ start; end_ } in
-    make_diagnostic st.document range oloc msg severity
-  in
-  List.map mk_parsing_error_diag parse_errors @
-    List.map mk_error_diag exec_errors @
-    List.map mk_diag diags
+  let feedback = all_feedback |> List.filter exists in
+  List.map (mk_parsing_error_diag st) parse_errors @
+    List.map (mk_error_diag st) exec_errors @
+    List.map (mk_diag st) feedback
+
+let id_of_pos st pos =
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
+  match Document.find_sentence_before st.document loc with
+  | None -> None
+  | Some { id } -> Some id
+
+let get_messages st pos =
+  match Option.cata (id_of_pos st) st.observe_id pos with
+  | None -> []
+  | Some id ->
+    let error = ExecutionManager.error st.execution_state id in
+    let feedback = ExecutionManager.feedback st.execution_state id in
+    let feedback = List.map (fun (lvl,_oloc,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback  in
+    match error with
+    | Some (_oloc,msg) -> (DiagnosticSeverity.Error, pp_of_coqpp msg) :: feedback
+    | None -> feedback
 
 let reset { uri; opts; init_vs; document; execution_state } =
   let text = RawDocument.text @@ Document.raw_document document in
@@ -190,10 +188,9 @@ let interpret_to ~stateful ~background state id : (state * event Sel.Event.t lis
       (state, [ event ])
 
 let interpret_to_position ~stateful st pos =
-  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match Document.find_sentence_before st.document loc with
+  match id_of_pos st pos with
   | None -> (st, []) (* document is empty *)
-  | Some { id } -> interpret_to ~stateful ~background:false st id
+  | Some id -> interpret_to ~stateful ~background:false st id
 
 let interpret_to_previous st =
   match st.observe_id with
@@ -288,34 +285,25 @@ let handle_event ev st =
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
 
 let get_proof st diff_mode pos =
-  let id_of_pos pos =
-    let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-    match Document.find_sentence_before st.document loc with
-    | None -> None
-    | Some { id } -> Some id
-  in
   let previous_st id =
     let oid = fst @@ Scheduler.task_for_sentence (Document.schedule st.document) id in
     Option.bind oid (ExecutionManager.get_vernac_state st.execution_state)
   in
-  let oid = Option.cata id_of_pos st.observe_id pos in
+  let oid = Option.cata (id_of_pos st) st.observe_id pos in
   let ost = Option.bind oid (ExecutionManager.get_vernac_state st.execution_state) in
   let previous = Option.bind oid previous_st in
   Option.bind ost (ProofState.get_proof ~previous diff_mode)
 
 let get_context st pos =
-  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match Document.find_sentence_before st.document loc with
+  match id_of_pos st pos with
   | None -> Some (ExecutionManager.get_initial_context st.execution_state)
-  | Some sentence ->
-    ExecutionManager.get_context st.execution_state sentence.id
+  | Some id -> ExecutionManager.get_context st.execution_state id
 
 let get_completions st pos =
-  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match Document.find_sentence_before st.document loc with
+  match id_of_pos st pos with
   | None -> Error ("Can't get completions, no sentence found before the cursor")
-  | Some sentence ->
-    let ost = ExecutionManager.get_vernac_state st.execution_state sentence.id in
+  | Some id ->
+    let ost = ExecutionManager.get_vernac_state st.execution_state id in
     let settings = ExecutionManager.get_options () in
     match Option.bind ost @@ CompletionSuggester.get_completions settings.completion_options with
     | None -> Error ("Can't get completions")

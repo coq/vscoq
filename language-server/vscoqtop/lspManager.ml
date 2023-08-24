@@ -164,18 +164,11 @@ let parse_loc json =
   let character = json |> member "character" |> to_int in
   Position.{ line ; character }
 
-let publish_feedbacks_and_diagnostics uri doc =
-  let diagnostics = Dm.DocumentManager.diagnostics doc in
-  let feedbacks = Dm.DocumentManager.feedbacks doc in
+let publish_diagnostics uri doc =
+  let diagnostics = Dm.DocumentManager.all_diagnostics doc in
   let params = Lsp.Types.PublishDiagnosticsParams.create ~diagnostics ~uri () in
   let diag_notification = Lsp.Server_notification.PublishDiagnostics params in
-  let fb_notification = Notification.Server.PublishCoqFeedback {
-    uri; 
-    feedbacks
-  }
-  in
-  output_notification (Std diag_notification);
-  output_notification fb_notification
+  output_notification (Std diag_notification)
 
 let send_highlights uri doc =
   let { Dm.DocumentManager.parsed; checked; checked_by_delegate; legacy_highlight } =
@@ -201,7 +194,7 @@ let send_move_cursor uri range =
 let update_view uri st =
   if (Dm.ExecutionManager.is_diagnostics_enabled ()) then (
     send_highlights uri st;
-    publish_feedbacks_and_diagnostics uri st;
+    publish_diagnostics uri st;
   )
 
 let textDocumentDidOpen params =
@@ -282,11 +275,11 @@ let coqtopStepBackward params =
   if !check_mode = Settings.Mode.Manual then
     match range with 
     | None ->
-      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] (* how can this do anything? isn't observe_id None? *)
     | Some range -> 
       [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
   else 
-    inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+    inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] (* isn't observe_id none in continuous mode? If so, how does this do anything? *)
 
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
@@ -515,11 +508,11 @@ let handle_event = function
     Dm.Log.handle_event e; []
   | SendProofView (uri, position) -> 
     let st = Hashtbl.find states (DocumentUri.to_path uri) in
-    let pv = Dm.DocumentManager.get_proof st !diff_mode position in
-    send_proof_view pv; []
+    let proof = Dm.DocumentManager.get_proof st !diff_mode position in
+    let messages = Dm.DocumentManager.get_messages st position in
+    send_proof_view Notification.Server.ProofViewParams.{ proof; messages }; []
   | SendMoveCursor (uri, range) -> 
     send_move_cursor uri range; []
-
 
 let pr_event = function
   | LspManagerEvent e -> pr_lsp_event e
