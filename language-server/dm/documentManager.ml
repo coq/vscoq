@@ -287,16 +287,21 @@ let handle_event ev st =
     let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
 
-let get_proof st pos =
+let get_proof st diff_mode pos =
   let id_of_pos pos =
     let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
     match Document.find_sentence_before st.document loc with
     | None -> None
     | Some { id } -> Some id
   in
+  let previous_st id =
+    let oid = fst @@ Scheduler.task_for_sentence (Document.schedule st.document) id in
+    Option.bind oid (ExecutionManager.get_vernac_state st.execution_state)
+  in
   let oid = Option.cata id_of_pos st.observe_id pos in
   let ost = Option.bind oid (ExecutionManager.get_vernac_state st.execution_state) in
-  Option.bind ost ProofState.get_proof
+  let previous = Option.bind oid previous_st in
+  Option.bind ost (ProofState.get_proof ~previous diff_mode)
 
 let get_context st pos =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in

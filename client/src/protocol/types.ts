@@ -44,15 +44,10 @@ interface Error {
     message: string; 
 }
 
-export interface Hypothesis {
-    identifiers: string[];
-    type: PpString;
-}
-
 export interface Goal {
     id: integer;
     goal: PpString;
-    hypotheses: Hypothesis[];
+    hypotheses: PpString[];
 }
 interface ProofViewNotificationType {
     goals: Goal[];

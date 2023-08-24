@@ -86,7 +86,7 @@ val feedbacks : state -> CoqFeedback.t list
 (** feedback [doc] returns notice, info and debug level feedbacks from coq corresponding
     to the sentences that have been executed in [doc]. *)
 
-val get_proof : state -> Position.t option -> ProofState.t option
+val get_proof : state -> Settings.Goals.Diff.Mode.t -> Position.t option -> ProofState.t option
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 

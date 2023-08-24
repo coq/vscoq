@@ -11,6 +11,8 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
+open Settings
+
 type t [@@deriving yojson]
 
-val get_proof : Vernacstate.t -> t option
+val get_proof : previous:Vernacstate.t option -> Goals.Diff.Mode.t -> Vernacstate.t -> t option

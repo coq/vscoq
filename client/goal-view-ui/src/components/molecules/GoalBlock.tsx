@@ -13,10 +13,7 @@ type GoalBlockProps = {
     goal: {
         id: string, 
         goal: PpString, 
-        hypotheses: {
-            identifiers: string[],
-            type: PpString, 
-        }[]
+        hypotheses: PpString[]
     }
 };
 

@@ -23,10 +23,7 @@ export type PpString =
 export type Goal = {
     id: string,
     goal: PpString, 
-    hypotheses: {
-        identifiers: string[],
-        type: PpString
-    }[],
+    hypotheses: PpString[],
     isOpen: boolean, 
     displayId: number
 };
