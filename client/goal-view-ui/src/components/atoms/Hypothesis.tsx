@@ -1,11 +1,11 @@
 import React, {FunctionComponent} from 'react';
 
 import classes from './Hypothesis.module.css';
-import { PpString } from '../../types';
+import { Hyp } from '../../types';
 import { fragmentOfPpString } from '../../utilities/pp';
 
 type HypothesisProps = {
-    content: PpString,
+    content: Hyp;
 };
 
 const hypothesis: FunctionComponent<HypothesisProps> = (props) => {

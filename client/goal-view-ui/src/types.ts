@@ -19,15 +19,33 @@ export type PpString =
   | ["Ppcmd_force_newline"]
   | ["Ppcmd_comment", string[]];
 
+export type Hyp = PpString;
 
-export type Goal = {
+export interface Goal {
     id: string,
     goal: PpString, 
-    hypotheses: PpString[],
-    isOpen: boolean, 
-    displayId: number
+    hypotheses: Hyp[],
 };
+
+export interface DisplayedGoal extends Goal  {
+    displayId: number; 
+    isOpen: boolean;
+};
+
+export type ProofViewType = {
+    goals: DisplayedGoal[];
+    shelvedGoals: DisplayedGoal[];
+    givenUpGoals: DisplayedGoal[];
+};
+
+export enum ProofViewKey {
+    goals = "goals", 
+    shelved = "shelvedGoals", 
+    givenUp = "givenUpGoals"
+}
 
 export type GoalArray = Goal[];
 
 export type GoalArrayOrNull = Nullable<Goal[]>;
+
+export type ProofView = Nullable<ProofViewType>;
