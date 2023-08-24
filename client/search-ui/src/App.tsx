@@ -13,14 +13,11 @@ import {
     QueryTab,
     QueryType,
     SearchNotification,
-    AboutNotification,
-    CheckNotification,
+    QueryNotification,
     CheckResultType,
     AboutResultType,
     SearchResultType,
-    LocateNotification, 
     LocateResultType,
-    PrintNotification,
     PrintResultType,
     QueryPanelState,
     VsCodeState,
@@ -156,7 +153,7 @@ const app = () => {
         });
     };
 
-    const handleCheckNotification = (notification : CheckNotification) => {
+    const handleCheckNotification = (notification : QueryNotification) => {
         
         setQueryPanelState(state => { 
             const result = {type: QueryType.check, statement: notification.statement} as CheckResultType;
@@ -174,7 +171,7 @@ const app = () => {
 
     };
 
-    const handleAboutNotification = (notification : AboutNotification) => {
+    const handleAboutNotification = (notification : QueryNotification) => {
         
         setQueryPanelState(state => { 
             const result = {type: QueryType.about, statement: notification.statement} as AboutResultType;
@@ -192,7 +189,7 @@ const app = () => {
 
     };
 
-    const handleLocateNotification = (notification: LocateNotification) => {
+    const handleLocateNotification = (notification: QueryNotification) => {
         
         setQueryPanelState(state => { 
             const result = {type: QueryType.locate, statement: notification.statement} as LocateResultType;
@@ -210,7 +207,7 @@ const app = () => {
 
     };
 
-    const handlePrintNotification = (notification: PrintNotification) => {
+    const handlePrintNotification = (notification: QueryNotification) => {
         
         setQueryPanelState(state => { 
             const result = {type: QueryType.print, statement: notification.statement} as PrintResultType;
@@ -233,13 +230,13 @@ const app = () => {
             case QueryType.search:
                 return {type: QueryType.search, data: []} as SearchResultType;
             case QueryType.about:
-                return {type: QueryType.about, statement: ""} as AboutResultType;
+                return {type: QueryType.about, statement: null} as AboutResultType;
             case QueryType.check:
-                return {type: QueryType.check, statement: ""} as CheckResultType;
+                return {type: QueryType.check, statement: null} as CheckResultType;
             case QueryType.locate:
-                return {type: QueryType.locate, statement: ""} as LocateResultType;
+                return {type: QueryType.locate, statement: null} as LocateResultType;
             case QueryType.print: 
-                return {type: QueryType.print, statement: ""} as PrintResultType;
+                return {type: QueryType.print, statement: null} as PrintResultType;
         }
     };
 

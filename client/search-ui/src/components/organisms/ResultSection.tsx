@@ -1,17 +1,14 @@
 import React, {FunctionComponent, useMemo} from 'react';
 
-import { QueryResult, QueryType, SearchResultType  } from '../../types';
+import { QueryResultType, QueryType, SearchResultType  } from '../../types';
 
 import SearchResult from '../molecules/SearchResult';
-import AboutResult from '../molecules/AboutResult';
-import CheckResult from '../molecules/CheckResult';
-import LocateResult from '../molecules/LocateResult';
-import PrintResult from '../molecules/PrintResult';
+import QueryResult from '../molecules/QueryResult';
 
 import classes from './ResultSection.module.css';
 
 type SearchResultSectionProps = {
-    result: QueryResult,
+    result: QueryResultType,
     toggleCollapsedHandler: (index: number) => void;
     deleteSearchResultHandler: (index: number) => void;
     copyNameHandler: (name: string) => void;
@@ -27,27 +24,23 @@ const searchResultSection: FunctionComponent<SearchResultSectionProps> = (props)
                 return (result as SearchResultType).data.map((res, index) => {
                         return <SearchResult
                             key={index}
-                            name={res.name} 
-                            statement={res.statement} 
-                            collapsed={res.collapsed}
+                            result={res}
                             copyNameHandler={copyNameHandler}
                             toggleCollapsedHandler={() => toggleCollapsedHandler(index)}
                             deleteResultHandler={() => deleteSearchResultHandler(index)}
                         />;
                     });
-
             case QueryType.check:
-                return <CheckResult  statement={result.statement} />;
+                return <QueryResult result={result} />;
 
             case QueryType.about:
-                return <AboutResult  statement={result.statement} />;
+                return <QueryResult result={result} />;
 
             case QueryType.locate: 
-                return <LocateResult statement={result.statement} />;
+                return <QueryResult result={result} />;
 
             case QueryType.print: 
-                return <PrintResult statement={result.statement} />;
-
+                return <QueryResult result={result} />;
         }
     };
 

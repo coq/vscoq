@@ -1,27 +1,24 @@
 import { integer } from "vscode-languageclient";
 
-export interface SearchNotification {
-    id: string; 
-    name: string; 
-    statement: string;
-};
-export interface AboutNotification {
-    id: string; 
-    statement: string; 
-};
-export interface CheckNotification {
-    id: string; 
-    statement: string; 
-};
-export interface LocateNotification {
-    id: string; 
-    statement: string; 
-};
-export interface PrintNotification {
-    id: string; 
-    statement: string; 
-};
+type Nullable<T> = T | null;
 
+export type PpTag = string;
+
+export type BlockType =
+  | ["Pp_hbox"]
+  | ["Pp_vbox", integer]
+  | ["Pp_hvbox", integer]
+  | ["Pp_hovbox", integer];
+
+export type PpString =
+  | ["Ppcmd_empty"]
+  | ["Ppcmd_string", string]
+  | ["Ppcmd_glue", PpString[]]
+  | ["Ppcmd_box", BlockType, PpString]
+  | ["Ppcmd_tag", PpTag, PpString]
+  | ["Ppcmd_print_break", integer, integer]
+  | ["Ppcmd_force_newline"]
+  | ["Ppcmd_comment", string[]];
 
 export enum QueryType {
     search = "search", 
@@ -30,64 +27,63 @@ export enum QueryType {
     locate = "locate", 
     print = "print"
 }
-
+export interface QueryResultBase {
+    statement: Nullable<PpString>;
+}
+export interface SearchResult extends QueryResultBase {
+    name: PpString;
+}
+export interface CollapsibleSearchResult extends SearchResult {
+    collapsed: boolean;
+}
 export interface SearchResultType {
     type: QueryType.search;
-
-    data : {
-        name: string; 
-        statement: string;
-        collapsed: boolean;
-    }[]
+    data : CollapsibleSearchResult[]
 };
-export interface CheckResultType {
+export interface SearchNotification extends SearchResult {
+    id: string; 
+};
+export interface QueryNotification extends QueryResultBase {
+    id: string;
+}
+export interface CheckResultType extends QueryResultBase {
     type: QueryType.check;
-    statement: string;
 }
-export interface AboutResultType {
+export interface AboutResultType extends QueryResultBase {
     type: QueryType.about;
-    statement: string; 
 }
-export interface LocateResultType {
+export interface LocateResultType extends QueryResultBase {
     type: QueryType.locate;
-    statement: string;
 }
-export interface PrintResultType {
+export interface PrintResultType extends QueryResultBase {
     type: QueryType.print;
-    statement: string;
 }
 export interface QueryError {
     code: integer; 
     message: string;
 }
-
-export type QueryResult = 
+export type QueryResultType = 
     SearchResultType
     | CheckResultType
     | AboutResultType
     | LocateResultType
     | PrintResultType;
-
 export interface Query {
     pattern: string; 
     type: QueryType; 
 };
-
-
 export interface QueryTab {
     id: string, 
     title: string, 
     pattern: string, 
     type: QueryType, 
-    result: QueryResult,
+    result: QueryResultType,
     error?: QueryError
 };
-
 export type QueryPanelState = {
     currentTab: number;
     tabs: QueryTab[];
 };
-
 export type VsCodeState = {
     state?: QueryPanelState,
     history?: string[],

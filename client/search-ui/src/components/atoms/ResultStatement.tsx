@@ -1,9 +1,12 @@
 import React, {FunctionComponent} from 'react';
 
+import { fragmentOfPpString } from '../../utilities/pp';
+import { PpString } from '../../types';
+
 import classes from './ResultStatement.module.css';
 
 type ResultStatementProps = {
-    statement: string; 
+    statement: PpString | null; 
     className?: string[];
 };
 
@@ -13,7 +16,9 @@ const resultStatement: FunctionComponent<ResultStatementProps> = (props) => {
 
     const classNames = className ? className.concat([classes.ResultStatement]) : [classes.ResultStatement];
     
-    return <span className={classNames.join(' ')}> {statement} </span>;
+    return statement ?
+        <span className={classNames.join(' ')}> {fragmentOfPpString(statement, classes)} </span>
+        : null;
     
 };
 

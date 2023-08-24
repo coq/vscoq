@@ -2,8 +2,52 @@
     font-family: var(--vscode-editor-font-family);
     font-weight: bold;
     width: 90%;
-    color: var(--vscode-coq-tacticKeyword);
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
+}
+
+.constr-notation {
+  color: var(--vscode-coq-termNotation);
+}
+.constr-keyword {
+  color: var(--vscode-coq-termKeyword);
+}
+.constr-evar {
+  color: var(--vscode-coq-termEvar);
+  font-style: italic;
+}
+.constr-path {
+  color: var(--vscode-coq-termPath);
+}
+.constr-reference {
+  color: var(--vscode-coq-termReference);
+}
+.constr-type {
+  color: var(--vscode-coq-termType);
+}
+.constr-variable {
+  color: var(--vscode-coq-termVariable);
+}
+.message-debug {
+  color: var(--vscode-coq-debugMessage);
+}
+.message-error {
+  color: var(--vscode-coq-errorMessage);
+  text-decoration: underline;
+}
+.message-warning {
+  color: var(--vscode-coq-warningMessage);
+}
+.module-keyword {
+  color: var(--vscode-coq-moduleKeyword);
+}
+.tactic-keyword {
+  color: var(--vscode-coq-tacticKeyword);
+}
+.tactic-primitive {
+  color: var(--vscode-coq-tacticPrimitive);
+}
+.tactic-string {
+  color: var(--vscode-coq-tacticString);
 }

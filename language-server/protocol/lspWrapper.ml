@@ -13,6 +13,7 @@
 (**************************************************************************)
 open Lsp.Types
 open Sexplib.Std
+open Printing
 
 module Position = struct
 
@@ -85,8 +86,8 @@ end
 
 type query_result =
   { id : string;
-    name : string;
-    statement : string;
+    name : pp;
+    statement : pp;
   } [@@deriving yojson]
 
 type notification =

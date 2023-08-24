@@ -15,6 +15,7 @@
 open Lsp.Types
 open Protocol
 open Protocol.LspWrapper
+open Protocol.Printing
 open Types
 
 let Log log = Log.mk_log "documentManager"
@@ -331,7 +332,7 @@ let about st pos ~pattern =
     try
       let ref_or_by_not = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
       let udecl = None (* TODO? *) in
-      Ok (Pp.string_of_ppcmds @@ Prettyp.print_about env sigma ref_or_by_not udecl)
+      Ok (pp_of_coqpp @@ Prettyp.print_about env sigma ref_or_by_not udecl)
     with e ->
       let e, info = Exninfo.capture e in
       Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
@@ -370,7 +371,7 @@ let check st pos ~pattern =
     let rc = parse_entry st loc Pcoq.Constr.lconstr pattern in
     try
       let redexpr = None in
-      Ok (Pp.string_of_ppcmds @@ Vernacentries.check_may_eval env sigma redexpr rc)
+      Ok (pp_of_coqpp @@ Vernacentries.check_may_eval env sigma redexpr rc)
     with e ->
       let e, info = Exninfo.capture e in
       Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
@@ -378,12 +379,12 @@ let check st pos ~pattern =
 let locate st pos ~pattern = 
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match parse_entry st loc (Pcoq.Prim.smart_global) pattern with
-  | { v = AN qid } -> Ok (Pp.string_of_ppcmds @@ Prettyp.print_located_qualid qid)
+  | { v = AN qid } -> Ok (pp_of_coqpp @@ Prettyp.print_located_qualid qid)
   | { v = ByNotation (ntn, sc)} -> 
     match get_context st pos with
     | None -> Error("No context found")
     | Some (sigma, env) -> 
-      Ok( Pp.string_of_ppcmds @@ Notation.locate_notation
+      Ok( pp_of_coqpp @@ Notation.locate_notation
         (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) ntn sc)
 
 let print st pos ~pattern = 
@@ -393,7 +394,7 @@ let print st pos ~pattern =
   | Some (sigma, env) -> 
     let qid = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
     let udecl = None in (*TODO*)
-    Ok ( Pp.string_of_ppcmds @@ Prettyp.print_name env sigma qid udecl )
+    Ok ( pp_of_coqpp @@ Prettyp.print_name env sigma qid udecl )
 
 module Internal = struct
 

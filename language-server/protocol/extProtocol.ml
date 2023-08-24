@@ -13,6 +13,7 @@
 (**************************************************************************)
 open Lsp.Types
 open LspWrapper
+open Printing
 
 module Notification = struct
 
@@ -241,10 +242,10 @@ module Request = struct
   type 'a t =
   | Std : 'a Lsp.Client_request.t -> 'a t
   | Reset : ResetParams.t -> unit t
-  | About : AboutParams.t -> string t
-  | Check : CheckParams.t -> string t
-  | Locate : LocateParams.t -> string t
-  | Print : PrintParams.t -> string t
+  | About : AboutParams.t -> pp t
+  | Check : CheckParams.t -> pp t
+  | Locate : LocateParams.t -> pp t
+  | Print : PrintParams.t -> pp t
   | Search : SearchParams.t -> unit t
   | DocumentState : DocumentStateParams.t -> DocumentStateResult.t t
 
@@ -282,10 +283,10 @@ module Request = struct
     fun req resp ->
       match req with
       | Reset _ -> yojson_of_unit resp
-      | About _ -> yojson_of_string resp
-      | Check _ -> yojson_of_string resp
-      | Locate _ -> yojson_of_string resp
-      | Print _ -> yojson_of_string resp
+      | About _ -> yojson_of_pp resp
+      | Check _ -> yojson_of_pp resp
+      | Locate _ -> yojson_of_pp resp
+      | Print _ -> yojson_of_pp resp
       | Search _ -> yojson_of_unit resp
       | DocumentState _ -> DocumentStateResult.(yojson_of_t resp)
       | Std req -> Lsp.Client_request.yojson_of_result req resp
