@@ -252,7 +252,7 @@ let mk_proof_view_event uri position =
   Sel.now ~priority:Dm.PriorityManager.proof_view (SendProofView (uri, position))
 
 let mk_move_cursor_event uri range = 
-  let priority = Dm.PriorityManager.pre_execution in
+  let priority = Dm.PriorityManager.move_cursor in
   Sel.now ~priority @@ SendMoveCursor (uri, range)
 
 let coqtopInterpretToPoint params =

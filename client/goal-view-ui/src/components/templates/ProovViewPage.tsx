@@ -66,7 +66,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
             <Accordion title={'Proof'} collapsed={false}>
                 {collapsibleGoalsDisplay}
             </Accordion>
-            <Accordion title='Messages' collapsed={true}>
+            <Accordion title='Messages' collapsed={false}>
                 <div className={classes.Panel}>
                     {displayMessages}
                 </div>
