@@ -9,6 +9,7 @@ import {
 
 import GoalSection from '../organisms/GoalSection';
 import EmptyState from '../atoms/EmptyState';
+import Accordion from '../atoms/Accordion';
 import { ProofViewGoals, ProofViewGoalsKey, ProofViewMessage } from '../../types';
 
 import classes from './GoalPage.module.css';
@@ -55,7 +56,9 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
     
     return (
         <div className={classes.Page}>
-            {collapsibleGoalsDisplay}
+            <Accordion title={'Proof'} collapsed={false}>
+                {collapsibleGoalsDisplay}
+            </Accordion>
         </div>
     );
 };
