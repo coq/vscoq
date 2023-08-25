@@ -10,6 +10,7 @@ import {
 import GoalSection from '../organisms/GoalSection';
 import EmptyState from '../atoms/EmptyState';
 import Accordion from '../atoms/Accordion';
+import Message from '../atoms/Message';
 import { ProofViewGoals, ProofViewGoalsKey, ProofViewMessage } from '../../types';
 
 import classes from './GoalPage.module.css';
@@ -49,6 +50,12 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
             </VSCodePanels>
         );
     };
+
+    const displayMessages = messages.map(m => {
+        return (
+            <Message message={m[1]} severity={m[0]}/>
+        );
+    });
     
     const collapsibleGoalsDisplay = (goals === null) 
         ? <EmptyState message="Not in proof mode" />
@@ -58,6 +65,11 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
         <div className={classes.Page}>
             <Accordion title={'Proof'} collapsed={false}>
                 {collapsibleGoalsDisplay}
+            </Accordion>
+            <Accordion title='Messages' collapsed={true}>
+                <div className={classes.Panel}>
+                    {displayMessages}
+                </div>
             </Accordion>
         </div>
     );

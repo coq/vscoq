@@ -44,9 +44,10 @@ export enum ProofViewGoalsKey {
 }
 
 export enum MessageSeverity {
-    error = "Error",
-    warning = "Warning", 
-    info = "Information"
+    error = 1, 
+    warning,
+    information,
+    hint
 }
 
 export type ProofViewMessage = [MessageSeverity, PpString];

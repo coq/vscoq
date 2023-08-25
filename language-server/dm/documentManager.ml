@@ -157,8 +157,8 @@ let id_of_pos st pos =
 
 let get_messages st pos =
   match Option.cata (id_of_pos st) st.observe_id pos with
-  | None -> []
-  | Some id ->
+  | None -> log "get_messages: Could not find id";[]
+  | Some id -> log "get_messages: Found id";
     let error = ExecutionManager.error st.execution_state id in
     let feedback = ExecutionManager.feedback st.execution_state id in
     let feedback = List.map (fun (lvl,_oloc,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback  in

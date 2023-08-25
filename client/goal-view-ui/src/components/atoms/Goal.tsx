@@ -1,6 +1,6 @@
 import React, {FunctionComponent} from 'react';
 
-import classes from './Goal.module.css';
+import classes from './PpString.module.css';
 import { PpString } from '../../types';
 import { fragmentOfPpString } from '../../utilities/pp';
 
