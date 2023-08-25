@@ -49,13 +49,25 @@ export interface Goal {
     goal: PpString;
     hypotheses: PpString[];
 }
-interface ProofViewNotificationType {
+
+export interface ProofViewGoals {
     goals: Goal[];
     shelvedGoals: Goal[];
     givenUpGoals: Goal[];
 }
 
-export type ProofViewNotification = Nullable<ProofViewNotificationType>;
+export enum MessageSeverity {
+    error = "Error",
+    warning = "Warning", 
+    info = "Information"
+}
+
+export type CoqMessage = [MessageSeverity, PpString];
+
+export interface ProofViewNotification {
+    proof: Nullable<ProofViewGoals>;
+    messages: CoqMessage[];
+}
 
 export interface UpdateHightlightsNotification {
     uri: Uri; 

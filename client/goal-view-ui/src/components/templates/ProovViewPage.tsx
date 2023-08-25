@@ -9,24 +9,25 @@ import {
 
 import GoalSection from '../organisms/GoalSection';
 import EmptyState from '../atoms/EmptyState';
-import { ProofView, ProofViewKey } from '../../types';
+import { ProofViewGoals, ProofViewGoalsKey, ProofViewMessage } from '../../types';
 
 import classes from './GoalPage.module.css';
 
 type ProofViewPageProps = {
-    proofView: ProofView, 
-    collapseGoalHandler: (id: string, key: ProofViewKey) => void,
+    goals: ProofViewGoals, 
+    messages: ProofViewMessage[],
+    collapseGoalHandler: (id: string, key: ProofViewGoalsKey) => void,
     displaySetting: string;
 };
 
 const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
 
-    const {proofView, displaySetting, collapseGoalHandler} = props;
+    const {goals, messages, displaySetting, collapseGoalHandler} = props;
 
-    const renderProofView = () => {
-        const goalBadge = <VSCodeBadge>{proofView!.goals.length}</VSCodeBadge>;
-        const shelvedBadge = <VSCodeBadge>{proofView!.shelvedGoals.length}</VSCodeBadge>;
-        const givenUpBadge = <VSCodeBadge>{proofView!.givenUpGoals.length}</VSCodeBadge>;
+    const renderGoals = () => {
+        const goalBadge = <VSCodeBadge>{goals!.main.length}</VSCodeBadge>;
+        const shelvedBadge = <VSCodeBadge>{goals!.shelved.length}</VSCodeBadge>;
+        const givenUpBadge = <VSCodeBadge>{goals!.givenUp.length}</VSCodeBadge>;
 
         const tabs = [
             <VSCodePanelTab>Main {goalBadge}</VSCodePanelTab>,
@@ -35,9 +36,9 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
         ];
 
         const views = [
-            <VSCodePanelView> <GoalSection goals={proofView!.goals} collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewKey.goals)} displaySetting={displaySetting}/> </VSCodePanelView>,
-            <VSCodePanelView> <GoalSection goals={proofView!.shelvedGoals} collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewKey.shelved)} displaySetting={displaySetting}/> </VSCodePanelView>,
-            <VSCodePanelView> <GoalSection goals={proofView!.givenUpGoals} collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewKey.givenUp)} displaySetting={displaySetting}/> </VSCodePanelView>
+            <VSCodePanelView> <GoalSection goals={goals!.main} collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.main)} displaySetting={displaySetting}/> </VSCodePanelView>,
+            <VSCodePanelView> <GoalSection goals={goals!.shelved} collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.shelved)} displaySetting={displaySetting}/> </VSCodePanelView>,
+            <VSCodePanelView> <GoalSection goals={goals!.givenUp} collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.givenUp)} displaySetting={displaySetting}/> </VSCodePanelView>
         ];
 
         return (
@@ -48,13 +49,13 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
         );
     };
     
-    const display = (proofView === null) 
+    const collapsibleGoalsDisplay = (goals === null) 
         ? <EmptyState message="Not in proof mode" />
-        : renderProofView(); 
+        : renderGoals(); 
     
     return (
         <div className={classes.Page}>
-            {display}
+            {collapsibleGoalsDisplay}
         </div>
     );
 };
