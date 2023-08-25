@@ -7,14 +7,10 @@ import Goal from '../atoms/Goal';
 import Separator from '../atoms/Separator';
 
 import classes from './GoalBlock.module.css';
-import { PpString } from '../../types';
+import { DisplayedGoal} from '../../types';
 
 type GoalBlockProps = {
-    goal: {
-        id: string, 
-        goal: PpString, 
-        hypotheses: PpString[]
-    }
+    goal: DisplayedGoal
 };
 
 const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {

@@ -3,10 +3,10 @@ import React, {FunctionComponent} from 'react';
 import Hypothesis from '../atoms/Hypothesis';
 
 import classes from './HypothesesBlock.module.css';
-import { PpString } from '../../types';
+import { Hyp } from '../../types';
 
 type HypothesesBlockProps = {
-    hypotheses: PpString[];
+    hypotheses: Hyp[];
 };
 
 const hypothesesBlock: FunctionComponent<HypothesesBlockProps> = (props) => {

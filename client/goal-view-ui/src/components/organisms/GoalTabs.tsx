@@ -1,21 +1,15 @@
-import React, {FunctionComponent, useState} from 'react';
+import React, {FunctionComponent} from 'react';
 import {
     VSCodePanels,
     VSCodePanelTab,
     VSCodePanelView 
 } from '@vscode/webview-ui-toolkit/react';
-import { VscPass } from 'react-icons/vsc';
 
 import GoalBlock from '../molecules/GoalBlock';
-import EmptyState from '../atoms/EmptyState';
-import { PpString } from '../../types';
+import { DisplayedGoal } from '../../types';
 
 type GoalSectionProps = {
-    goals: {
-        id: string,
-        goal: PpString, 
-        hypotheses: PpString[]
-    }[];
+    goals: DisplayedGoal[];
 };
 
 const goalSection: FunctionComponent<GoalSectionProps> = (props) => {

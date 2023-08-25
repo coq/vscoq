@@ -1,12 +1,12 @@
 import React, {useState, useCallback, useEffect} from 'react';
 import "./App.css";
 
-import GoalPage from './components/templates/GoalPage';
-import {Goal, GoalArrayOrNull} from './types';
+import ProofViewPage from './components/templates/ProovViewPage';
+import {Goal, ProofView, ProofViewKey} from './types';
 
 const app = () => {
 
-  const [goals, setGoals] = useState<GoalArrayOrNull>(null);
+  const [proofView, setProofView] = useState<ProofView>(null);
   const [goalDisplaySetting, setGoalDisplaySetting] = useState<string>("List");
 
   const handleMessage = useCallback ((msg: any) => {
@@ -16,11 +16,19 @@ const app = () => {
             break;
         case 'renderProofView':
             const proofView = msg.data.proofView;
-            setGoals(proofView === null 
-                ? null 
-                : proofView.goals.map((goal: Goal, index: number) => {
-                    return {...goal, isOpen: index === 0, displayId: index+1 };
-                })
+            setProofView(proofView === null
+                ? proofView
+                : {
+                    goals: proofView.goals.map((goal: Goal, index: number) => {
+                        return {...goal, isOpen: index === 0, displayId: index+1 };
+                    }),
+                    shelvedGoals: proofView.shelvedGoals.map((goal: Goal, index: number) => {
+                        return {...goal, isOpen: index === 0, displayId: index+1 };
+                    }),
+                    givenUpGoals: proofView.givenUpGoals.map((goal: Goal, index: number) => {
+                        return {...goal, isOpen: index === 0, displayId: index+1 };
+                    })
+                }
             );
             break;
     }
@@ -34,21 +42,27 @@ const app = () => {
     }, [handleMessage]);
             
 
-    const collapseGoalHandler = (id: string) => {
-        if(goals) {
-            const newGoals = goals.map(goal => {
-                if(goal.id === id){
-                    return {...goal, isOpen: !goal.isOpen};
-                }
-                return goal;
-            });
-            setGoals(newGoals);
+    const collapseGoalHandler = (id: string, key: ProofViewKey) => {
+        if(proofView) {
+            if(proofView[key]) {
+                const newGoals = proofView[key].map(goal => {
+                    if(goal.id === id){
+                        return {...goal, isOpen: !goal.isOpen};
+                    }
+                    return goal;
+                });
+                setProofView({
+                    ...proofView, 
+                    [key]: newGoals
+                });
+                
+            }           
         }
     };
 
   return (
     <main>
-        <GoalPage goals={goals} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting} />
+        <ProofViewPage proofView={proofView} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting}/>
     </main>
   );
 };
