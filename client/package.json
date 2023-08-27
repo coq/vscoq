@@ -128,6 +128,11 @@
             ],
             "default": "off",
             "markdownDescription": "Controls VsCoq's diff mode. If `on`, only added characters are displayed. If `removed` is selected, both added and removed characters are shown."
+          },
+          "vscoq.goals.messages.full": {
+            "type": "boolean",
+            "default": false,
+            "markdownDescription": "Include warning and errors in proofview messages"
           }
         }
       },
@@ -209,6 +214,18 @@
             ],
             "default": 1,
             "description": "Configures the ranking algorithm for auto completions in Coq."
+          }
+        }
+      },
+      {
+        "title": "Diagnostics",
+        "type": "object",
+        "properties": {
+          "vscoq.diagnostics.full": {
+            "scope": "window",
+            "type": "boolean",
+            "default": false,
+            "description": "Include info in diagnostics"
           }
         }
       }

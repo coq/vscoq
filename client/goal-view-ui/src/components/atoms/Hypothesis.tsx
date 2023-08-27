@@ -1,6 +1,6 @@
 import React, {FunctionComponent} from 'react';
 
-import classes from './Hypothesis.module.css';
+import classes from './PpString.module.css';
 import { Hyp } from '../../types';
 import { fragmentOfPpString } from '../../utilities/pp';
 

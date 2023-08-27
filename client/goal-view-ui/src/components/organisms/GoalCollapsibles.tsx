@@ -1,10 +1,12 @@
 import React, {FunctionComponent, useState} from 'react';
 
 import CollapsibleGoalBlock from '../molecules/CollapsibleGoalBlock';
-import { DisplayedGoal } from '../../types';
+import { CollapsibleGoal } from '../../types';
+
+import classes from './GoalCollapsibles.module.css';
 
 type GoalSectionProps = {
-    goals: DisplayedGoal[],
+    goals: CollapsibleGoal[],
     collapseGoalHandler: (id: string) => void, 
 };
 
@@ -21,7 +23,7 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     });
 
     return (
-        <div>
+        <div className={classes.Collapsibles}>
             {goalCollapsibles}
         </div>
     );

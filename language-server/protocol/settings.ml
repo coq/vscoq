@@ -62,6 +62,14 @@ end
 
 module Goals = struct
 
+  module Messages = struct
+
+    type t = {
+      full : bool;
+    } [@@deriving yojson]
+
+  end
+
   module Diff = struct
 
     module Mode = struct
@@ -89,6 +97,7 @@ module Goals = struct
 
   type t = {
     diff: Diff.t;
+    messages: Messages.t;
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end
@@ -122,9 +131,18 @@ module Completion = struct
 
 end
 
+module Diagnostics = struct
+
+  type t = {
+    enable: bool [@default true]; (** Sets whether diagnostics like errors and highlighting are sent to the client at all. *)
+    full: bool;
+  } [@@deriving yojson]
+
+end
+
 type t = {
   proof: Proof.t;
   goals: Goals.t;
   completion: Completion.t;
-  enableDiagnostics: bool [@default true]; (** Sets whether diagnostics like errors and highlighting are sent to the client at all. *)
+  diagnostics: Diagnostics.t;
 } [@@deriving yojson] [@@yojson.allow_extra_fields]

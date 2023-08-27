@@ -4,6 +4,8 @@ main {
   justify-content: center;
   align-items: flex-start;
   height: 100%;
+  width: calc(100vw - 4 * var(--vscode-scrollbar-verticalScrollbarSize));
+  scrollbar-gutter: stable;
 }
 
 main > * {

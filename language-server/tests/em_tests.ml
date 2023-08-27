@@ -27,8 +27,8 @@ let%test_unit "exec: finished proof" =
   let todo = Sel.Todo.(add empty init_events) in
   let todo = Sel.Todo.(add todo exec_events) in
   let st = handle_events todo st in
-  check_feedback st [
-    F (s4.id,Notice,".*True.*")
+  check_diag st [
+    D (s4.id,Information,".*True.*")
   ]
 
 let%test_unit "exec: finished proof skip" =
@@ -39,8 +39,8 @@ let%test_unit "exec: finished proof skip" =
   let todo = Sel.Todo.(add empty init_events) in
   let todo = Sel.Todo.(add todo exec_events) in
   let st = handle_events todo st in
-  check_feedback st [
-    F (s4.id,Notice,".*True.*")
+  check_diag st [
+    D (s4.id,Information,".*True.*")
   ];
   ExecutionManager.set_default_options ()
 
@@ -51,13 +51,13 @@ let%test_unit "exec: unfinished proof" =
   let todo = Sel.Todo.(add empty init_events) in
   let todo = Sel.Todo.(add todo exec_events) in
   let st = handle_events todo st in
-  let errors = ExecutionManager.errors (DocumentManager.Internal.execution_state st) in
+  let errors = ExecutionManager.all_errors (DocumentManager.Internal.execution_state st) in
   [%test_eq: bool] true (1 = List.length errors);
   check_diag st [
     D (s2.id,Error,".*incomplete proof.*");
   ];
-  check_feedback st [
-    F (s3.id,Notice,".*True.*")
+  check_diag st [
+    D (s3.id,Information,".*True.*")
   ]
 
 let%test_unit "exec: unfinished proof skip" =
@@ -71,8 +71,8 @@ let%test_unit "exec: unfinished proof skip" =
   check_diag st [
     D (s2.id,Error,".*incomplete proof.*")
   ];
-  check_feedback st [
-    F (s3.id,Notice,".*True.*")
+  check_diag st [
+    D (s3.id,Information,".*True.*")
   ];
   ExecutionManager.set_default_options ()
 
@@ -87,8 +87,8 @@ let%test_unit "exec: unfinished proof delegate" =
   check_diag st [
     D (s2.id,Error,".*incomplete proof.*")
   ];
-  check_feedback st [
-    F (s3.id,Notice,".*True.*")
+  check_diag st [
+    D (s3.id,Information,".*True.*")
   ];
   ExecutionManager.set_default_options ()
 
@@ -103,6 +103,6 @@ let%test_unit "exec: unstarted proof" =
   check_diag st [
     D (s1.id,Error,".*No proof-editing in progress.*");
   ];
-  check_feedback st [
-    F (s2.id,Notice,".*Set.*")
+  check_diag st [
+    D (s2.id,Information,".*Set.*")
   ]

@@ -6,10 +6,10 @@ import {
 } from '@vscode/webview-ui-toolkit/react';
 
 import GoalBlock from '../molecules/GoalBlock';
-import { DisplayedGoal } from '../../types';
+import { Goal } from '../../types';
 
 type GoalSectionProps = {
-    goals: DisplayedGoal[];
+    goals: Goal[];
 };
 
 const goalSection: FunctionComponent<GoalSectionProps> = (props) => {

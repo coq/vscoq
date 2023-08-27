@@ -31,7 +31,7 @@ type executable_sentence = {
 }
 
 type task =
-  | Skip of { id: sentence_id; error: string option }
+  | Skip of { id: sentence_id; error: Pp.t option }
   | Exec of executable_sentence
   | OpaqueProof of { terminator: executable_sentence;
                      opener_id: sentence_id;
@@ -203,8 +203,8 @@ let push_state id ast synterp classif st =
     base_id st, push_ex_sentence ex_sentence st, Exec ex_sentence
   | VtSideff _ ->
     base_id st, extrude_side_effect ex_sentence st, Exec ex_sentence
-  | VtMeta -> base_id st, push_ex_sentence ex_sentence st, Skip { id; error = Some "Unsupported command" }
-  | VtProofMode _ -> base_id st, push_ex_sentence ex_sentence st, Skip { id; error = Some "Unsupported command" }
+  | VtMeta -> base_id st, push_ex_sentence ex_sentence st, Skip { id; error = Some (Pp.str "Unsupported command") }
+  | VtProofMode _ -> base_id st, push_ex_sentence ex_sentence st, Skip { id; error = Some (Pp.str "Unsupported command") }
 
 let string_of_task (task_id,(base_id,task)) =
   let s = match task with

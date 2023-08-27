@@ -27,25 +27,33 @@ export interface Goal {
     hypotheses: Hyp[],
 };
 
-export interface DisplayedGoal extends Goal  {
-    displayId: number; 
+export interface CollapsibleGoal extends Goal  {
     isOpen: boolean;
 };
 
-export type ProofViewType = {
-    goals: DisplayedGoal[];
-    shelvedGoals: DisplayedGoal[];
-    givenUpGoals: DisplayedGoal[];
+export type ProofViewGoalsType = {
+    main: CollapsibleGoal[];
+    shelved: CollapsibleGoal[];
+    givenUp: CollapsibleGoal[];
 };
 
-export enum ProofViewKey {
-    goals = "goals", 
-    shelved = "shelvedGoals", 
-    givenUp = "givenUpGoals"
+export enum ProofViewGoalsKey {
+    main = "main", 
+    shelved = "shelved", 
+    givenUp = "givenUp"
 }
+
+export enum MessageSeverity {
+    error = 1, 
+    warning,
+    information,
+    hint
+}
+
+export type ProofViewMessage = [MessageSeverity, PpString];
 
 export type GoalArray = Goal[];
 
 export type GoalArrayOrNull = Nullable<Goal[]>;
 
-export type ProofView = Nullable<ProofViewType>;
+export type ProofViewGoals = Nullable<ProofViewGoalsType>;

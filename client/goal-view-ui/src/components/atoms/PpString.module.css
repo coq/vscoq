@@ -1,3 +1,33 @@
+.Message {
+    margin-top: 12px;
+    width: 100%;
+    font-family: var(--vscode-editor-font-family);
+}
+
+.Error {
+    color: var(--vscode-coq-errorMessage);
+}
+
+.Warning {
+    color: var(--vscode-coq-warningMessage);
+}
+
+.Info {
+    color: var(--vscode-editorInfo-background);
+}
+
+.Hint {
+    color: var(--vscode-editorInlayHint-background);
+}
+
+.Goal {
+    font-family: var(--vscode-editor-font-family);
+    color: var(--vscode-editor-foreground);
+    white-space: pre-wrap;
+    width: 100%;
+    margin-top: 6px;
+}
+  
 .Hypothesis {
     list-style: none;
     font-family: var(--vscode-editor-font-family);

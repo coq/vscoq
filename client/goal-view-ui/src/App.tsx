@@ -2,11 +2,12 @@ import React, {useState, useCallback, useEffect} from 'react';
 import "./App.css";
 
 import ProofViewPage from './components/templates/ProovViewPage';
-import {Goal, ProofView, ProofViewKey} from './types';
+import {Goal, ProofViewGoals, ProofViewGoalsKey, ProofViewMessage} from './types';
 
 const app = () => {
 
-  const [proofView, setProofView] = useState<ProofView>(null);
+  const [goals, setGoals] = useState<ProofViewGoals>(null);
+  const [messages, setMessages] = useState<ProofViewMessage[]>([]);
   const [goalDisplaySetting, setGoalDisplaySetting] = useState<string>("List");
 
   const handleMessage = useCallback ((msg: any) => {
@@ -15,18 +16,20 @@ const app = () => {
             setGoalDisplaySetting(msg.data.text);
             break;
         case 'renderProofView':
-            const proofView = msg.data.proofView;
-            setProofView(proofView === null
-                ? proofView
+            const allGoals = msg.data.proofView.proof;
+            const messages = msg.data.proofView.messages;
+            setMessages(messages);
+            setGoals(allGoals === null
+                ? allGoals
                 : {
-                    goals: proofView.goals.map((goal: Goal, index: number) => {
-                        return {...goal, isOpen: index === 0, displayId: index+1 };
+                    main: allGoals.goals.map((goal: Goal, index: number) => {
+                        return {...goal, isOpen: index === 0};
                     }),
-                    shelvedGoals: proofView.shelvedGoals.map((goal: Goal, index: number) => {
-                        return {...goal, isOpen: index === 0, displayId: index+1 };
+                    shelved: allGoals.shelvedGoals.map((goal: Goal, index: number) => {
+                        return {...goal, isOpen: index === 0};
                     }),
-                    givenUpGoals: proofView.givenUpGoals.map((goal: Goal, index: number) => {
-                        return {...goal, isOpen: index === 0, displayId: index+1 };
+                    givenUp: allGoals.givenUpGoals.map((goal: Goal, index: number) => {
+                        return {...goal, isOpen: index === 0}; 
                     })
                 }
             );
@@ -42,27 +45,22 @@ const app = () => {
     }, [handleMessage]);
             
 
-    const collapseGoalHandler = (id: string, key: ProofViewKey) => {
-        if(proofView) {
-            if(proofView[key]) {
-                const newGoals = proofView[key].map(goal => {
-                    if(goal.id === id){
-                        return {...goal, isOpen: !goal.isOpen};
-                    }
-                    return goal;
-                });
-                setProofView({
-                    ...proofView, 
-                    [key]: newGoals
-                });
-                
-            }           
-        }
+    const collapseGoalHandler = (id: string, key: ProofViewGoalsKey) => {
+        const newGoals = goals![key].map(goal => {
+            if(goal.id === id){
+                return {...goal, isOpen: !goal.isOpen};
+            }
+            return goal;
+        });
+        setGoals({
+            ...goals!, 
+            [key]: newGoals
+        });          
     };
 
   return (
     <main>
-        <ProofViewPage proofView={proofView} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting}/>
+        <ProofViewPage goals={goals} messages={messages} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting}/>
     </main>
   );
 };

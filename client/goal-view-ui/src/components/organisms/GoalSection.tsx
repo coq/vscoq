@@ -4,11 +4,11 @@ import { VscPass } from 'react-icons/vsc';
 import GoalCollapsibleSection from './GoalCollapsibles';
 import GoalTabSection from './GoalTabs';
 import EmptyState from '../atoms/EmptyState';
-import { DisplayedGoal } from '../../types';
+import { CollapsibleGoal } from '../../types';
 
 
 type GoalSectionProps = {
-    goals: DisplayedGoal[],
+    goals: CollapsibleGoal[],
     collapseGoalHandler: (id: string) => void, 
     displaySetting: string;
 };

@@ -3,14 +3,14 @@ import {VSCodeButton} from '@vscode/webview-ui-toolkit/react';
 import {VscChevronDown} from 'react-icons/vsc';
 
 import HypothesesBlock from './HypothesesBlock';
-import Goal from '../atoms/Goal';
+import GoalComponent from '../atoms/Goal';
 import Separator from '../atoms/Separator';
 
 import classes from './GoalBlock.module.css';
-import { DisplayedGoal} from '../../types';
+import { Goal } from '../../types';
 
 type GoalBlockProps = {
-    goal: DisplayedGoal
+    goal: Goal
 };
 
 const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {
@@ -20,7 +20,7 @@ const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {
     return (
         <div className={classes.Block}>
             <HypothesesBlock hypotheses={goal.hypotheses}/>
-            <Goal goal={goal.goal}/>
+            <GoalComponent goal={goal.goal}/>
         </div>
     );
 };
