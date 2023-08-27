@@ -130,7 +130,7 @@
             "markdownDescription": "Controls VsCoq's diff mode. If `on`, only added characters are displayed. If `removed` is selected, both added and removed characters are shown."
           },
           "vscoq.goals.messages.full": {
-            "type": "bool",
+            "type": "boolean",
             "default": false,
             "markdownDescription": "Include warning and errors in proofview messages"
           }
