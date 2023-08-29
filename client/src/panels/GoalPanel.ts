@@ -1,8 +1,8 @@
 import { Disposable, Webview, WebviewPanel, window, workspace, Uri, ViewColumn, TextEditor, Position } from "vscode";
 import { ProofViewNotification } from '../protocol/types';
-import { LanguageClient } from "vscode-languageclient/node";
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
+import Client from "../client";
 
 // /////////////////////////////////////////////////////////////////////////////
 // GOAL VIEW PANEL CODE
@@ -23,7 +23,6 @@ export default class GoalPanel {
   public static currentPanel: GoalPanel | undefined;
   private readonly _panel: WebviewPanel;
   private _disposables: Disposable[] = [];
-  private static _channel: any = window.createOutputChannel('vscoq-goal-panel');
 
 
   /**
@@ -116,15 +115,18 @@ export default class GoalPanel {
   // Create the goal panel if it doesn't exit and then 
   // handle a proofview notification
   // /////////////////////////////////////////////////////////////////////////////
-  public static proofViewNotification(extensionUri: Uri, editor: TextEditor, client: LanguageClient, pv: ProofViewNotification) {
-     
-    this._channel.appendLine("Recieved proofview notification");
+  public static proofViewNotification(extensionUri: Uri, editor: TextEditor, pv: ProofViewNotification) {
+    
+    Client.writeToVscoq2Channel("[GoalPanel] Recieved proofview notification");
+
     if(!GoalPanel.currentPanel) {
         GoalPanel.render(editor, extensionUri, (goalPanel) => {
+            Client.writeToVscoq2Channel("[GoalPanel] Created new goal panel");
             goalPanel._handleProofViewResponseOrNotification(pv);
         });
     }
     else {
+        Client.writeToVscoq2Channel("[GoalPanel] Rendered in current panel");
         GoalPanel.currentPanel._handleProofViewResponseOrNotification(pv);
     }
     

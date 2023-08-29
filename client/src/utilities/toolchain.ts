@@ -5,6 +5,7 @@ import * as path from 'path';
 import { isFileInFolder } from './fileHelper';
 import { ServerSessionOptions } from 'http2';
 import { ServerOptions } from 'vscode-languageclient/node';
+import Client from '../client';
 
 export enum ToolChainErrorCode {
     notFound = 1, 
@@ -17,8 +18,7 @@ export interface ToolchainError {
 }
 
 export default class VsCoqToolchainManager implements Disposable {
-    
-    private static _channel: any = window.createOutputChannel('vscoq-toolchain-manager');
+
     private _vscoqtopPath: string = ""; 
 
     public dispose(): void {
@@ -26,11 +26,11 @@ export default class VsCoqToolchainManager implements Disposable {
     }
 
     public intialize() : Promise<void> {
-        VsCoqToolchainManager._channel.appendLine("Searching for vscoqtop");
+        Client.writeToVscoq2Channel("[Toolchain] Searching for vscoqtop");
         return new Promise((resolve, reject: ((reason: ToolchainError) => void)) => {
             this.vscoqtopPath().then(vscoqtopPath => {
                 if(vscoqtopPath) {
-                    VsCoqToolchainManager._channel.appendLine("Found path: " + vscoqtopPath);
+                    Client.writeToVscoq2Channel("[Toolchain] Found path: " + vscoqtopPath);
                     this._vscoqtopPath = vscoqtopPath;
                     this.vscoqtopWhere().then(
                         () => {
@@ -42,7 +42,7 @@ export default class VsCoqToolchainManager implements Disposable {
                     );
 
                 } else {
-                    VsCoqToolchainManager._channel.appendLine("Did not find vscoqtop path");
+                    Client.writeToVscoq2Channel("[Toolchain] Did not find vscoqtop path");
                     reject({
                         status: ToolChainErrorCode.notFound, 
                         message: "VsCoq couldn't launch because no language server was found."
@@ -88,7 +88,7 @@ export default class VsCoqToolchainManager implements Disposable {
     private async searchForVscoqtopInPath () : Promise<string> {
         const pathVars = this.splitEnvPath(this.getEnvPath());
         for(let i in pathVars) {
-            VsCoqToolchainManager._channel.appendLine(pathVars[i]);
+            Client.writeToVscoq2Channel("[Toolchain] " + pathVars[i]);
             if(await isFileInFolder('vscoqtop', pathVars[i])) {
                 return pathVars[i] + '/vscoqtop';
             }

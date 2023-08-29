@@ -10,15 +10,15 @@ export const checkVersion = (client: Client, context: ExtensionContext) => {
         const serverInfo =client.initializeResult?.serverInfo;
         if(serverInfo !== undefined) {
             const {name, version} = serverInfo;
-            client.writeToVscoq2Channel("Intialized server " + name + " [" + version + "]");
+            Client.writeToVscoq2Channel("[Versioning] Intialized server " + name + " [" + version + "]");
             if(extensionVersion !== version) {
                 window.showErrorMessage('This version of VsCoq requires version ' + extensionVersion + ' of ' + name);
             }
         } else {
-            client.writeToVscoq2Channel("Could not run compatibility tests: failed to get serverInfo");
+            Client.writeToVscoq2Channel("Could not run compatibility tests: failed to get serverInfo");
         }  
     } else {
-        client.writeToVscoq2Channel("Could not run compatibility tests: failed to recieve initializeResult");
+        Client.writeToVscoq2Channel("Could not run compatibility tests: failed to recieve initializeResult");
     }
 
 };

@@ -30,7 +30,6 @@ interface Query {
 export default class SearchViewProvider implements vscode.WebviewViewProvider {
 
     public static readonly viewType = 'vscoq.search'; 
-    private static _channel: any = vscode.window.createOutputChannel('vscoq-query-panel');
 
     private _view?: vscode.WebviewView; 
     private _queries: Query[] = [];

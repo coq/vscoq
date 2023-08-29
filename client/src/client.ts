@@ -9,14 +9,9 @@ import {
 
 import {decorationsManual, decorationsContinuous} from './Decorations';
 
-import { FeedbackChannel } from './protocol/types';
-
 export default class Client extends LanguageClient {
 
-	private _channel: any = vscode.window.createOutputChannel('vscoq');
-    private _debug: any = vscode.window.createOutputChannel('Debug');
-    private _notice: any = vscode.window.createOutputChannel('Notice');
-    private _info: any = vscode.window.createOutputChannel('Info');
+	private static _channel: any = vscode.window.createOutputChannel('VsCoq');
     private _decorations: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
 
 	constructor(
@@ -29,31 +24,16 @@ export default class Client extends LanguageClient {
 		    serverOptions,
 		    clientOptions
         );
-		this._channel.appendLine("vscoq initialised");
+		Client._channel.appendLine("VsCoq initialised");
 	}
 
     dispose(): void {
-        this._channel.dispose();
-        this._debug.dispose();
-        this._info.dispose();
-        this._notice.dispose();
+        Client._channel.dispose();
     };
 
-    public writeToVscoq2Channel(message: string) {
-        this._channel.appendLine(message);
+    public static writeToVscoq2Channel(message: string) {
+        Client._channel.appendLine(message);
     }
-
-    public writeToFeedbackChannel(channel: integer, message: string) {
-        if(channel === FeedbackChannel.debug) {
-            this._debug.appendLine(message);
-        }
-        if(channel === FeedbackChannel.info) {
-            this._info.appendLine(message);
-        }
-        if(channel === FeedbackChannel.notice) {
-            this._notice.appendLine(message);
-        }
-    };
 
     public saveHighlights(uri: String, parsedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
         this._decorations.set(uri, processedRange);
