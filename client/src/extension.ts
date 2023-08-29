@@ -41,7 +41,7 @@ let client: Client;
 
 export function activate(context: ExtensionContext) {
     
-    const coqTM = new VsCoqToolchainManager(client);
+    const coqTM = new VsCoqToolchainManager();
     coqTM.intialize().then(
         () => {
             const serverOptions = coqTM.getServerConfiguration(); 
@@ -180,7 +180,7 @@ export function activate(context: ExtensionContext) {
 
             client.onNotification("vscoq/proofView", (proofView: ProofViewNotification) => {
                 const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
-                GoalPanel.proofViewNotification(context.extensionUri, editor, client, proofView);
+                GoalPanel.proofViewNotification(context.extensionUri, editor, proofView);
             });
 
             let goalsHook = window.onDidChangeTextEditorSelection(

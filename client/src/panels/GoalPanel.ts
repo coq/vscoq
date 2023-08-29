@@ -31,7 +31,7 @@ export default class GoalPanel {
    * @param panel A reference to the webview panel
    * @param extensionUri The URI of the directory containing the extension
    */
-  private constructor(panel: WebviewPanel, extensionUri: Uri, private _client: Client) {
+  private constructor(panel: WebviewPanel, extensionUri: Uri) {
     this._panel = panel;
 
     // Set an event listener to listen for when the panel is disposed (i.e. when the user closes
@@ -54,7 +54,7 @@ export default class GoalPanel {
    *
    * @param extensionUri The URI of the directory containing the extension.
    */
-  public static render(client: Client, editor: TextEditor, extensionUri: Uri, callback?: (panel: GoalPanel) => any) {
+  public static render(editor: TextEditor, extensionUri: Uri, callback?: (panel: GoalPanel) => any) {
 
     //Get the correct view column
     let column = editor && editor.viewColumn ? editor.viewColumn + 1 : ViewColumn.Two;
@@ -85,7 +85,7 @@ export default class GoalPanel {
         }
       );
 
-      GoalPanel.currentPanel = new GoalPanel(panel, extensionUri, client);
+      GoalPanel.currentPanel = new GoalPanel(panel, extensionUri);
       if(callback) {
         callback(GoalPanel.currentPanel);
       }
@@ -115,18 +115,18 @@ export default class GoalPanel {
   // Create the goal panel if it doesn't exit and then 
   // handle a proofview notification
   // /////////////////////////////////////////////////////////////////////////////
-  public static proofViewNotification(extensionUri: Uri, editor: TextEditor, client: Client, pv: ProofViewNotification) {
+  public static proofViewNotification(extensionUri: Uri, editor: TextEditor, pv: ProofViewNotification) {
     
-    client.writeToVscoq2Channel("[GoalPanel] Recieved proofview notification");
+    Client.writeToVscoq2Channel("[GoalPanel] Recieved proofview notification");
 
     if(!GoalPanel.currentPanel) {
-        GoalPanel.render(client, editor, extensionUri, (goalPanel) => {
-            goalPanel._client.writeToVscoq2Channel("[GoalPanel] Created new goal panel");
+        GoalPanel.render(editor, extensionUri, (goalPanel) => {
+            Client.writeToVscoq2Channel("[GoalPanel] Created new goal panel");
             goalPanel._handleProofViewResponseOrNotification(pv);
         });
     }
     else {
-        GoalPanel.currentPanel._client.writeToVscoq2Channel("[GoalPanel] Rendered in current panel");
+        Client.writeToVscoq2Channel("[GoalPanel] Rendered in current panel");
         GoalPanel.currentPanel._handleProofViewResponseOrNotification(pv);
     }
     

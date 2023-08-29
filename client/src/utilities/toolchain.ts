@@ -21,20 +21,16 @@ export default class VsCoqToolchainManager implements Disposable {
 
     private _vscoqtopPath: string = ""; 
 
-    constructor(
-        private _client: Client
-    ) {};
-
     public dispose(): void {
         
     }
 
     public intialize() : Promise<void> {
-        this._client.writeToVscoq2Channel("[Toolchain] Searching for vscoqtop");
+        Client.writeToVscoq2Channel("[Toolchain] Searching for vscoqtop");
         return new Promise((resolve, reject: ((reason: ToolchainError) => void)) => {
             this.vscoqtopPath().then(vscoqtopPath => {
                 if(vscoqtopPath) {
-                    this._client.writeToVscoq2Channel("[Toolchain] Found path: " + vscoqtopPath);
+                    Client.writeToVscoq2Channel("[Toolchain] Found path: " + vscoqtopPath);
                     this._vscoqtopPath = vscoqtopPath;
                     this.vscoqtopWhere().then(
                         () => {
@@ -46,7 +42,7 @@ export default class VsCoqToolchainManager implements Disposable {
                     );
 
                 } else {
-                    this._client.writeToVscoq2Channel("[Toolchain] Did not find vscoqtop path");
+                    Client.writeToVscoq2Channel("[Toolchain] Did not find vscoqtop path");
                     reject({
                         status: ToolChainErrorCode.notFound, 
                         message: "VsCoq couldn't launch because no language server was found."
@@ -92,7 +88,7 @@ export default class VsCoqToolchainManager implements Disposable {
     private async searchForVscoqtopInPath () : Promise<string> {
         const pathVars = this.splitEnvPath(this.getEnvPath());
         for(let i in pathVars) {
-            this._client.writeToVscoq2Channel("[Toolchain] " + pathVars[i]);
+            Client.writeToVscoq2Channel("[Toolchain] " + pathVars[i]);
             if(await isFileInFolder('vscoqtop', pathVars[i])) {
                 return pathVars[i] + '/vscoqtop';
             }

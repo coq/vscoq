@@ -11,7 +11,7 @@ import {decorationsManual, decorationsContinuous} from './Decorations';
 
 export default class Client extends LanguageClient {
 
-	private _channel: any = vscode.window.createOutputChannel('VsCoq');
+	private static _channel: any = vscode.window.createOutputChannel('VsCoq');
     private _decorations: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
 
 	constructor(
@@ -24,15 +24,15 @@ export default class Client extends LanguageClient {
 		    serverOptions,
 		    clientOptions
         );
-		this._channel.appendLine("VsCoq initialised");
+		Client._channel.appendLine("VsCoq initialised");
 	}
 
     dispose(): void {
-        this._channel.dispose();
+        Client._channel.dispose();
     };
 
-    public writeToVscoq2Channel(message: string) {
-        this._channel.appendLine(message);
+    public static writeToVscoq2Channel(message: string) {
+        Client._channel.appendLine(message);
     }
 
     public saveHighlights(uri: String, parsedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
