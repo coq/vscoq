@@ -1,8 +1,8 @@
 import { Disposable, Webview, WebviewPanel, window, workspace, Uri, ViewColumn, TextEditor, Position } from "vscode";
 import { ProofViewNotification } from '../protocol/types';
-import { LanguageClient } from "vscode-languageclient/node";
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
+import Client from "../client";
 
 // /////////////////////////////////////////////////////////////////////////////
 // GOAL VIEW PANEL CODE
@@ -23,7 +23,6 @@ export default class GoalPanel {
   public static currentPanel: GoalPanel | undefined;
   private readonly _panel: WebviewPanel;
   private _disposables: Disposable[] = [];
-  private static _channel: any = window.createOutputChannel('vscoq-goal-panel');
 
 
   /**
@@ -32,7 +31,7 @@ export default class GoalPanel {
    * @param panel A reference to the webview panel
    * @param extensionUri The URI of the directory containing the extension
    */
-  private constructor(panel: WebviewPanel, extensionUri: Uri) {
+  private constructor(panel: WebviewPanel, extensionUri: Uri, private _client: Client) {
     this._panel = panel;
 
     // Set an event listener to listen for when the panel is disposed (i.e. when the user closes
@@ -55,7 +54,7 @@ export default class GoalPanel {
    *
    * @param extensionUri The URI of the directory containing the extension.
    */
-  public static render(editor: TextEditor, extensionUri: Uri, callback?: (panel: GoalPanel) => any) {
+  public static render(client: Client, editor: TextEditor, extensionUri: Uri, callback?: (panel: GoalPanel) => any) {
 
     //Get the correct view column
     let column = editor && editor.viewColumn ? editor.viewColumn + 1 : ViewColumn.Two;
@@ -86,7 +85,7 @@ export default class GoalPanel {
         }
       );
 
-      GoalPanel.currentPanel = new GoalPanel(panel, extensionUri);
+      GoalPanel.currentPanel = new GoalPanel(panel, extensionUri, client);
       if(callback) {
         callback(GoalPanel.currentPanel);
       }
@@ -116,15 +115,18 @@ export default class GoalPanel {
   // Create the goal panel if it doesn't exit and then 
   // handle a proofview notification
   // /////////////////////////////////////////////////////////////////////////////
-  public static proofViewNotification(extensionUri: Uri, editor: TextEditor, client: LanguageClient, pv: ProofViewNotification) {
-     
-    this._channel.appendLine("Recieved proofview notification");
+  public static proofViewNotification(extensionUri: Uri, editor: TextEditor, client: Client, pv: ProofViewNotification) {
+    
+    client.writeToVscoq2Channel("[GoalPanel] Recieved proofview notification");
+
     if(!GoalPanel.currentPanel) {
-        GoalPanel.render(editor, extensionUri, (goalPanel) => {
+        GoalPanel.render(client, editor, extensionUri, (goalPanel) => {
+            goalPanel._client.writeToVscoq2Channel("[GoalPanel] Created new goal panel");
             goalPanel._handleProofViewResponseOrNotification(pv);
         });
     }
     else {
+        GoalPanel.currentPanel._client.writeToVscoq2Channel("[GoalPanel] Rendered in current panel");
         GoalPanel.currentPanel._handleProofViewResponseOrNotification(pv);
     }
     

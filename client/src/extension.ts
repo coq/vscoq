@@ -4,14 +4,13 @@ import {workspace, window, commands, ExtensionContext,
   TextEditor,
   ViewColumn,
   TextEditorRevealType,
-  Selection, 
-  languages, 
+  Selection,
   Uri
 } from 'vscode';
 
 import {
   LanguageClientOptions,
-  ServerOptions, VersionedTextDocumentIdentifier
+  ServerOptions,
 } from 'vscode-languageclient/node';
 
 import Client from './client';
@@ -42,7 +41,7 @@ let client: Client;
 
 export function activate(context: ExtensionContext) {
     
-    const coqTM = new VsCoqToolchainManager();
+    const coqTM = new VsCoqToolchainManager(client);
     coqTM.intialize().then(
         () => {
             const serverOptions = coqTM.getServerConfiguration(); 
