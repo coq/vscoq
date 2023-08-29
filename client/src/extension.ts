@@ -20,9 +20,7 @@ import { checkVersion } from './utilities/versioning';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
-import { 
-    CoqFeedback, 
-    CoqFeedbackNotification, 
+import {
     MoveCursorNotification, 
     ProofViewNotification, 
     SearchCoqResult
@@ -184,12 +182,6 @@ export function activate(context: ExtensionContext) {
             client.onNotification("vscoq/proofView", (proofView: ProofViewNotification) => {
                 const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
                 GoalPanel.proofViewNotification(context.extensionUri, editor, client, proofView);
-            });
-
-            client.onNotification("vscoq/coqFeedback", (notification: CoqFeedbackNotification) => {
-                notification.feedback.map((f: CoqFeedback) => {
-                    client.writeToFeedbackChannel(f.channel, f.message);
-                });
             });
 
             let goalsHook = window.onDidChangeTextEditorSelection(

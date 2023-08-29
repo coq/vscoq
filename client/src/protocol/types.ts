@@ -3,13 +3,6 @@ import { Position, Range, Uri } from "vscode";
 
 type Nullable<T> = T | null;
 
-export enum FeedbackChannel {
-    debug, 
-    info, 
-    notice, 
-    ignore
-}
-
 export type PpTag = string;
 
 export type BlockType =
@@ -27,17 +20,6 @@ export type PpString =
   | ["Ppcmd_print_break", integer, integer]
   | ["Ppcmd_force_newline"]
   | ["Ppcmd_comment", string[]];
-
-export interface CoqFeedback {
-    range: Range;
-    message: string;
-    channel: FeedbackChannel;
-}
-
-export interface CoqFeedbackNotification {
-    uri: Uri; 
-    feedback: CoqFeedback[]
-}
 
 interface Error {
     code: integer; 
