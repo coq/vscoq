@@ -206,6 +206,17 @@ let update_view uri st =
     publish_diagnostics uri st;
   )
 
+let run_documents () =
+  let interpret_doc_in_bg path st events =
+    let (st, events') = Dm.DocumentManager.interpret_in_background st in
+    let uri = DocumentUri.of_path path in
+    Hashtbl.replace states path st;
+    update_view uri st;
+    let events' = inject_dm_events (uri, events') in
+    events@events'
+  in
+  Hashtbl.fold interpret_doc_in_bg states []
+
 let textDocumentDidOpen params =
   let Lsp.Types.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
   let vst, opts = get_init_state () in
@@ -392,7 +403,10 @@ let workspaceDidChangeConfiguration params =
   let Lsp.Types.DidChangeConfigurationParams.{ settings } = params in
   let settings = Settings.t_of_yojson settings in
   do_configuration settings;
-  []
+  if !check_mode = Settings.Mode.Continuous then
+    run_documents ()
+  else
+    []
 
 let dispatch_std_request : type a. Jsonrpc.Id.t -> a Lsp.Client_request.t -> (a,string) result * events =
   fun id req ->

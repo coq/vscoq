@@ -146,7 +146,13 @@ export function activate(context: ExtensionContext) {
             initializeDecorations(context);
             
             // I think vscode should handle this automatically, TODO: try again after implemeting client capabilities
-            context.subscriptions.push(workspace.onDidChangeConfiguration(event => updateServerOnConfigurationChange(event, context, client)));
+            context.subscriptions.push(workspace.onDidChangeConfiguration(event => {
+                updateServerOnConfigurationChange(event, context, client);
+                if(event.affectsConfiguration('vscoq.proof.mode')) {
+                    client.resetHighlights();
+                    client.updateHightlights();
+                }
+            }));
             
             client.onNotification("vscoq/updateHighlights", (notification) => {
             

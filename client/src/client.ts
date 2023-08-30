@@ -45,9 +45,23 @@ export default class Client extends LanguageClient {
         }
     };
 
+    public resetHighlights() {
+        for(let entry of this._decorations.entries()) {
+            this.resetDocumentEditors(entry[0]);
+        }
+    }
+
     private getDocumentEditors(uri: String) {
         return vscode.window.visibleTextEditors.filter(editor => {
             return editor.document.uri.toString() === uri;
+        });
+    }
+
+    private resetDocumentEditors(uri: String) {
+        const editors = this.getDocumentEditors(uri);
+        editors.map(editor => {
+            editor.setDecorations(decorationsManual.processed, []);
+            editor.setDecorations(decorationsContinuous.processed, []);
         });
     }
 
