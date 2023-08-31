@@ -9,6 +9,8 @@ We implement a few custom verbs that we detail here.
 We handle the `workspace/configuration` and `workspace/didChangeConfiguration` notifications. 
 The settings that get sent to the server are as follows: 
 
+### Settings for checking proofs
+
 ```typescript
 
 enum DelegationMode {
@@ -17,11 +19,80 @@ enum DelegationMode {
     delegate: "Delegate"
 }
 
-interface Configuration {
+enum Mode {
+    Manual: 0, 
+    Continuous
+}
+
+interface Proof {
     //Delegation mode 
     delegate: DelegationMode
     //Number of workers if relevant
     workers: int
+    //Proof checking mode 
+    mode: Mode
+}
+```
+
+### Settings for the goal view
+
+```typescript
+// Should we send errors and diagnostics to the message 
+// panel of the goal view ?
+interface Messages {
+    full: bool;
+}
+
+//diff mode
+enum DiffMode {
+    On: "on", 
+    Off: "off",
+    Removed: "removed" 
+}
+
+interface Diff {
+    mode: DiffMode
+}
+
+//Config settings pertaining to the goal view
+interface Goals {
+    diff: Diff
+    messages: Messages
+}
+```
+
+### Settings for completion (experimental)
+```typescript
+enum RankingAlgorithm {
+    SplitTypeIntersection = 0, 
+    StructuredSplitUnification
+}
+
+interface Completion {
+    enable: bool
+    algorithm: RankingAlgorithm
+    unificationLimit: float
+    sizeFactor: float
+}
+```
+
+### Settings for diagnostics 
+
+```typescript
+interface Diagnostics {
+    enable: bool
+    full: bool
+}
+```
+
+### Configuration message
+
+```typescript
+interface Configuration {
+    proof: Proof
+    goals: Goals
+    completion: Completion
+    diagnostics: Diagnostics
 }
 ```
 
@@ -49,33 +120,64 @@ By default, we display the processed lines in the VSCode gutter.
 
 For the goal view we provide a request verb `vscoq/updateProofView` and its corresponding response. 
 
-```typescript 
+We now make use of PpStrings to display the goals with syntaxic coloration.
 
-//The hypothesis type from coq
-interface Hypothesis {
-    identifiers: string[];
-    type: string;
-}
+We also have a move cursor notification to inform the client to move the cursor (used in manual mode).
+
+```typescript 
+type PpTag = string;
+
+type BlockType =
+  | ["Pp_hbox"]
+  | ["Pp_vbox", integer]
+  | ["Pp_hvbox", integer]
+  | ["Pp_hovbox", integer];
+
+type PpString =
+  | ["Ppcmd_empty"]
+  | ["Ppcmd_string", string]
+  | ["Ppcmd_glue", PpString[]]
+  | ["Ppcmd_box", BlockType, PpString]
+  | ["Ppcmd_tag", PpTag, PpString]
+  | ["Ppcmd_print_break", integer, integer]
+  | ["Ppcmd_force_newline"]
+  | ["Ppcmd_comment", string[]];
 
 //A coq goal and its corresponding hypotheses
 interface Goal {
     id: integer;
     goal: string;
-    hypotheses: Hypothesis[];
+    hypotheses: PpString[];
 }
 
-//The update proof view request requires a URI and a Position in the document
-interface UpdateProofViewRequest {
-    textDocument: VersionedTextDocumentIdentifier;
-    position: vscode.Position;
-}
-
-// the reponse to your request returns the goals, the shelvedGoals and the given up goals
-interface UpdateProofViewResponse {
+//We also display shelved and given up goals
+interface ProofViewGoals {
     goals: Goal[];
     shelvedGoals: Goal[];
     givenUpGoals: Goal[];
 }
+
+//We display messages in the goal panel
+enum MessageSeverity {
+    error = "Error",
+    warning = "Warning", 
+    info = "Information"
+}
+type CoqMessage = [MessageSeverity, PpString];
+
+
+// The proof view notification is sent from the server to the client
+interface ProofViewNotification {
+    proof: Nullable<ProofViewGoals>;
+    messages: CoqMessage[];
+}
+
+// Sent from the server to the client after a stepForward or stepBack
+interface MoveCursorNotification {
+    uri: Uri; 
+    range: Range; 
+}
+
 
 ```
 
@@ -110,36 +212,52 @@ interface SearchCoqResult {
     //The uuid of the search associated to this result
     id: string;
     // The name of the relevant search result (theorem or lemma or etc... in coq)
-    name: string; 
+    name: PpString; 
     // The statement of the relevant search result
-    statement: string;
+    statement: PpString;
 }
 ```
 
 By default the coq Search command as asynchronous. Therefore, the language server first sends a handshake either with an OK code, or with an error. It then sends each result one by one through the SearchCoqResult interface. The id corresponds to a uuid given to each search request. 
 
-We also provide the requests for the "check" and "about" queries, with plans to support more in the future. 
+We also provide the requests for the "check", "about", "locate" and "print" queries, with plans to support more in the future. 
 Note that the "check" and about "about" queries are synchronous and do not require a seperate verb for their responses. 
 Verbs: `vscoq/check`, `vscoq/about`.
 
 ```typescript
 
-export interface AboutCoqRequest {
+interface AboutCoqRequest {
     textDocument: VersionedTextDocumentIdentifier;
     pattern: string; 
     position: Position;
     goalIndex?: number;
 }
 
-export type AboutCoqResponse = string;
+type AboutCoqResponse = PpString;
 
-export interface CheckCoqRequest {
+interface CheckCoqRequest {
     textDocument: VersionedTextDocumentIdentifier;
     pattern: string; 
     position: Position;
     goalIndex?: number;
 };
 
-export type CheckCoqResponse = string; 
+type CheckCoqResponse = PpString; 
+
+interface LocateCoqRequest {
+    textDocument: VersionedTextDocumentIdentifier;
+    pattern: string; 
+    position: Position;
+};
+
+type LocateCoqResponse = PpString; 
+
+interface PrintCoqRequest {
+    textDocument: VersionedTextDocumentIdentifier;
+    pattern: string; 
+    position: Position;
+};
+
+type PrintCoqResponse = PpString; 
 ```
 
