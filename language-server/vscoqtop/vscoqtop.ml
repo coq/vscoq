@@ -75,5 +75,4 @@ let _ =
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
   Flags.quiet := true;
   Sys.(set_signal sigint Signal_ignore);
-  Exninfo.record_backtrace true;
   loop injections
