@@ -16,7 +16,7 @@ const error: FunctionComponent<ErrorProps> = (props) => {
     
     return (
         <div className={classes.Error}>
-            <span className={classes.ErrorHeader}> Error {error.code} </span>
+            <span className={classes.ErrorHeader}> Error </span>
             <span className={classNames.join(' ')}> {error.message} </span>
         </div>
     );
