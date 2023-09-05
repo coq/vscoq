@@ -142,8 +142,8 @@ let flatten_proof_block st =
 (* FIXME handle commands with side effects followed by `Abort` *)
 
 let find_proof_using (ast : Synterp.vernac_control_entry) =
-  match ast.CAst.v.expr with
-  | VernacSynPure(VernacProof(_,Some e)) -> Some e
+  match ast.CAst.v.eexpr with
+  | EVernacSynPure(VernacProof(_,Some e)) -> Some e
   | _ -> log "no ast for proof using, looking at a default";
          Proof_using.get_default_proof_using ()
 
@@ -221,12 +221,11 @@ let _string_of_state st =
 
 let schedule_sentence (id, (ast, classif, synterp_st)) st schedule =
   let base, st, task = 
-      let open Vernacexpr in
       let (base, st, task) = push_state id ast synterp_st classif st in
-      begin match ast.CAst.v.expr with
-      | VernacSynterp (EVernacBeginSection _) ->
+      begin match ast.CAst.v.eexpr with
+      | EVernacSynterp (EVernacBeginSection _) ->
         (base, { st with section_depth = st.section_depth + 1 }, task)
-      | VernacSynterp (EVernacEndSegment _) ->
+      | EVernacSynterp (EVernacEndSegment _) ->
         (base, { st with section_depth = max 0 (st.section_depth - 1) }, task)
       | _ -> (base, st, task)
       end
