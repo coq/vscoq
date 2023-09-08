@@ -418,10 +418,10 @@ let get_completion_items env proof lemmas options =
 let get_lemmas sigma env =
   let open CompletionItems in
   let results = ref [] in
-  let display ref _kind env c =
+  let display ref _kind env sigma c =
     results := mk_completion_item sigma ref env c :: results.contents;
   in
-  Search.generic_search env display;
+  Search.generic_search env sigma display;
   results.contents
 
 let get_completions options st =
