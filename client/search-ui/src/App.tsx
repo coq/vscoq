@@ -32,7 +32,8 @@ const defaultTab = {
         type: QueryType.search,
         data: []
     } as SearchResultType,
-    error: undefined
+    error: undefined,
+    expanded: true
 };
 
 const defaultQueryPanelState = {
@@ -119,6 +120,7 @@ const app = () => {
         if(tabs[currentTab].type === QueryType.search && 
             (tabs[currentTab].result as SearchResultType).data.length) {
             enableCollapseButton();
+            updateCollapseButton(tabs[currentTab].expanded!);
         } else {
             disableCollapseButton();
         }
@@ -390,7 +392,7 @@ const app = () => {
         setQueryPanelState(
             state => {
                 const result = {type: QueryType.search, data: []} as SearchResultType; 
-                const newTab : QueryTab[] = [{id: uuid(), title: "New Tab", pattern: "", result: result, type: QueryType.search}];
+                const newTab : QueryTab[] = [{id: uuid(), title: "New Tab", pattern: "", result: result, type: QueryType.search, expanded: true}];
                 return {currentTab: state.tabs.length, tabs: state.tabs.concat(newTab)};
             }, 
             (state) => saveState({state, history, historyIndex})
@@ -436,7 +438,7 @@ const app = () => {
                         type: QueryType.search, 
                         data: data
                     } as SearchResultType;
-                    return {...tab, result: result};
+                    return {...tab, result: result, expanded: false};
                 }
                 return tab;
             });
@@ -455,7 +457,7 @@ const app = () => {
                         type: "search", 
                         data: data
                     } as SearchResultType;
-                    return {...tab, result: result};
+                    return {...tab, result: result, expanded: true};
                 }
                 return tab;
             });

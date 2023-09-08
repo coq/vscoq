@@ -78,7 +78,8 @@ export interface QueryTab {
     pattern: string, 
     type: QueryType, 
     result: QueryResultType,
-    error?: QueryError
+    error?: QueryError,
+    expanded?: boolean
 };
 export type QueryPanelState = {
     currentTab: number;

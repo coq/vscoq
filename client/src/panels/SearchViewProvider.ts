@@ -250,9 +250,8 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                 vscode.window.showInformationMessage('Successfuly copied command ' + message.text + ' to clipboard.');
                 return;
 
-            case "toggleExpandButton": 
-                const flag = (message.text === 'true');
-                vscode.commands.executeCommand('setContext', 'vscoq.expandedQueries', flag);
+            case "toggleExpandButton":
+                vscode.commands.executeCommand('setContext', 'vscoq.expandedQueries', message.value);
                 return;
 
             case "enableCollapseButton":
@@ -261,6 +260,7 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
 
             case "disableCollapseButton":
                 vscode.commands.executeCommand('setContext', 'vscoq.hasSearchResults', false);
+                return;
         }
       }
     );
