@@ -304,13 +304,15 @@
         "command": "extension.coq.collapseAllQueries",
         "title": "Collapse All",
         "category": "Coq",
-        "icon": "$(collapse-all)"
+        "icon": "$(collapse-all)",
+        "enablement": "vscoq.hasSearchResults"
       },
       {
         "command": "extension.coq.expandAllQueries",
         "title": "Expand All",
         "category": "Coq",
-        "icon": "$(expand-all)"
+        "icon": "$(expand-all)",
+        "enablement": "vscoq.hasSearchResults"
       }
     ],
     "menus": {
@@ -355,6 +357,7 @@
         {
           "command": "extension.coq.expandAllQueries",
           "group": "navigation",
+          "enablement": "editorHasSelection",
           "when": "view == vscoq.search && !vscoq.expandedQueries"
         }
       ]

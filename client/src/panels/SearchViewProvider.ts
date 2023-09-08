@@ -254,6 +254,13 @@ export default class SearchViewProvider implements vscode.WebviewViewProvider {
                 const flag = (message.text === 'true');
                 vscode.commands.executeCommand('setContext', 'vscoq.expandedQueries', flag);
                 return;
+
+            case "enableCollapseButton":
+                vscode.commands.executeCommand('setContext', 'vscoq.hasSearchResults', true);
+                return;
+
+            case "disableCollapseButton":
+                vscode.commands.executeCommand('setContext', 'vscoq.hasSearchResults', false);
         }
       }
     );

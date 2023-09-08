@@ -114,6 +114,17 @@ const app = () => {
         ready();
     }, []);
 
+    useEffect(() => {
+        const {tabs, currentTab} = queryPanelState;
+        if(tabs[currentTab].type === QueryType.search && 
+            (tabs[currentTab].result as SearchResultType).data.length) {
+            enableCollapseButton();
+        } else {
+            disableCollapseButton();
+        }
+
+    }, [queryPanelState]);
+
     const ready = () => {
         vscode.postMessage({
             command: "ready",
@@ -140,8 +151,8 @@ const app = () => {
             const newTabs = state.tabs.map(tab => {
                 if(tab.id === notification.id) {
                     //This is only for typescript, but should always be the case
-                    if(tab.result.type === QueryType.search) {
-                        const data = tab.result.data.concat([{name: notification.name, statement: notification.statement, collapsed: true}]);
+                    if(tab.result.type === QueryType.search) { 
+                        const data = tab.result.data.concat([{name: notification.name, statement: notification.statement, collapsed: false}]);
                         return {...tab, result: {...tab.result, data: data}};
                     }
                 }
@@ -346,6 +357,25 @@ const app = () => {
                 return tab;
             });
             return {...state, tabs: newTabs};
+        });
+    };
+
+    const updateCollapseButton = (buttonStatus: boolean) => {
+        vscode.postMessage({
+            command: "toggleExpandButton", 
+            value: buttonStatus
+        });
+    };
+
+    const enableCollapseButton = () => {
+        vscode.postMessage({
+            command: "enableCollapseButton"
+        });
+    };
+
+    const disableCollapseButton = () => {
+        vscode.postMessage({
+            command: "disableCollapseButton"
         });
     };
 
