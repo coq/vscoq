@@ -13,12 +13,17 @@ import * as coqproto from './protocol';
 import {Settings} from './protocol';
 import {CoqProject} from './CoqProject';
 import { RouteId } from './coqtop/coq-proto';
+import { setDefaultResultOrder } from 'dns';
 
 // Create a connection for the server. The connection uses 
 // stdin / stdout for message passing
 export let connection: IConnection = createConnection();
 
 export let project : CoqProject = null;
+
+// Tell node to prefer ipv4, this is necessary due to changes in node 18.x
+// since coqidetop and coqtop does not support ipv6
+setDefaultResultOrder('ipv4first');
 
 // // Create a simple text document manager. The text document manager
 // // supports full document sync only
