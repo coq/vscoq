@@ -32,7 +32,8 @@ const defaultTab = {
         type: QueryType.search,
         data: []
     } as SearchResultType,
-    error: undefined
+    error: undefined,
+    expanded: true
 };
 
 const defaultQueryPanelState = {
@@ -114,6 +115,18 @@ const app = () => {
         ready();
     }, []);
 
+    useEffect(() => {
+        const {tabs, currentTab} = queryPanelState;
+        if(tabs[currentTab].type === QueryType.search && 
+            (tabs[currentTab].result as SearchResultType).data.length) {
+            enableCollapseButton();
+            updateCollapseButton(tabs[currentTab].expanded!);
+        } else {
+            disableCollapseButton();
+        }
+
+    }, [queryPanelState]);
+
     const ready = () => {
         vscode.postMessage({
             command: "ready",
@@ -140,8 +153,8 @@ const app = () => {
             const newTabs = state.tabs.map(tab => {
                 if(tab.id === notification.id) {
                     //This is only for typescript, but should always be the case
-                    if(tab.result.type === QueryType.search) {
-                        const data = tab.result.data.concat([{name: notification.name, statement: notification.statement, collapsed: true}]);
+                    if(tab.result.type === QueryType.search) { 
+                        const data = tab.result.data.concat([{name: notification.name, statement: notification.statement, collapsed: false}]);
                         return {...tab, result: {...tab.result, data: data}};
                     }
                 }
@@ -349,6 +362,25 @@ const app = () => {
         });
     };
 
+    const updateCollapseButton = (buttonStatus: boolean) => {
+        vscode.postMessage({
+            command: "toggleExpandButton", 
+            value: buttonStatus
+        });
+    };
+
+    const enableCollapseButton = () => {
+        vscode.postMessage({
+            command: "enableCollapseButton"
+        });
+    };
+
+    const disableCollapseButton = () => {
+        vscode.postMessage({
+            command: "disableCollapseButton"
+        });
+    };
+
     const copyNameToClipboard = (name: string) => {
         vscode.postMessage({
             command: "copySearchResult",
@@ -360,7 +392,7 @@ const app = () => {
         setQueryPanelState(
             state => {
                 const result = {type: QueryType.search, data: []} as SearchResultType; 
-                const newTab : QueryTab[] = [{id: uuid(), title: "New Tab", pattern: "", result: result, type: QueryType.search}];
+                const newTab : QueryTab[] = [{id: uuid(), title: "New Tab", pattern: "", result: result, type: QueryType.search, expanded: true}];
                 return {currentTab: state.tabs.length, tabs: state.tabs.concat(newTab)};
             }, 
             (state) => saveState({state, history, historyIndex})
@@ -406,7 +438,7 @@ const app = () => {
                         type: QueryType.search, 
                         data: data
                     } as SearchResultType;
-                    return {...tab, result: result};
+                    return {...tab, result: result, expanded: false};
                 }
                 return tab;
             });
@@ -425,7 +457,7 @@ const app = () => {
                         type: "search", 
                         data: data
                     } as SearchResultType;
-                    return {...tab, result: result};
+                    return {...tab, result: result, expanded: true};
                 }
                 return tab;
             });
