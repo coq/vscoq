@@ -87,7 +87,7 @@ The new version of vscoq allows for continuous checking, see the goal panel upda
 ![](gif/continuous-mode.gif)
 
 Note that users can opt out and choose to use the classic step by step checking mode. 
-![](gif/manual-mode.gif)
+![](gif/manual_checking.gif)
 
 * Customisable goal panel 
   
