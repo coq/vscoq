@@ -84,7 +84,7 @@ the "Proof: Mode" and select "Manual". Otherwise, processing will asynchronous.
 * Continuous and incremental checking of Coq documents
 
 The new version of vscoq allows for continuous checking, see the goal panel update as you scroll or edit your document.
-![](gif/continuous-mode.gif)
+![](gif/continuous_checking.gif)
 
 Note that users can opt out and choose to use the classic step by step checking mode. 
 ![](gif/manual_checking.gif)
@@ -92,16 +92,16 @@ Note that users can opt out and choose to use the classic step by step checking 
 * Customisable goal panel 
   
 Users can choose their preferred display mode, see goals in accordion lists...
-![](gif/goals-accordion.gif)
+![](gif/goals_collapsible.gif)
 
 ... Or organized in tabs. 
-![](gif/goals-tab.gif)
+![](gif/goals_tabs.gif)
 
 * Dedicated panel for queries and their history
 
 We now support a dedicated panel for queries. We currently support Search, Check, About, Locate and Print with plans 
 to add more in the future.
-![](gif/query-panel.gif)
+![](gif/query_panel.gif)
 
 * Supports \_CoqProject
 
