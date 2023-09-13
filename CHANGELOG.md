@@ -1,6 +1,10 @@
+## 0.3.9
+* pass correct `-topfile` argument(#617 by @Blaisorblade and @4ever2)
+* Enable search in proofview (#616 by @4ever2)
+* Fix ip issues with VS Code 1.82.0 (#614 by @4ever2)
 ## 0.3.8
 * client and server are webpacked (#411 by @4ever2 and @fakusb)
-* fix completion on last line (##409 by @4ever2)
+* fix completion on last line (#409 by @4ever2)
 * preserve printing width on undo (#405 by @4ever2)
 * fix error location for Windows (#363 by @4ever2 and @thery)
 * fix for snippet (#358  #338 by @4ever2)
