@@ -25,7 +25,7 @@ jobs:
         pat: ${{ secrets.OVSX_PAT }}
         packagePath: ./client/
         yarn: true
-        preRelease: true
+        preRelease: false
     - name: Publish to Visual Studio Marketplace
       uses: HaaLeo/publish-vscode-extension@v1
       with:
@@ -34,7 +34,7 @@ jobs:
         registryUrl: https://marketplace.visualstudio.com
         extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
         yarn: true
-        preRelease: true
+        preRelease: false
 
   publish-opam-package:
     strategy:
@@ -76,4 +76,4 @@ jobs:
         cd language-server
         git config --global user.name vscoqbot
         git config --global user.email vscoqbot@inria.fr
-        opam publish --no-browser --repo=coq/opam-coq-archive --packages-directory=extra-dev/packages -v $VERSION https://github.com/coq-community/vscoq/releases/download/$GITHUB_REF_NAME/vscoq-language-server-$VERSION_SLUG.tar.gz vscoq-language-server.opam
+        opam publish --no-browser -v $VERSION https://github.com/coq-community/vscoq/releases/download/$GITHUB_REF_NAME/vscoq-language-server-$VERSION_SLUG.tar.gz vscoq-language-server.opam
