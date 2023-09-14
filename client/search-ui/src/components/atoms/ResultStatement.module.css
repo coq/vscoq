@@ -1,6 +1,5 @@
 .ResultStatement {
     font-family: var(--vscode-editor-font-family);
-    font-style: italic;
     color: var(--vscode-coq-proofViewText);
     white-space: pre-wrap;
 }
@@ -12,7 +11,6 @@
   }
   .constr-evar {
     color: var(--vscode-coq-termEvar);
-    font-style: italic;
   }
   .constr-path {
     color: var(--vscode-coq-termPath);
