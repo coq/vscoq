@@ -181,5 +181,5 @@ jobs:
           files: vscoq-language-server-*.tar.gz
           fail_on_unmatched_files: true
           draft: true
-          prerelease: true
+          prerelease: false
           generate_release_notes: true
