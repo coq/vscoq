@@ -95,7 +95,7 @@ Users can choose their preferred display mode, see goals in accordion lists...
 ![](gif/goals-accordion.gif)
 
 ... Or organized in tabs. 
-![](gif/goals-tabs.gif)
+![](gif/goals-tab.gif)
 
 * Dedicated panel for queries and their history
 
