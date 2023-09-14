@@ -12,7 +12,7 @@ import {
     CheckCoqResponse,
     LocateCoqRequest,
     LocateCoqResponse,
-    PrintCoqRequest, 
+    PrintCoqRequest,
     PrintCoqResponse
 } from '../protocol/types';
 import {

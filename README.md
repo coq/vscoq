@@ -103,6 +103,11 @@ We now support a dedicated panel for queries. We currently support Search, Check
 to add more in the future.
 ![](gif/query-panel.gif)
 
+* Messages in the goal panel
+
+We also support inline queries which then trigger messages in the goal panel.
+![](gif/messages.gif)
+
 * Supports \_CoqProject
 
 ### Settings
