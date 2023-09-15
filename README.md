@@ -50,7 +50,6 @@ and (2) install and configure the VsCoq extension in either VS Code or VSCodium.
 After creating an opam switch, activate these repositories, pin Coq,
 and install the `vscoq-language-server` package:
 ```shell
-$ opam pin add coq 8.18
 $ opam install vscoq-language-server
 ```
 
