@@ -40,23 +40,17 @@ and contributors.
   compatible with Coq 8.18 or more recent, and supports manual or continuous mode
   checking.
 
-## Installing a VsCoq 2 beta release
+## Installing VsCoq 2
 
-To use a beta release of VsCoq 2, you need to (1) install the VsCoq 2 language server
+To use VsCoq 2, you need to (1) install the VsCoq 2 language server
 and (2) install and configure the VsCoq extension in either VS Code or VSCodium.
 
 ### Installing the language server
 
-The beta releases of the language server are available in the
-`extra-dev` [Coq opam repository](https://github.com/coq/opam#usage),
-and relies on Coq 8.18+rc1 from the `core-dev` Coq opam repository.
-
 After creating an opam switch, activate these repositories, pin Coq,
 and install the `vscoq-language-server` package:
 ```shell
-$ opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
-$ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
-$ opam pin add coq 8.18+rc1
+$ opam pin add coq 8.18
 $ opam install vscoq-language-server
 ```
 

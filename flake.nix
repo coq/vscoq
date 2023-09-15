@@ -9,7 +9,7 @@
       type = "github";
       owner = "coq";
       repo = "coq";
-      ref = "V8.18+rc1";
+      ref = "V8.18.0";
     };
 
     coq-8_18.inputs.nixpkgs.follows = "nixpkgs";
@@ -31,7 +31,7 @@
       ocamlPackages.buildDunePackage {
         duneVersion = "3";
         pname = "vscoq-language-server";
-        version = "1.9.3";
+        version = "2.0.0";
         src = ./language-server;
         buildInputs = [
           coq
