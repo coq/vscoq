@@ -96,19 +96,23 @@ the language-server folder nor in PATH), set `VSCOQPATH` to the binary you
 want to be run by the test.
 
 # Release process 
+
 To release a new version of VsCoq: 
-    1. First make sure to bump the version number in the three folowing files: 
-        - flake.nix
-        - client/package.json
-        - language-server/vscoqtop/lspManager.ml
-    2. Create a signed tag for the release with the new version number 
-        ```shell
-            git tag -s #VERSION_NUMBER
-        ```
-    3. Push
-        ```shell 
-            git push origin #VERSION_NUMBER
-        ```
+
+1. First make sure to bump the version number in the three folowing files: 
+    - flake.nix
+    - client/package.json
+    - language-server/vscoqtop/lspManager.ml
+  
+2. Create a signed tag for the release with the new version number 
+```shell
+    git tag -s #VERSION_NUMBER
+```
+3. Push
+```shell 
+    git push origin #VERSION_NUMBER
+```
+
 Version semantics are currently as follows: v#NUMBER+coq#COQ_VERSION (ex: v1.9.2+coq.8.18)
 
 Once the CI has run, a draft release will be automatically created. Open the draft release and edit the change log to your liking.
