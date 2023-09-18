@@ -25,6 +25,7 @@ depends: [
   "ppx_yojson_conv"
   "ppx_import"
   "lsp"
+  "jsonrpc" { >= "1.16.2"}
   "sel" {>= "0.4.0"}
 ]
 synopsis: "VSCoq language server"
