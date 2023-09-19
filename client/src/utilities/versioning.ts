@@ -11,8 +11,8 @@ export const checkVersion = (client: Client, context: ExtensionContext) => {
         if(serverInfo !== undefined) {
             const {name, version} = serverInfo;
             Client.writeToVscoq2Channel("[Versioning] Intialized server " + name + " [" + version + "]");
-            if(extensionVersion !== version) {
-                window.showErrorMessage('This version of VsCoq requires version ' + extensionVersion + ' of ' + name);
+            if(!checkCompat(extensionVersion, version)) {
+                window.showErrorMessage('This version of VsCoq requires version ' + versionRequirements[extensionVersion] + ' of ' + name + '. Found version: ' + version);
             }
         } else {
             Client.writeToVscoq2Channel("Could not run compatibility tests: failed to get serverInfo");
@@ -23,12 +23,19 @@ export const checkVersion = (client: Client, context: ExtensionContext) => {
 
 };
 
+type VersionReq = {
+    [index: string]: string
+};
+
+const versionRequirements : VersionReq = {
+    '2.0.0': '2.0.0', 
+    '2.0.1': '2.0.0'
+};
+
 //We will add version ranges as we start releasing
 const checkCompat = (clientVersion: string, serverVersion: string|undefined) => {
     if(serverVersion !== undefined) {
-        if(compareVersions(clientVersion, '1.0.0') >= 1) {
-            return compareVersions(serverVersion, '1.0.0') >= 1;
-        }
+        return compareVersions(serverVersion, versionRequirements[clientVersion]) >= 0;
     }
     return false;
 };
