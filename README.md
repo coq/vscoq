@@ -29,6 +29,20 @@ This extension is currently developed and maintained as part of
 [Laurent Théry](https://github.com/thery),
 and contributors.
 
+## Problems with VsCoq 2 
+
+The latest VsCoq 2 release has broken the extension for many users. We apologize for the inconvenience and are working through a solution to prevent this form happening in the future. 
+
+Currently, if you are using Coq 8.17 or lower you need to downgrade the current version of the extension: 
+- Go to the extensions panel 
+- Click on the cog 
+- Select `Install another version` 
+- When prompted choose version 0.3.9
+
+![](gif/downgrading-vscoq.gif)
+
+If you are using Coq 8.18, we are busy getting the language server package in opam ASAP. You can use vscoq 0.3.9 so long.
+
 ## Status
 
 - VsCoq 1 (versions 0.x.y) is based on the original VsCoq implementation by [C.J. Bell](https://github.com/siegebell)
