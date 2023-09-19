@@ -51,19 +51,25 @@ export function activate(context: ExtensionContext) {
             switch(err.status) {
 
                 case ToolChainErrorCode.notFound: 
-                    window.showErrorMessage(err.message, {title: "Install the VsCoq language server", id: 0})
+                    window.showErrorMessage(err.message, {title: "Install the VsCoq language server", id: 0}, {title: "Downgrade to VsCoq 0.3.9", id: 1})
                     .then(act => {
                         if(act?.id === 0) {
                             commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#installing-the-language-server'));
+                        }
+                        if(act?.id === 1) {
+                            commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#problems-with-vscoq-2'));
                         }
                     });
                     break;
 
                 case ToolChainErrorCode.launchError: 
-                    window.showErrorMessage(err.message, {title: "Get Coq", id: 0})
+                    window.showErrorMessage(err.message, {title: "Get Coq", id: 0}, {title: "Downgrade to VsCoq 0.3.9", id: 1})
                     .then(act => {
                         if(act?.id === 0) {
                             commands.executeCommand("vscode.open", Uri.parse('https://coq.inria.fr/download'));
+                        }
+                        if(act?.id === 1) {
+                            commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#problems-with-vscoq-2'));
                         }
                         
                     });

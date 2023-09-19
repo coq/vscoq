@@ -9,7 +9,8 @@ import Client from '../client';
 
 export enum ToolChainErrorCode {
     notFound = 1, 
-    launchError = 2
+    launchError = 2,
+    coqVersionMissmatch = 3
 }
 
 export interface ToolchainError {
@@ -45,7 +46,7 @@ export default class VsCoqToolchainManager implements Disposable {
                     Client.writeToVscoq2Channel("[Toolchain] Did not find vscoqtop path");
                     reject({
                         status: ToolChainErrorCode.notFound, 
-                        message: "VsCoq couldn't launch because no language server was found."
+                        message: "VsCoq couldn't launch because no language server was found.  If you have Coq 8.17 or lower please downgrade to VsCoq 0.3.9."
                     });
                 }
             });
@@ -109,8 +110,8 @@ export default class VsCoqToolchainManager implements Disposable {
                 if(error) {
                     reject({
                         status: ToolChainErrorCode.launchError, 
-                        message: `${this._vscoqtopPath} crashed with the following message: ${stderr}\n
-                        This could be due to a bad coq installation.`
+                        message: `${this._vscoqtopPath} crashed with the following message: ${stderr}
+                        This could be due to a bad coq installation. If you have Coq 8.17 or lower please downgrade to VsCoq 0.3.9`
                     });
                 } else {
                     resolve();
