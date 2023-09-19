@@ -40,7 +40,7 @@ let full_messages = ref false
 
 let Dm.Types.Log log = Dm.Log.mk_log "lspManager"
 
-let conf_request_id = Int32.to_int Int32.max_int - 1
+let conf_request_id = max_int
 
 let server_info = InitializeResult.create_serverInfo
   ~name:"vscoq-language-server"
