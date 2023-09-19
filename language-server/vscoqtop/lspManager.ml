@@ -40,11 +40,11 @@ let full_messages = ref false
 
 let Dm.Types.Log log = Dm.Log.mk_log "lspManager"
 
-let conf_request_id = 3456736879
+let conf_request_id = max_int
 
 let server_info = InitializeResult.create_serverInfo
   ~name:"vscoq-language-server"
-  ~version:"2.0.0"
+  ~version:"2.0.1"
   ()
 
 type lsp_event = 
