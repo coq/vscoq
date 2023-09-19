@@ -16,7 +16,7 @@ depends: [
   "coq-core" { >= "8.18" < "8.19" }
   "coq-stdlib" { >= "8.18" < "8.19" }
   "yojson"
-  "jsonrpc" { >= "1.16"}
+  "jsonrpc" { >= "1.15"}
   "ocamlfind"
   "ppx_inline_test"
   "ppx_assert"
@@ -26,7 +26,7 @@ depends: [
   "sexplib"
   "ppx_yojson_conv"
   "ppx_import"
-  "lsp" { >= "1.16"}
+  "lsp" { >= "1.15"}
   "sel" {>= "0.4.0"}
 ]
 synopsis: "VSCoq language server"
