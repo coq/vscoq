@@ -33,7 +33,15 @@ and contributors.
 
 The latest VsCoq 2 release has broken the extension for many users. We apologize for the inconvenience and are working through a solution to prevent this form happening in the future. 
 
-Currently, if you are using Coq 8.17 or lower you need to downgrade the current version of the extension: 
+Currently, if you are using Coq 8.17 or lower you need to downgrade the current version of the extension. 
+You can either do this using the commandline 
+```shell
+#installing vscoq 0.3.9 with codium 
+$ codium --install-extension maximedenes.vscoq@0.3.9
+#or with code
+$ code --install-extension maximedenes.vscoq@0.3.9
+``` 
+Or from the extensions panel in vscode: 
 - Go to the extensions panel 
 - Click on the cog 
 - Select `Install another version` 
@@ -61,9 +69,10 @@ and (2) install and configure the VsCoq extension in either VS Code or VSCodium.
 
 ### Installing the language server
 
-After creating an opam switch, activate these repositories, pin Coq,
+After creating an opam switch, pin Coq,
 and install the `vscoq-language-server` package:
 ```shell
+$ opam pin add coq 8.18.0
 $ opam install vscoq-language-server
 ```
 
