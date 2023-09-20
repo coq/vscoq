@@ -5,8 +5,8 @@
 [![Available on the Visual Studio marketplace][vs-marketplace-shield]][vs-marketplace-link]
 [![Available on the Open VSX marketplace][open-vsx-shield]][open-vsx-link]
 
-[travis-shield]: https://travis-ci.com/coq-community/vscoq.svg?branch=vscoq1
-[travis-link]: https://travis-ci.com/coq-community/vscoq/builds
+<!-- [travis-shield]: https://travis-ci.com/coq-community/vscoq.svg?branch=master
+[travis-link]: https://travis-ci.com/coq-community/vscoq/builds -->
 
 [contributing-shield]: https://img.shields.io/badge/contributions-welcome-%23f7931e.svg
 [contributing-link]: https://github.com/coq-community/manifesto/blob/master/CONTRIBUTING.md
@@ -17,11 +17,11 @@
 [zulip-shield]: https://img.shields.io/badge/chat-on%20zulip-%23c1272d.svg
 [zulip-link]: https://coq.zulipchat.com/#narrow/stream/237662-VsCoq-devs.20.26.20users
 
-[vs-marketplace-shield]: https://img.shields.io/visual-studio-marketplace/v/coq-community.vscoq1?label=Visual%20Studio%20Marketplace
+<!-- [vs-marketplace-shield]: https://img.shields.io/visual-studio-marketplace/v/coq-community.vscoq1?label=Visual%20Studio%20Marketplace
 [vs-marketplace-link]: https://marketplace.visualstudio.com/items?itemName=coq-community.vscoq1
 
 [open-vsx-shield]: https://img.shields.io/open-vsx/v/coq-community/vscoq1
-[open-vsx-link]: https://open-vsx.org/extension/coq-community/vscoq1
+[open-vsx-link]: https://open-vsx.org/extension/coq-community/vscoq1 -->
 
 VsCoq 1 is an extension for [Visual Studio Code](https://code.visualstudio.com/) (VS Code)
 and [VSCodium](https://vscodium.com/) with support for the [Coq Proof Assistant](https://coq.inria.fr/).
