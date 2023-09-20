@@ -1,9 +1,9 @@
-[![Travis][travis-shield]][travis-link]
+<!-- [![Travis][travis-shield]][travis-link] -->
 [![Contributing][contributing-shield]][contributing-link]
 [![Code of Conduct][conduct-shield]][conduct-link]
 [![Zulip][zulip-shield]][zulip-link]
-[![Available on the Visual Studio marketplace][vs-marketplace-shield]][vs-marketplace-link]
-[![Available on the Open VSX marketplace][open-vsx-shield]][open-vsx-link]
+<!-- [![Available on the Visual Studio marketplace][vs-marketplace-shield]][vs-marketplace-link]
+[![Available on the Open VSX marketplace][open-vsx-shield]][open-vsx-link] -->
 
 <!-- [travis-shield]: https://travis-ci.com/coq-community/vscoq.svg?branch=master
 [travis-link]: https://travis-ci.com/coq-community/vscoq/builds -->
