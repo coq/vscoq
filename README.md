@@ -25,7 +25,7 @@
 
 VsCoq 1 is an extension for [Visual Studio Code](https://code.visualstudio.com/) (VS Code)
 and [VSCodium](https://vscodium.com/) with support for the [Coq Proof Assistant](https://coq.inria.fr/).
-It is a legacy version compatible with Coq 8.17 or lower. If you are using Coq 8.18 or higher please use the VsCoq 2 extension. 
+It is a legacy version compatible with Coq 8.17 or lower. If you are using Coq 8.18 or higher please use the VsCoq extension. 
 
 This extension is currently developed by @maximedenes and contributors, as
 part of [Coq Community](https://github.com/coq-community/manifesto). The
@@ -78,4 +78,4 @@ The recommended way to install VsCoq is via the [Visual Studio Marketplace](http
 
 ## Install a local version
 
-Checkout the repo, run make, and install the produced .vsix file in the repository root by following https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix. So, either "Cmd-Shift-P" and "Extensions: Install from VSIX", or running code --install-extension vscoq1-0.3.2.vsix (or whatever version number) from the terminal.
+Checkout the repo, run make, and install the produced .vsix file in the repository root by following https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix. So, either "Cmd-Shift-P" and "Extensions: Install from VSIX", or running code --install-extension vscoq1-0.4.0.vsix (or whatever version number) from the terminal.

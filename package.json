@@ -1,6 +1,6 @@
 {
-  "name": "vscoq",
-  "displayName": "VSCoq",
+  "name": "vscoq1",
+  "displayName": "VsCoq Legacy",
   "description": "An IDE for the Coq Proof Assistant",
   "author": {
     "name": "Christian J. Bell",
