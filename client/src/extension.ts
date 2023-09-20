@@ -78,6 +78,26 @@ export function activate(context: ExtensionContext) {
             }
         }
     );
+    
+    // Detect if vscoq1 is installed and active
+    const vscoq1 = extensions.getExtension("coq-community.vscoq1");
+    if (vscoq1) {
+        if (vscoq1.isActive) {
+            const message = "VsCoq2 is incompatible with VsCoq1 it is recommended that you disable one of them.";
+            window.showErrorMessage(message, { title: "Disable VsCoq1", id: 0 }, { title: "Disable VsCoq2", id: 1 })
+                .then(act => {
+                    if (act?.id === 0) {
+                        commands.executeCommand("extension.open", "coq-community.vscoq1");
+                    }
+                    if (act?.id === 1) {
+                        commands.executeCommand("extension.open", "maximedenes.vscoq");
+                    }
+
+                });
+        }
+    }
+
+
 
     function registerVscoqTextCommand(command: string, callback: (textEditor: TextEditor, ...args: any[]) => void) {
         context.subscriptions.push(commands.registerTextEditorCommand('extension.coq.' + command, callback));
