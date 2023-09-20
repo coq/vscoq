@@ -31,10 +31,10 @@ and contributors.
 
 ## Problems with VsCoq 2 
 
-The latest VsCoq 2 release has broken the extension for many users. We apologize for the inconvenience and are working through a solution to prevent this form happening in the future. 
+The latest VsCoq 2 release has broken the extension for many users. We apologize for the inconvenience and are working through a solution to prevent this from happening in the future. 
 
 Currently, if you are using Coq 8.17 or lower you need to downgrade the current version of the extension. 
-You can either do this using the commandline 
+You can either do this using the command line:
 ```shell
 #installing vscoq 0.3.9 with codium 
 $ codium --install-extension maximedenes.vscoq@0.3.9
