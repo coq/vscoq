@@ -1,3 +1,5 @@
+## 0.4.0
+* release of a seperate vscoq1 extension
 ## 0.3.9
 * pass correct `-topfile` argument(#617 by @Blaisorblade and @4ever2)
 * Enable search in proofview (#616 by @4ever2)
