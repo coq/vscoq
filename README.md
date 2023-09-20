@@ -1,12 +1,12 @@
-[![Travis][travis-shield]][travis-link]
+<!-- [![Travis][travis-shield]][travis-link] -->
 [![Contributing][contributing-shield]][contributing-link]
 [![Code of Conduct][conduct-shield]][conduct-link]
 [![Zulip][zulip-shield]][zulip-link]
-[![Available on the Visual Studio marketplace][vs-marketplace-shield]][vs-marketplace-link]
-[![Available on the Open VSX marketplace][open-vsx-shield]][open-vsx-link]
+<!-- [![Available on the Visual Studio marketplace][vs-marketplace-shield]][vs-marketplace-link]
+[![Available on the Open VSX marketplace][open-vsx-shield]][open-vsx-link] -->
 
-[travis-shield]: https://travis-ci.com/coq-community/vscoq.svg?branch=master
-[travis-link]: https://travis-ci.com/coq-community/vscoq/builds
+<!-- [travis-shield]: https://travis-ci.com/coq-community/vscoq.svg?branch=master
+[travis-link]: https://travis-ci.com/coq-community/vscoq/builds -->
 
 [contributing-shield]: https://img.shields.io/badge/contributions-welcome-%23f7931e.svg
 [contributing-link]: https://github.com/coq-community/manifesto/blob/master/CONTRIBUTING.md
@@ -17,14 +17,15 @@
 [zulip-shield]: https://img.shields.io/badge/chat-on%20zulip-%23c1272d.svg
 [zulip-link]: https://coq.zulipchat.com/#narrow/stream/237662-VsCoq-devs.20.26.20users
 
-[vs-marketplace-shield]: https://img.shields.io/visual-studio-marketplace/v/maximedenes.vscoq?label=Visual%20Studio%20Marketplace
-[vs-marketplace-link]: https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq
+<!-- [vs-marketplace-shield]: https://img.shields.io/visual-studio-marketplace/v/coq-community.vscoq1?label=Visual%20Studio%20Marketplace
+[vs-marketplace-link]: https://marketplace.visualstudio.com/items?itemName=coq-community.vscoq1
 
-[open-vsx-shield]: https://img.shields.io/open-vsx/v/maximedenes/vscoq
-[open-vsx-link]: https://open-vsx.org/extension/maximedenes/vscoq
+[open-vsx-shield]: https://img.shields.io/open-vsx/v/coq-community/vscoq1
+[open-vsx-link]: https://open-vsx.org/extension/coq-community/vscoq1 -->
 
-VsCoq is an extension for [Visual Studio Code](https://code.visualstudio.com/) (VS Code)
+VsCoq 1 is an extension for [Visual Studio Code](https://code.visualstudio.com/) (VS Code)
 and [VSCodium](https://vscodium.com/) with support for the [Coq Proof Assistant](https://coq.inria.fr/).
+It is a legacy version compatible with Coq 8.17 or lower. If you are using Coq 8.18 or higher please use the VsCoq extension. 
 
 This extension is currently developed by @maximedenes and contributors, as
 part of [Coq Community](https://github.com/coq-community/manifesto). The
@@ -46,7 +47,7 @@ original author of this extension is @siegebell.
 * Coq 8.7.0, or more recent
 
 ## Installation
-The recommended way to install VsCoq is via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq) or [Open VSX](https://open-vsx.org/extension/maximedenes/vscoq).
+The recommended way to install VsCoq is via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=coq-community.vscoq1) or [Open VSX](https://open-vsx.org/extension/coq-community/vscoq1).
 
 ## Screenshots
 ![vscoq](https://user-images.githubusercontent.com/647105/64025392-dbf12100-cb3c-11e9-8e7f-5c63296500f9.png)
@@ -55,7 +56,7 @@ The recommended way to install VsCoq is via the [Visual Studio Marketplace](http
 1. install [Coq](https://coq.inria.fr/download)
 2. install [VS Code](https://code.visualstudio.com/) or [VSCodium](https://vscodium.com/)
 3. run `code` or `codium`
-4. install this extension: press `F1` to open the command palette, start typing "Extensions: Install Extension", press `enter`, and search for `vscoq`
+4. install this extension: press `F1` to open the command palette, start typing "Extensions: Install Extension", press `enter`, and search for `vscoq1`
 5. select "enable" on the extension
 
 ## Basic usage
@@ -77,4 +78,4 @@ The recommended way to install VsCoq is via the [Visual Studio Marketplace](http
 
 ## Install a local version
 
-Checkout the repo, run make, and install the produced .vsix file in the repository root by following https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix. So, either "Cmd-Shift-P" and "Extensions: Install from VSIX", or running code --install-extension vscoq-0.3.2.vsix (or whatever version number) from the terminal.
+Checkout the repo, run make, and install the produced .vsix file in the repository root by following https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix. So, either "Cmd-Shift-P" and "Extensions: Install from VSIX", or running code --install-extension vscoq1-0.4.0.vsix (or whatever version number) from the terminal.
