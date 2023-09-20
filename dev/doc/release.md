@@ -4,6 +4,6 @@
 2. Update the version number in package.json
 3. Publish using vsce:
    ```
-   vsce login maximedenes
+   vsce login coq-community
    vsce publish
    ```
