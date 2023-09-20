@@ -5,7 +5,8 @@ import {workspace, window, commands, ExtensionContext,
   ViewColumn,
   TextEditorRevealType,
   Selection,
-  Uri
+  Uri,
+  extensions
 } from 'vscode';
 
 import {
@@ -56,20 +57,20 @@ export function activate(context: ExtensionContext) {
                         if(act?.id === 0) {
                             commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#installing-the-language-server'));
                         }
-                        if(act?.id === 1) {
-                            commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#problems-with-vscoq-2'));
+                        if (act?.id === 1) {
+                            commands.executeCommand("extension.open", "coq-community.vscoq1");
                         }
                     });
                     break;
 
                 case ToolChainErrorCode.launchError: 
-                    window.showErrorMessage(err.message, {title: "Get Coq", id: 0}, {title: "Downgrade to VsCoq 0.3.9", id: 1})
+                    window.showErrorMessage(err.message, {title: "Get Coq", id: 0}, {title: "Downgrade to VsCoq 0.4.0", id: 1})
                     .then(act => {
                         if(act?.id === 0) {
                             commands.executeCommand("vscode.open", Uri.parse('https://coq.inria.fr/download'));
                         }
-                        if(act?.id === 1) {
-                            commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#problems-with-vscoq-2'));
+                        if (act?.id === 1) {
+                            commands.executeCommand("extension.open", "coq-community.vscoq1");
                         }
                         
                     });
