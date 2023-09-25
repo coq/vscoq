@@ -5,7 +5,8 @@ import {workspace, window, commands, ExtensionContext,
   ViewColumn,
   TextEditorRevealType,
   Selection,
-  Uri
+  Uri,
+  extensions
 } from 'vscode';
 
 import {
@@ -51,25 +52,25 @@ export function activate(context: ExtensionContext) {
             switch(err.status) {
 
                 case ToolChainErrorCode.notFound: 
-                    window.showErrorMessage(err.message, {title: "Install the VsCoq language server", id: 0}, {title: "Downgrade to VsCoq 0.3.9", id: 1})
+                    window.showErrorMessage("No language server found", {modal: true, detail: err.message}, {title: "Install the VsCoq language server (Recommended for Coq >= 8.18)", id: 0}, {title: "Install VsCoq Legacy (Required for Coq <= 8.17)", id: 1})
                     .then(act => {
                         if(act?.id === 0) {
                             commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#installing-the-language-server'));
                         }
-                        if(act?.id === 1) {
-                            commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#problems-with-vscoq-2'));
+                        if (act?.id === 1) {
+                            commands.executeCommand("extension.open", "coq-community.vscoq1");
                         }
                     });
                     break;
 
                 case ToolChainErrorCode.launchError: 
-                    window.showErrorMessage(err.message, {title: "Get Coq", id: 0}, {title: "Downgrade to VsCoq 0.3.9", id: 1})
+                    window.showErrorMessage("Could not launch language server", {modal: true, detail: err.message}, {title: "Get Coq", id: 0}, {title: "Install VsCoq Legacy (Required for Coq <= 8.17)", id: 1})
                     .then(act => {
                         if(act?.id === 0) {
                             commands.executeCommand("vscode.open", Uri.parse('https://coq.inria.fr/download'));
                         }
-                        if(act?.id === 1) {
-                            commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#problems-with-vscoq-2'));
+                        if (act?.id === 1) {
+                            commands.executeCommand("extension.open", "coq-community.vscoq1");
                         }
                         
                     });
@@ -77,6 +78,26 @@ export function activate(context: ExtensionContext) {
             }
         }
     );
+    
+    // Detect if vscoq1 is installed and active
+    const vscoq1 = extensions.getExtension("coq-community.vscoq1");
+    if (vscoq1) {
+        if (vscoq1.isActive) {
+            const message = "VsCoq2 is incompatible with VsCoq1 it is recommended that you disable one of them.";
+            window.showErrorMessage(message, { title: "Disable VsCoq1", id: 0 }, { title: "Disable VsCoq2", id: 1 })
+                .then(act => {
+                    if (act?.id === 0) {
+                        commands.executeCommand("extension.open", "coq-community.vscoq1");
+                    }
+                    if (act?.id === 1) {
+                        commands.executeCommand("extension.open", "maximedenes.vscoq");
+                    }
+
+                });
+        }
+    }
+
+
 
     function registerVscoqTextCommand(command: string, callback: (textEditor: TextEditor, ...args: any[]) => void) {
         context.subscriptions.push(commands.registerTextEditorCommand('extension.coq.' + command, callback));
