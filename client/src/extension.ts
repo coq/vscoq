@@ -52,7 +52,7 @@ export function activate(context: ExtensionContext) {
             switch(err.status) {
 
                 case ToolChainErrorCode.notFound: 
-                    window.showErrorMessage(err.message, {title: "Install the VsCoq language server", id: 0}, {title: "Downgrade to VsCoq 0.3.9", id: 1})
+                    window.showErrorMessage("No language server found", {modal: true, detail: err.message}, {title: "Install the VsCoq language server (Recommended for Coq >= 8.18)", id: 0}, {title: "Install VsCoq Legacy (Required for Coq <= 8.17)", id: 1})
                     .then(act => {
                         if(act?.id === 0) {
                             commands.executeCommand("vscode.open", Uri.parse('https://github.com/coq-community/vscoq#installing-the-language-server'));
@@ -64,7 +64,7 @@ export function activate(context: ExtensionContext) {
                     break;
 
                 case ToolChainErrorCode.launchError: 
-                    window.showErrorMessage(err.message, {title: "Get Coq", id: 0}, {title: "Downgrade to VsCoq 0.4.0", id: 1})
+                    window.showErrorMessage("Could not launch language server", {modal: true, detail: err.message}, {title: "Get Coq", id: 0}, {title: "Install VsCoq Legacy (Required for Coq <= 8.17)", id: 1})
                     .then(act => {
                         if(act?.id === 0) {
                             commands.executeCommand("vscode.open", Uri.parse('https://coq.inria.fr/download'));
