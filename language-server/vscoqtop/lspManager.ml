@@ -346,7 +346,7 @@ let textDocumentCompletion id params =
     Error(message), []
 
 let coqtopResetCoq id params =
-  let Request.Client.ResetParams.{ uri } = params in
+  let Request.Client.ResetParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let st, events = Dm.DocumentManager.reset st in
   Hashtbl.replace states (DocumentUri.to_path uri) st;

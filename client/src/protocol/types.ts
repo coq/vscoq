@@ -126,3 +126,9 @@ export interface DocumentStateRequest {
 export interface DocumentStateResponse {
     document: string;
 }
+
+export interface ResetCoqRequest {
+    textDocument: TextDocumentIdentifier;
+}
+
+export interface ResetCoqResponse {};

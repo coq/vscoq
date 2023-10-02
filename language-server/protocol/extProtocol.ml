@@ -153,7 +153,7 @@ module Request = struct
   module ResetParams = struct
 
     type t = {
-      uri : DocumentUri.t;
+      textDocument : TextDocumentIdentifier.t;
     } [@@deriving yojson]
 
   end

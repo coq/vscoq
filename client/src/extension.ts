@@ -10,7 +10,9 @@ import {workspace, window, commands, ExtensionContext,
 
 import {
   LanguageClientOptions,
+  RequestType,
   ServerOptions,
+  TextDocumentIdentifier,
 } from 'vscode-languageclient/node';
 
 import Client from './client';
@@ -22,6 +24,8 @@ import SearchViewProvider from './panels/SearchViewProvider';
 import {
     MoveCursorNotification, 
     ProofViewNotification, 
+    ResetCoqRequest, 
+    ResetCoqResponse, 
     SearchCoqResult
 } from './protocol/types';
 import { 
@@ -117,6 +121,21 @@ export function activate(context: ExtensionContext) {
             searchProvider.launchQuery(queryText, type);
         };
 
+        registerVscoqTextCommand('reset', (editor) => {
+            const uri = editor.document.uri;
+            const textDocument = TextDocumentIdentifier.create(uri.toString());
+            const params: ResetCoqRequest = {textDocument};
+            const req = new RequestType<ResetCoqRequest, ResetCoqResponse, void>("vscoq/resetCoq");
+            Client.writeToVscoq2Channel(uri.toString());
+            client.sendRequest(req, params).then(
+                (res) => {
+
+                }, 
+                (err) => {
+                    window.showErrorMessage(err);
+                }
+            );
+        });
         registerVscoqTextCommand('query.search', (editor) => launchQuery(editor, "search"));
         registerVscoqTextCommand('query.about', (editor) => launchQuery(editor, "about"));
         registerVscoqTextCommand('query.check', (editor) => launchQuery(editor, "check"));
