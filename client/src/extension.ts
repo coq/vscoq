@@ -194,9 +194,14 @@ export function activate(context: ExtensionContext) {
             // I think vscode should handle this automatically, TODO: try again after implemeting client capabilities
             context.subscriptions.push(workspace.onDidChangeConfiguration(event => {
                 updateServerOnConfigurationChange(event, context, client);
+
                 if(event.affectsConfiguration('vscoq.proof.mode')) {
                     client.resetHighlights();
                     client.updateHightlights();
+                }
+
+                if(event.affectsConfiguration('vscoq.goals.display')) {
+                    GoalPanel.toggleGoalDisplaySettings();
                 }
             }));
             

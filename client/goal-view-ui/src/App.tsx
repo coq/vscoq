@@ -12,7 +12,7 @@ const app = () => {
 
   const handleMessage = useCallback ((msg: any) => {
     switch (msg.data.command) {
-        case 'initAppSettings':
+        case 'updateDisplaySettings':
             setGoalDisplaySetting(msg.data.text);
             break;
         case 'renderProofView':
