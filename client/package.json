@@ -232,6 +232,11 @@
     ],
     "commands": [
       {
+        "command": "extension.coq.reset",
+        "category": "Coq",
+        "title": "Reset"
+      },
+      {
         "command": "extension.coq.displayGoals",
         "category": "Coq",
         "title": "Display Goals",

@@ -112,6 +112,19 @@ export default class GoalPanel {
   }
 
   // /////////////////////////////////////////////////////////////////////////////
+  // Change the display setting
+  //
+  // /////////////////////////////////////////////////////////////////////////////
+  public static resetGoalPanel() {
+
+    if(GoalPanel.currentPanel) {
+        Client.writeToVscoq2Channel("[GoalPanel] Resetting goal panel");
+        GoalPanel.currentPanel._reset();
+    }
+
+  }
+
+  // /////////////////////////////////////////////////////////////////////////////
   // Create the goal panel if it doesn't exit and then 
   // handle a proofview notification
   // /////////////////////////////////////////////////////////////////////////////
@@ -132,8 +145,12 @@ export default class GoalPanel {
     
   }
 
+  private _reset() {
+    this._panel.webview.postMessage({ "command": "reset"});
+  };
+
   private _handleProofViewResponseOrNotification(pv: ProofViewNotification) {
-    this._panel.webview.postMessage({ "command": "renderProofView", "proofView": pv });    
+    this._panel.webview.postMessage({ "command": "renderProofView", "proofView": pv });
   };
   
   /**

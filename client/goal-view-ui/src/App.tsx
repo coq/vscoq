@@ -34,6 +34,10 @@ const app = () => {
                 }
             );
             break;
+        case 'reset':
+            setMessages([]);
+            setGoals(null);
+            break;
     }
   }, []);
 
