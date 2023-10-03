@@ -15,7 +15,7 @@ The settings that get sent to the server are as follows:
 
 enum DelegationMode {
     none: "None", 
-    skip: "Skip, 
+    skip: "Skip",
     delegate: "Delegate"
 }
 
@@ -103,7 +103,7 @@ For providing highlights which reflect the current internal state of coq, we pro
 ``` typescript
 interface Highlights {
     //Document idefinfier
-    uri: VersionedTextDocumentIdentifier;
+    uri: TextDocumentIdentifier;
     // The ranges of lines of code that were parsed by the server
     parsedRange: vscode.Range[];
     // The ranges of lines of code currently being processed by the server
@@ -146,7 +146,7 @@ type PpString =
 //A coq goal and its corresponding hypotheses
 interface Goal {
     id: integer;
-    goal: string;
+    goal: PpString;
     hypotheses: PpString[];
 }
 
