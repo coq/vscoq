@@ -22,14 +22,14 @@ const app = () => {
             setGoals(allGoals === null
                 ? allGoals
                 : {
-                    main: allGoals.goals.map((goal: Goal, index: number) => {
-                        return {...goal, isOpen: index === 0};
+                    main: allGoals.goals.map((goal: Goal) => {
+                        return {...goal, isOpen: true};
                     }),
-                    shelved: allGoals.shelvedGoals.map((goal: Goal, index: number) => {
-                        return {...goal, isOpen: index === 0};
+                    shelved: allGoals.shelvedGoals.map((goal: Goal) => {
+                        return {...goal, isOpen: true};
                     }),
                     givenUp: allGoals.givenUpGoals.map((goal: Goal, index: number) => {
-                        return {...goal, isOpen: index === 0}; 
+                        return {...goal, isOpen: true}; 
                     })
                 }
             );
