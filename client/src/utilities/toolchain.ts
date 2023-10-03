@@ -11,8 +11,7 @@ import { match } from 'assert';
 
 export enum ToolChainErrorCode {
     notFound = 1, 
-    launchError = 2,
-    coqVersionMissmatch = 3
+    launchError = 2
 }
 
 export interface ToolchainError {
@@ -25,6 +24,7 @@ export default class VsCoqToolchainManager implements Disposable {
     private _vscoqtopPath: string = "";
     private _coqVersion: string = "";
     private _versionFullOutput: string = "";
+    private _coqPath: string = "";
 
     public dispose(): void {
         
@@ -67,6 +67,14 @@ export default class VsCoqToolchainManager implements Disposable {
         };
         return serverOptions;
     };
+
+    public getVsCoqTopPath() : string {
+        return this._vscoqtopPath;
+    }
+
+    public getCoqPath() : string {
+        return this._coqPath;
+    }
 
     public getCoqVersion() : string {
         return this._coqVersion;
@@ -123,12 +131,22 @@ export default class VsCoqToolchainManager implements Disposable {
                     reject({
                         status: ToolChainErrorCode.launchError, 
                         message: `${this._vscoqtopPath} crashed with the following message: ${stderr}
-                        This could be due to a bad Coq or installation or an incompatible Coq version.`
+                        This could be due to a bad Coq installation or an incompatible Coq version.`
                     });
                 } else {
-                    this.coqVersion().then(() => {
-                        resolve();
-                    });
+                    this._coqPath = stdout;
+                    this.coqVersion().then(
+                        () => {
+                            resolve();
+                        },
+                        (err) => {
+                            reject({
+                                status: ToolChainErrorCode.launchError,
+                                message: `${this._vscoqtopPath} crashed with the following message: ${err}.
+                                This could be due to a bad Coq installation or an incompatible Coq version`
+                            });
+                        }
+                    );
                 }
                 
             });
@@ -141,10 +159,10 @@ export default class VsCoqToolchainManager implements Disposable {
         const options = ["-v"].concat(config);
         const cmd = [this._vscoqtopPath].concat(options).join(' ');
 
-        return new Promise((resolve, reject: () => void) => {
+        return new Promise((resolve, reject: (reason: string) => void) => {
             exec(cmd, (error, stdout, stderr) => {
                 if(error) {
-                    reject();
+                    reject(stderr);
                 } else {
                     const versionRegexp = /\b\d\.\d+(\.\d|\+rc\d)\b/g;
                     this._versionFullOutput = stdout;

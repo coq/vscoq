@@ -8,7 +8,8 @@ import {workspace, window, commands, ExtensionContext,
   Uri,
   StatusBarItem,
   extensions,
-  StatusBarAlignment
+  StatusBarAlignment,
+  MarkdownString
 } from 'vscode';
 
 import {
@@ -178,7 +179,20 @@ export function activate(context: ExtensionContext) {
             checkVersion(client, context);
             const serverInfo = client.initializeResult!.serverInfo;
             statusBar.text = `${serverInfo?.name} ${serverInfo?.version}, coq ${coqTM.getCoqVersion()}`;
-            statusBar.tooltip = coqTM.getversionFullOutput();
+            statusBar.tooltip = new MarkdownString(
+                
+`**Coq Installation**
+
+${coqTM.getversionFullOutput()}
+
+Path: \`${coqTM.getCoqPath()}\`
+---
+
+**vscoqtop** ${serverInfo?.version}
+
+Path: \`${coqTM.getVsCoqTopPath()}\`
+`
+            );
             statusBar.show();
 
             initializeDecorations(context);
