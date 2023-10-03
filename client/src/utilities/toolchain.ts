@@ -6,6 +6,8 @@ import { isFileInFolder } from './fileHelper';
 import { ServerSessionOptions } from 'http2';
 import { ServerOptions } from 'vscode-languageclient/node';
 import Client from '../client';
+import { version } from 'os';
+import { match } from 'assert';
 
 export enum ToolChainErrorCode {
     notFound = 1, 
@@ -20,7 +22,9 @@ export interface ToolchainError {
 
 export default class VsCoqToolchainManager implements Disposable {
 
-    private _vscoqtopPath: string = ""; 
+    private _vscoqtopPath: string = "";
+    private _coqVersion: string = "";
+    private _versionFullOutput: string = "";
 
     public dispose(): void {
         
@@ -63,6 +67,14 @@ export default class VsCoqToolchainManager implements Disposable {
         };
         return serverOptions;
     };
+
+    public getCoqVersion() : string {
+        return this._coqVersion;
+    };
+
+    public getversionFullOutput() : string {
+        return this._versionFullOutput;
+    }
 
     private getEnvPath() : string {
         if(process.platform === 'win32') {
@@ -114,9 +126,34 @@ export default class VsCoqToolchainManager implements Disposable {
                         This could be due to a bad Coq or installation or an incompatible Coq version.`
                     });
                 } else {
-                    resolve();
+                    this.coqVersion().then(() => {
+                        resolve();
+                    });
                 }
                 
+            });
+        });
+    };
+
+    private coqVersion() : Promise<void> {
+
+        const config = workspace.getConfiguration('vscoq').get('args') as string[];
+        const options = ["-v"].concat(config);
+        const cmd = [this._vscoqtopPath].concat(options).join(' ');
+
+        return new Promise((resolve, reject: () => void) => {
+            exec(cmd, (error, stdout, stderr) => {
+                if(error) {
+                    reject();
+                } else {
+                    const versionRegexp = /\b\d\.\d+(\.\d|\+rc\d)\b/g;
+                    this._versionFullOutput = stdout;
+                    const matchArray = stdout.match(versionRegexp);
+                    if(matchArray) {
+                        this._coqVersion = matchArray[0];
+                    }
+                    resolve();
+                }
             });
         });
     };

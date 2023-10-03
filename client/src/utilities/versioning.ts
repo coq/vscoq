@@ -7,7 +7,7 @@ export const checkVersion = (client: Client, context: ExtensionContext) => {
     const extensionVersion = context.extension.packageJSON.version;
     const initializeResult = client.initializeResult;
     if(initializeResult !== undefined) {
-        const serverInfo =client.initializeResult?.serverInfo;
+        const serverInfo = client.initializeResult?.serverInfo;
         if(serverInfo !== undefined) {
             const {name, version} = serverInfo;
             Client.writeToVscoq2Channel("[Versioning] Intialized server " + name + " [" + version + "]");
