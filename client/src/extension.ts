@@ -237,9 +237,8 @@ export function activate(context: ExtensionContext) {
 
             let goalsHook = window.onDidChangeTextEditorSelection(
                 (evt: TextEditorSelectionChangeEvent) => {                    
-                    if (evt.textEditor.document.languageId === "coq" 
-                        && workspace.getConfiguration('vscoq.proof').mode === 1
-                        && isMouseOrKeyboardEvent(evt)) 
+                    if (evt.textEditor.document.languageId === "coq"
+                        && workspace.getConfiguration('vscoq.proof').mode === 1)
                     {
                         sendInterpretToPoint(evt.textEditor, client);
                     }
