@@ -129,7 +129,7 @@ export function activate(context: ExtensionContext) {
             Client.writeToVscoq2Channel(uri.toString());
             client.sendRequest(req, params).then(
                 (res) => {
-
+                    GoalPanel.resetGoalPanel();
                 }, 
                 (err) => {
                     window.showErrorMessage(err);

@@ -349,9 +349,15 @@ let coqtopResetCoq id params =
   let Request.Client.ResetParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let st, events = Dm.DocumentManager.reset st in
+  let (st, events') =
+    if !check_mode = Settings.Mode.Continuous then
+      Dm.DocumentManager.interpret_in_background st
+    else
+      (st, [])
+  in
   Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st;
-  Ok(()), (uri,events) |> inject_dm_events
+  Ok(()), (uri,events@events') |> inject_dm_events
 
 let coqtopInterpretToEnd params =
   let Notification.Client.InterpretToEndParams.{ textDocument = { uri } } = params in
