@@ -271,23 +271,27 @@
         "command": "extension.coq.interpretToPoint",
         "category": "Coq",
         "title": "Interpret to point",
-        "description": "Interprets the current coq file until the given point"
+        "description": "Interprets the current coq file until the given point",
+        "enablement": "config.vscoq.proof.mode == 0"
       },
       {
         "command": "extension.coq.interpretToEnd",
         "category": "Coq",
         "title": "Interpret to end",
-        "description": "Interprets the current coq file until the end"
+        "description": "Interprets the current coq file until the end",
+        "enablement": "config.vscoq.proof.mode == 0"
       },
       {
         "command": "extension.coq.stepForward",
         "title": "Step Forward",
-        "category": "Coq"
+        "category": "Coq",
+        "enablement": "config.vscoq.proof.mode == 0"
       },
       {
         "command": "extension.coq.stepBackward",
         "title": "Step Backward",
-        "category": "Coq"
+        "category": "Coq",
+        "enablement": "config.vscoq.proof.mode == 0"
       },
       {
         "command": "extension.coq.documentState",
