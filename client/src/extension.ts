@@ -6,7 +6,10 @@ import {workspace, window, commands, ExtensionContext,
   TextEditorRevealType,
   Selection,
   Uri,
-  extensions
+  StatusBarItem,
+  extensions,
+  StatusBarAlignment,
+  MarkdownString
 } from 'vscode';
 
 import {
@@ -41,6 +44,7 @@ import {
 } from './utilities/utils';
 import { DocumentStateViewProvider } from './panels/DocumentStateViewProvider';
 import VsCoqToolchainManager, {ToolchainError, ToolChainErrorCode} from './utilities/toolchain';
+import { stat } from 'fs';
 
 let client: Client;
 
@@ -128,6 +132,10 @@ export function activate(context: ExtensionContext) {
         const documentStateProvider = new DocumentStateViewProvider(client); 
         context.subscriptions.push(workspace.registerTextDocumentContentProvider("vscoq-document-state", documentStateProvider));
 
+        //status bar item for showing coq version and language server version
+        const statusBar: StatusBarItem = window.createStatusBarItem(StatusBarAlignment.Right, 1000);
+        context.subscriptions.push(statusBar);
+
         const launchQuery = (editor: TextEditor, type: string)=> {
             const selection = editor.selection;
             const {end, start} = selection; 
@@ -188,6 +196,23 @@ export function activate(context: ExtensionContext) {
         .then(() => {
             
             checkVersion(client, context);
+            const serverInfo = client.initializeResult!.serverInfo;
+            statusBar.text = `${serverInfo?.name} ${serverInfo?.version}, coq ${coqTM.getCoqVersion()}`;
+            statusBar.tooltip = new MarkdownString(
+                
+`**Coq Installation**
+
+${coqTM.getversionFullOutput()}
+
+Path: \`${coqTM.getCoqPath()}\`
+---
+
+**vscoqtop** ${serverInfo?.version}
+
+Path: \`${coqTM.getVsCoqTopPath()}\`
+`
+            );
+            statusBar.show();
 
             initializeDecorations(context);
             

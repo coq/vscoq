@@ -6,11 +6,12 @@ import { isFileInFolder } from './fileHelper';
 import { ServerSessionOptions } from 'http2';
 import { ServerOptions } from 'vscode-languageclient/node';
 import Client from '../client';
+import { version } from 'os';
+import { match } from 'assert';
 
 export enum ToolChainErrorCode {
     notFound = 1, 
-    launchError = 2,
-    coqVersionMissmatch = 3
+    launchError = 2
 }
 
 export interface ToolchainError {
@@ -20,7 +21,10 @@ export interface ToolchainError {
 
 export default class VsCoqToolchainManager implements Disposable {
 
-    private _vscoqtopPath: string = ""; 
+    private _vscoqtopPath: string = "";
+    private _coqVersion: string = "";
+    private _versionFullOutput: string = "";
+    private _coqPath: string = "";
 
     public dispose(): void {
         
@@ -63,6 +67,22 @@ export default class VsCoqToolchainManager implements Disposable {
         };
         return serverOptions;
     };
+
+    public getVsCoqTopPath() : string {
+        return this._vscoqtopPath;
+    }
+
+    public getCoqPath() : string {
+        return this._coqPath;
+    }
+
+    public getCoqVersion() : string {
+        return this._coqVersion;
+    };
+
+    public getversionFullOutput() : string {
+        return this._versionFullOutput;
+    }
 
     private getEnvPath() : string {
         if(process.platform === 'win32') {
@@ -111,12 +131,47 @@ export default class VsCoqToolchainManager implements Disposable {
                     reject({
                         status: ToolChainErrorCode.launchError, 
                         message: `${this._vscoqtopPath} crashed with the following message: ${stderr}
-                        This could be due to a bad Coq or installation or an incompatible Coq version.`
+                        This could be due to a bad Coq installation or an incompatible Coq version.`
                     });
                 } else {
-                    resolve();
+                    this._coqPath = stdout;
+                    this.coqVersion().then(
+                        () => {
+                            resolve();
+                        },
+                        (err) => {
+                            reject({
+                                status: ToolChainErrorCode.launchError,
+                                message: `${this._vscoqtopPath} crashed with the following message: ${err}.
+                                This could be due to a bad Coq installation or an incompatible Coq version`
+                            });
+                        }
+                    );
                 }
                 
+            });
+        });
+    };
+
+    private coqVersion() : Promise<void> {
+
+        const config = workspace.getConfiguration('vscoq').get('args') as string[];
+        const options = ["-v"].concat(config);
+        const cmd = [this._vscoqtopPath].concat(options).join(' ');
+
+        return new Promise((resolve, reject: (reason: string) => void) => {
+            exec(cmd, (error, stdout, stderr) => {
+                if(error) {
+                    reject(stderr);
+                } else {
+                    const versionRegexp = /\b\d\.\d+(\.\d|\+rc\d)\b/g;
+                    this._versionFullOutput = stdout;
+                    const matchArray = stdout.match(versionRegexp);
+                    if(matchArray) {
+                        this._coqVersion = matchArray[0];
+                    }
+                    resolve();
+                }
             });
         });
     };
