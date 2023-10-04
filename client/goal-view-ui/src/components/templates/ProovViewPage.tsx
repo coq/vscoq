@@ -41,6 +41,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
         const views = [
             <VSCodePanelView> 
                 <GoalSection 
+                    key={"goals"}
                     goals={goals!.main} 
                     collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.main)} 
                     displaySetting={displaySetting}
@@ -56,6 +57,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
             </VSCodePanelView>,
             <VSCodePanelView> 
                 <GoalSection 
+                    key="shelved"
                     goals={goals!.shelved} 
                     collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.shelved)} 
                     displaySetting={displaySetting}
@@ -63,7 +65,8 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                 /> 
             </VSCodePanelView>,
             <VSCodePanelView> 
-                <GoalSection 
+                <GoalSection
+                    key="givenup"
                     goals={goals!.givenUp} 
                     collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.givenUp)} 
                     displaySetting={displaySetting}
