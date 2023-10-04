@@ -1,5 +1,4 @@
 import React, {FunctionComponent} from 'react';
-import { IconType } from 'react-icons';
 
 import classes from './EmptyState.module.css';
 

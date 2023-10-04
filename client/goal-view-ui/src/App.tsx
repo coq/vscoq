@@ -59,7 +59,7 @@ const app = () => {
         setGoals({
             ...goals!, 
             [key]: newGoals
-        });          
+        });
     };
 
   return (
