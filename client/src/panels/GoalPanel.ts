@@ -45,7 +45,7 @@ export default class GoalPanel {
     this._setWebviewMessageListener(this._panel.webview);
 
     //init the app settings
-    this._initWebAppSettings(this._panel.webview);
+    this._updateDisplaySettings(this._panel.webview);
   }
 
   /**
@@ -112,7 +112,20 @@ export default class GoalPanel {
   }
 
   // /////////////////////////////////////////////////////////////////////////////
-  // Change the display setting
+  // Change the goal display settings (gets triggered if the user changes 
+  // his settings)
+  // /////////////////////////////////////////////////////////////////////////////
+  public static toggleGoalDisplaySettings() {
+
+    if(GoalPanel.currentPanel) {
+        Client.writeToVscoq2Channel("[GoalPanel] Toggling display settings");
+        GoalPanel.currentPanel._updateDisplaySettings(GoalPanel.currentPanel._panel.webview);
+    }
+
+  }
+
+  // /////////////////////////////////////////////////////////////////////////////
+  // Reset the goal panel
   //
   // /////////////////////////////////////////////////////////////////////////////
   public static resetGoalPanel() {
@@ -192,9 +205,9 @@ export default class GoalPanel {
   }
 
 
-  private _initWebAppSettings(webview: Webview) {
+  private _updateDisplaySettings(webview: Webview) {
     const config = workspace.getConfiguration('vscoq.goals');
-    webview.postMessage({ "command": "initAppSettings", "text": config.display });
+    webview.postMessage({ "command": "updateDisplaySettings", "text": config.display });
   };
 
   /**

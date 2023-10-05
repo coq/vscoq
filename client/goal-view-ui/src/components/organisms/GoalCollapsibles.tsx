@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useState} from 'react';
+import React, {FunctionComponent, useEffect, useRef} from 'react';
 
 import CollapsibleGoalBlock from '../molecules/CollapsibleGoalBlock';
 import { CollapsibleGoal } from '../../types';
@@ -13,10 +13,33 @@ type GoalSectionProps = {
 const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     
     const {goals, collapseGoalHandler} = props;
+    const firstGoalRef = useRef<HTMLDivElement>(null);
     
+    useEffect(() => {
+        scrollToBottomOfFirstGoal();
+    }, [goals]);
+
+    const scrollToBottomOfFirstGoal = () => {
+        if(firstGoalRef.current) {
+            firstGoalRef.current.scrollIntoView({
+                behavior: "smooth",
+                block: "end",
+                inline: "nearest"
+            });
+        }
+    };
     
     const goalCollapsibles = goals.map((goal, index) => {
         
+        if(index === 0) {
+            return (
+                <>
+                    <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} collapseHandler={collapseGoalHandler}/>
+                    <div ref={firstGoalRef}/>
+                </>
+            );
+        }
+
         return (
             <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} collapseHandler={collapseGoalHandler}/>
         );
