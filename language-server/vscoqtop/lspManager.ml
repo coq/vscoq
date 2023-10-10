@@ -143,10 +143,12 @@ let do_initialize id params =
   let textDocumentSync = `TextDocumentSyncKind TextDocumentSyncKind.Incremental in
   let completionProvider = CompletionOptions.create ~resolveProvider:false () in
   let hoverProvider = `Bool true in
+  let positionEncoding = PositionEncodingKind.UTF16 in
   let capabilities = ServerCapabilities.create
     ~textDocumentSync
     ~completionProvider
     ~hoverProvider
+    ~positionEncoding
   ()
   in
   let initialize_result = Lsp.Types.InitializeResult.{

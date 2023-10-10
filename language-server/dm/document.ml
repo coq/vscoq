@@ -285,6 +285,7 @@ let rec parse_more synterp_state stream raw parsed errors =
     | exception (CLexer.Error.E e as exn) -> (* May be more problematic to handle for the diff *)
       let loc = Loc.get_loc @@ Exninfo.info exn in
       junk_sentence_end stream;
+      log @@ "LEXER";
       handle_parse_error start (loc,CLexer.Error.to_string e)
   end
 
@@ -345,6 +346,7 @@ let validate_document ({ parsed_loc; raw_doc; } as document) =
     List.fold_left (fun acc error -> LM.add error.stop error acc) errors new_errors
   in
   let parsed_loc = pos_at_end document in
+  log @@ Format.sprintf "Parsed loc is now %i" parsed_loc;
   unchanged_id, invalid_ids, { document with parsed_loc; parsing_errors_by_end }
 
 let create_document init_synterp_state text =

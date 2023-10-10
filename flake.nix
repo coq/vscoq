@@ -82,6 +82,8 @@
           self.packages.${system}.vscoq-language-server.buildInputs
           ++ (with ocamlPackages; [
             ocaml-lsp
+            ocamlformat-rpc-lib
+            ocamlformat_0_23_0
           ]);
       };
 
