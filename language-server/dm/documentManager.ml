@@ -235,20 +235,21 @@ let validate_document state =
       ) state.execution_state (Stateid.Set.elements invalid_ids) in
   { state with document; execution_state; observe_id }
 
-let init init_vs ~opts uri ~text =
+let init init_vs ~opts ~params =
+  let Lsp.Types.DidOpenTextDocumentParams.{ textDocument = { uri; _ } } = params in
   Vernacstate.unfreeze_full_state init_vs;
   let top = Coqargs.(dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) in
   Coqinit.start_library ~top opts;
   let init_vs = Vernacstate.freeze_full_state () in 
-  let document = Document.create_document init_vs.Vernacstate.synterp text in
+  let document = Document.create_document init_vs.Vernacstate.synterp params in
   let execution_state, feedback = ExecutionManager.init init_vs in
   let st = { uri; opts; init_vs; document; execution_state; observe_id = None } in
   validate_document st, [inject_em_event feedback]
 
 let reset { uri; opts; init_vs; document; execution_state } =
-  let text = RawDocument.text @@ Document.raw_document document in
+  let raw = Document.raw_document document in
   Vernacstate.unfreeze_full_state init_vs;
-  let document = Document.create_document init_vs.synterp text in
+  let document = Document.reset_document init_vs.synterp raw in
   ExecutionManager.destroy execution_state;
   let execution_state, feedback = ExecutionManager.init init_vs in
   let st = { uri; opts; init_vs; document; execution_state; observe_id = None } in
@@ -256,11 +257,11 @@ let reset { uri; opts; init_vs; document; execution_state } =
 
 let apply_text_edits state edits =
   let document = Document.apply_text_edits state.document edits in
-  let shift_diagnostics_locs exec_st (range, new_text) =
+  let shift_diagnostics_locs exec_st TextEdit.{newText; range} =
     let edit_start = RawDocument.loc_of_position (Document.raw_document state.document) range.Range.start in
     let edit_stop = RawDocument.loc_of_position (Document.raw_document state.document) range.Range.end_ in
     let edit_length = edit_stop - edit_start in
-    ExecutionManager.shift_diagnostics_locs exec_st ~start:edit_stop ~offset:(String.length new_text - edit_length)
+    ExecutionManager.shift_diagnostics_locs exec_st ~start:edit_stop ~offset:(String.length newText - edit_length)
   in
   let execution_state = List.fold_left shift_diagnostics_locs state.execution_state edits in
   validate_document { state with document; execution_state }

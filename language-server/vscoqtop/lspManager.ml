@@ -134,6 +134,18 @@ let send_configuration_request () =
   Send (Request req)
 
 let do_initialize id params =
+  let Lsp.Types.InitializeParams.{ capabilities } = params in
+    begin match capabilities.general with 
+    | None -> log "Failed to get general capabilities"
+    | Some g -> 
+      begin match g.positionEncodings with 
+      | None -> log "Failed to get position encodings"
+      | Some positionEncodings ->
+        let yojson_list = List.map Lsp.Types.PositionEncodingKind.yojson_of_t positionEncodings in
+        let string_list = List.map Yojson.Safe.to_string yojson_list in
+        log @@ "Supported position encodings: " ^ (String.concat ", " string_list)
+      end
+    end;
   let Lsp.Types.InitializeParams.{ initializationOptions } = params in
   begin match initializationOptions with
   | None -> log "Failed to decode initialization options"
@@ -220,9 +232,9 @@ let run_documents () =
   Hashtbl.fold interpret_doc_in_bg states []
 
 let textDocumentDidOpen params =
-  let Lsp.Types.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
+  let Lsp.Types.DidOpenTextDocumentParams.{ textDocument = { uri; _ } } = params in
   let vst, opts = get_init_state () in
-  let st, events = Dm.DocumentManager.init vst ~opts uri ~text in
+  let st, events = Dm.DocumentManager.init vst ~opts ~params in
   let (st, events') = 
     if !check_mode = Settings.Mode.Continuous then 
       Dm.DocumentManager.interpret_in_background st 
@@ -238,7 +250,8 @@ let textDocumentDidChange params =
   let uri = textDocument.uri in
   let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let mk_text_edit TextDocumentContentChangeEvent.{ range; text } =
-    Option.get range, text
+    let range = Option.get range in 
+    TextEdit.create ~newText:text ~range:range
   in
   let text_edits = List.map mk_text_edit contentChanges in
   let st = Dm.DocumentManager.apply_text_edits st text_edits in

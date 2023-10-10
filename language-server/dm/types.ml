@@ -11,12 +11,8 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
-open Lsp.Types
-
 type sentence_id = Stateid.t
 type sentence_id_set = Stateid.Set.t
-
-type text_edit = Range.t * string
 
 type link = {
   write_to :  Unix.file_descr;

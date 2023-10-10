@@ -24,8 +24,12 @@ type document
 
 val raw_document : document -> RawDocument.t
 
-val create_document : Vernacstate.Synterp.t -> string -> document
+val create_document : Vernacstate.Synterp.t -> DidOpenTextDocumentParams.t -> document
 (** [create_document init_synterp_state text] creates a fresh document with content defined by
+    [text] under [init_synterp_state]. *)
+
+val reset_document : Vernacstate.Synterp.t -> RawDocument.t -> document
+(** [reset_document init_synterp_state text] resets a document with content defined by
     [text] under [init_synterp_state]. *)
 
 val validate_document : document -> sentence_id option * sentence_id_set * document
@@ -49,7 +53,7 @@ val parse_errors : document -> parsing_error list
 (** [parse_errors doc] returns the list of sentences which failed to parse
     (see validate_document) together with their error message *)
 
-val apply_text_edits : document -> text_edit list -> document
+val apply_text_edits : document -> TextEdit.t list -> document
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
     text is not parsed or executed. *)
 

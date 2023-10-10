@@ -12,7 +12,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Types
 open Lsp.Types
 open Protocol
 open Protocol.LspWrapper
@@ -31,11 +30,11 @@ val pp_event : Format.formatter -> event -> unit
 
 type events = event Sel.Event.t list
 
-val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> state * events
+val init : Vernacstate.t -> opts:Coqargs.injection_command list -> params:DidOpenTextDocumentParams.t -> state * events
 (** [init st opts uri text] initializes the document manager with initial vernac state
     [st] on which command line opts will be set. *)
 
-val apply_text_edits : state -> text_edit list -> state
+val apply_text_edits : state -> TextEdit.t list -> state
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
     document is parsed, outdated executions states are invalidated, and the observe
     id is updated. *)

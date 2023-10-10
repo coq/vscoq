@@ -360,14 +360,31 @@ let create_document init_synterp_state text =
       init_synterp_state;
     }
 
-let apply_text_edit document edit =
-  let raw_doc, start = RawDocument.apply_text_edit document.raw_doc edit in
-  let parsed_loc = min document.parsed_loc start in
-  { document with raw_doc; parsed_loc }
+let reset_document init_synterp_state raw_doc =
+  { parsed_loc = -1;
+    raw_doc;
+    sentences_by_id = SM.empty;
+    sentences_by_end = LM.empty;
+    parsing_errors_by_end = LM.empty;
+    schedule = initial_schedule;
+    init_synterp_state;
+  }
+
+let update_parsed_loc document edits = 
+  let update_parsed_loc doc edit = 
+      let TextEdit.{ range } = edit in
+      let Range.{start; _} = range in
+      let start = RawDocument.loc_of_position document.raw_doc start in
+      let parsed_loc = min document.parsed_loc start in
+      { doc with parsed_loc }
+  in
+  List.fold_left update_parsed_loc document edits
 
 let apply_text_edits document edits =
-  let doc' = { document with raw_doc = document.raw_doc } in
-  List.fold_left apply_text_edit doc' edits
+  let raw_doc = RawDocument.apply_text_edits document.raw_doc edits in
+  let doc = { document with raw_doc } in
+  update_parsed_loc doc edits
+
 
 module Internal = struct
 
