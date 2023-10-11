@@ -18,6 +18,8 @@ type t
 val create : DidOpenTextDocumentParams.t -> t
 val text : t -> string
 
+val compare_lines : t -> (string -> unit) -> unit
+
 val position_of_loc : t -> int -> Position.t
 val loc_of_position : t -> Position.t -> int
 val end_loc : t -> int

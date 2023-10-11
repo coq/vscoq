@@ -18,14 +18,32 @@ type t = {
   lines : int array; (* locs of beginning of lines *)
 }
 
-let compute_lines text =
+let compute_lines text_doc =
+  let text = Lsp.Text_document.text text_doc in
   let lines = String.split_on_char '\n' text in
   let _,lines_locs = CList.fold_left_map (fun acc s -> let n = String.length s in n + acc + 1, acc) 0 lines in
   Array.of_list lines_locs
 
+let compute_lines_ocaml_lsp text_doc = 
+  let text = Lsp.Text_document.text text_doc in
+  let lines = String.split_on_char '\n' text in
+  let get_line_loc line_number = 
+    let pos = Position.{line = line_number; character = 0} in
+    Lsp.Text_document.absolute_position text_doc pos 
+  in
+  let lines_locs = List.init (List.length lines) get_line_loc in
+  Array.of_list lines_locs
+
+let compare_lines doc log = 
+  let text_doc = doc.text in
+  let lines = compute_lines text_doc in
+  let lines_ocaml = compute_lines_ocaml_lsp text_doc in
+  let i = ref 0 in
+  while(!i < Array.length lines) do log @@ Format.sprintf "%i <--> %i\n" lines.(!i) lines_ocaml.(!i); incr(i) done
+
 let create text =
   let text = Lsp.Text_document.make ~position_encoding:`UTF16 text in
-  { text; lines = compute_lines @@ Lsp.Text_document.text text }
+  { text; lines = compute_lines_ocaml_lsp text }
 
 let text t = Lsp.Text_document.text t.text
 
@@ -48,7 +66,7 @@ let range_of_loc raw loc =
 
 let apply_text_edits raw edits = 
   let text_doc = Lsp.Text_document.apply_text_document_edits raw.text edits in
-  let new_lines = compute_lines @@ Lsp.Text_document.text text_doc in
+  let new_lines = compute_lines_ocaml_lsp text_doc in
   { text = text_doc; lines = new_lines}
 
 (* let apply_text_edit raw (Range.{start; end_}, editText) =
