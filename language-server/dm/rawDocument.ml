@@ -36,13 +36,19 @@ let line_text raw i =
     String.sub raw.text (raw.lines.(i)) (String.length raw.text - raw.lines.(i))
 
 let get_character_pos linestr loc =
-  let rec get_pos i p =
-    if i >= loc then
-      p
+  let rec loop d =
+    if Uutf.decoder_byte_count d >= loc then
+      Uutf.decoder_count d
     else
-      let char = String.get_utf_8_uchar linestr i in
-      get_pos (i + Uchar.utf_decode_length char) (p + 1) in
-  get_pos 0 0 
+      match Uutf.decode d with
+      | `Uchar _ -> loop d
+      | `End
+      | `Malformed _
+      | `Await -> assert false
+  in
+  let nln = `Readline (Uchar.of_int 0x000A) in
+  let encoding = `UTF_8 in
+  loop (Uutf.decoder ~nln ~encoding (`String linestr))
 
 let position_of_loc raw loc =
   let i = ref 0 in
@@ -51,14 +57,20 @@ let position_of_loc raw loc =
   let char = get_character_pos (line_text raw line) (loc - raw.lines.(line)) in
   Position.{ line = line; character = char }
 
-let get_character_loc linestr character =
-  let rec get_loc i todo =
-    if todo = 0 then
-      i
+let get_character_loc linestr pos =
+  let rec loop d =
+    if Uutf.decoder_count d >= pos then
+      Uutf.decoder_byte_count d
     else
-      let char = String.get_utf_8_uchar linestr i in
-      get_loc (i + Uchar.utf_decode_length char) (todo - 1) in
-  get_loc 0 character
+      match Uutf.decode d with
+      | `Uchar _ -> loop d
+      | `End
+      | `Malformed _
+      | `Await -> assert false
+  in
+  let nln = `Readline (Uchar.of_int 0x000A) in
+  let encoding = `UTF_8 in
+  loop (Uutf.decoder ~nln ~encoding (`String linestr))
 
 let loc_of_position raw Position.{ line; character } =
   let linestr = line_text raw line in
