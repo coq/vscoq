@@ -1,0 +1,38 @@
+on: 
+    workflow_dispatch:
+      inputs:
+        tags:
+          description: 'Tag to use for release'  
+
+jobs:
+    publish-extension:
+      runs-on: ubuntu-latest
+      if: success() && startsWith(github.ref, 'refs/tags/')
+      steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+      - name: Publish on VsCode marketplace
+        run: |
+          cd client
+          cp ../LICENSE . && cp ../README.md .
+      - name: Publish to Open VSX Registry
+        uses: HaaLeo/publish-vscode-extension@v1
+        id: publishToOpenVSX
+        with:
+          pat: ${{ secrets.OVSX_PAT }}
+          packagePath: ./client/
+          yarn: true
+          preRelease: false
+      - name: Publish to Visual Studio Marketplace
+        uses: HaaLeo/publish-vscode-extension@v1
+        with:
+          pat: ${{ secrets.VSCE_PAT }}
+          packagePath: ./client/
+          registryUrl: https://marketplace.visualstudio.com
+          extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
+          yarn: true
+          preRelease: false

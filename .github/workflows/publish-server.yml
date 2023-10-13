@@ -1,0 +1,49 @@
+on: 
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Tag to use for release'  
+
+jobs:
+
+  publish-opam-package:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        ocaml-compiler: [4.14.x]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Use OCaml ${{ matrix.ocaml-compiler }}
+      uses: avsm/setup-ocaml@v2
+      with:
+        ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+    - name: Install opam-publish # 2.0.3 because more recent versions do not respect OPAMYES
+      run: opam install -y -j 2 opam-publish=2.0.3
+
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v4
+
+    - uses: webfactory/ssh-agent@v0.8.0
+      with:
+          ssh-private-key: ${{ secrets.BOT_SSH_KEY }}
+
+    - name: Write PAT
+      env:
+        OPAM_PUBLISH_TOKEN: ${{ secrets.OPAM_PUBLISH_TOKEN }}
+      run: |
+        mkdir -p ~/.opam/plugins/opam-publish
+        printf "$OPAM_PUBLISH_TOKEN" > ~/.opam/plugins/opam-publish/vscoqbot.token
+
+    - name: Publish
+      run: |
+        eval $(opam env)
+        VERSION_SLUG="${GITHUB_REF_NAME_SLUG#v}"
+        VERSION="${GITHUB_REF_NAME#v}"
+        cd language-server
+        git config --global user.name vscoqbot
+        git config --global user.email vscoqbot@inria.fr
+        opam publish --no-browser -v $VERSION https://github.com/coq-community/vscoq/releases/download/$GITHUB_REF_NAME/vscoq-language-server-$VERSION_SLUG.tar.gz vscoq-language-server.opam
