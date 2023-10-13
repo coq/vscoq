@@ -29,13 +29,53 @@ let create text = { text; lines = compute_lines text }
 
 let text t = t.text
 
+let line_text raw i =
+  if i + 1 < Array.length raw.lines then
+    String.sub raw.text (raw.lines.(i)) (raw.lines.(i+1) - raw.lines.(i))
+  else
+    String.sub raw.text (raw.lines.(i)) (String.length raw.text - raw.lines.(i))
+
+let get_character_pos linestr loc =
+  let rec loop d =
+    if Uutf.decoder_byte_count d >= loc then
+      Uutf.decoder_count d
+    else
+      match Uutf.decode d with
+      | `Uchar _ -> loop d
+      | `Malformed _ -> loop d
+      | `End -> Uutf.decoder_count d
+      | `Await -> assert false
+  in
+  let nln = `Readline (Uchar.of_int 0x000A) in
+  let encoding = `UTF_8 in
+  loop (Uutf.decoder ~nln ~encoding (`String linestr))
+
 let position_of_loc raw loc =
   let i = ref 0 in
   while (!i < Array.length raw.lines && raw.lines.(!i) <= loc) do incr(i) done;
-  Position.{ line = !i - 1; character = loc - raw.lines.(!i - 1) }
+  let line = !i - 1 in
+  let char = get_character_pos (line_text raw line) (loc - raw.lines.(line)) in
+  Position.{ line = line; character = char }
+
+let get_character_loc linestr pos =
+  let rec loop d =
+    if Uutf.decoder_count d >= pos then
+      Uutf.decoder_byte_count d
+    else
+      match Uutf.decode d with
+      | `Uchar _ -> loop d
+      | `Malformed _ -> loop d
+      | `End -> Uutf.decoder_byte_count d
+      | `Await -> assert false
+  in
+  let nln = `Readline (Uchar.of_int 0x000A) in
+  let encoding = `UTF_8 in
+  loop (Uutf.decoder ~nln ~encoding (`String linestr))
 
 let loc_of_position raw Position.{ line; character } =
-  raw.lines.(line) + character
+  let linestr = line_text raw line in
+  let charloc = get_character_loc linestr character in
+  raw.lines.(line) + charloc
 
 let end_loc raw =
   String.length raw.text
