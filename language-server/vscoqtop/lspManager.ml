@@ -44,7 +44,7 @@ let conf_request_id = max_int
 
 let server_info = InitializeResult.create_serverInfo
   ~name:"vscoq-language-server"
-  ~version:"2.0.1"
+  ~version:"2.0.2"
   ()
 
 type lsp_event = 
