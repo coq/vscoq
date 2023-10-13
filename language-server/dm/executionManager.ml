@@ -154,7 +154,7 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
     Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
     let result =
       try Ok(Vernacinterp.interp_entry ~st ast,[])
-      with e when CErrors.noncritical e ->
+      with e -> (* we also catch anomalies *)
         let e, info = Exninfo.capture e in
         Error (e, info) in
     Sys.(set_signal sigint Signal_ignore);
