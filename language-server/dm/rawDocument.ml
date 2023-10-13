@@ -42,8 +42,8 @@ let get_character_pos linestr loc =
     else
       match Uutf.decode d with
       | `Uchar _ -> loop d
-      | `End
-      | `Malformed _
+      | `Malformed _ -> loop d
+      | `End -> Uutf.decoder_count d
       | `Await -> assert false
   in
   let nln = `Readline (Uchar.of_int 0x000A) in
@@ -64,8 +64,8 @@ let get_character_loc linestr pos =
     else
       match Uutf.decode d with
       | `Uchar _ -> loop d
-      | `End
-      | `Malformed _
+      | `Malformed _ -> loop d
+      | `End -> Uutf.decoder_byte_count d
       | `Await -> assert false
   in
   let nln = `Readline (Uchar.of_int 0x000A) in
