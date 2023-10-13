@@ -110,7 +110,7 @@ To release a new version of VsCoq:
 ```shell
     git tag -s #VERSION_NUMBER
 ```
-1. Push
+3. Push
 ```shell 
     git push origin #VERSION_NUMBER
 ```
