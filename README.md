@@ -135,7 +135,7 @@ After installation and activation of the extension:
 * `"vscoq.completion.algorithm": StructuredSplitUnification | SplitTypeIntersection` -- Which completion algorithm to use
 * `"vscoq.completion.unificationLimit": int` -- Sets the limit for how many theorems unification is attempted
 
-## For extension developpers 
+## For extension developers 
 See [Dev docs](https://github.com/coq-community/vscoq/blob/main/docs/developers.md)
 
 ## License
