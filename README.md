@@ -125,13 +125,13 @@ After installation and activation of the extension:
 #### Goal and info view panel
 * `"vscoq.goals.diff.mode": on | off | removed` -- Toggles diff mode. If set to `removed`, only removed characters are shown (defaults to `off`)
 * `"vscoq.goals.display": Tabs | List` -- Decide whether to display goals in seperate tabs or as a list of collapsibles.
-* `"vscoq.goals.messages.full": bool` -- A toggle to include warning and errors in the proof view (defaults to `true`)
+* `"vscoq.goals.messages.full": bool` -- A toggle to include warning and errors in the proof view (defaults to `false`)
 
 #### Diagnostics
-* `"vscoq.diagnostics.full": bool` -- Toggles the printing of `Info` level diagnostics
+* `"vscoq.diagnostics.full": bool` -- Toggles the printing of `Info` level diagnostics (defaults to `false`)
 
 #### Code completion (experimental)
-* `"vscoq.completion.enable": bool` -- Toggle code completion
+* `"vscoq.completion.enable": bool` -- Toggle code completion (defaults to `false`)
 * `"vscoq.completion.algorithm": StructuredSplitUnification | SplitTypeIntersection` -- Which completion algorithm to use
 * `"vscoq.completion.unificationLimit": int` -- Sets the limit for how many theorems unification is attempted
 
