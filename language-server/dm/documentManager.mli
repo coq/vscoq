@@ -65,10 +65,8 @@ val reset : state -> state * events
 (** resets Coq *)
 
 type exec_overview = {
-  parsed : Range.t list;
-  checked : Range.t list;
-  checked_by_delegate : Range.t list;
-  legacy_highlight : Range.t list;
+  processing : Range.t list;
+  processed : Range.t list;
 }
 
 val executed_ranges : state -> exec_overview

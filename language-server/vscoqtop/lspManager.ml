@@ -180,13 +180,12 @@ let publish_diagnostics uri doc =
   output_notification (Std diag_notification)
 
 let send_highlights uri doc =
-  let { Dm.DocumentManager.parsed; checked; checked_by_delegate; legacy_highlight } =
+  let { Dm.DocumentManager.processing;  processed } =
     Dm.DocumentManager.executed_ranges doc in
   let notification = Notification.Server.UpdateHighlights {
     uri;
-    parsedRange = parsed;
-    processingRange = checked;
-    processedRange = legacy_highlight;
+    processingRange = processing;
+    processedRange = processed;
   }
   in
   output_json @@ Jsonrpc.Notification.yojson_of_t @@ Notification.Server.to_jsonrpc notification
