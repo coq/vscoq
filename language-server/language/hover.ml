@@ -169,11 +169,15 @@ let rec insert_fake_args volatile bidi impls =
 let print_arguments ref =
   let flags, recargs, nargs_for_red =
     let open Reductionops.ReductionBehaviour in
-    match get ref with
-    | None -> [], [], None
-    | Some NeverUnfold -> [`ReductionNeverUnfold], [], None
-    | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
-    | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
+    match ref with
+    | GlobRef.ConstRef ref ->
+      begin match get ref with
+      | None -> [], [], None
+      | Some NeverUnfold -> [`ReductionNeverUnfold], [], None
+      | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
+      | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
+      end
+    | _ -> [], [], None
   in
   let names, not_renamed =
     try Arguments_renaming.arguments_names ref, false
