@@ -183,13 +183,15 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
 
 (* This adapts the Future API with our event model *)
 let interp_qed_delayed ~proof_using ~state_id ~st =
+  let lemmas = Option.get @@ st.Vernacstate.interp.lemmas in
   let f proof =
     let proof =
       let env = Global.env () in
       let sigma, _ = Declare.Proof.get_current_context proof in
       let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
       let terms = List.map (fun (_,_,x) -> x) (initial_goals (Declare.Proof.get proof)) in
-      let using = Proof_using.definition_using env sigma ~using:proof_using ~terms in
+      let names = Vernacstate.LemmaStack.get_all_proof_names lemmas in
+      let using = Proof_using.definition_using env sigma ~fixnames:names ~using:proof_using ~terms in
       let vars = Environ.named_context env in
       Names.Id.Set.iter (fun id ->
           if not (List.exists Util.(Context.Named.Declaration.get_id %> Names.Id.equal id) vars) then
@@ -202,7 +204,6 @@ let interp_qed_delayed ~proof_using ~state_id ~st =
     let f, assign = Future.create_delegate ~blocking:false ~name:"XX" fix_exn in
     Declare.Proof.close_future_proof ~feedback_id:state_id proof f, assign
   in
-  let lemmas = Option.get @@ st.Vernacstate.interp.lemmas in
   let proof, assign = Vernacstate.LemmaStack.with_top lemmas ~f in
   let control = [] (* FIXME *) in
   let opaque = Vernacexpr.Opaque in
