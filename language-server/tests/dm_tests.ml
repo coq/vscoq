@@ -101,7 +101,7 @@ let%test_unit "exec.init" =
   let todo = Sel.Todo.(add empty init_events) in
   let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
-  let ranges = (DocumentManager.executed_ranges st).checked in
+  let ranges = (DocumentManager.executed_ranges st).processed in
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.start.character) ranges in
   [%test_eq: int list] positions [ 0 ];
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.end_.character) ranges in
@@ -115,7 +115,7 @@ let%test_unit "exec.require_error" =
   let todo = Sel.Todo.(add empty init_events) in
   let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
-  let ranges = (DocumentManager.executed_ranges st).checked in
+  let ranges = (DocumentManager.executed_ranges st).processed in
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.start.character) ranges in
   [%test_eq: int list] positions [ 19 ]
 
