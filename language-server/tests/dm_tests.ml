@@ -101,7 +101,7 @@ let%test_unit "exec.init" =
   let todo = Sel.Todo.(add empty init_events) in
   let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
-  let ranges = (DocumentManager.executed_ranges st).checked in
+  let ranges = (DocumentManager.executed_ranges st).processed in
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.start.character) ranges in
   [%test_eq: int list] positions [ 0 ];
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.end_.character) ranges in
@@ -115,7 +115,7 @@ let%test_unit "exec.require_error" =
   let todo = Sel.Todo.(add empty init_events) in
   let todo = Sel.Todo.(add todo events) in
   let st = handle_events todo st in
-  let ranges = (DocumentManager.executed_ranges st).checked in
+  let ranges = (DocumentManager.executed_ranges st).processed in
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.start.character) ranges in
   [%test_eq: int list] positions [ 19 ]
 
@@ -262,7 +262,7 @@ let%test_unit "exec.insert" =
   let st = insert_text st ~loc:0 ~text:"Definition z := 0. " in
   let st = DocumentManager.validate_document st in
   let st, events = DocumentManager.interpret_to_end st in
-  let ranges = (DocumentManager.executed_ranges st).checked in
+  let ranges = (DocumentManager.executed_ranges st).processed in
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.start.char) ranges in
   check_no_diag st;
   [%test_eq: int list] positions [ 0; 22 ]
