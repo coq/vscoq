@@ -53,8 +53,6 @@ type events = event Sel.Event.t list
 
 type exec_overview = {
   processing : Range.t list;
-  (* checked : Range.t list; *)
-  (* checked_by_delegate : Range.t list; *)(*  why did we need this ? *)
   processed : Range.t list;
 }
 
@@ -82,12 +80,9 @@ let executed_ranges doc execution_state loc =
   in
   let ids_before_loc = List.map (fun s -> s.Document.id) @@ Document.sentences_before doc loc in
   let processed_ids = List.filter (fun x -> ExecutionManager.is_executed execution_state x || ExecutionManager.is_remotely_executed execution_state x) ids_before_loc in
-  (* let processing_ids = List.filter (fun x -> not (List.mem x processed_ids)) ids_before_loc in
-  log @@ Printf.sprintf "highlight: processing: %s" (String.concat " " (List.map Stateid.to_string processing_ids)); *)
   log @@ Printf.sprintf "highlight: processed: %s" (String.concat " " (List.map Stateid.to_string processed_ids));
   { 
     processing = [];
-    (* checked_by_delegate = ranges_of remotely_executed_ids; *)
     processed = ranges_of processed_ids; 
   }
 

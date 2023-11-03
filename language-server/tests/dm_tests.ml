@@ -262,7 +262,7 @@ let%test_unit "exec.insert" =
   let st = insert_text st ~loc:0 ~text:"Definition z := 0. " in
   let st = DocumentManager.validate_document st in
   let st, events = DocumentManager.interpret_to_end st in
-  let ranges = (DocumentManager.executed_ranges st).checked in
+  let ranges = (DocumentManager.executed_ranges st).processed in
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.start.char) ranges in
   check_no_diag st;
   [%test_eq: int list] positions [ 0; 22 ]
