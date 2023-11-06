@@ -233,21 +233,23 @@ let textDocumentDidOpen params =
 let textDocumentDidChange params =
   let Lsp.Types.DidChangeTextDocumentParams.{ textDocument; contentChanges } = params in
   let uri = textDocument.uri in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let mk_text_edit TextDocumentContentChangeEvent.{ range; text } =
-    Option.get range, text
-  in
-  let text_edits = List.map mk_text_edit contentChanges in
-  let st = Dm.DocumentManager.apply_text_edits st text_edits in
-  let (st, events) = 
-    if !check_mode = Settings.Mode.Continuous then 
-      Dm.DocumentManager.interpret_in_background st 
-    else 
-      (st, [])
-  in
-  Hashtbl.replace states (DocumentUri.to_path uri) st;
-  update_view uri st;
-  inject_dm_events (uri, events)
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+    | None -> log @@ "[textDocumentDidChange] ignoring event on non-existing document"; []
+    | Some st ->
+      let mk_text_edit TextDocumentContentChangeEvent.{ range; text } =
+        Option.get range, text
+      in
+      let text_edits = List.map mk_text_edit contentChanges in
+      let st = Dm.DocumentManager.apply_text_edits st text_edits in
+      let (st, events) = 
+        if !check_mode = Settings.Mode.Continuous then 
+          Dm.DocumentManager.interpret_in_background st 
+        else 
+          (st, [])
+      in
+      Hashtbl.replace states (DocumentUri.to_path uri) st;
+      update_view uri st;
+      inject_dm_events (uri, events)
 
 let textDocumentDidSave params =
   [] (* TODO handle properly *)
@@ -258,14 +260,17 @@ let textDocumentDidClose params =
 let textDocumentHover id params = 
   let Lsp.Types.HoverParams.{ textDocument; position } = params in
   let open Yojson.Safe.Util in
-  let st = Hashtbl.find states (DocumentUri.to_path textDocument.uri) in 
-  match Dm.DocumentManager.hover st position with
-  | Some contents -> Ok (Some (Hover.create ~contents:(`MarkupContent contents) ()))
-  | _ -> Ok None (* FIXME handle error case properly *)
+  match Hashtbl.find_opt states (DocumentUri.to_path textDocument.uri) with
+  | None -> log @@ "[textDocumentHover] ignoring event on non existing document"; Ok None (* FIXME handle error case properly *)
+  | Some st ->
+    match Dm.DocumentManager.hover st position with
+    | Some contents -> Ok (Some (Hover.create ~contents:(`MarkupContent contents) ()))
+    | _ -> Ok None (* FIXME handle error case properly *)
 
 let progress_hook uri () =
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  update_view uri st
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "ignoring non existant document"
+  | Some st -> update_view uri st
 
 let mk_proof_view_event uri position = 
   Sel.now ~priority:Dm.PriorityManager.proof_view (SendProofView (uri, position))
@@ -277,44 +282,50 @@ let mk_move_cursor_event uri range =
 let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let (st, events) = Dm.DocumentManager.interpret_to_position ~stateful:(!check_mode = Settings.Mode.Manual) st position in
-  Hashtbl.replace states (DocumentUri.to_path uri) st;
-  update_view uri st;
-  let sel_events = inject_dm_events (uri, events) in
-  sel_events @ [ mk_proof_view_event uri (Some position)]
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[interpretToPoint] ignoring event on non existant document"; []
+  | Some st ->
+    let (st, events) = Dm.DocumentManager.interpret_to_position ~stateful:(!check_mode = Settings.Mode.Manual) st position in
+    Hashtbl.replace states (DocumentUri.to_path uri) st;
+    update_view uri st;
+    let sel_events = inject_dm_events (uri, events) in
+    sel_events @ [ mk_proof_view_event uri (Some position)]
  
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let (st, events) = Dm.DocumentManager.interpret_to_previous st in
-  let range = Dm.DocumentManager.observe_id_range st in
-  Hashtbl.replace states (DocumentUri.to_path uri) st;
-  update_view uri st; 
-  if !check_mode = Settings.Mode.Manual then
-    match range with 
-    | None ->
-      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] (* how can this do anything? isn't observe_id None? *)
-    | Some range -> 
-      [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
-  else 
-    inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] (* isn't observe_id none in continuous mode? If so, how does this do anything? *)
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[stepBackward] ignoring event on non existant document"; []
+  | Some st ->
+    let (st, events) = Dm.DocumentManager.interpret_to_previous st in
+    let range = Dm.DocumentManager.observe_id_range st in
+    Hashtbl.replace states (DocumentUri.to_path uri) st;
+    update_view uri st; 
+    if !check_mode = Settings.Mode.Manual then
+      match range with 
+      | None ->
+        inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] (* how can this do anything? isn't observe_id None? *)
+      | Some range -> 
+        [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
+    else 
+      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] (* isn't observe_id none in continuous mode? If so, how does this do anything? *)
 
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let (st, events) = Dm.DocumentManager.interpret_to_next st in
-  let range = Dm.DocumentManager.observe_id_range st in
-  Hashtbl.replace states (DocumentUri.to_path uri) st;
-  update_view uri st; 
-  if !check_mode = Settings.Mode.Manual then
-    match range with 
-    | None ->
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "ignoring event on non existant document"; []
+  | Some st ->
+    let (st, events) = Dm.DocumentManager.interpret_to_next st in
+    let range = Dm.DocumentManager.observe_id_range st in
+    Hashtbl.replace states (DocumentUri.to_path uri) st;
+    update_view uri st; 
+    if !check_mode = Settings.Mode.Manual then
+      match range with 
+      | None ->
+        inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+      | Some range -> 
+        [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
+    else 
       inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
-    | Some range -> 
-      [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
-  else 
-    inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
   
   let make_CompletionItem i item : CompletionItem.t = 
     let (label, insertText, typ, path) = Dm.CompletionItems.pp_completion_item item in
@@ -335,74 +346,88 @@ let textDocumentCompletion id params =
     return_completion ~isIncomplete:false ~items:[], []
   else
   let Lsp.Types.CompletionParams.{ textDocument = { uri }; position } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  match Dm.DocumentManager.get_completions st position with
-  | Ok completionItems -> 
-    let items = List.mapi make_CompletionItem completionItems in
-    return_completion ~isIncomplete:false ~items, []
-  | Error e -> 
-    let message = e in
-    Error(message), []
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[textDocumentCompletion]ignoring event on non existant document"; Error("Document does not exist"), []
+  | Some st -> 
+    match Dm.DocumentManager.get_completions st position with
+    | Ok completionItems -> 
+      let items = List.mapi make_CompletionItem completionItems in
+      return_completion ~isIncomplete:false ~items, []
+    | Error e -> 
+      let message = e in
+      Error(message), []
 
 let coqtopResetCoq id params =
   let Request.Client.ResetParams.{ textDocument = { uri } } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let st, events = Dm.DocumentManager.reset st in
-  let (st, events') =
-    if !check_mode = Settings.Mode.Continuous then
-      Dm.DocumentManager.interpret_in_background st
-    else
-      (st, [])
-  in
-  Hashtbl.replace states (DocumentUri.to_path uri) st;
-  update_view uri st;
-  Ok(()), (uri,events@events') |> inject_dm_events
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[resetCoq] ignoring event on non existant document"; Error("Document does not exist"), []
+  | Some st -> 
+    let st, events = Dm.DocumentManager.reset st in
+    let (st, events') =
+      if !check_mode = Settings.Mode.Continuous then
+        Dm.DocumentManager.interpret_in_background st
+      else
+        (st, [])
+    in
+    Hashtbl.replace states (DocumentUri.to_path uri) st;
+    update_view uri st;
+    Ok(()), (uri,events@events') |> inject_dm_events
 
 let coqtopInterpretToEnd params =
   let Notification.Client.InterpretToEndParams.{ textDocument = { uri } } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let (st, events) = Dm.DocumentManager.interpret_to_end st in
-  Hashtbl.replace states (DocumentUri.to_path uri) st;
-  update_view uri st;
-  inject_dm_events (uri,events) @ [ mk_proof_view_event uri None]
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[interpretToEnd] ignoring event on non existant document"; []
+  | Some st ->
+    let (st, events) = Dm.DocumentManager.interpret_to_end st in
+    Hashtbl.replace states (DocumentUri.to_path uri) st;
+    update_view uri st;
+    inject_dm_events (uri,events) @ [ mk_proof_view_event uri None]
 
 let coqtopLocate id params = 
   let Request.Client.LocateParams.{ textDocument = { uri }; position; pattern } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  Dm.DocumentManager.locate st position ~pattern, []
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[locate] ignoring event on non existant document"; Error("Document does not exist"), []
+  | Some st ->
+    Dm.DocumentManager.locate st position ~pattern, []
 
 let coqtopPrint id params = 
   let Request.Client.PrintParams.{ textDocument = { uri }; position; pattern } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  Dm.DocumentManager.print st position ~pattern, []
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[print] ignoring event on non existant document"; Error("Document does not exist"), []
+  | Some st -> Dm.DocumentManager.print st position ~pattern, []
 
 let coqtopAbout id params =
   let Request.Client.AboutParams.{ textDocument = { uri }; position; pattern } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  Dm.DocumentManager.about st position ~pattern, []
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[about] ignoring event on non existant document"; Error("Document does not exist"), []
+  | Some st -> Dm.DocumentManager.about st position ~pattern, []
 
 let coqtopCheck id params =
   let Request.Client.CheckParams.{ textDocument = { uri }; position; pattern } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  Dm.DocumentManager.check st position ~pattern, []
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[check] ignoring event on non existant document"; Error("Document does not exist"), []
+  | Some st -> Dm.DocumentManager.check st position ~pattern, []
 
 let coqtopSearch id params =
   let Request.Client.SearchParams.{ textDocument = { uri }; id; position; pattern } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  try
-    let notifications = Dm.DocumentManager.search st ~id position pattern in
-    Ok(()), inject_notifications notifications
-  with e ->
-    let e, info = Exninfo.capture e in
-    let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
-    Error(message), []
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[search] ignoring event on non existant document"; Error("Document does not exist"), []
+  | Some st ->
+    try
+      let notifications = Dm.DocumentManager.search st ~id position pattern in
+      Ok(()), inject_notifications notifications
+    with e ->
+      let e, info = Exninfo.capture e in
+      let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
+      Error(message), []
 
 let sendDocumentState id params = 
   let Request.Client.DocumentStateParams.{ textDocument } = params in
   let uri = textDocument.uri in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let document = Dm.DocumentManager.Internal.string_of_state st in
-  Ok Request.Client.DocumentStateResult.{ document }, []
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[documentState] ignoring event on non existant document"; Error("Document does not exist"), []
+  | Some st -> let document = Dm.DocumentManager.Internal.string_of_state st in
+    Ok Request.Client.DocumentStateResult.{ document }, []
 
 let workspaceDidChangeConfiguration params = 
   let Lsp.Types.DidChangeConfigurationParams.{ settings } = params in
@@ -535,14 +560,17 @@ let handle_event = function
   | LogEvent e ->
     Dm.Log.handle_event e; []
   | SendProofView (uri, position) -> 
-    let st = Hashtbl.find states (DocumentUri.to_path uri) in
-    let proof = Dm.DocumentManager.get_proof st !diff_mode position in
-    let messages = Dm.DocumentManager.get_messages st position in
-    let messages =
-      if !full_messages then messages
-      else List.filter (fun (sev,_) -> sev == DiagnosticSeverity.Information) messages
-    in
-    send_proof_view Notification.Server.ProofViewParams.{ proof; messages }; []
+    begin match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+    | None -> log @@ "ignoring event on non existant document"; []
+    | Some st ->
+      let proof = Dm.DocumentManager.get_proof st !diff_mode position in
+      let messages = Dm.DocumentManager.get_messages st position in
+      let messages =
+        if !full_messages then messages
+        else List.filter (fun (sev,_) -> sev == DiagnosticSeverity.Information) messages
+      in
+      send_proof_view Notification.Server.ProofViewParams.{ proof; messages }; []
+    end
   | SendMoveCursor (uri, range) -> 
     send_move_cursor uri range; []
 
