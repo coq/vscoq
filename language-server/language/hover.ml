@@ -105,7 +105,9 @@ let pr_args args more_implicits mods =
 
 let implicit_kind_of_status = function
   | None -> Anonymous, Glob_term.Explicit
-  | Some ((na,_,_),_,(maximal,_)) -> na, if maximal then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
+  | Some imp ->
+    let (na, _, _) = imp.Impargs.impl_pos in
+    na, if imp.Impargs.impl_max then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
 
 let extra_implicit_kind_of_status imp =
   let _,imp = implicit_kind_of_status imp in
