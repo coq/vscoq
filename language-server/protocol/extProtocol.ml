@@ -86,7 +86,6 @@ module Notification = struct
 
       type t = {
         uri : DocumentUri.t;
-        parsedRange : Range.t list;
         processingRange : Range.t list;
         processedRange : Range.t list;
       } [@@deriving yojson]

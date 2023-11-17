@@ -233,9 +233,8 @@ Path: \`${coqTM.getVsCoqTopPath()}\`
             client.onNotification("vscoq/updateHighlights", (notification) => {
             
                 client.saveHighlights(
-                    notification.uri, 
-                    notification.parsedRange, 
-                    notification.processingRange, 
+                    notification.uri,
+                    notification.processingRange,
                     notification.processedRange
                 );
             

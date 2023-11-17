@@ -35,7 +35,7 @@ export default class Client extends LanguageClient {
         Client._channel.appendLine(message);
     }
 
-    public saveHighlights(uri: String, parsedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
+    public saveHighlights(uri: String, processingRange: vscode.Range[], processedRange: vscode.Range[]) {
         this._decorations.set(uri, processedRange);
     }
 

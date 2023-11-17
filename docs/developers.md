@@ -103,6 +103,8 @@ To release a new version of VsCoq:
     - flake.nix
     - client/package.json
     - language-server/vscoqtop/lspManager.ml
+
+1.a Don't forget to add the version requirements in `client/src/utilities/versioning.ts`
   
 2. Create a signed tag for the release with the new version number 
 ```shell

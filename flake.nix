@@ -31,7 +31,7 @@
       ocamlPackages.buildDunePackage {
         duneVersion = "3";
         pname = "vscoq-language-server";
-        version = "2.0.1";
+        version = "2.0.2";
         src = ./language-server;
         buildInputs = [
           coq

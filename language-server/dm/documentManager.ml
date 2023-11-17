@@ -52,10 +52,8 @@ let inject_em_events events = List.map inject_em_event events
 type events = event Sel.Event.t list
 
 type exec_overview = {
-  parsed : Range.t list;
-  checked : Range.t list;
-  checked_by_delegate : Range.t list;
-  legacy_highlight : Range.t list;
+  processing : Range.t list;
+  processed : Range.t list;
 }
 
 let merge_ranges doc (r1,l) r2 =
@@ -81,20 +79,11 @@ let executed_ranges doc execution_state loc =
     compress_ranges (Document.raw_document doc) @@ List.map (Document.range_of_id doc) l
   in
   let ids_before_loc = List.map (fun s -> s.Document.id) @@ Document.sentences_before doc loc in
-  let ids = List.map (fun s -> s.Document.id) @@ Document.sentences doc in
-  let executed_ids = List.filter (ExecutionManager.is_executed execution_state) ids in
-  let remotely_executed_ids = List.filter (ExecutionManager.is_remotely_executed execution_state) ids in
-  let parsed_ids = List.filter (fun x -> not (List.mem x executed_ids || List.mem x remotely_executed_ids)) ids in
-  let legacy_ids = List.filter (fun x -> ExecutionManager.is_executed execution_state x || ExecutionManager.is_remotely_executed execution_state x) ids_before_loc in
-  log @@ Printf.sprintf "highlight: legacy: %s" (String.concat " " (List.map Stateid.to_string legacy_ids));
-  log @@ Printf.sprintf "highlight: parsed: %s" (String.concat " " (List.map Stateid.to_string parsed_ids));
-  log @@ Printf.sprintf "highlight: parsed + checked: %s" (String.concat " " (List.map Stateid.to_string executed_ids));
-  log @@ Printf.sprintf "highlight: parsed + checked_by_delegate: %s" (String.concat " " (List.map Stateid.to_string remotely_executed_ids));
+  let processed_ids = List.filter (fun x -> ExecutionManager.is_executed execution_state x || ExecutionManager.is_remotely_executed execution_state x) ids_before_loc in
+  log @@ Printf.sprintf "highlight: processed: %s" (String.concat " " (List.map Stateid.to_string processed_ids));
   { 
-    parsed = ranges_of parsed_ids;
-    checked = ranges_of executed_ids;
-    checked_by_delegate = ranges_of remotely_executed_ids;
-    legacy_highlight = ranges_of legacy_ids; 
+    processing = [];
+    processed = ranges_of processed_ids; 
   }
 
 let executed_ranges st =

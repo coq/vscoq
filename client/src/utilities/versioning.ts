@@ -27,9 +27,11 @@ type VersionReq = {
     [index: string]: string
 };
 
+/*  Version requirements for the client. Syntax is client version : minimum server version */
 const versionRequirements : VersionReq = {
     '2.0.0': '2.0.0', 
-    '2.0.1': '2.0.0'
+    '2.0.1': '2.0.0', 
+    '2.0.2': '2.0.0'
 };
 
 //We will add version ranges as we start releasing

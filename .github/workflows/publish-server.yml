@@ -1,7 +1,8 @@
-on:
-  release:
-    types:
-    - published
+on: 
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Tag to use for release'  
 
 jobs:
 

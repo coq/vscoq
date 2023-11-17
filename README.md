@@ -16,7 +16,7 @@
 [zulip-link]: https://coq.zulipchat.com/#narrow/stream/237662-VsCoq-devs.20.26.20users
 
 VsCoq is an extension for [Visual Studio Code](https://code.visualstudio.com/)
-(VS Code) and [VSCodium](https://vscodium.com/) with support for the [Coq Proof
+(VS Code) and [VSCodium](https://vscodium.com/) which provides support for the [Coq Proof
 Assistant](https://coq.inria.fr/).
 
 This extension is currently developed and maintained as part of
@@ -29,42 +29,21 @@ This extension is currently developed and maintained as part of
 [Laurent Théry](https://github.com/thery),
 and contributors.
 
-## Problems with VsCoq 2 
+VsCoq is distributed in two flavours:
 
-The latest VsCoq 2 release has broken the extension for many users. We apologize for the inconvenience and are working through a solution to prevent this from happening in the future. 
+- **VsCoq Legacy** (required for Coq < 8.18, compatible with Coq >= 8.7) is based on the original 
+  VsCoq implementation by [C.J. Bell](https://github.com/siegebell). It uses the legacy XML protocol 
+  spoken by CoqIDE.\
+  For more information, see the [VsCoq 1 branch](https://github.com/coq-community/vscoq/tree/vscoq1).
+  *Please note it is no longer actively developed, but still maintained for compatibility purposes.*
 
-Currently, if you are using Coq 8.17 or lower you need to downgrade the current version of the extension. 
-You can either do this using the command line:
-```shell
-#installing vscoq 0.3.9 with codium 
-$ codium --install-extension maximedenes.vscoq@0.3.9
-#or with code
-$ code --install-extension maximedenes.vscoq@0.3.9
-``` 
-Or from the extensions panel in vscode: 
-- Go to the extensions panel 
-- Click on the cog 
-- Select `Install another version` 
-- When prompted choose version 0.3.9
+- **VsCoq** (recommended for Coq >= 8.18) is a full reimplementation around a
+  language server which natively speaks the 
+  [LSP protocol](https://learn.microsoft.com/en-us/visualstudio/extensibility/language-server-protocol?view=vs-2022). 
 
-![](gif/downgrading-vscoq.gif)
+## Installing VsCoq
 
-If you are using Coq 8.18, we are busy getting the language server package in opam ASAP. You can use vscoq 0.3.9 so long.
-
-## Status
-
-- VsCoq 1 (versions 0.x.y) is based on the original VsCoq implementation by [C.J. Bell](https://github.com/siegebell)
-  and compatible with Coq 8.7 or more recent. It uses the legacy XML protocol
-  spoken by CoqIDE. For more information, see the
-  [VsCoq 1 branch](https://github.com/coq-community/vscoq/tree/vscoq1).
-- VsCoq 2 (beta releases versions 1.9.x) is a full reimplementation around a
-  language server which natively speaks the LSP protocol. VsCoq 2 is
-  compatible with Coq 8.18 or more recent, and supports manual or continuous mode
-  checking.
-
-## Installing VsCoq 2
-
-To use VsCoq 2, you need to (1) install the VsCoq 2 language server
+To use VsCoq, you need to (1) install the VsCoq language server
 and (2) install and configure the VsCoq extension in either VS Code or VSCodium.
 
 ### Installing the language server
@@ -130,8 +109,34 @@ We also support inline queries which then trigger messages in the goal panel.
 After installation and activation of the extension:
 
 (Press `F1` and start typing "settings" to open either workspace/project or user settings.)
+#### Coq configuration
 * `"vscoq.path": ""` -- specify the path to `vscoqtop` (e.g. `path/to/vscoq/bin/vscoqtop`)
 * `"vscoq.args": []` -- an array of strings specifying additional command line arguments for `vscoqtop` (typically accepts the same flags as `coqtop`)
+* `"vscoq.trace.server": off | messages | verbose` -- Toggles the tracing of communications between the server and client
+
+#### Proof checking
+* `"vscoq.proof.cursor.sticky": bool` -- a toggle to specify wether the cursor should move as Coq interactively navigates a document (step forward, backward, etc...)
+* `"vscoq.proof.mode": Continuous | Manual` -- Decide wether documents should checked continuously or using the classig navigation commmands (defaults to `Continuous`)
+* `"vscoq.proof.delegation": None | Skip | Delegate` -- Decides which delegation strategy should be used by the server. 
+  `Skip` allows to skip proofs which are out of focus and should be used in manual mode. `Delegate` allocates a settable amount of workers
+  to delegate proofs. 
+* `"vscoq.proof.workers": int` -- Determines how many workers should be used for proof checking
+
+#### Goal and info view panel
+* `"vscoq.goals.diff.mode": on | off | removed` -- Toggles diff mode. If set to `removed`, only removed characters are shown (defaults to `off`)
+* `"vscoq.goals.display": Tabs | List` -- Decide whether to display goals in seperate tabs or as a list of collapsibles.
+* `"vscoq.goals.messages.full": bool` -- A toggle to include warning and errors in the proof view (defaults to `false`)
+
+#### Diagnostics
+* `"vscoq.diagnostics.full": bool` -- Toggles the printing of `Info` level diagnostics (defaults to `false`)
+
+#### Code completion (experimental)
+* `"vscoq.completion.enable": bool` -- Toggle code completion (defaults to `false`)
+* `"vscoq.completion.algorithm": StructuredSplitUnification | SplitTypeIntersection` -- Which completion algorithm to use
+* `"vscoq.completion.unificationLimit": int` -- Sets the limit for how many theorems unification is attempted
+
+## For extension developers 
+See [Dev docs](https://github.com/coq-community/vscoq/blob/main/docs/developers.md)
 
 ## License
 Unless mentioned otherwise, files in this repository are [distributed under the MIT License](LICENSE).
