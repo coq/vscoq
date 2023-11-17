@@ -222,9 +222,9 @@ let textDocumentDidOpen params =
   let vst, opts = get_init_state () in
   let st, events = Dm.DocumentManager.init vst ~opts uri ~text in
   let (st, events') = 
-    if !check_mode = Settings.Mode.Continuous then 
-      Dm.DocumentManager.interpret_in_background st 
-    else 
+    if !check_mode <> Settings.Mode.Manual then 
+      Dm.DocumentManager.interpret_in_background st
+    else
       (st, [])
   in
   Hashtbl.add states (DocumentUri.to_path uri) st;
@@ -241,7 +241,7 @@ let textDocumentDidChange params =
   let text_edits = List.map mk_text_edit contentChanges in
   let st = Dm.DocumentManager.apply_text_edits st text_edits in
   let (st, events) = 
-    if !check_mode = Settings.Mode.Continuous then 
+    if !check_mode <> Settings.Mode.Manual then 
       Dm.DocumentManager.interpret_in_background st 
     else 
       (st, [])
@@ -279,7 +279,7 @@ let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
   let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let (st, events) = Dm.DocumentManager.interpret_to_position ~stateful:(!check_mode = Settings.Mode.Manual) st position in
+  let (st, events) = Dm.DocumentManager.interpret_to_position ~skip_proofs:(!check_mode = Settings.Mode.SemiContinuous) ~stateful:(!check_mode = Settings.Mode.Manual) st position in
   Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st;
   let sel_events = inject_dm_events (uri, events) in
@@ -288,7 +288,7 @@ let coqtopInterpretToPoint params =
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let (st, events) = Dm.DocumentManager.interpret_to_previous st in
+  let (st, events) = Dm.DocumentManager.interpret_to_previous ~skip_proofs:(!check_mode = Settings.Mode.SemiContinuous) st in
   let range = Dm.DocumentManager.observe_id_range st in
   Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st; 
@@ -304,7 +304,7 @@ let coqtopStepBackward params =
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let (st, events) = Dm.DocumentManager.interpret_to_next st in
+  let (st, events) = Dm.DocumentManager.interpret_to_next ~skip_proofs:(!check_mode = Settings.Mode.SemiContinuous)  st in
   let range = Dm.DocumentManager.observe_id_range st in
   Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st; 
@@ -350,7 +350,7 @@ let coqtopResetCoq id params =
   let st = Hashtbl.find states (DocumentUri.to_path uri) in
   let st, events = Dm.DocumentManager.reset st in
   let (st, events') =
-    if !check_mode = Settings.Mode.Continuous then
+    if !check_mode <> Settings.Mode.Manual then
       Dm.DocumentManager.interpret_in_background st
     else
       (st, [])
@@ -362,7 +362,7 @@ let coqtopResetCoq id params =
 let coqtopInterpretToEnd params =
   let Notification.Client.InterpretToEndParams.{ textDocument = { uri } } = params in
   let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let (st, events) = Dm.DocumentManager.interpret_to_end st in
+  let (st, events) = Dm.DocumentManager.interpret_to_end ~skip_proofs:false st in
   Hashtbl.replace states (DocumentUri.to_path uri) st;
   update_view uri st;
   inject_dm_events (uri,events) @ [ mk_proof_view_event uri None]
@@ -409,7 +409,7 @@ let workspaceDidChangeConfiguration params =
   let Lsp.Types.DidChangeConfigurationParams.{ settings } = params in
   let settings = Settings.t_of_yojson settings in
   do_configuration settings;
-  if !check_mode = Settings.Mode.Continuous then
+  if !check_mode <> Settings.Mode.Manual then
     run_documents ()
   else
     []
