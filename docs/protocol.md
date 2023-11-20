@@ -101,19 +101,17 @@ interface Configuration {
 For providing highlights which reflect the current internal state of coq, we provide "vscoq/updateHighlights" which returns an object containing 
 
 ``` typescript
-interface Highlights {
+interface UpdateHighlightsNotification {
     //Document idefinfier
-    uri: TextDocumentIdentifier;
+    uri: Uri;
     // The ranges of lines of code that were parsed by the server
     parsedRange: vscode.Range[];
-    // The ranges of lines of code currently being processed by the server
-    processingRange: vscode.Range[];
     // The ranges of lines of code that have been processed by the server
     processedRange: vscode.Range[];
 }
 ```
 
-The parsed, processing and processed range correspond to the ranges of lines in the document that have the coresponding type. 
+The parsed and processed range correspond to the ranges of lines in the document that have the coresponding type. 
 By default, we display the processed lines in the VSCode gutter.
 
 ## Goal view 
@@ -201,11 +199,6 @@ interface SearchCoqRequest {
 interface SearchCoqHandshake {
     //Returns the provided uuid
     id: string;
-    //If the search was succesful just returns ok
-    result?: boolean;
-    //Returns any relevant error message
-    error?: any;
-
 }
 
 interface SearchCoqResult {
@@ -218,11 +211,10 @@ interface SearchCoqResult {
 }
 ```
 
-By default the coq Search command as asynchronous. Therefore, the language server first sends a handshake either with an OK code, or with an error. It then sends each result one by one through the SearchCoqResult interface. The id corresponds to a uuid given to each search request. 
+By default the coq Search command as asynchronous. Therefore, the language server first sends a handshake either with an OK code, or with an error. It then sends each result one by one through the SearchCoqResult notification. The id corresponds to a uuid given to each search request. 
 
-We also provide the requests for the "check", "about", "locate" and "print" queries, with plans to support more in the future. 
-Note that the "check" and about "about" queries are synchronous and do not require a seperate verb for their responses. 
-Verbs: `vscoq/check`, `vscoq/about`.
+We also provide the requests for the `vscoq/check`, `vscoq/about`, `vscoq/locate` and `vscoq/print` queries, with plans to support more in the future. 
+These queries are synchronous and do not require a seperate verb for their responses. 
 
 ```typescript
 
@@ -230,7 +222,6 @@ interface AboutCoqRequest {
     textDocument: VersionedTextDocumentIdentifier;
     pattern: string; 
     position: Position;
-    goalIndex?: number;
 }
 
 type AboutCoqResponse = PpString;
@@ -239,7 +230,6 @@ interface CheckCoqRequest {
     textDocument: VersionedTextDocumentIdentifier;
     pattern: string; 
     position: Position;
-    goalIndex?: number;
 };
 
 type CheckCoqResponse = PpString; 
