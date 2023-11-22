@@ -357,3 +357,26 @@ let%test_unit "edit.shift_error_before_sentence" =
   let warning = Stdlib.List.hd @@ DocumentManager.all_diagnostics st in
   [%test_eq: int] 41 (warning.range.start.character);
   [%test_eq: int] 42 (warning.range.end_.character)
+
+let%test_unit "edit.edit_non_root_observe_id_top" =
+  let st, init_events = init_test_doc ~text:"Definition x := 1. Definition y := 2." in
+  let st, (s1, (s2, ())) = dm_parse st (P(P O)) in
+  let st, events = DocumentManager.interpret_to_end st in
+  let todo = Sel.Todo.(add empty init_events) in
+  let todo = Sel.Todo.(add todo events) in
+  let st = handle_events todo st in
+  let st = edit_text st ~start:0 ~stop:18 ~text:"Definition x := 3." in
+  [%test_eq: bool] (ExecutionManager.is_executed (DocumentManager.Internal.execution_state st) s2.id) false;
+  [%test_eq: int option] (Option.map ~f:Stateid.to_int (DocumentManager.Internal.observe_id st)) None
+
+let%test_unit "edit.edit_non_root_observe_id" =
+  let st, init_events = init_test_doc ~text:"Definition x := 1. Definition y := 2. Definition z := 3." in
+  let st, (s1, (s2, (s3, ()))) = dm_parse st (P(P(P O))) in
+  let st, events = DocumentManager.interpret_to_end st in
+  let todo = Sel.Todo.(add empty init_events) in
+  let todo = Sel.Todo.(add todo events) in
+  let st = handle_events todo st in
+  let st = edit_text st ~start:19 ~stop:37 ~text:"Definition y := 4." in
+  [%test_eq: bool] (ExecutionManager.is_executed (DocumentManager.Internal.execution_state st) s3.id) false;
+  [%test_eq: int option] (Option.map ~f:Stateid.to_int (DocumentManager.Internal.observe_id st))
+    (Some (Stateid.to_int s1.id))

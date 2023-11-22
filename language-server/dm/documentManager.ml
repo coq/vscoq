@@ -211,17 +211,21 @@ let interpret_in_background st =
   | None -> (st, [])
   | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to ~stateful:true ~background:true st id
 
+let is_above st id1 id2 =
+  let range1 = Document.range_of_id st id1 in
+  let range2 = Document.range_of_id st id2 in
+  Position.compare range1.start range2.start < 0
+
 let validate_document state =
-  let unchanged_id, invalid_ids, document = Document.validate_document state.document in
-  let update_observe_id id =
-    if Stateid.Set.mem id invalid_ids then unchanged_id
-    else Some id
+  let unchanged_id, invalid_roots, document = Document.validate_document state.document in
+  let observe_id = match unchanged_id, state.observe_id with
+    | None, _ | _, None -> None
+    | Some id, Some id' -> if is_above state.document id id' then Some id else Some id'
   in
-  let observe_id = Option.bind state.observe_id update_observe_id in
   let execution_state =
     List.fold_left (fun st id ->
       ExecutionManager.invalidate (Document.schedule state.document) id st
-      ) state.execution_state (Stateid.Set.elements invalid_ids) in
+      ) state.execution_state (Stateid.Set.elements invalid_roots) in
   { state with document; execution_state; observe_id }
 
 let init init_vs ~opts uri ~text =
