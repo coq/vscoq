@@ -51,9 +51,9 @@ export interface ProofViewNotification {
     messages: CoqMessage[];
 }
 
-export interface UpdateHightlightsNotification {
+export interface UpdateHighlightsNotification {
     uri: Uri; 
-    parsedRange: Range[];
+    processingRange: Range[];
     processedRange: Range[];
 }
 
