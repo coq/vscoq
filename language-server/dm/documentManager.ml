@@ -437,7 +437,9 @@ module Internal = struct
     st.execution_state
 
   let observe_id st =
-    st.observe_id
+    match st.observe_id with
+    | None | Some Top -> None
+    | Some (Id id) -> Some id
 
   let validate_document st =
     validate_document st

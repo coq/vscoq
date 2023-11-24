@@ -119,7 +119,7 @@ module Internal : sig
   val raw_document : state -> RawDocument.t
   val execution_state : state -> ExecutionManager.state
   val string_of_state : state -> string
-  val observe_id : state -> observe_id option
+  val observe_id : state -> sentence_id option
 
   val validate_document : state -> state
   (** [validate_document doc] reparses the text of [doc] and invalidates the
