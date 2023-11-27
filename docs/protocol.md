@@ -104,14 +104,14 @@ For providing highlights which reflect the current internal state of coq, we pro
 interface UpdateHighlightsNotification {
     //Document idefinfier
     uri: Uri;
-    // The ranges of lines of code that were parsed by the server
-    parsedRange: vscode.Range[];
+    // The ranges of lines of code currently being processed by the server
+    processingRange: vscode.Range[];
     // The ranges of lines of code that have been processed by the server
     processedRange: vscode.Range[];
 }
 ```
 
-The parsed and processed range correspond to the ranges of lines in the document that have the coresponding type. 
+The processing and processed range correspond to the ranges of lines in the document that have the coresponding type. 
 By default, we display the processed lines in the VSCode gutter.
 
 ## Goal view 
