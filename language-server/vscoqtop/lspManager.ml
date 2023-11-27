@@ -226,7 +226,9 @@ let run_documents () =
 let reset_observe_ids =
   let reset_doc_observe_id path (st : Dm.DocumentManager.state) events =
     let st = Dm.DocumentManager.reset_to_top st in
-    Hashtbl.replace states path st
+    let uri = DocumentUri.of_path path in
+    Hashtbl.replace states path st;
+    update_view uri st
   in
   Hashtbl.fold reset_doc_observe_id states
 
