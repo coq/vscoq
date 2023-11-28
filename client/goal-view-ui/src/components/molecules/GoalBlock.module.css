@@ -2,6 +2,19 @@
     width: 100%;
 }
 
+.SeparatorZone {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+.GoalIndex {
+    color: var(--vscode-coq-goalId);
+    margin-right: 6px;
+    text-wrap: nowrap;
+    font-size: x-small;
+}
+
 .Header {
     display: flex;
     flex-direction: row;

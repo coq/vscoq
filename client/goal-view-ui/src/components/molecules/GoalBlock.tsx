@@ -11,15 +11,18 @@ import { Goal } from '../../types';
 
 type GoalBlockProps = {
     goal: Goal
+    goalIndicator?: string
 };
 
 const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {
     
-    const {goal} = props;
+    const {goal, goalIndicator} = props;
+    const indicator = goalIndicator ? <span className={classes.GoalIndex} >({goalIndicator})</span> : null;
 
     return (
         <div className={classes.Block}>
             <HypothesesBlock hypotheses={goal.hypotheses}/>
+            <div className={classes.SeparatorZone}> {indicator} <Separator /> </div>
             <GoalComponent goal={goal.goal}/>
         </div>
     );

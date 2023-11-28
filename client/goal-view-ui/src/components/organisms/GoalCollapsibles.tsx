@@ -22,7 +22,7 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     const scrollToBottomOfFirstGoal = () => {
         if(firstGoalRef.current) {
             firstGoalRef.current.scrollIntoView({
-                behavior: "smooth",
+                // behavior: "smooth",
                 block: "end",
                 inline: "nearest"
             });
@@ -34,14 +34,14 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
         if(index === 0) {
             return (
                 <>
-                    <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} collapseHandler={collapseGoalHandler}/>
+                    <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} goalIndicator={index + 1 + " / " + goals.length} collapseHandler={collapseGoalHandler}/>
                     <div ref={firstGoalRef}/>
                 </>
             );
         }
 
         return (
-            <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} collapseHandler={collapseGoalHandler}/>
+            <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} goalIndicator={index + 1 + " / " + goals.length} collapseHandler={collapseGoalHandler}/>
         );
     });
 
