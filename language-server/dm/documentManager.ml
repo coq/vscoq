@@ -404,7 +404,12 @@ let hover st pos =
     log ("hover: found word at cursor: " ^ pattern);
     let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
     match hover st loc pattern (get_context st pos) with
-    | None -> hover st loc pattern (get_next_context st pos) (* Try*)
+    | None -> 
+      (* No hover was found using context at the start of a the sentence,
+         In case of definition, this may be because we are hovering on things
+         that aren't yet defined. Try to get hover using context at the end of
+         the sentence *)
+      hover st loc pattern (get_next_context st pos)
     | x -> x
 
 let check st pos ~pattern =
