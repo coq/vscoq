@@ -224,7 +224,7 @@ let ref_info env _sigma ref udecl =
   let path = Libnames.pr_path (Nametab.path_of_global ref) ++ canonical_name_info ref in
   let args = print_arguments ref in
   let args = if Pp.ismt args then [] else ["**Args:** " ^ (Pp.string_of_ppcmds (print_arguments ref))] in
-  String.concat "\n" @@ [md_code_block @@ compactify @@ Pp.string_of_ppcmds typ]@args@
+  String.concat "\n\n---\n\n" @@ [md_code_block @@ compactify @@ Pp.string_of_ppcmds typ]@args@
   [Format.sprintf "**%s** %s" (pr_globref_kind ref) (Pp.string_of_ppcmds path)]
 
 let mod_info mp =
