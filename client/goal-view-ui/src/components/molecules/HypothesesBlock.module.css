@@ -1,7 +1,7 @@
 .Block {
-    border-bottom: 2pt solid;
+    /* border-bottom: 2pt solid; */
     padding: 0pt;
     padding-bottom: 1em;
     margin: 0;
-    border-bottom-color: var(--vscode-coq-hypothesesSeparator);
+    /* border-bottom-color: var(--vscode-coq-hypothesesSeparator); */
 }
