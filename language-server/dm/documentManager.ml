@@ -330,10 +330,20 @@ let get_proof st diff_mode pos =
   let previous = Option.bind oid previous_st in
   Option.bind ost (ProofState.get_proof ~previous diff_mode)
 
-let get_context st pos =
-  match id_of_pos st pos with
+let context_of_id st = function
   | None -> Some (ExecutionManager.get_initial_context st.execution_state)
   | Some id -> ExecutionManager.get_context st.execution_state id
+
+(** Get context at the start of the sentence containing [pos] *)
+let get_context st pos = context_of_id st (id_of_pos st pos)
+
+(** Get context at the end of the sentence containing [pos] *)
+let get_next_context st pos =
+    let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
+    let id = match Document.find_sentence_after st.document loc with
+    | None -> None
+    | Some { id } -> Some id in
+    context_of_id st id
 
 let get_completions st pos =
   match id_of_pos st pos with
@@ -374,23 +384,28 @@ let search st ~id pos pattern =
     let query, r = parse_entry st loc (G_vernac.search_queries) pattern in
     SearchQuery.interp_search ~id env sigma query r
 
-let hover st pos = 
+(** Try to generate hover text from [pattern] in the given context *)
+let hover st loc pattern = function
+  | None -> log "hover: no context found"; None
+  | Some (sigma, env) ->
+    try
+      let ref_or_by_not = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
+      Language.Hover.get_hover_contents env sigma ref_or_by_not
+    with e ->
+      let e, info = Exninfo.capture e in
+      log ("Exception while handling hover: " ^ (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)));
+      None
+
+let hover st pos =
   let opattern = RawDocument.word_at_position (Document.raw_document st.document) pos in
   match opattern with
   | None -> log "hover: no word found at cursor"; None
   | Some pattern ->
     log ("hover: found word at cursor: " ^ pattern);
     let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-    match get_context st pos with
-    | None -> log "hover: no context found"; None
-    | Some (sigma, env) ->
-      try
-        let ref_or_by_not = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
-        Language.Hover.get_hover_contents env sigma ref_or_by_not
-      with e ->
-        let e, info = Exninfo.capture e in
-        log ("Exception while handling hover: " ^ (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)));
-        None
+    match hover st loc pattern (get_context st pos) with
+    | None -> hover st loc pattern (get_next_context st pos) (* Try*)
+    | x -> x
 
 let check st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
