@@ -230,9 +230,11 @@ let validate_document state =
 
 let init init_vs ~opts uri ~text =
   Vernacstate.unfreeze_full_state init_vs;
-  let top = Coqargs.(dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) in
+  let top = try Coqargs.(dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) with
+    e -> raise e
+  in
   Coqinit.start_library ~top opts;
-  let init_vs = Vernacstate.freeze_full_state () in 
+  let init_vs = Vernacstate.freeze_full_state () in
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in
   let st = { uri; opts; init_vs; document; execution_state; observe_id = None } in
