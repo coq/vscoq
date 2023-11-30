@@ -142,7 +142,7 @@ let find_sentence_after parsed loc =
   | Some (_, sentence) -> Some sentence
   | _ -> None
 
-let find_next_qed (parsed : document) loc =
+let find_next_qed parsed loc =
   let exception Found of sentence in
   let f k sentence =
     if loc <= k then
