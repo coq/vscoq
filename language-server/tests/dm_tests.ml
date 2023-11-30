@@ -209,50 +209,6 @@ let%test_unit "step_backward.document_begin" =
   let st = handle_events todo st in
   [%test_eq: bool] (Option.is_none (DocumentManager.Internal.observe_id st)) true
 
-(* With this test we can check that interpret_in_background has lower priority then interpret to *)
-let%test_unit "interpret_in_background.interpret_to stateful" = 
-  let st, init_events = init_test_doc ~text:"Definition x := true. Definition y := false. Definition z := 0." in
-  let st, (s1, (s2, (s3, ()))) = dm_parse st (P (P (P O))) in
-  let todo = Sel.Todo.(add empty init_events) in
-  let st = handle_events todo st in 
-  let st1, events = DocumentManager.interpret_in_background st in
-  let todo = Sel.Todo.(add empty events) in 
-  let position = RawDocument.position_of_loc (DocumentManager.Internal.raw_document st) s2.stop in
-  let st2, events = DocumentManager.interpret_to_position ~stateful:true st1 position in 
-  let todo = Sel.Todo.(add todo events) in 
-  let st = handle_events todo st1 in 
-  [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s3.id)) (DocumentManager.Internal.observe_id st)
-
-(* With this test interpret_to_end and interpret_to have the same priority, and interpret to is stateful 
-   so it will modify observe id, they will get executed in order of insertion, hence observe_id = s2.id *)  
-let%test_unit "interpret_to_end.interpret_to stateful" = 
-  let st, init_events = init_test_doc ~text:"Definition x := true. Definition y := false. Definition z := 0." in
-  let st, (s1, (s2, (s3, ()))) = dm_parse st (P (P (P O))) in
-  let todo = Sel.Todo.(add empty init_events) in
-  let st = handle_events todo st in 
-  let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.Todo.(add empty events) in 
-  let position = RawDocument.position_of_loc (DocumentManager.Internal.raw_document st) s2.stop in
-  let st, events = DocumentManager.interpret_to_position ~stateful:true st position in 
-  let todo = Sel.Todo.(add todo events) in 
-  let st = handle_events todo st in 
-  [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s2.id)) (DocumentManager.Internal.observe_id st)
-
-(* With this test interpret_to_end and interpret_to have the same priority, and interpret to is not stateful 
-   so it will not modify observe id, they will get executed in order of insertion, hence observe_id = s3.id *) 
-let%test_unit "interpret_to_end.interpret_to not stateful" = 
-  let st, init_events = init_test_doc ~text:"Definition x := true. Definition y := false. Definition z := 0." in
-  let st, (s1, (s2, (s3, ()))) = dm_parse st (P (P (P O))) in
-  let todo = Sel.Todo.(add empty init_events) in
-  let st = handle_events todo st in 
-  let st, events = DocumentManager.interpret_to_end st in
-  let todo = Sel.Todo.(add empty events) in 
-  let position = RawDocument.position_of_loc (DocumentManager.Internal.raw_document st) s2.stop in
-  let st, events = DocumentManager.interpret_to_position ~stateful:false st position in 
-  let todo = Sel.Todo.(add todo events) in 
-  let st = handle_events todo st in 
-  [%test_pred: sentence_id option] (Option.equal Stateid.equal (Some s3.id)) (DocumentManager.Internal.observe_id st)
-
 (*
 let%test_unit "exec.insert" =
   let st, events = init_test_doc ~text:"Definition x := true. Definition y := false." in

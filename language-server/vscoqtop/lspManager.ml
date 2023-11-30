@@ -212,7 +212,8 @@ let update_view uri st =
   )
 
 let run_documents () =
-  let interpret_doc_in_bg path st events =
+  let interpret_doc_in_bg path (st : Dm.DocumentManager.state) events =
+    let st = Dm.DocumentManager.clear_observe_id st in
     let (st, events') = Dm.DocumentManager.interpret_in_background st in
     let uri = DocumentUri.of_path path in
     Hashtbl.replace states path st;
@@ -222,10 +223,20 @@ let run_documents () =
   in
   Hashtbl.fold interpret_doc_in_bg states []
 
+let reset_observe_ids =
+  let reset_doc_observe_id path (st : Dm.DocumentManager.state) events =
+    let st = Dm.DocumentManager.reset_to_top st in
+    let uri = DocumentUri.of_path path in
+    Hashtbl.replace states path st;
+    update_view uri st
+  in
+  Hashtbl.fold reset_doc_observe_id states
+
 let textDocumentDidOpen params =
   let Lsp.Types.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
   let vst, opts = get_init_state () in
-  let st, events = try Dm.DocumentManager.init vst ~opts uri ~text with
+  let observe_id = if !check_mode = Settings.Mode.Continuous then None else Some Dm.DocumentManager.Top in
+  let st, events = try Dm.DocumentManager.init vst ~opts uri ~text observe_id with
     e -> raise e
   in
   let (st, events') = 
@@ -293,7 +304,7 @@ let coqtopInterpretToPoint params =
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[interpretToPoint] ignoring event on non existant document"; []
   | Some st ->
-    let (st, events) = Dm.DocumentManager.interpret_to_position ~stateful:(!check_mode = Settings.Mode.Manual) st position in
+    let (st, events) = Dm.DocumentManager.interpret_to_position st position in
     Hashtbl.replace states (DocumentUri.to_path uri) st;
     update_view uri st;
     let sel_events = inject_dm_events (uri, events) in
@@ -302,38 +313,32 @@ let coqtopInterpretToPoint params =
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[stepBackward] ignoring event on non existant document"; []
+  | None -> log "[stepForward] ignoring event on non existant document"; []
   | Some st ->
     let (st, events) = Dm.DocumentManager.interpret_to_previous st in
     let range = Dm.DocumentManager.observe_id_range st in
     Hashtbl.replace states (DocumentUri.to_path uri) st;
-    update_view uri st; 
-    if !check_mode = Settings.Mode.Manual then
-      match range with 
-      | None ->
-        inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] (* how can this do anything? isn't observe_id None? *)
-      | Some range -> 
-        [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
-    else 
-      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] (* isn't observe_id none in continuous mode? If so, how does this do anything? *)
+    update_view uri st;
+    match range with
+    | None ->
+      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+    | Some range ->
+      [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
 
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "ignoring event on non existant document"; []
+  | None -> log "[stepBackward] ignoring event on non existant document"; []
   | Some st ->
     let (st, events) = Dm.DocumentManager.interpret_to_next st in
     let range = Dm.DocumentManager.observe_id_range st in
     Hashtbl.replace states (DocumentUri.to_path uri) st;
-    update_view uri st; 
-    if !check_mode = Settings.Mode.Manual then
-      match range with 
-      | None ->
-        inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
-      | Some range -> 
-        [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ] 
-    else 
+    update_view uri st;
+    match range with 
+    | None ->
       inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+    | Some range -> 
+      [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
   
   let make_CompletionItem i item : CompletionItem.t = 
     let (label, insertText, typ, path) = Dm.CompletionItems.pp_completion_item item in
@@ -441,10 +446,9 @@ let workspaceDidChangeConfiguration params =
   let Lsp.Types.DidChangeConfigurationParams.{ settings } = params in
   let settings = Settings.t_of_yojson settings in
   do_configuration settings;
-  if !check_mode = Settings.Mode.Continuous then
-    run_documents ()
-  else
-    []
+  match !check_mode with
+  | Continuous -> run_documents ()
+  | Manual -> reset_observe_ids (); ([] : events)
 
 let dispatch_std_request : type a. Jsonrpc.Id.t -> a Lsp.Client_request.t -> (a,string) result * events =
   fun id req ->

@@ -24,6 +24,8 @@ open CompletionItems
     and get feedback. Note that it does not require IDEs to parse vernacular
     sentences. *)
 
+type observe_id = Id of Types.sentence_id | Top
+
 type state
 
 type event
@@ -31,7 +33,7 @@ val pp_event : Format.formatter -> event -> unit
 
 type events = event Sel.Event.t list
 
-val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> state * events
+val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> observe_id option -> state * events
 (** [init st opts uri text] initializes the document manager with initial vernac state
     [st] on which command line opts will be set. *)
 
@@ -40,7 +42,13 @@ val apply_text_edits : state -> text_edit list -> state
     document is parsed, outdated executions states are invalidated, and the observe
     id is updated. *)
 
-val interpret_to_position : stateful:bool -> state -> Position.t -> (state * events)
+val clear_observe_id : state -> state
+(** [clear_observe_id state] updates the state to make the observe_id None *)
+
+val reset_to_top : state -> state
+(** [reset_to_top state] updates the state to make the observe_id Top *)
+
+val interpret_to_position : state -> Position.t -> (state * events)
 (** [interpret_to_position stateful doc pos] navigates to the last sentence ending
     before or at [pos] and returns the resulting state. The [stateful] flag 
     determines if we record the resulting position in the state. *)
@@ -111,7 +119,7 @@ module Internal : sig
   val raw_document : state -> RawDocument.t
   val execution_state : state -> ExecutionManager.state
   val string_of_state : state -> string
-  val observe_id : state -> Types.sentence_id option
+  val observe_id : state -> sentence_id option
 
   val validate_document : state -> state
   (** [validate_document doc] reparses the text of [doc] and invalidates the

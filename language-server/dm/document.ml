@@ -332,6 +332,7 @@ let validate_document ({ parsed_loc; raw_doc; } as document) =
   (* We take the state strictly before parsed_loc to cover the case when the
   end of the sentence is editted *)
   let (stop, synterp_state, _scheduler_state) = state_strictly_before document parsed_loc in
+  (* let top_id = find_sentence_strictly_before document parsed_loc with None -> Top | Some sentence -> Id sentence.id in *)
   let top_id = Option.map (fun sentence -> sentence.id) (find_sentence_strictly_before document parsed_loc) in
   let text = RawDocument.text raw_doc in
   let stream = Stream.of_string text in

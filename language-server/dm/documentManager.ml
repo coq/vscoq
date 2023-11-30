@@ -20,13 +20,23 @@ open Types
 
 let Log log = Log.mk_log "documentManager"
 
+type observe_id = Id of Types.sentence_id | Top
+
+let to_sentence_id = function
+| Top -> None
+| Id id -> Some id
+
+(* let observe_id_to_string = function
+| Top -> "Top"
+| Id id -> Stateid.to_string id *)
+
 type state = {
   uri : DocumentUri.t;
   init_vs : Vernacstate.t;
   opts : Coqargs.injection_command list;
   document : Document.document;
   execution_state : ExecutionManager.state;
-  observe_id : Types.sentence_id option;
+  observe_id : observe_id option;
 }
 
 type event =
@@ -87,17 +97,23 @@ let executed_ranges doc execution_state loc =
   }
 
 let executed_ranges st =
-  let loc = match Option.bind st.observe_id (Document.get_sentence st.document) with
-  | None -> 0
-  | Some { stop } -> stop
+  let loc = match st.observe_id with
+  | None -> max_int
+  | Some Top -> 0
+  | Some (Id id) -> match Document.get_sentence st.document id with 
+    | None -> failwith "observe_id does not exist"
+    | Some { stop } -> stop
   in
   executed_ranges st.document st.execution_state loc
 
 let observe_id_range st = 
   let doc = Document.raw_document st.document in
-  match Option.bind st.observe_id (Document.get_sentence st.document) with 
+  match st.observe_id with
     | None -> None
-    | Some { start; stop} -> 
+    | Some Top -> None
+    | Some (Id id) -> match Document.get_sentence st.document id with
+      | None -> failwith "observe_id does not exist"
+      | Some { start; stop } ->
       let start = RawDocument.position_of_loc doc start in 
       let end_ = RawDocument.position_of_loc doc stop in 
       let range = Range.{ start; end_ } in 
@@ -144,8 +160,12 @@ let id_of_pos st pos =
   | None -> None
   | Some { id } -> Some id
 
+let id_of_pos_opt st = function
+  | None -> begin match st.observe_id with None | Some Top  -> None | Some Id id -> Some id end
+  | Some pos -> id_of_pos st pos
+
 let get_messages st pos =
-  match Option.cata (id_of_pos st) st.observe_id pos with
+  match id_of_pos_opt st pos with
   | None -> log "get_messages: Could not find id";[]
   | Some id -> log "get_messages: Found id";
     let error = ExecutionManager.error st.execution_state id in
@@ -155,11 +175,10 @@ let get_messages st pos =
     | Some (_oloc,msg) -> (DiagnosticSeverity.Error, pp_of_coqpp msg) :: feedback
     | None -> feedback
 
-let interpret_to ~stateful ~background state id : (state * event Sel.Event.t list) =
+let observe ~background state id : (state * event Sel.Event.t list) =
   match Document.get_sentence state.document id with
   | None -> (state, []) (* TODO error? *)
-  | Some { id } ->
-    let state = if stateful then { state with observe_id = Some id } else state in
+  | Some {id } ->
     let vst_for_next_todo, todo = ExecutionManager.build_tasks_for (Document.schedule state.document) state.execution_state id in
     if CList.is_empty todo then
       (state, [])
@@ -168,48 +187,61 @@ let interpret_to ~stateful ~background state id : (state * event Sel.Event.t lis
       let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday (); background }) in
       (state, [ event ])
 
-let interpret_to_position ~stateful st pos =
+let clear_observe_id st = 
+  { st with observe_id = None }
+
+let reset_to_top st =
+  { st with observe_id = Some Top }
+
+let interpret_to st id =
+  let observe_id = if st.observe_id = None then None else (Some (Id id)) in
+  let st = { st with observe_id} in
+  observe ~background:false st id
+
+let interpret_to_position st pos =
   match id_of_pos st pos with
   | None -> (st, []) (* document is empty *)
-  | Some id -> interpret_to ~stateful ~background:false st id
+  | Some id -> interpret_to st id
 
 let interpret_to_previous st =
   match st.observe_id with
-  | None -> (st, [])
-  | Some oid ->
-    match Document.get_sentence st.document oid with
+  | None -> failwith "interpret to previous with no observe_id"
+  | Some Top -> (st, [])
+  | Some (Id id) ->
+    match Document.get_sentence st.document id with
     | None -> (st, []) (* TODO error? *)
     | Some { start } ->
       match Document.find_sentence_before st.document start with
       | None -> 
         Vernacstate.unfreeze_full_state st.init_vs; 
-        { st with observe_id=None}, []
-      | Some { id } -> interpret_to ~stateful:true ~background:false st id 
+        { st with observe_id=(Some Top)}, []
+      | Some { id } -> interpret_to st id
 
 let interpret_to_next st =
   match st.observe_id with
-  | None -> 
+  | None -> failwith "interpret to next with no observe_id"
+  | Some Top ->
     begin match Document.get_first_sentence st.document with
     | None -> (st, []) (*The document is empty*)
-    | Some {id} -> interpret_to ~stateful:true ~background:false st id
+    | Some {id} -> interpret_to st id
     end
-  | Some id ->
+  | Some (Id id) ->
     match Document.get_sentence st.document id with
     | None -> (st, []) (* TODO error? *)
     | Some { stop } ->
       match Document.find_sentence_after st.document (stop+1) with
       | None -> (st, [])
-      | Some {id } -> interpret_to ~stateful:true ~background:false st id
+      | Some {id } -> interpret_to st id
 
 let interpret_to_end st =
-  match Document.get_last_sentence st.document with 
+  match Document.get_last_sentence st.document with
   | None -> (st, [])
-  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to ~stateful:true ~background:false st id
+  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to st id
 
 let interpret_in_background st =
-  match Document.get_last_sentence st.document with 
+  match Document.get_last_sentence st.document with
   | None -> (st, [])
-  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to ~stateful:true ~background:true st id
+  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); observe ~background:true st id
 
 let is_above st id1 id2 =
   let range1 = Document.range_of_id st id1 in
@@ -219,8 +251,10 @@ let is_above st id1 id2 =
 let validate_document state =
   let unchanged_id, invalid_roots, document = Document.validate_document state.document in
   let observe_id = match unchanged_id, state.observe_id with
-    | None, _ | _, None -> None
-    | Some id, Some id' -> if is_above state.document id id' then Some id else Some id'
+    | _, None -> None
+    | None, Some (Id _) -> None
+    | _, Some Top -> Some Top
+    | Some id, Some (Id id') -> if is_above state.document id id' then Some (Id id) else state.observe_id
   in
   let execution_state =
     List.fold_left (fun st id ->
@@ -228,7 +262,7 @@ let validate_document state =
       ) state.execution_state (Stateid.Set.elements invalid_roots) in
   { state with document; execution_state; observe_id }
 
-let init init_vs ~opts uri ~text =
+let init init_vs ~opts uri ~text observe_id =
   Vernacstate.unfreeze_full_state init_vs;
   let top = try Coqargs.(dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) with
     e -> raise e
@@ -237,16 +271,17 @@ let init init_vs ~opts uri ~text =
   let init_vs = Vernacstate.freeze_full_state () in
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in
-  let st = { uri; opts; init_vs; document; execution_state; observe_id = None } in
+  let st = { uri; opts; init_vs; document; execution_state; observe_id } in
   validate_document st, [inject_em_event feedback]
 
-let reset { uri; opts; init_vs; document; execution_state } =
+let reset { uri; opts; init_vs; document; execution_state; observe_id } =
   let text = RawDocument.text @@ Document.raw_document document in
   Vernacstate.unfreeze_full_state init_vs;
   let document = Document.create_document init_vs.synterp text in
   ExecutionManager.destroy execution_state;
   let execution_state, feedback = ExecutionManager.init init_vs in
-  let st = { uri; opts; init_vs; document; execution_state; observe_id = None } in
+  let observe_id = if observe_id = None then None else (Some Top) in
+  let st = { uri; opts; init_vs; document; execution_state; observe_id} in
   validate_document st, [inject_em_event feedback]
 
 let apply_text_edits state edits =
@@ -285,7 +320,12 @@ let get_proof st diff_mode pos =
     let oid = fst @@ Scheduler.task_for_sentence (Document.schedule st.document) id in
     Option.bind oid (ExecutionManager.get_vernac_state st.execution_state)
   in
-  let oid = Option.cata (id_of_pos st) st.observe_id pos in
+  let observe_id = 
+    match st.observe_id with
+    | None -> None
+    | Some observe_id -> to_sentence_id observe_id 
+  in
+  let oid = Option.cata (id_of_pos st) observe_id pos in
   let ost = Option.bind oid (ExecutionManager.get_vernac_state st.execution_state) in
   let previous = Option.bind oid previous_st in
   Option.bind ost (ProofState.get_proof ~previous diff_mode)
@@ -315,7 +355,7 @@ let parse_entry st pos entry pattern =
 
 let about st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match get_context st pos with 
+  match get_context st pos with
   | None -> Error ("No context found") (*TODO execute *)
   | Some (sigma, env) ->
     try
@@ -341,7 +381,7 @@ let hover st pos =
   | Some pattern ->
     log ("hover: found word at cursor: " ^ pattern);
     let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-    match get_context st pos with 
+    match get_context st pos with
     | None -> log "hover: no context found"; None
     | Some (sigma, env) ->
       try
@@ -354,7 +394,7 @@ let hover st pos =
 
 let check st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match get_context st pos with 
+  match get_context st pos with
   | None -> Error ("No context found") (*TODO execute *)
   | Some (sigma,env) ->
     let rc = parse_entry st loc Pcoq.Constr.lconstr pattern in
@@ -378,7 +418,7 @@ let locate st pos ~pattern =
 
 let print st pos ~pattern = 
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match get_context st pos with 
+  match get_context st pos with
   | None -> Error("No context found")
   | Some (sigma, env) -> 
     let qid = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
@@ -397,7 +437,9 @@ module Internal = struct
     st.execution_state
 
   let observe_id st =
-    st.observe_id
+    match st.observe_id with
+    | None | Some Top -> None
+    | Some (Id id) -> Some id
 
   let validate_document st =
     validate_document st
