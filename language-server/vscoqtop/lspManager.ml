@@ -199,6 +199,12 @@ let send_move_cursor uri range =
   let notification = Notification.Server.MoveCursor {uri;range} in 
   output_notification notification
 
+let send_error_notification message =
+  let type_ = MessageType.Error in
+  let params = ShowMessageParams.{type_; message} in
+  let notification = Lsp.Server_notification.ShowMessage params in
+  output_json @@ Jsonrpc.Notification.yojson_of_t @@ Lsp.Server_notification.to_jsonrpc notification
+
 let update_view uri st =
   if (Dm.ExecutionManager.is_diagnostics_enabled ()) then (
     send_highlights uri st;
@@ -219,7 +225,9 @@ let run_documents () =
 let textDocumentDidOpen params =
   let Lsp.Types.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
   let vst, opts = get_init_state () in
-  let st, events = Dm.DocumentManager.init vst ~opts uri ~text in
+  let st, events = try Dm.DocumentManager.init vst ~opts uri ~text with
+    e -> raise e
+  in
   let (st, events') = 
     if !check_mode = Settings.Mode.Continuous then 
       Dm.DocumentManager.interpret_in_background st 
@@ -466,7 +474,11 @@ let dispatch_request : type a. Jsonrpc.Id.t -> a Request.Client.t -> (a,string) 
 let dispatch_std_notification = 
   let open Lsp.Client_notification in function
   | TextDocumentDidOpen params -> log "Recieved notification: textDocument/didOpen";
-    textDocumentDidOpen params
+    begin try textDocumentDidOpen params with
+      exn -> let info = Exninfo.capture exn in
+      let message = "Error while opening document. " ^ Pp.string_of_ppcmds @@ CErrors.iprint_no_report info in
+      send_error_notification message; []
+    end
   | TextDocumentDidChange params -> log "Recieved notification: textDocument/didChange";
     textDocumentDidChange params
   | TextDocumentDidClose params ->  log "Recieved notification: textDocument/didClose";
