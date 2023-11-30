@@ -312,29 +312,33 @@ let coqtopInterpretToPoint params =
  
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let (st, events) = Dm.DocumentManager.interpret_to_previous st in
-  let range = Dm.DocumentManager.observe_id_range st in
-  Hashtbl.replace states (DocumentUri.to_path uri) st;
-  update_view uri st;
-  match range with
-  | None ->
-    inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
-  | Some range ->
-    [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log "[stepForward] ignoring event on non existant document"; []
+  | Some st ->
+    let (st, events) = Dm.DocumentManager.interpret_to_previous st in
+    let range = Dm.DocumentManager.observe_id_range st in
+    Hashtbl.replace states (DocumentUri.to_path uri) st;
+    update_view uri st;
+    match range with
+    | None ->
+      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+    | Some range ->
+      [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
 
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
-  let st = Hashtbl.find states (DocumentUri.to_path uri) in
-  let (st, events) = Dm.DocumentManager.interpret_to_next st in
-  let range = Dm.DocumentManager.observe_id_range st in
-  Hashtbl.replace states (DocumentUri.to_path uri) st;
-  update_view uri st;
-  match range with 
-  | None ->
-    inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
-  | Some range -> 
-    [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log "[stepBackward] ignoring event on non existant document"; []
+  | Some st ->
+    let (st, events) = Dm.DocumentManager.interpret_to_next st in
+    let range = Dm.DocumentManager.observe_id_range st in
+    Hashtbl.replace states (DocumentUri.to_path uri) st;
+    update_view uri st;
+    match range with 
+    | None ->
+      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+    | Some range -> 
+      [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
   
   let make_CompletionItem i item : CompletionItem.t = 
     let (label, insertText, typ, path) = Dm.CompletionItems.pp_completion_item item in
