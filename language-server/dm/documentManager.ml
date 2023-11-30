@@ -337,14 +337,6 @@ let context_of_id st = function
 (** Get context at the start of the sentence containing [pos] *)
 let get_context st pos = context_of_id st (id_of_pos st pos)
 
-(** Get context at the end of the sentence containing [pos] *)
-let get_next_context st pos =
-    let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-    let id = match Document.find_sentence_after st.document loc with
-    | None -> None
-    | Some { id } -> Some id in
-    context_of_id st id
-
 let get_completions st pos =
   match id_of_pos st pos with
   | None -> Error ("Can't get completions, no sentence found before the cursor")
@@ -384,8 +376,9 @@ let search st ~id pos pattern =
     let query, r = parse_entry st loc (G_vernac.search_queries) pattern in
     SearchQuery.interp_search ~id env sigma query r
 
-(** Try to generate hover text from [pattern] in the given context *)
-let hover st loc pattern = function
+(** Try to generate hover text from [pattern] the context of the given [sentence] *)
+let hover_of_sentence st loc pattern sentence = 
+  match context_of_id st (Option.map (fun ({ id; _ }: Document.sentence) -> id) sentence) with
   | None -> log "hover: no context found"; None
   | Some (sigma, env) ->
     try
@@ -397,20 +390,34 @@ let hover st loc pattern = function
       None
 
 let hover st pos =
+  (* Tries to get hover at three difference places:
+     - At the start of the current sentence
+     - At the start of the next sentence (for symbols defined in the current sentence)
+       e.g. Definition, Inductive
+     - At the next QED (for symbols defined after proof), if the next sentence 
+       is in proof mode e.g. Lemmas, Definition with tactics *)
   let opattern = RawDocument.word_at_position (Document.raw_document st.document) pos in
   match opattern with
   | None -> log "hover: no word found at cursor"; None
   | Some pattern ->
     log ("hover: found word at cursor: " ^ pattern);
     let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-    match hover st loc pattern (get_context st pos) with
+    (* hover at previous sentence *)
+    match hover_of_sentence st loc pattern (Document.find_sentence_before st.document loc) with
+    | Some _ as x -> x
     | None -> 
-      (* No hover was found using context at the start of a the sentence,
-         In case of definition, this may be because we are hovering on things
-         that aren't yet defined. Try to get hover using context at the end of
-         the sentence *)
-      hover st loc pattern (get_next_context st pos)
-    | x -> x
+    match Document.find_sentence_after st.document loc with
+    | None -> None (* Skip if no next sentence *)
+    | Some sentence as opt ->
+    (* hover at next sentence *)
+    match hover_of_sentence st loc pattern opt with
+    | Some _ as x -> x
+    | None -> 
+    match sentence.ast.classification with
+    (* next sentence in proof mode, hover at qed *)
+    | VtProofStep _ | VtStartProof _ -> 
+        hover_of_sentence st loc pattern (Document.find_next_qed st.document loc)
+    | _ -> None
 
 let check st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
