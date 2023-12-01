@@ -13,11 +13,11 @@
 }
 
 .Info {
-    color: var(--vscode-editorInfo-background);
+    color: var(--vscode-editorInfo-foreground);
 }
 
 .Hint {
-    color: var(--vscode-editorInlayHint-background);
+    color: var(--vscode-editorInlayHint-foreground);
 }
 
 .Goal {
