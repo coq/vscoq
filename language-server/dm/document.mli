@@ -78,6 +78,9 @@ val find_sentence_before : document -> int -> sentence option
 val find_sentence_after : document -> int -> sentence option
 (** [find_sentence_after pos loc] finds the first sentence after the loc *)
 
+val find_next_qed : document -> int -> sentence option
+(** [find_next_qed parsed loc] finds the next proof end *)
+
 val get_first_sentence : document  -> sentence option
 (** [get_first_sentence doc] returns the first parsed sentence *)
 

@@ -330,10 +330,12 @@ let get_proof st diff_mode pos =
   let previous = Option.bind oid previous_st in
   Option.bind ost (ProofState.get_proof ~previous diff_mode)
 
-let get_context st pos =
-  match id_of_pos st pos with
+let context_of_id st = function
   | None -> Some (ExecutionManager.get_initial_context st.execution_state)
   | Some id -> ExecutionManager.get_context st.execution_state id
+
+(** Get context at the start of the sentence containing [pos] *)
+let get_context st pos = context_of_id st (id_of_pos st pos)
 
 let get_completions st pos =
   match id_of_pos st pos with
@@ -374,23 +376,48 @@ let search st ~id pos pattern =
     let query, r = parse_entry st loc (G_vernac.search_queries) pattern in
     SearchQuery.interp_search ~id env sigma query r
 
-let hover st pos = 
+(** Try to generate hover text from [pattern] the context of the given [sentence] *)
+let hover_of_sentence st loc pattern sentence = 
+  match context_of_id st (Option.map (fun ({ id; _ }: Document.sentence) -> id) sentence) with
+  | None -> log "hover: no context found"; None
+  | Some (sigma, env) ->
+    try
+      let ref_or_by_not = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
+      Language.Hover.get_hover_contents env sigma ref_or_by_not
+    with e ->
+      let e, info = Exninfo.capture e in
+      log ("Exception while handling hover: " ^ (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)));
+      None
+
+let hover st pos =
+  (* Tries to get hover at three difference places:
+     - At the start of the current sentence
+     - At the start of the next sentence (for symbols defined in the current sentence)
+       e.g. Definition, Inductive
+     - At the next QED (for symbols defined after proof), if the next sentence 
+       is in proof mode e.g. Lemmas, Definition with tactics *)
   let opattern = RawDocument.word_at_position (Document.raw_document st.document) pos in
   match opattern with
   | None -> log "hover: no word found at cursor"; None
   | Some pattern ->
     log ("hover: found word at cursor: " ^ pattern);
     let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-    match get_context st pos with
-    | None -> log "hover: no context found"; None
-    | Some (sigma, env) ->
-      try
-        let ref_or_by_not = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
-        Language.Hover.get_hover_contents env sigma ref_or_by_not
-      with e ->
-        let e, info = Exninfo.capture e in
-        log ("Exception while handling hover: " ^ (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)));
-        None
+    (* hover at previous sentence *)
+    match hover_of_sentence st loc pattern (Document.find_sentence_before st.document loc) with
+    | Some _ as x -> x
+    | None -> 
+    match Document.find_sentence_after st.document loc with
+    | None -> None (* Skip if no next sentence *)
+    | Some sentence as opt ->
+    (* hover at next sentence *)
+    match hover_of_sentence st loc pattern opt with
+    | Some _ as x -> x
+    | None -> 
+    match sentence.ast.classification with
+    (* next sentence in proof mode, hover at qed *)
+    | VtProofStep _ | VtStartProof _ -> 
+        hover_of_sentence st loc pattern (Document.find_next_qed st.document loc)
+    | _ -> None
 
 let check st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in

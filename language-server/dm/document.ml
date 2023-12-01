@@ -142,6 +142,18 @@ let find_sentence_after parsed loc =
   | Some (_, sentence) -> Some sentence
   | _ -> None
 
+let find_next_qed parsed loc =
+  let exception Found of sentence in
+  let f k sentence =
+    if loc <= k then
+    match sentence.ast.classification with
+    | VtQed _ -> raise (Found sentence)
+    | _ -> () in
+  (* We can't use find_first since f isn't monotone *)
+  match LM.iter f parsed.sentences_by_end with
+  | () -> None
+  | exception (Found n) -> Some n
+
 let get_first_sentence parsed = 
   Option.map snd @@ LM.find_first_opt (fun _ -> true) parsed.sentences_by_end
 
