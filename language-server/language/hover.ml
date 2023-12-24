@@ -38,13 +38,31 @@ let compactify s =
   List.fold_left (fun s (reg,repl) -> Str.global_replace reg repl s) s replacements
 
 (* TODO this should be exposed by Coq and removed from here *)
+
+[%%if coq = "8.18"]
+let pr_s = prlist (fun CAst.{v=s} -> str "%" ++ str s)
+let eq_realarg = List.equal (fun a b -> String.equal a.CAst.v b.CAst.v)
+let nargs_maximal_of_pos ((na,_,_),_,(maximal,_)) = na, maximal
+let make_scope = CAst.make
+[%%else]
+let pr_delimiter_depth = function
+  | Constrexpr.DelimOnlyTmpScope -> str "%_"
+  | Constrexpr.DelimUnboundedScope -> str "%"
+let pr_scope_delimiter (d, sc) = pr_delimiter_depth d ++ str sc
+let pr_s = prlist (fun CAst.{v=s} -> pr_scope_delimiter s)
+
+let eq_realarg =
+  List.equal
+   (fun a b -> let da, a = a.CAst.v in let db, b = b.CAst.v in
+    da = db && String.equal a b)
+let nargs_of_pos imp =
+  let (na, _, _) = imp.Impargs.impl_pos in
+  na, imp.Impargs.impl_max
+let make_scope = (fun s -> CAst.make (Constrexpr.DelimUnboundedScope, s))
+[%%endif]
+
 let pr_args args more_implicits mods =
   let open Vernacexpr in
-  let pr_delimiter_depth = function
-    | Constrexpr.DelimOnlyTmpScope -> str "%_"
-    | Constrexpr.DelimUnboundedScope -> str "%" in
-  let pr_scope_delimiter (d, sc) = pr_delimiter_depth d ++ str sc in
-  let pr_s = prlist (fun CAst.{v=s} -> pr_scope_delimiter s) in
   let pr_if b x = if b then x else str "" in
   let pr_one_arg (x,k) = pr_if k (str"!") ++ Name.print x in
   let pr_br imp force x =
@@ -60,10 +78,7 @@ let pr_args args more_implicits mods =
     if s = [] && imp = Glob_term.Explicit then [], tl
     else
       let rec fold extra = function
-        | RealArg arg :: tl when
-            List.equal
-              (fun a b -> let da, a = a.CAst.v in let db, b = b.CAst.v in
-               da = db && String.equal a b) arg.notation_scope s
+        | RealArg arg :: tl when eq_realarg arg.notation_scope s
             && arg.implicit_status = imp ->
           fold ((arg.name,arg.recarg_like) :: extra) tl
         | args -> List.rev extra, args
@@ -106,8 +121,8 @@ let pr_args args more_implicits mods =
 let implicit_kind_of_status = function
   | None -> Anonymous, Glob_term.Explicit
   | Some imp ->
-    let (na, _, _) = imp.Impargs.impl_pos in
-    na, if imp.Impargs.impl_max then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
+    let na, maximal = nargs_maximal_of_pos imp in
+    na, if maximal then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
 
 let extra_implicit_kind_of_status imp =
   let _,imp = implicit_kind_of_status imp in
@@ -139,7 +154,7 @@ let rec main_implicits i renames recargs scopes impls =
       | [], (None::_ | []) -> (Anonymous, Glob_term.Explicit)
     in
     let notation_scope = match scopes with
-      | scope :: _ -> List.map (fun s -> CAst.make (Constrexpr.DelimUnboundedScope, s)) scope
+      | scope :: _ -> List.map make_scope scope
       | [] -> []
     in
     let status = {Vernacexpr.implicit_status; name; recarg_like; notation_scope} in
@@ -174,18 +189,26 @@ let rec insert_fake_args volatile bidi impls =
     let f = Option.map pred in
     RealArg hd :: insert_fake_args (f volatile) (f bidi) tl
 
+[%%if coq = "8.18"]
+let ref_of_const x = Some x
+[%%else]
+let ref_of_const = function
+| GlobRef.ConstRef ref -> Some ref
+| _ -> None
+[%%endif]
+
 let print_arguments ref =
   let flags, recargs, nargs_for_red =
     let open Reductionops.ReductionBehaviour in
-    match ref with
-    | GlobRef.ConstRef ref ->
+    match ref_of_const ref with
+    | Some ref ->
       begin match get ref with
       | None -> [], [], None
       | Some NeverUnfold -> [`ReductionNeverUnfold], [], None
       | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
       | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
       end
-    | _ -> [], [], None
+    | None -> [], [], None
   in
   let names, not_renamed =
     try Arguments_renaming.arguments_names ref, false
