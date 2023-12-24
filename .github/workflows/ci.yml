@@ -52,6 +52,7 @@ jobs:
 
   install-opam:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         ocaml-compiler: [4.13.x]

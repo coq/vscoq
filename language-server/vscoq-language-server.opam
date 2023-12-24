@@ -13,8 +13,8 @@ build: [
 depends: [
   "ocaml" { >= "4.13.1" }
   "dune" { >= "3.5" }
-  "coq-core" { >= "8.18" < "8.19" }
-  "coq-stdlib" { >= "8.18" < "8.19" }
+  "coq-core" { >= "8.18" < "8.20" }
+  "coq-stdlib" { >= "8.18" < "8.20" }
   "yojson"
   "jsonrpc" { >= "1.15"}
   "ocamlfind"
