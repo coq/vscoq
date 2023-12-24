@@ -136,13 +136,6 @@ jobs:
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-    - name: Pin Coq
-      env:
-        OPAMYES: true
-      run: |
-        opam pin add coq-core.dev "https://github.com/coq/coq.git#$PIN_COQ"
-        opam pin add coq-stdlib.dev "https://github.com/coq/coq.git#$PIN_COQ"
-
     - name: Install deps
       env:
         OPAMYES: true
