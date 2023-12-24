@@ -6,9 +6,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-env:
-  PIN_COQ: fbaea89860348ca2b2ca485e52df7215bea27746 # Should be kept in sync with input in flake.nix
-
 jobs:
   build-extension:
     strategy:
