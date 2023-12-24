@@ -15,6 +15,15 @@ open Protocol.LspWrapper
 
 val query_feedback : notification Sel.Event.t
 
+[%%if coq = "8.18"]
+val interp_search :
+  id:string ->
+  Environ.env ->
+  Evd.evar_map ->
+  (bool * Vernacexpr.search_request) list ->
+  Vernacexpr.search_restriction ->
+  notification Sel.Event.t list
+[%%else]
 val interp_search :
   id:string ->
   Environ.env ->
@@ -22,3 +31,4 @@ val interp_search :
   (bool * Vernacexpr.search_request) list ->
   Libnames.qualid list Vernacexpr.search_restriction ->
   notification Sel.Event.t list
+[%%endif]

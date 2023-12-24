@@ -55,7 +55,7 @@ let eq_realarg =
   List.equal
    (fun a b -> let da, a = a.CAst.v in let db, b = b.CAst.v in
     da = db && String.equal a b)
-let nargs_of_pos imp =
+let nargs_maximal_of_pos imp =
   let (na, _, _) = imp.Impargs.impl_pos in
   na, imp.Impargs.impl_max
 let make_scope = (fun s -> CAst.make (Constrexpr.DelimUnboundedScope, s))
