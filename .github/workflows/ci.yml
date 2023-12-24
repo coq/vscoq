@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  PIN_COQ: fbaea89860348ca2b2ca485e52df7215bea27746 # Should be kept in sync with input in flake.nix
+
 jobs:
   build-extension:
     strategy:
@@ -130,6 +133,13 @@ jobs:
       uses: avsm/setup-ocaml@v2
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+    - name: Pin Coq
+      env:
+        OPAMYES: true
+      run: |
+        opam pin add coq-core.dev "https://github.com/coq/coq.git#$PIN_COQ"
+        opam pin add coq-stdlib.dev "https://github.com/coq/coq.git#$PIN_COQ"
 
     - name: Install deps
       env:

@@ -40,7 +40,11 @@ let compactify s =
 (* TODO this should be exposed by Coq and removed from here *)
 let pr_args args more_implicits mods =
   let open Vernacexpr in
-  let pr_s = prlist (fun CAst.{v=s} -> str "%" ++ str s) in
+  let pr_delimiter_depth = function
+    | Constrexpr.DelimOnlyTmpScope -> str "%_"
+    | Constrexpr.DelimUnboundedScope -> str "%" in
+  let pr_scope_delimiter (d, sc) = pr_delimiter_depth d ++ str sc in
+  let pr_s = prlist (fun CAst.{v=s} -> pr_scope_delimiter s) in
   let pr_if b x = if b then x else str "" in
   let pr_one_arg (x,k) = pr_if k (str"!") ++ Name.print x in
   let pr_br imp force x =
@@ -57,7 +61,9 @@ let pr_args args more_implicits mods =
     else
       let rec fold extra = function
         | RealArg arg :: tl when
-            List.equal (fun a b -> String.equal a.CAst.v b.CAst.v) arg.notation_scope s
+            List.equal
+              (fun a b -> let da, a = a.CAst.v in let db, b = b.CAst.v in
+               da = db && String.equal a b) arg.notation_scope s
             && arg.implicit_status = imp ->
           fold ((arg.name,arg.recarg_like) :: extra) tl
         | args -> List.rev extra, args
@@ -99,7 +105,9 @@ let pr_args args more_implicits mods =
 
 let implicit_kind_of_status = function
   | None -> Anonymous, Glob_term.Explicit
-  | Some ((na,_,_),_,(maximal,_)) -> na, if maximal then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
+  | Some imp ->
+    let (na, _, _) = imp.Impargs.impl_pos in
+    na, if imp.Impargs.impl_max then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
 
 let extra_implicit_kind_of_status imp =
   let _,imp = implicit_kind_of_status imp in
@@ -131,7 +139,7 @@ let rec main_implicits i renames recargs scopes impls =
       | [], (None::_ | []) -> (Anonymous, Glob_term.Explicit)
     in
     let notation_scope = match scopes with
-      | scope :: _ -> List.map CAst.make scope
+      | scope :: _ -> List.map (fun s -> CAst.make (Constrexpr.DelimUnboundedScope, s)) scope
       | [] -> []
     in
     let status = {Vernacexpr.implicit_status; name; recarg_like; notation_scope} in
@@ -169,11 +177,15 @@ let rec insert_fake_args volatile bidi impls =
 let print_arguments ref =
   let flags, recargs, nargs_for_red =
     let open Reductionops.ReductionBehaviour in
-    match get ref with
-    | None -> [], [], None
-    | Some NeverUnfold -> [`ReductionNeverUnfold], [], None
-    | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
-    | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
+    match ref with
+    | GlobRef.ConstRef ref ->
+      begin match get ref with
+      | None -> [], [], None
+      | Some NeverUnfold -> [`ReductionNeverUnfold], [], None
+      | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
+      | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
+      end
+    | _ -> [], [], None
   in
   let names, not_renamed =
     try Arguments_renaming.arguments_names ref, false

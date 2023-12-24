@@ -5,6 +5,7 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
+<<<<<<< HEAD
     coq-8_18 = {
       type = "github";
       owner = "coq";
@@ -13,6 +14,10 @@
     };
 
     coq-8_18.inputs.nixpkgs.follows = "nixpkgs";
+=======
+    coq-master = { url = "github:coq/coq/fbaea89860348ca2b2ca485e52df7215bea27746"; }; # Should be kept in sync with PIN_COQ in CI workflow
+    coq-master.inputs.nixpkgs.follows = "nixpkgs";
+>>>>>>> coq-master
 
   };
 
