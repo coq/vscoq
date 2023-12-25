@@ -182,6 +182,13 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
         st, status, []
 
 (* This adapts the Future API with our event model *)
+[%%if coq = "8.18"]
+let definition_using e s ~fixnames:_ ~using ~terms =
+  Proof_using.definition_using e s ~using ~terms
+
+[%%else]
+let definition_using = Proof_using.definition_using
+[%%endif]
 let interp_qed_delayed ~proof_using ~state_id ~st =
   let lemmas = Option.get @@ st.Vernacstate.interp.lemmas in
   let f proof =
@@ -191,7 +198,7 @@ let interp_qed_delayed ~proof_using ~state_id ~st =
       let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
       let terms = List.map (fun (_,_,x) -> x) (initial_goals (Declare.Proof.get proof)) in
       let names = Vernacstate.LemmaStack.get_all_proof_names lemmas in
-      let using = Proof_using.definition_using env sigma ~fixnames:names ~using:proof_using ~terms in
+      let using = definition_using env sigma ~fixnames:names ~using:proof_using ~terms in
       let vars = Environ.named_context env in
       Names.Id.Set.iter (fun id ->
           if not (List.exists Util.(Context.Named.Declaration.get_id %> Names.Id.equal id) vars) then

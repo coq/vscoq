@@ -415,13 +415,18 @@ let get_completion_items env proof lemmas options =
     log ("Ranking of lemmas failed: " ^ (Printexc.to_string e));
     lemmas
 
+[%%if coq = "8.18"]
+let generic_search e s f = Search.generic_search e (fun r k e c -> f r k e s c)
+[%%else]
+let generic_search = Search.generic_search
+[%%endif]
 let get_lemmas sigma env =
   let open CompletionItems in
   let results = ref [] in
   let display ref _kind env sigma c =
     results := mk_completion_item sigma ref env c :: results.contents;
   in
-  Search.generic_search env sigma display;
+  generic_search env sigma display;
   results.contents
 
 let get_completions options st =
