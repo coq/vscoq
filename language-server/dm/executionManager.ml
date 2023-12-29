@@ -185,7 +185,6 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
 [%%if coq = "8.18"]
 let definition_using e s ~fixnames:_ ~using ~terms =
   Proof_using.definition_using e s ~using ~terms
-
 [%%else]
 let definition_using = Proof_using.definition_using
 [%%endif]
