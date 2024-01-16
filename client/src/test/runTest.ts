@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'node:fs/promises';
 import * as tmp from 'tmp-promise';
 
-import { runTests } from '@vscode/test-electron';
+import { runTests, downloadAndUnzipVSCode } from '@vscode/test-electron';
 
 async function main() {
 	try {
@@ -37,7 +37,8 @@ async function main() {
 		const launchArgs = [path.resolve(__dirname, '../../testFixture'), "--disable-extensions", "--user-data-dir=" + userDataDir];
 
 		// Download VS Code, unzip it and run the integration test
-		await runTests({ extensionDevelopmentPath, extensionTestsPath, launchArgs });
+        const vscodeExecutablePath = await downloadAndUnzipVSCode('1.84.0');
+		await runTests({ vscodeExecutablePath, extensionDevelopmentPath, extensionTestsPath, launchArgs });
 	} catch (err) {
 		console.error('Failed to run tests');
 		process.exit(1);
