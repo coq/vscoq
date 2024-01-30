@@ -5,7 +5,6 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
-<<<<<<< HEAD
     coq-8_18 = {
       type = "github";
       owner = "coq";
@@ -13,18 +12,22 @@
       ref = "V8.18.0";
     };
 
+    coq-8_19 = {
+      type = "github";
+      owner = "coq";
+      repo = "coq";
+      ref = "V8.19.0";
+    };
+
     coq-8_18.inputs.nixpkgs.follows = "nixpkgs";
-=======
-    coq-master = { url = "github:coq/coq/fbaea89860348ca2b2ca485e52df7215bea27746"; }; # Should be kept in sync with PIN_COQ in CI workflow
-    coq-master.inputs.nixpkgs.follows = "nixpkgs";
->>>>>>> coq-master
+    coq-8_19.inputs.nixpkgs.follows = "nixpkgs";
 
   };
 
-  outputs = { self, nixpkgs, flake-utils, coq-8_18 }:
+  outputs = { self, nixpkgs, flake-utils, coq-8_19 }:
     flake-utils.lib.eachDefaultSystem (system:
   
-   let coq = coq-8_18.defaultPackage.${system}; in
+   let coq = coq-8_19.defaultPackage.${system}; in
    rec {
 
     packages.default = self.packages.${system}.vscoq-language-server;
