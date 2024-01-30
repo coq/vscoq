@@ -40,7 +40,7 @@
           python3
           time
           dune_3
-        ] ++ (with ocamlPackages; [
+        ] ++ (with coq.ocamlPackages; [
           lablgtk3-sourceview3
           glib
           gnome.adwaita-icon-theme
