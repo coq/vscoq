@@ -63,7 +63,11 @@ export default class VsCoqToolchainManager implements Disposable {
         const config = workspace.getConfiguration('vscoq');
         const serverOptions : ServerOptions = {
             command: this._vscoqtopPath, 
-            args: config.args
+            args: config.args,
+            options: {
+                cwd: workspace.rootPath,
+                shell: true,
+            },
         };
         return serverOptions;
     };
@@ -125,7 +129,7 @@ export default class VsCoqToolchainManager implements Disposable {
         const cmd = [this._vscoqtopPath].concat(options).join(' ');
 
         return new Promise((resolve, reject: ((reason: ToolchainError) => void)) => {
-            exec(cmd, (error, stdout, stderr) => {
+            exec(cmd, {cwd: workspace.rootPath}, (error, stdout, stderr) => {
 
                 if(error) {
                     reject({
@@ -160,7 +164,7 @@ export default class VsCoqToolchainManager implements Disposable {
         const cmd = [this._vscoqtopPath].concat(options).join(' ');
 
         return new Promise((resolve, reject: (reason: string) => void) => {
-            exec(cmd, (error, stdout, stderr) => {
+            exec(cmd, {cwd: workspace.rootPath}, (error, stdout, stderr) => {
                 if(error) {
                     reject(stderr);
                 } else {
