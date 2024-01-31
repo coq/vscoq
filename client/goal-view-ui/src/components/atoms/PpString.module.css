@@ -2,6 +2,7 @@
     margin-top: 12px;
     width: 100%;
     font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
 }
 
 .Error {
@@ -22,6 +23,7 @@
 
 .Goal {
     font-family: var(--vscode-editor-font-family);
+    font-size: var(--vscode-editor-font-size);
     color: var(--vscode-editor-foreground);
     white-space: pre-wrap;
     width: 100%;
