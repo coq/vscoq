@@ -5,21 +5,11 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
-    coq-8_18 = {
-      type = "github";
-      owner = "coq";
-      repo = "coq";
-      ref = "V8.18.0";
-    };
-
-    coq-8_18.inputs.nixpkgs.follows = "nixpkgs";
-
   };
 
-  outputs = { self, nixpkgs, flake-utils, coq-8_18 }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
   
-   let coq = coq-8_18.defaultPackage.${system}; in
    rec {
 
     packages.default = self.packages.${system}.vscoq-language-server;
@@ -27,7 +17,7 @@
     packages.vscoq-language-server =
       # Notice the reference to nixpkgs here.
       with import nixpkgs { inherit system; };
-      
+      let ocamlPackages = ocaml-ng.ocamlPackages_4_14; in
       ocamlPackages.buildDunePackage {
         duneVersion = "3";
         pname = "vscoq-language-server";
@@ -35,10 +25,6 @@
         src = ./language-server;
         buildInputs = [
           coq
-          bash
-          hostname
-          python3
-          time
           dune_3
         ] ++ (with coq.ocamlPackages; [
           lablgtk3-sourceview3
