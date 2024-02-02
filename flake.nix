@@ -62,7 +62,20 @@
 
     };
 
-    devShells.default =
+    devShells.vscoq-client = 
+      with import nixpkgs { inherit system; };
+      mkShell {
+        buildInputs = self.packages.${system}.vscoq-client.buildInputs;
+      };
+
+    devShells.vscoq-language-server = 
+      with import nixpkgs { inherit system; };
+      mkShell {
+        buildInputs =
+          self.packages.${system}.vscoq-language-server.buildInputs;
+      };
+
+    devShells.default = 
       with import nixpkgs { inherit system; };
       mkShell {
         buildInputs =
