@@ -147,7 +147,7 @@
             self.packages.${system}.vscoq-language-server-coq-8-18.buildInputs;
         };
         
-    devShells.vscoq-language-server-8-19 = 
+    devShells.vscoq-language-server-coq-8-19 = 
       with import nixpkgs { inherit system; };
       mkShell {
         buildInputs =
