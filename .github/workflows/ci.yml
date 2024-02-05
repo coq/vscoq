@@ -27,6 +27,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
+        coq: [coq-8-18, coq-8-19, coq-master]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -41,7 +42,7 @@ jobs:
     - uses: cachix/install-nix-action@v22
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run: nix develop .#vscoq-language-server -c bash -c "cd language-server && dune build"
+    - run: nix develop .#vscoq-language-server-${{ matrix.coq }} -c bash -c "cd language-server && dune build"
     - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
     - run: xvfb-run nix develop .#vscoq-client -c bash -c "cd client && yarn test"
       if: runner.os == 'Linux'
