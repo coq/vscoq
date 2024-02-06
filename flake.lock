@@ -8,17 +8,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1692621436,
-        "narHash": "sha256-fLkFHuL8vu4v7Oc9v2701d7pVM/eS/7mCJTEuAFfksA=",
+        "lastModified": 1707209540,
+        "narHash": "sha256-C3ZnIXZQptLo76iqltf/GYu/EqFU5yT7nSMClKTriiI=",
         "owner": "coq",
         "repo": "coq",
-        "rev": "fbaea89860348ca2b2ca485e52df7215bea27746",
+        "rev": "b157d65080076498ad04dd3918c1e508eb9740c0",
         "type": "github"
       },
       "original": {
         "owner": "coq",
         "repo": "coq",
-        "rev": "fbaea89860348ca2b2ca485e52df7215bea27746",
+        "rev": "b157d65080076498ad04dd3918c1e508eb9740c0",
         "type": "github"
       }
     },

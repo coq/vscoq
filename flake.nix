@@ -5,7 +5,7 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
-    coq-master = { url = "github:coq/coq/fbaea89860348ca2b2ca485e52df7215bea27746"; }; # Should be kept in sync with PIN_COQ in CI workflow
+    coq-master = { url = "github:coq/coq/b157d65080076498ad04dd3918c1e508eb9740c0"; }; # Should be kept in sync with PIN_COQ in CI workflow
     coq-master.inputs.nixpkgs.follows = "nixpkgs";
 
   };
@@ -156,9 +156,13 @@
     
     devShells.vscoq-language-server-coq-master = 
       with import nixpkgs { inherit system; };
+      let ocamlPackages = ocaml-ng.ocamlPackages_4_14; in
       mkShell {
         buildInputs =
-          self.packages.${system}.vscoq-language-server-coq-master.buildInputs;
+          self.packages.${system}.vscoq-language-server-coq-master.buildInputs
+          ++ (with ocamlPackages; [
+            ocaml-lsp
+          ]);
       };
 
     devShells.default = 
