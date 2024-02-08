@@ -1,4 +1,5 @@
 (library
  (name language)
  (public_name vscoq-language-server.language)
+ (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
  (libraries coq-core.sysinit lsp))

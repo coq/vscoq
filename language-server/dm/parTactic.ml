@@ -60,7 +60,11 @@ let assign_tac ~abstract res : unit Proofview.tactic =
       tclUNIT ()
   end)
 
+[%%if coq = "8.18" || coq = "8.19"]
 let command_focus = Proof.new_focus_kind ()
+[%%else]
+let command_focus = Proof.new_focus_kind "vscoq_command_focus"
+[%%endif]
 
 let worker_solve_one_goal { TacticJob.state; ast; goalno; goal } ~send_back =
   let focus_cond = Proof.no_cond command_focus in

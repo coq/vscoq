@@ -252,6 +252,12 @@ let rec junk_sentence_end stream =
   | [] -> ()
   | _ ->  Stream.junk () stream; junk_sentence_end stream
 
+[%%if coq = "8.18"]
+exception E = Stream.Error
+[%%else]
+exception E = Grammar.Error
+[%%endif]
+
 let rec parse_more synterp_state stream raw parsed errors =
   let handle_parse_error start msg =
     log @@ "handling parse error at " ^ string_of_int start;
@@ -290,7 +296,7 @@ let rec parse_more synterp_state stream raw parsed errors =
           let loc = Loc.get_loc @@ info in
           handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
         end
-    | exception (Stream.Error msg as exn) ->
+    | exception (E msg as exn) ->
       let loc = Loc.get_loc @@ Exninfo.info exn in
       junk_sentence_end stream;
       handle_parse_error start (loc,msg)
