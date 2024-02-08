@@ -13,6 +13,7 @@
   outputs = { self, nixpkgs, flake-utils, coq-master }:
     flake-utils.lib.eachDefaultSystem (system:
   
+   let vscoq_version = "2.1.0"; in
    let coq = coq-master.defaultPackage.${system}; in
    rec {
 
@@ -25,7 +26,7 @@
       ocamlPackages.buildDunePackage {
         duneVersion = "3";
         pname = "vscoq-language-server";
-        version = "2.0.3";
+        version = vscoq_version;
         src = ./language-server;
         buildInputs = [
           coq_8_18
@@ -59,7 +60,7 @@
       ocamlPackages.buildDunePackage {
         duneVersion = "3";
         pname = "vscoq-language-server";
-        version = "2.0.3";
+        version = vscoq_version;
         src = ./language-server;
         buildInputs = [
           coq_8_19
@@ -93,7 +94,7 @@
       ocamlPackages.buildDunePackage {
         duneVersion = "3";
         pname = "vscoq-language-server";
-        version = "2.0.3";
+        version = vscoq_version;
         src = ./language-server;
         buildInputs = [
           coq
