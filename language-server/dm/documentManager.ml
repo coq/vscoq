@@ -432,14 +432,20 @@ let check st pos ~pattern =
       let e, info = Exninfo.capture e in
       Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
 
+[%%if coq = "8.18" || coq = "8.19"]
+let print_located_qualid _ qid = Prettyp.print_located_qualid qid
+[%%else]
+let print_located_qualid = Prettyp.print_located_qualid
+[%%endif]
+
 let locate st pos ~pattern = 
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match parse_entry st loc (Pcoq.Prim.smart_global) pattern with
-  | { v = AN qid } -> Ok (pp_of_coqpp @@ Prettyp.print_located_qualid qid)
-  | { v = ByNotation (ntn, sc)} -> 
-    match get_context st pos with
-    | None -> Error("No context found")
-    | Some (sigma, env) -> 
+  match get_context st pos with
+  | None -> Error ("No context found") (*TODO execute *)
+  | Some (sigma, env) ->
+    match parse_entry st loc (Pcoq.Prim.smart_global) pattern with
+    | { v = AN qid } -> Ok (pp_of_coqpp @@ print_located_qualid env qid)
+    | { v = ByNotation (ntn, sc)} ->
       Ok( pp_of_coqpp @@ Notation.locate_notation
         (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) ntn sc)
 
