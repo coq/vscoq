@@ -90,7 +90,7 @@ let word_at_position raw pos : string option =
   let r = Str.regexp {|\([a-zA-Z_][a-zA-Z_0-9]*\)|} in
   let start = ref (loc_of_position raw pos) in
   let word = ref None in
-  while (Str.string_match r raw.text start.contents) do
+  while (start.contents >= 0 && Str.string_match r raw.text start.contents) do
     start := start.contents - 1;
     word := Some (Str.matched_string raw.text);
   done;
