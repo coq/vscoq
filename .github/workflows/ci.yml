@@ -74,7 +74,7 @@ jobs:
         OPAMYES: true
       run: |
         opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
-        opam install coq-core.${{ matrix.coq }}
+        opam pin add coq-core ${{ matrix.coq }}
         opam pin add vscoq-language-server ./language-server/ --with-doc --with-test -y
 
     - run: |
