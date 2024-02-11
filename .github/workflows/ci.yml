@@ -25,6 +25,7 @@ jobs:
 
   nix-dev-build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         coq: [coq-8-18, coq-8-19, coq-master]
