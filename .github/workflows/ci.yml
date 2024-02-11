@@ -25,6 +25,7 @@ jobs:
 
   nix-dev-build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         coq: [coq-8-18, coq-8-19, coq-master]
@@ -57,7 +58,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         ocaml-compiler: [4.13.x]
-        coq: [8.18.0, 8.19+rc1, dev]
+        coq: [8.18.0, 8.19.0, dev]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -73,7 +74,7 @@ jobs:
         OPAMYES: true
       run: |
         opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
-        opam install coq-core.${{ matrix.coq }}
+        if [ "${{ matrix.coq }}" = "dev" ]; then opam install coq-core.dev; else opam pin add coq-core ${{ matrix.coq }}; fi
         opam pin add vscoq-language-server ./language-server/ --with-doc --with-test -y
 
     - run: |
