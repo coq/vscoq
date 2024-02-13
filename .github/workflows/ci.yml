@@ -19,6 +19,8 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 18
+    - name: Install modern yarn
+      run: corepack enable && yarn set version berry
     - name: Yarn run package
       uses: borales/actions-yarn@v4
       with:
