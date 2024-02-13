@@ -21,6 +21,11 @@ jobs:
         node-version: 18
     - name: Install modern yarn
       run: corepack enable && yarn set version berry
+    - name: Yarn install
+      uses: borales/actions-yarn@v4
+      with:
+        dir: client
+        cmd: install
     - name: Yarn run package
       uses: borales/actions-yarn@v4
       with:
