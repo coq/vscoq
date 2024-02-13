@@ -18,8 +18,9 @@ jobs:
     - name: Install Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: 16.x
+        node-version: 18
     - run: |
+        corepack enable
         cd client
         yarn run package
 
@@ -84,9 +85,9 @@ jobs:
 
     - uses: actions/setup-node@v3
       with:
-        node-version: 16
+        node-version: 18
 
-    - run: cd client && yarn run package
+    - run: corepack enable && cd client && yarn run package
     - run: eval $(opam env) && cd client && xvfb-run yarn test
       env:
         VSCOQPATH: ${{ env.vscoqtop }}
@@ -114,9 +115,9 @@ jobs:
 
     - uses: actions/setup-node@v3
       with:
-        node-version: 16
+        node-version: 18
 
-    - run: cd client && yarn run package && yarn test
+    - run: corepack enable && cd client && yarn run package && yarn test
       env:
         VSCOQPATH: ${{ env.vscoqtop }}
         VSCOQARGS: "-bt"
@@ -155,9 +156,9 @@ jobs:
 
     - uses: actions/setup-node@v3
       with:
-        node-version: 16
+        node-version: 18
 
-    - run: cd client && yarn run install:all && yarn run build:all && yarn run compile
+    - run: corepack enable && cd client && yarn run install:all && yarn run build:all && yarn run compile
     - run: cd client && xvfb-run yarn test
     - if: ${{ failure() }}
       run: cat /tmp/vscoq_init_log.*
@@ -198,9 +199,10 @@ jobs:
     - name: Install Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: 16.x
+        node-version: 18
     - name: Publish on VsCode marketplace
       run: |
+        corepack enable
         cd client
         cp ../LICENSE . && cp ../README.md .
     - name: Publish to Open VSX Registry

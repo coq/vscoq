@@ -14,9 +14,10 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: 18
       - name: Publish on VsCode marketplace
         run: |
+          corepack enable
           cd client
           cp ../LICENSE . && cp ../README.md .
       - name: Publish to Open VSX Registry
