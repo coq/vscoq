@@ -188,3 +188,37 @@ jobs:
           draft: true
           prerelease: false
           generate_release_notes: true
+
+  publish-extension:
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.x
+    - name: Publish on VsCode marketplace
+      run: |
+        cd client
+        cp ../LICENSE . && cp ../README.md .
+    - name: Publish to Open VSX Registry
+      uses: HaaLeo/publish-vscode-extension@v1.6.2
+      id: publishToOpenVSX
+      with:
+        pat: 'stub'
+        packagePath: ./client/
+        yarn: true
+        preRelease: false
+        dryRun: true
+    - name: Publish to Visual Studio Marketplace
+      uses: HaaLeo/publish-vscode-extension@v1.6.2
+      with:
+        pat: 'stub'
+        packagePath: ./client/
+        registryUrl: https://marketplace.visualstudio.com
+        extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
+        yarn: true
+        preRelease: false
+        dryRun: true
