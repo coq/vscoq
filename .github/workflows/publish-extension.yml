@@ -20,7 +20,7 @@ jobs:
           cd client
           cp ../LICENSE . && cp ../README.md .
       - name: Publish to Open VSX Registry
-        uses: HaaLeo/publish-vscode-extension@v1.6.1
+        uses: HaaLeo/publish-vscode-extension@v1.6.2
         id: publishToOpenVSX
         with:
           pat: ${{ secrets.OVSX_PAT }}
@@ -28,7 +28,7 @@ jobs:
           yarn: true
           preRelease: false
       - name: Publish to Visual Studio Marketplace
-        uses: HaaLeo/publish-vscode-extension@v1.6.1
+        uses: HaaLeo/publish-vscode-extension@v1.6.2
         with:
           pat: ${{ secrets.VSCE_PAT }}
           packagePath: ./client/

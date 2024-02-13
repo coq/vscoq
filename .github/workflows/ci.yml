@@ -204,7 +204,7 @@ jobs:
         cd client
         cp ../LICENSE . && cp ../README.md .
     - name: Publish to Open VSX Registry
-      uses: HaaLeo/publish-vscode-extension@v1.6.1
+      uses: HaaLeo/publish-vscode-extension@v1.6.2
       id: publishToOpenVSX
       with:
         pat: 'stub'
@@ -213,7 +213,7 @@ jobs:
         preRelease: false
         dryRun: true
     - name: Publish to Visual Studio Marketplace
-      uses: HaaLeo/publish-vscode-extension@v1.6.1
+      uses: HaaLeo/publish-vscode-extension@v1.6.2
       with:
         pat: 'stub'
         packagePath: ./client/
