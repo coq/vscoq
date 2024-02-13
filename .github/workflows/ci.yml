@@ -19,10 +19,11 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 18
-    - run: |
-        corepack enable
-        cd client
-        yarn run package
+    - name: Yarn run package
+      uses: borales/actions-yarn@v4
+      with:
+        dir: client
+        cmd: run package
 
   nix-dev-build:
     strategy:
@@ -87,7 +88,10 @@ jobs:
       with:
         node-version: 18
 
-    - run: corepack enable && cd client && yarn run package
+    - uses: borales/actions-yarn@v4
+      with:
+        dir: client
+        cmd: run package
     - run: eval $(opam env) && cd client && xvfb-run yarn test
       env:
         VSCOQPATH: ${{ env.vscoqtop }}
@@ -117,7 +121,15 @@ jobs:
       with:
         node-version: 18
 
-    - run: corepack enable && cd client && yarn run package && yarn test
+    - uses: borales/actions-yarn@v4
+      with:
+        dir: client
+        cmd: run package
+    
+    - uses: borales/actions-yarn@v4
+      with: 
+        dir: client
+        cmd: test
       env:
         VSCOQPATH: ${{ env.vscoqtop }}
         VSCOQARGS: "-bt"
@@ -202,7 +214,6 @@ jobs:
         node-version: 18
     - name: Publish on VsCode marketplace
       run: |
-        corepack enable
         cd client
         cp ../LICENSE . && cp ../README.md .
     - name: Publish to Open VSX Registry
