@@ -98,6 +98,11 @@ jobs:
     - uses: borales/actions-yarn@v4
       with:
         dir: client
+        cmd: install
+
+    - uses: borales/actions-yarn@v4
+      with:
+        dir: client
         cmd: run package
     - run: eval $(opam env) && cd client && xvfb-run yarn test
       env:
@@ -127,6 +132,11 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: 18
+
+    - uses: borales/actions-yarn@v4
+      with:
+        dir: client
+        cmd: install
 
     - uses: borales/actions-yarn@v4
       with:
