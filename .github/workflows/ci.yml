@@ -244,7 +244,12 @@ jobs:
         node-version: 18
     - name: Install modern yarn
       run: corepack enable && yarn set version berry
-    - name: Publish on VsCode marketplace
+    - name: Run a yarn install
+      uses: borales/actions-yarn@v4
+      with:
+        dir: client
+        cmd: install
+    - name: Copy licence and readme
       run: |
         cd client
         cp ../LICENSE . && cp ../README.md .
