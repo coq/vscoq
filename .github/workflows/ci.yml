@@ -86,25 +86,34 @@ jobs:
         if [ "${{ matrix.coq }}" = "dev" ]; then opam install coq-core.dev; else opam pin add coq-core ${{ matrix.coq }}; fi
         opam pin add vscoq-language-server ./language-server/ --with-doc --with-test -y
 
-    - run: |
+    - name: Test vscoqtop
+      run: |
         eval $(opam env)
         echo "vscoqtop=`which vscoqtop`" >> $GITHUB_ENV
         vscoqtop -v
 
-    - uses: actions/setup-node@v3
+    - name: Install node
+      uses: actions/setup-node@v3
       with:
         node-version: 18
+    
+    - name: Install modern yarn
+      run: corepack enable && yarn set version berry
 
-    - uses: borales/actions-yarn@v4
+    - name: Run yarn install
+      uses: borales/actions-yarn@v4
       with:
         dir: client
         cmd: install
 
-    - uses: borales/actions-yarn@v4
+    - name: Run yarn run package
+      uses: borales/actions-yarn@v4
       with:
         dir: client
         cmd: run package
-    - run: eval $(opam env) && cd client && xvfb-run yarn test
+
+    - name: Run tests
+      run: eval $(opam env) && cd client && xvfb-run yarn test
       env:
         VSCOQPATH: ${{ env.vscoqtop }}
         VSCOQARGS: "-bt"
@@ -132,6 +141,9 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: 18
+
+    - name: Install modern yarn
+      run: corepack enable && yarn set version berry
 
     - uses: borales/actions-yarn@v4
       with:
@@ -220,6 +232,7 @@ jobs:
           generate_release_notes: true
 
   publish-extension:
+    
     runs-on: ubuntu-latest
     if: success()
     steps:
@@ -229,6 +242,8 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 18
+    - name: Install modern yarn
+      run: corepack enable && yarn set version berry
     - name: Publish on VsCode marketplace
       run: |
         cd client
