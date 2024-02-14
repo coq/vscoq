@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "compare-versions": "^6.0.0-rc.1",
-    "vscode-languageclient": "^7.0.0"
+    "vscode-languageclient": "^9.0.1"
   },
   "categories": [
     "Programming Languages"

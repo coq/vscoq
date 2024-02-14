@@ -191,8 +191,42 @@ export function activate(context: ExtensionContext) {
             }); 
             
         });
+            
+        client.onNotification("vscoq/updateHighlights", (notification) => {
+        
+            client.saveHighlights(
+                notification.uri,
+                notification.processingRange,
+                notification.processedRange
+            );
+        
+            client.updateHightlights();
+        });
 
-        client.onReady()
+        client.onNotification("vscoq/moveCursor", (notification: MoveCursorNotification) => {
+            const {uri, range} = notification;
+            const editors = window.visibleTextEditors.filter(editor => {
+                return editor.document.uri.toString() === uri.toString();
+            });
+            if(workspace.getConfiguration('vscoq.proof.cursor').sticky === true &&
+            workspace.getConfiguration('vscoq.proof').mode === 0) {
+                editors.map(editor => {
+                    editor.selections = [new Selection(range.end, range.end)];
+                    editor.revealRange(range, TextEditorRevealType.Default);
+                });
+            }
+        });
+
+        client.onNotification("vscoq/searchResult", (searchResult: SearchCoqResult) => {
+            searchProvider.renderSearchResult(searchResult);
+        });
+
+        client.onNotification("vscoq/proofView", (proofView: ProofViewNotification) => {
+            const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
+            GoalPanel.proofViewNotification(context.extensionUri, editor, proofView);
+        });
+
+        client.start()
         .then(() => {
             
             checkVersion(client, context);
@@ -229,40 +263,6 @@ Path: \`${coqTM.getVsCoqTopPath()}\`
                     GoalPanel.toggleGoalDisplaySettings();
                 }
             }));
-            
-            client.onNotification("vscoq/updateHighlights", (notification) => {
-            
-                client.saveHighlights(
-                    notification.uri,
-                    notification.processingRange,
-                    notification.processedRange
-                );
-            
-                client.updateHightlights();
-            });
-
-            client.onNotification("vscoq/moveCursor", (notification: MoveCursorNotification) => {
-                const {uri, range} = notification;
-                const editors = window.visibleTextEditors.filter(editor => {
-                    return editor.document.uri.toString() === uri.toString();
-                });
-                if(workspace.getConfiguration('vscoq.proof.cursor').sticky === true &&
-                workspace.getConfiguration('vscoq.proof').mode === 0) {
-                    editors.map(editor => {
-                        editor.selections = [new Selection(range.end, range.end)];
-                        editor.revealRange(range, TextEditorRevealType.Default);
-                    });
-                }
-            });
-
-            client.onNotification("vscoq/searchResult", (searchResult: SearchCoqResult) => {
-                searchProvider.renderSearchResult(searchResult);
-            });
-
-            client.onNotification("vscoq/proofView", (proofView: ProofViewNotification) => {
-                const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
-                GoalPanel.proofViewNotification(context.extensionUri, editor, proofView);
-            });
 
             let goalsHook = window.onDidChangeTextEditorSelection(
                 (evt: TextEditorSelectionChangeEvent) => {                    
@@ -280,8 +280,6 @@ Path: \`${coqTM.getVsCoqTopPath()}\`
 
         });
 
-        // Start the client. This will also launch the server
-        client.start();
         context.subscriptions.push(client);
     }	
 
