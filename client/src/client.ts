@@ -27,9 +27,6 @@ export default class Client extends LanguageClient {
 		Client._channel.appendLine("VsCoq initialised");
 	}
 
-    dispose(): void {
-        Client._channel.dispose();
-    };
 
     public static writeToVscoq2Channel(message: string) {
         Client._channel.appendLine(message);
