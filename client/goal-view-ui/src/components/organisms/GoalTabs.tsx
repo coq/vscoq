@@ -47,7 +47,7 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
         const viewId = "view-" + index;
         return (
             <VSCodePanelView id={viewId} key={viewId}>
-                <GoalBlock goal={goal}/>
+                <GoalBlock goal={goal} goalIndicator={index + 1 + " / " + goals.length}/>
                 <div ref={el => goalRefs.current[index] = el}/>
             </VSCodePanelView>
         );
