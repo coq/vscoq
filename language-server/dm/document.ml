@@ -102,9 +102,33 @@ let remove_sentence parsed id =
 
 let sentences parsed =
   List.map snd @@ SM.bindings parsed.sentences_by_id
+  
+type comment = {
+  start : int;
+  stop : int;
+}
+
+type item =
+  | Sentence of sentence
+  | ParsingError of parsing_error
+  | Comment of comment
+  
+let start_of_item = function
+  | Sentence { start = x } -> x
+  | ParsingError  { start = x } -> x
+  | Comment { start = x } -> x
+
+let compare_item x y =
+  let s1 = start_of_item x in
+  let s2 = start_of_item y in
+  s1 - s2
 
 let sentences_sorted_by_loc parsed =
-  List.sort (fun ({ start = s1 } : sentence) { start = s2 } -> s1 - s2) @@ List.map snd @@ SM.bindings parsed.sentences_by_id
+  List.sort compare_item @@ List.concat [
+    (List.map (fun (_,x) -> Sentence x) @@ SM.bindings parsed.sentences_by_id) ;
+    (List.map (fun (_,x) -> ParsingError x) @@ LM.bindings parsed.parsing_errors_by_end) ;
+    []  (* todo comments *)
+   ]
 
 let sentences_before parsed loc =
   let (before,ov,_after) = LM.split loc parsed.sentences_by_end in
@@ -367,7 +391,7 @@ let validate_document ({ parsed_loc; raw_doc; } as document) =
   log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
   let unchanged_id, invalid_ids, document = invalidate (stop+1) top_id document new_sentences in
   let parsing_errors_by_end =
-    List.fold_left (fun acc error -> LM.add error.stop error acc) errors new_errors
+    List.fold_left (fun acc (error : parsing_error) -> LM.add error.stop error acc) errors new_errors
   in
   let parsed_loc = pos_at_end document in
   unchanged_id, invalid_ids, { document with parsed_loc; parsing_errors_by_end }
@@ -400,4 +424,9 @@ module Internal = struct
     sentence.start
     sentence.stop
 
+    let string_of_item = function
+      | Sentence sentence -> string_of_sentence sentence
+      | Comment _ -> "(* comment *)"
+      | ParsingError { msg = (_,str) } -> "Error:" ^ str
+  
 end

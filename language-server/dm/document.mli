@@ -63,8 +63,18 @@ type sentence = {
   id : sentence_id;
 }
 
+type comment = {
+  start : int;
+  stop : int;
+}
+
+type item =
+  | Sentence of sentence
+  | ParsingError of parsing_error
+  | Comment of comment
+
 val sentences : document -> sentence list
-val sentences_sorted_by_loc : document -> sentence list
+val sentences_sorted_by_loc : document -> item list
 
 val get_sentence : document -> sentence_id -> sentence option
 val sentences_before : document -> int -> sentence list
@@ -94,5 +104,6 @@ val range_of_id : document -> Stateid.t -> Range.t
 module Internal : sig
 
   val string_of_sentence : sentence -> string
+  val string_of_item : item -> string
 
 end
