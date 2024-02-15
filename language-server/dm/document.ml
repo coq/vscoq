@@ -73,6 +73,11 @@ let schedule doc = doc.schedule
 let raw_document doc = doc.raw_doc
 
 let range_of_sentence raw (sentence : sentence) =
+  let start = RawDocument.position_of_loc raw sentence.start in
+  let end_ = RawDocument.position_of_loc raw sentence.stop in
+  Range.{ start; end_ }
+
+let range_of_sentence_with_blank_space raw (sentence : sentence) =
   let start = RawDocument.position_of_loc raw sentence.parsing_start in
   let end_ = RawDocument.position_of_loc raw sentence.stop in
   Range.{ start; end_ }
@@ -81,6 +86,11 @@ let range_of_id document id =
   match SM.find_opt id document.sentences_by_id with
   | None -> CErrors.anomaly Pp.(str"Trying to get range of non-existing sentence " ++ Stateid.print id)
   | Some sentence -> range_of_sentence document.raw_doc sentence
+
+let range_of_id_with_blank_space document id =
+  match SM.find_opt id document.sentences_by_id with
+  | None -> CErrors.anomaly Pp.(str"Trying to get range of non-existing sentence " ++ Stateid.print id)
+  | Some sentence -> range_of_sentence_with_blank_space document.raw_doc sentence
 
 let parse_errors parsed =
   List.map snd (LM.bindings parsed.parsing_errors_by_end)
@@ -209,14 +219,14 @@ let pos_at_end parsed =
   | Some (stop, _) -> stop
   | None -> -1
 
-let patch_sentence parsed scheduler_state_before id ({ ast; start; stop; synterp_state } : pre_sentence) =
+let patch_sentence parsed scheduler_state_before id ({ parsing_start; ast; start; stop; synterp_state } : pre_sentence) =
   log @@ "Patching sentence " ^ Stateid.to_string id;
   let old_sentence = SM.find id parsed.sentences_by_id in
   let scheduler_state_after, schedule =
     let ast = (ast.ast, ast.classification, synterp_state) in
     Scheduler.schedule_sentence (id,ast) scheduler_state_before parsed.schedule
   in
-  let new_sentence = { old_sentence with ast; start; stop; scheduler_state_before; scheduler_state_after } in
+  let new_sentence = { old_sentence with ast; parsing_start; start; stop; scheduler_state_before; scheduler_state_after } in
   let sentences_by_id = SM.add id new_sentence parsed.sentences_by_id in
   let sentences_by_end = LM.remove old_sentence.stop parsed.sentences_by_end in
   let sentences_by_end = LM.add new_sentence.stop new_sentence sentences_by_end in
