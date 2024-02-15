@@ -143,6 +143,7 @@
 
     devShells.vscoq-language-server-coq-8-18 = 
         with import nixpkgs { inherit system; };
+        let ocamlPackages = ocaml-ng.ocamlPackages_4_14; in
         mkShell {
             buildInputs =
             self.packages.${system}.vscoq-language-server-coq-8-18.buildInputs;
@@ -150,6 +151,7 @@
         
     devShells.vscoq-language-server-coq-8-19 = 
       with import nixpkgs { inherit system; };
+      let ocamlPackages = ocaml-ng.ocamlPackages_4_14; in
       mkShell {
         buildInputs =
           self.packages.${system}.vscoq-language-server-coq-8-19.buildInputs;
@@ -168,6 +170,7 @@
 
     devShells.default = 
       with import nixpkgs { inherit system; };
+      let ocamlPackages = ocaml-ng.ocamlPackages_4_14; in
       mkShell {
         buildInputs =
           self.packages.${system}.vscoq-language-server-coq-8-19.buildInputs
