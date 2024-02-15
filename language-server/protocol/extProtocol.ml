@@ -40,6 +40,7 @@ module Notification = struct
 
       type t = {
         textDocument : VersionedTextDocumentIdentifier.t;
+        position: Position.t option;
       } [@@deriving yojson]
 
     end
@@ -48,6 +49,7 @@ module Notification = struct
 
       type t = {
         textDocument : VersionedTextDocumentIdentifier.t;
+        position: Position.t option;
       } [@@deriving yojson]
 
     end

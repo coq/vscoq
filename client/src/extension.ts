@@ -175,8 +175,28 @@ export function activate(context: ExtensionContext) {
         registerVscoqTextCommand('expandAllQueries', () => searchProvider.expandAll());
         registerVscoqTextCommand('interpretToPoint', (editor) => sendInterpretToPoint(editor, client));
         registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
-        registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));
-        registerVscoqTextCommand('stepBackward', (editor) => sendStepBackward(editor, client));
+        registerVscoqTextCommand('stepForward', (editor) => {
+            
+            if(workspace.getConfiguration('vscoq.proof').mode === 1) {
+                const textDocument = makeVersionedDocumentId(editor);
+                const position = editor.selection.active;
+                client.sendNotification("vscoq/stepForward", {textDocument: textDocument, position: position});
+            }
+            else {
+                sendStepForward(editor, client);
+            }
+                
+        });
+        registerVscoqTextCommand('stepBackward', (editor) => {
+            if(workspace.getConfiguration('vscoq.proof').mode === 1) {
+                const textDocument = makeVersionedDocumentId(editor);
+                const position = editor.selection.active;
+                client.sendNotification("vscoq/stepBackward", {textDocument: textDocument, position: position});
+            }
+            else {
+                sendStepBackward(editor, client);
+            }
+        });
         registerVscoqTextCommand('documentState', async (editor) => {
                 
             documentStateProvider.setDocumentUri(editor.document.uri);
@@ -208,8 +228,8 @@ export function activate(context: ExtensionContext) {
             const editors = window.visibleTextEditors.filter(editor => {
                 return editor.document.uri.toString() === uri.toString();
             });
-            if(workspace.getConfiguration('vscoq.proof.cursor').sticky === true &&
-            workspace.getConfiguration('vscoq.proof').mode === 0) {
+            if(workspace.getConfiguration('vscoq.proof.cursor').sticky === true ||
+            workspace.getConfiguration('vscoq.proof').mode === 1) {
                 editors.map(editor => {
                     editor.selections = [new Selection(range.end, range.end)];
                     editor.revealRange(range, TextEditorRevealType.Default);

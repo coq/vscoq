@@ -48,6 +48,12 @@ val clear_observe_id : state -> state
 val reset_to_top : state -> state
 (** [reset_to_top state] updates the state to make the observe_id Top *)
 
+val get_next_range : state -> Position.t -> Range.t option
+(** [get_next_range st pos] get the range of the next sentence relative to pos *)
+
+val get_previous_range : state -> Position.t -> Range.t option
+(** [get_previous_pos st pos] get the range of the previous sentence relative to pos *)
+
 val interpret_to_position : state -> Position.t -> (state * events)
 (** [interpret_to_position stateful doc pos] navigates to the last sentence ending
     before or at [pos] and returns the resulting state. The [stateful] flag 

@@ -201,6 +201,28 @@ let interpret_to_position st pos =
   | None -> (st, []) (* document is empty *)
   | Some id -> interpret_to st id
 
+let get_next_range st pos =
+  match id_of_pos st pos with
+  | None -> None
+  | Some id ->
+    match Document.get_sentence st.document id with
+    | None -> None
+    | Some { stop } ->
+      match Document.find_sentence_after st.document (stop+1) with
+      | None -> Some (Document.range_of_id st.document id)
+      | Some { id } -> Some (Document.range_of_id st.document id)
+
+let get_previous_range st pos =
+  match id_of_pos st pos with
+  | None -> None
+  | Some id ->
+    match Document.get_sentence st.document id with
+    | None -> None
+    | Some { start } ->
+      match Document.find_sentence_before st.document (start) with
+      | None -> Some (Document.range_of_id st.document id)
+      | Some { id } -> Some (Document.range_of_id st.document id)
+
 let interpret_to_previous st =
   match st.observe_id with
   | None -> failwith "interpret to previous with no observe_id"
