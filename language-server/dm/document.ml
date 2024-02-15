@@ -267,6 +267,7 @@ let rec parse_more synterp_state stream raw parsed errors =
     parse_more synterp_state stream raw parsed errors
   in
   let start = Stream.count stream in
+  log @@ "Start of parse is: " ^ (string_of_int start);
   begin
     (* FIXME should we save lexer state? *)
     match parse_one_sentence stream ~st:synterp_state with
@@ -307,6 +308,7 @@ let rec parse_more synterp_state stream raw parsed errors =
     | exception exn ->
       let e, info = Exninfo.capture exn in
       let loc = Loc.get_loc @@ info in
+      junk_sentence_end stream;
       handle_parse_error start (loc, "Unexpected parse error: " ^ Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
   end
 
