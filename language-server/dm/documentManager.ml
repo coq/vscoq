@@ -66,10 +66,10 @@ type exec_overview = {
   processed : Range.t list;
 }
 
-let merge_ranges doc (r1,l) r2 =
+let merge_adjacent_ranges doc (r1,l) r2 =
   let loc1 = RawDocument.loc_of_position doc r1.Range.end_ in
   let loc2 = RawDocument.loc_of_position doc r2.Range.start in
-  if RawDocument.only_whitespace_between doc (loc1+1) (loc2-1) then
+  if (loc1+1) = (loc2-1) then
     Range.{ start = r1.Range.start; end_ = r2.Range.end_ }, l
   else
     r2, r1 :: l
@@ -77,7 +77,7 @@ let merge_ranges doc (r1,l) r2 =
 let compress_sorted_ranges doc = function
   | [] -> []
   | range :: tl ->
-    let r, l = List.fold_left (merge_ranges doc) (range,[]) tl in
+    let r, l = List.fold_left (merge_adjacent_ranges doc) (range,[]) tl in
     r :: l
 
 let compress_ranges doc ranges =

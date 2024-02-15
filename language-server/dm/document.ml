@@ -29,13 +29,20 @@ type parsed_ast = {
 }
 
 type pre_sentence = {
+  parsing_start : int;
   start : int;
   stop : int;
   synterp_state : Vernacstate.Synterp.t; (* synterp state after this sentence's synterp phase *)
   ast : parsed_ast;
 }
 
+(* Example:                        *)
+(* "  Check 3. "                   *)
+(* ^  ^       ^---- end            *)
+(* |  |------------ start          *)
+(* |---------------- parsing_start *)
 type sentence = {
+  parsing_start : int;
   start : int;
   stop : int;
   synterp_state : Vernacstate.Synterp.t; (* synterp state after this sentence's synterp phase *)
@@ -66,7 +73,7 @@ let schedule doc = doc.schedule
 let raw_document doc = doc.raw_doc
 
 let range_of_sentence raw (sentence : sentence) =
-  let start = RawDocument.position_of_loc raw sentence.start in
+  let start = RawDocument.position_of_loc raw sentence.parsing_start in
   let end_ = RawDocument.position_of_loc raw sentence.stop in
   Range.{ start; end_ }
 
@@ -78,14 +85,14 @@ let range_of_id document id =
 let parse_errors parsed =
   List.map snd (LM.bindings parsed.parsing_errors_by_end)
 
-let add_sentence parsed start stop (ast: parsed_ast) synterp_state scheduler_state_before =
+let add_sentence parsed parsing_start start stop (ast: parsed_ast) synterp_state scheduler_state_before =
   let id = Stateid.fresh () in
   let ast' = (ast.ast, ast.classification, synterp_state) in
   let scheduler_state_after, schedule =
     Scheduler.schedule_sentence (id, ast') scheduler_state_before parsed.schedule
   in
   (* FIXME may invalidate scheduler_state_XXX for following sentences -> propagate? *)
-  let sentence = { start; stop; ast; id; synterp_state; scheduler_state_before; scheduler_state_after } in
+  let sentence = { parsing_start; start; stop; ast; id; synterp_state; scheduler_state_before; scheduler_state_after } in
   { parsed with sentences_by_end = LM.add stop sentence parsed.sentences_by_end;
     sentences_by_id = SM.add id sentence parsed.sentences_by_id;
     schedule
@@ -313,7 +320,7 @@ let rec parse_more synterp_state stream raw parsed errors =
           let entry = Synterp.synterp_control ast in
           let classification = Vernac_classifier.classify_vernac ast in
           let synterp_state = Vernacstate.Synterp.freeze () in
-          let sentence = { ast = { ast = entry; classification; tokens }; start = begin_char; stop; synterp_state } in
+          let sentence = { parsing_start = start; ast = { ast = entry; classification; tokens }; start = begin_char; stop; synterp_state } in
           let parsed = sentence :: parsed in
           parse_more synterp_state stream raw parsed errors
         with exn ->
@@ -361,8 +368,8 @@ let invalidate top_edit top_id parsed_doc new_sentences =
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs
     | Added new_sentences :: diffs ->
     (* FIXME could have side effect on the following, unchanged sentences *)
-      let add_sentence (parsed_doc,scheduler_state) ({ start; stop; ast; synterp_state } : pre_sentence) =
-        add_sentence parsed_doc start stop ast synterp_state scheduler_state
+      let add_sentence (parsed_doc,scheduler_state) ({ parsing_start; start; stop; ast; synterp_state } : pre_sentence) =
+        add_sentence parsed_doc parsing_start start stop ast synterp_state scheduler_state
       in
       let parsed_doc, scheduler_state = List.fold_left add_sentence (parsed_doc,scheduler_state) new_sentences in
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs

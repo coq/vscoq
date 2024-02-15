@@ -29,7 +29,3 @@ val word_at_position: t -> Position.t -> string option
 
 (** Applies a text edit, and returns start location *)
 val apply_text_edit : t -> text_edit -> t * int
-
-(** Tests if document text contains only whitespace between the two provided
-    locations, included *)
-val only_whitespace_between : t -> int -> int -> bool

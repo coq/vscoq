@@ -53,7 +53,13 @@ val apply_text_edits : document -> text_edit list -> document
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
     text is not parsed or executed. *)
 
+(* Example:                        *)
+(* "  Check 3. "                    *)
+(* ^  ^       ^---- end            *)
+(* |  |------------ start          *)
+(* |---------------- parsing_start *)
 type sentence = {
+  parsing_start : int;
   start : int;
   stop : int;
   synterp_state : Vernacstate.Synterp.t; (* synterp state after this sentence's synterp phase *)
