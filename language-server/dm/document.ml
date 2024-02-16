@@ -441,9 +441,16 @@ module Internal = struct
     sentence.start
     sentence.stop
 
-    let string_of_item = function
-      | Sentence sentence -> string_of_sentence sentence
-      | Comment _ -> "(* comment *)"
-      | ParsingError { msg = (_,str) } -> "Error:" ^ str
+  let string_of_error error =
+    let (_, str) = error.msg in
+    Format.sprintf "[parsing error] [%s] (%i -> %i)"
+    str
+    error.start
+    error.stop
+
+  let string_of_item = function
+    | Sentence sentence -> string_of_sentence sentence
+    | Comment _ -> "(* comment *)"
+    | ParsingError error -> string_of_error error
   
 end

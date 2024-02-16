@@ -480,7 +480,8 @@ module Internal = struct
       Document.Internal.string_of_item item ^ " " ^
         match item with
         | Sentence { id } -> string_of_state id
-        | _ -> ""
+        | ParsingError _ -> "(error)"
+        | Comment _ -> "(comment)"
     in
     String.concat "\n" @@ List.map string_of_item sentences
 
