@@ -66,27 +66,25 @@ type exec_overview = {
   processed : Range.t list;
 }
 
-let merge_ranges doc (r1,l) r2 =
-  let loc1 = RawDocument.loc_of_position doc r1.Range.end_ in
-  let loc2 = RawDocument.loc_of_position doc r2.Range.start in
-  if RawDocument.only_whitespace_between doc (loc1+1) (loc2-1) then
+let merge_adjacent_ranges (r1,l) r2 =
+  if Position.compare r1.Range.end_ r2.Range.start == 0 then
     Range.{ start = r1.Range.start; end_ = r2.Range.end_ }, l
   else
     r2, r1 :: l
 
-let compress_sorted_ranges doc = function
+let compress_sorted_ranges = function
   | [] -> []
   | range :: tl ->
-    let r, l = List.fold_left (merge_ranges doc) (range,[]) tl in
+    let r, l = List.fold_left merge_adjacent_ranges (range,[]) tl in
     r :: l
 
-let compress_ranges doc ranges =
+let compress_ranges ranges =
   let ranges = List.sort (fun { Range.start = s1 } { Range.start = s2 } -> Position.compare s1 s2) ranges in
-  compress_sorted_ranges doc ranges
+  compress_sorted_ranges ranges
 
 let executed_ranges doc execution_state loc =
   let ranges_of l =
-    compress_ranges (Document.raw_document doc) @@ List.map (Document.range_of_id doc) l
+    compress_ranges @@ List.map (Document.range_of_id_with_blank_space doc) l
   in
   let ids_before_loc = List.map (fun s -> s.Document.id) @@ Document.sentences_before doc loc in
   let processed_ids = List.filter (fun x -> ExecutionManager.is_executed execution_state x || ExecutionManager.is_remotely_executed execution_state x) ids_before_loc in
@@ -472,15 +470,19 @@ module Internal = struct
     validate_document st
 
   let string_of_state st =
-    let sentences = Document.sentences_sorted_by_loc st.document in
+    let code_lines = Document.code_lines_sorted_by_loc st.document in
     let string_of_state id =
       if ExecutionManager.is_executed st.execution_state id then "(executed)"
       else if ExecutionManager.is_remotely_executed st.execution_state id then "(executed in worker)"
       else "(not executed)"
     in
-    let string_of_sentence sentence =
-      Document.Internal.string_of_sentence sentence ^ " " ^ string_of_state sentence.id
+    let string_of_item item =
+      Document.Internal.string_of_item item ^ " " ^
+        match item with
+        | Sentence { id } -> string_of_state id
+        | ParsingError _ -> "(error)"
+        | Comment _ -> "(comment)"
     in
-    String.concat "\n" @@ List.map string_of_sentence sentences
+    String.concat "\n" @@ List.map string_of_item code_lines
 
 end

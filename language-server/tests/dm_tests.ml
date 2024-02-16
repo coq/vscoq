@@ -33,7 +33,7 @@ let%test_unit "parse.init" =
   let doc = Document.raw_document @@ DocumentManager.Internal.document st in
   [%test_eq: int] (RawDocument.end_loc doc) 44;
   let sentences = Document.sentences @@ DocumentManager.Internal.document st in
-  let positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
+  let positions = Stdlib.List.map (fun (s : Document.sentence) -> s.Document.start) sentences in
   [%test_eq: int list] positions [ 0; 22 ];
   check_no_diag st
 
@@ -41,7 +41,7 @@ let%test_unit "parse.insert" =
   let st, events = init_test_doc ~text:"Definition x := true. Definition y := false." in
   let st = insert_text st ~loc:0 ~text:"Definition z := 0. " in
   let sentences = Document.sentences @@ DocumentManager.Internal.document st in
-  let positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
+  let positions = Stdlib.List.map (fun (s : Document.sentence) -> s.Document.start) sentences in
   [%test_eq: int list] positions [ 0; 19; 41 ];
   check_no_diag st
 
@@ -50,8 +50,8 @@ let%test_unit "parse.squash" =
   let st = edit_text st ~start:20 ~stop:21 ~text:"" in
   let doc = DocumentManager.Internal.document st in
   let sentences = Document.sentences doc in
-  let start_positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
-  let stop_positions = Stdlib.List.map (fun s -> s.Document.stop) sentences in
+  let start_positions = Stdlib.List.map (fun (s : Document.sentence) -> s.Document.start) sentences in
+  let stop_positions = Stdlib.List.map (fun (s : Document.sentence) -> s.Document.stop) sentences in
   [%test_eq: int list] start_positions [ 44 ];
   [%test_eq: int list] stop_positions [ 62 ];
   [%test_eq: int] (List.length (Document.parse_errors doc)) 1
@@ -60,14 +60,14 @@ let%test_unit "parse.error_recovery" =
   let st, events = init_test_doc ~text:"## . Definition x := true. !! . Definition y := false." in
   let doc = DocumentManager.Internal.document st in
   let sentences = Document.sentences doc in
-  let start_positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
+  let start_positions = Stdlib.List.map (fun (s : Document.sentence) -> s.Document.start) sentences in
   [%test_eq: int list] start_positions [ 5; 32 ];
   [%test_eq: int] (List.length (Document.parse_errors doc)) 2
 
 let%test_unit "parse.extensions" =
   let st, events = init_test_doc ~text:"Notation \"## x\" := x (at level 0). Definition f (x : nat) := ##xx." in
   let sentences = Document.sentences @@ DocumentManager.Internal.document st in
-  let start_positions = Stdlib.List.map (fun s -> s.Document.start) sentences in
+  let start_positions = Stdlib.List.map (fun (s : Document.sentence) -> s.Document.start) sentences in
   [%test_eq: int list] start_positions [ 0; 35 ];
   check_no_diag st
 
@@ -117,7 +117,7 @@ let%test_unit "exec.require_error" =
   let st = handle_events todo st in
   let ranges = (DocumentManager.executed_ranges st).processed in
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.start.character) ranges in
-  [%test_eq: int list] positions [ 19 ]
+  [%test_eq: int list] positions [ 18 ]
 
 let%test_unit "step_forward.delete_observe_id" =
   let st, init_events = init_test_doc ~text:"Definition x := 3. Lemma foo : x = 3." in 

@@ -65,7 +65,7 @@ let rec parse : type a. int -> int -> Document.sentence list -> Document.parsing
       Error ("fewer sentences than expected, only " ^ Int.to_string m ^ " list of errors:\n" ^ errors)
     | E _, _, [] -> Error ("fewer errors than expected, only " ^ Int.to_string n)
 
-let d_sentences doc spec = 
+let d_sentences doc spec =
   let sentences = Document.sentences_sorted_by_loc doc in
   let errors = Document.parse_errors doc in
   let r = run (parse 0 0 sentences errors spec) in

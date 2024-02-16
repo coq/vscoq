@@ -53,7 +53,13 @@ val apply_text_edits : document -> text_edit list -> document
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
     text is not parsed or executed. *)
 
+(* Example:                        *)
+(* "  Check 3. "                    *)
+(* ^  ^       ^---- end            *)
+(* |  |------------ start          *)
+(* |---------------- parsing_start *)
 type sentence = {
+  parsing_start : int;
   start : int;
   stop : int;
   synterp_state : Vernacstate.Synterp.t; (* synterp state after this sentence's synterp phase *)
@@ -63,7 +69,18 @@ type sentence = {
   id : sentence_id;
 }
 
+type comment = {
+  start : int;
+  stop : int;
+}
+
+type code_line =
+  | Sentence of sentence
+  | ParsingError of parsing_error
+  | Comment of comment
+
 val sentences : document -> sentence list
+val code_lines_sorted_by_loc : document -> code_line list
 val sentences_sorted_by_loc : document -> sentence list
 
 val get_sentence : document -> sentence_id -> sentence option
@@ -90,9 +107,14 @@ val get_last_sentence : document  -> sentence option
 val schedule : document -> Scheduler.schedule
 
 val range_of_id : document -> Stateid.t -> Range.t
+(** [range_of_id doc id] returns a Range object coressponding to the sentence id given in argument *)
+
+val range_of_id_with_blank_space : document -> Stateid.t -> Range.t
+(** [range_of_id_with_blank_space doc id] returns a Range object coressponding to the sentence id given in argument but with the white spaces before (until the previous sentence) *)
 
 module Internal : sig
 
   val string_of_sentence : sentence -> string
+  val string_of_item : code_line -> string
 
 end

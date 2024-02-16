@@ -29,13 +29,20 @@ type parsed_ast = {
 }
 
 type pre_sentence = {
+  parsing_start : int;
   start : int;
   stop : int;
   synterp_state : Vernacstate.Synterp.t; (* synterp state after this sentence's synterp phase *)
   ast : parsed_ast;
 }
 
+(* Example:                        *)
+(* "  Check 3. "                   *)
+(* ^  ^       ^---- end            *)
+(* |  |------------ start          *)
+(* |---------------- parsing_start *)
 type sentence = {
+  parsing_start : int;
   start : int;
   stop : int;
   synterp_state : Vernacstate.Synterp.t; (* synterp state after this sentence's synterp phase *)
@@ -70,22 +77,32 @@ let range_of_sentence raw (sentence : sentence) =
   let end_ = RawDocument.position_of_loc raw sentence.stop in
   Range.{ start; end_ }
 
+let range_of_sentence_with_blank_space raw (sentence : sentence) =
+  let start = RawDocument.position_of_loc raw sentence.parsing_start in
+  let end_ = RawDocument.position_of_loc raw sentence.stop in
+  Range.{ start; end_ }
+
 let range_of_id document id =
   match SM.find_opt id document.sentences_by_id with
   | None -> CErrors.anomaly Pp.(str"Trying to get range of non-existing sentence " ++ Stateid.print id)
   | Some sentence -> range_of_sentence document.raw_doc sentence
 
+let range_of_id_with_blank_space document id =
+  match SM.find_opt id document.sentences_by_id with
+  | None -> CErrors.anomaly Pp.(str"Trying to get range of non-existing sentence " ++ Stateid.print id)
+  | Some sentence -> range_of_sentence_with_blank_space document.raw_doc sentence
+
 let parse_errors parsed =
   List.map snd (LM.bindings parsed.parsing_errors_by_end)
 
-let add_sentence parsed start stop (ast: parsed_ast) synterp_state scheduler_state_before =
+let add_sentence parsed parsing_start start stop (ast: parsed_ast) synterp_state scheduler_state_before =
   let id = Stateid.fresh () in
   let ast' = (ast.ast, ast.classification, synterp_state) in
   let scheduler_state_after, schedule =
     Scheduler.schedule_sentence (id, ast') scheduler_state_before parsed.schedule
   in
   (* FIXME may invalidate scheduler_state_XXX for following sentences -> propagate? *)
-  let sentence = { start; stop; ast; id; synterp_state; scheduler_state_before; scheduler_state_after } in
+  let sentence = { parsing_start; start; stop; ast; id; synterp_state; scheduler_state_before; scheduler_state_after } in
   { parsed with sentences_by_end = LM.add stop sentence parsed.sentences_by_end;
     sentences_by_id = SM.add id sentence parsed.sentences_by_id;
     schedule
@@ -102,9 +119,36 @@ let remove_sentence parsed id =
 
 let sentences parsed =
   List.map snd @@ SM.bindings parsed.sentences_by_id
+  
+type comment = {
+  start : int;
+  stop : int;
+}
+
+type code_line =
+  | Sentence of sentence
+  | ParsingError of parsing_error
+  | Comment of comment
+  
+let start_of_code_line = function
+  | Sentence { start = x } -> x
+  | ParsingError  { start = x } -> x
+  | Comment { start = x } -> x
+
+let compare_code_line x y =
+  let s1 = start_of_code_line x in
+  let s2 = start_of_code_line y in
+  s1 - s2
+
+let code_lines_sorted_by_loc parsed =
+  List.sort compare_code_line @@ List.concat [
+    (List.map (fun (_,x) -> Sentence x) @@ SM.bindings parsed.sentences_by_id) ;
+    (List.map (fun (_,x) -> ParsingError x) @@ LM.bindings parsed.parsing_errors_by_end) ;
+    []  (* todo comments *)
+   ]
 
 let sentences_sorted_by_loc parsed =
-  List.sort (fun ({ start = s1 } : sentence) { start = s2 } -> s1 - s2) @@ List.map snd @@ SM.bindings parsed.sentences_by_id
+  List.sort (fun ({start = s1} : sentence) {start = s2} -> s1 - s2) @@ List.map snd @@ SM.bindings parsed.sentences_by_id
 
 let sentences_before parsed loc =
   let (before,ov,_after) = LM.split loc parsed.sentences_by_end in
@@ -178,14 +222,14 @@ let pos_at_end parsed =
   | Some (stop, _) -> stop
   | None -> -1
 
-let patch_sentence parsed scheduler_state_before id ({ ast; start; stop; synterp_state } : pre_sentence) =
+let patch_sentence parsed scheduler_state_before id ({ parsing_start; ast; start; stop; synterp_state } : pre_sentence) =
   log @@ "Patching sentence " ^ Stateid.to_string id;
   let old_sentence = SM.find id parsed.sentences_by_id in
   let scheduler_state_after, schedule =
     let ast = (ast.ast, ast.classification, synterp_state) in
     Scheduler.schedule_sentence (id,ast) scheduler_state_before parsed.schedule
   in
-  let new_sentence = { old_sentence with ast; start; stop; scheduler_state_before; scheduler_state_after } in
+  let new_sentence = { old_sentence with ast; parsing_start; start; stop; scheduler_state_before; scheduler_state_after } in
   let sentences_by_id = SM.add id new_sentence parsed.sentences_by_id in
   let sentences_by_end = LM.remove old_sentence.stop parsed.sentences_by_end in
   let sentences_by_end = LM.add new_sentence.stop new_sentence sentences_by_end in
@@ -267,6 +311,7 @@ let rec parse_more synterp_state stream raw parsed errors =
     parse_more synterp_state stream raw parsed errors
   in
   let start = Stream.count stream in
+  log @@ "Start of parse is: " ^ (string_of_int start);
   begin
     (* FIXME should we save lexer state? *)
     match parse_one_sentence stream ~st:synterp_state with
@@ -288,7 +333,7 @@ let rec parse_more synterp_state stream raw parsed errors =
           let entry = Synterp.synterp_control ast in
           let classification = Vernac_classifier.classify_vernac ast in
           let synterp_state = Vernacstate.Synterp.freeze () in
-          let sentence = { ast = { ast = entry; classification; tokens }; start = begin_char; stop; synterp_state } in
+          let sentence = { parsing_start = start; ast = { ast = entry; classification; tokens }; start = begin_char; stop; synterp_state } in
           let parsed = sentence :: parsed in
           parse_more synterp_state stream raw parsed errors
         with exn ->
@@ -304,6 +349,11 @@ let rec parse_more synterp_state stream raw parsed errors =
       let loc = Loc.get_loc @@ Exninfo.info exn in
       junk_sentence_end stream;
       handle_parse_error start (loc,CLexer.Error.to_string e)
+    | exception exn ->
+      let e, info = Exninfo.capture exn in
+      let loc = Loc.get_loc @@ info in
+      junk_sentence_end stream;
+      handle_parse_error start (loc, "Unexpected parse error: " ^ Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
   end
 
 let parse_more synterp_state stream raw =
@@ -331,8 +381,8 @@ let invalidate top_edit top_id parsed_doc new_sentences =
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs
     | Added new_sentences :: diffs ->
     (* FIXME could have side effect on the following, unchanged sentences *)
-      let add_sentence (parsed_doc,scheduler_state) ({ start; stop; ast; synterp_state } : pre_sentence) =
-        add_sentence parsed_doc start stop ast synterp_state scheduler_state
+      let add_sentence (parsed_doc,scheduler_state) ({ parsing_start; start; stop; ast; synterp_state } : pre_sentence) =
+        add_sentence parsed_doc parsing_start start stop ast synterp_state scheduler_state
       in
       let parsed_doc, scheduler_state = List.fold_left add_sentence (parsed_doc,scheduler_state) new_sentences in
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs
@@ -361,7 +411,7 @@ let validate_document ({ parsed_loc; raw_doc; } as document) =
   log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
   let unchanged_id, invalid_ids, document = invalidate (stop+1) top_id document new_sentences in
   let parsing_errors_by_end =
-    List.fold_left (fun acc error -> LM.add error.stop error acc) errors new_errors
+    List.fold_left (fun acc (error : parsing_error) -> LM.add error.stop error acc) errors new_errors
   in
   let parsed_loc = pos_at_end document in
   unchanged_id, invalid_ids, { document with parsed_loc; parsing_errors_by_end }
@@ -394,4 +444,16 @@ module Internal = struct
     sentence.start
     sentence.stop
 
+  let string_of_error error =
+    let (_, str) = error.msg in
+    Format.sprintf "[parsing error] [%s] (%i -> %i)"
+    str
+    error.start
+    error.stop
+
+  let string_of_item = function
+    | Sentence sentence -> string_of_sentence sentence
+    | Comment _ -> "(* comment *)"
+    | ParsingError error -> string_of_error error
+  
 end
