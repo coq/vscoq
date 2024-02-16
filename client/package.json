@@ -289,14 +289,12 @@
       {
         "command": "extension.coq.stepForward",
         "title": "Step Forward",
-        "category": "Coq",
-        "enablement": "config.vscoq.proof.mode == 0"
+        "category": "Coq"
       },
       {
         "command": "extension.coq.stepBackward",
         "title": "Step Backward",
-        "category": "Coq",
-        "enablement": "config.vscoq.proof.mode == 0"
+        "category": "Coq"
       },
       {
         "command": "extension.coq.documentState",
