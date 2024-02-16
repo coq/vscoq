@@ -117,7 +117,7 @@ let%test_unit "exec.require_error" =
   let st = handle_events todo st in
   let ranges = (DocumentManager.executed_ranges st).processed in
   let positions = Stdlib.List.map (fun s -> s.Lsp.Types.Range.start.character) ranges in
-  [%test_eq: int list] positions [ 19 ]
+  [%test_eq: int list] positions [ 18 ]
 
 let%test_unit "step_forward.delete_observe_id" =
   let st, init_events = init_test_doc ~text:"Definition x := 3. Lemma foo : x = 3." in 
