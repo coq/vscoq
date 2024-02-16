@@ -125,27 +125,30 @@ type comment = {
   stop : int;
 }
 
-type item =
+type code_line =
   | Sentence of sentence
   | ParsingError of parsing_error
   | Comment of comment
   
-let start_of_item = function
+let start_of_code_line = function
   | Sentence { start = x } -> x
   | ParsingError  { start = x } -> x
   | Comment { start = x } -> x
 
-let compare_item x y =
-  let s1 = start_of_item x in
-  let s2 = start_of_item y in
+let compare_code_line x y =
+  let s1 = start_of_code_line x in
+  let s2 = start_of_code_line y in
   s1 - s2
 
-let sentences_sorted_by_loc parsed =
-  List.sort compare_item @@ List.concat [
+let code_lines_sorted_by_loc parsed =
+  List.sort compare_code_line @@ List.concat [
     (List.map (fun (_,x) -> Sentence x) @@ SM.bindings parsed.sentences_by_id) ;
     (List.map (fun (_,x) -> ParsingError x) @@ LM.bindings parsed.parsing_errors_by_end) ;
     []  (* todo comments *)
    ]
+
+let sentences_sorted_by_loc parsed =
+  List.sort (fun ({start = s1} : sentence) {start = s2} -> s1 - s2) @@ List.map snd @@ SM.bindings parsed.sentences_by_id
 
 let sentences_before parsed loc =
   let (before,ov,_after) = LM.split loc parsed.sentences_by_end in

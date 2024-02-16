@@ -74,13 +74,14 @@ type comment = {
   stop : int;
 }
 
-type item =
+type code_line =
   | Sentence of sentence
   | ParsingError of parsing_error
   | Comment of comment
 
 val sentences : document -> sentence list
-val sentences_sorted_by_loc : document -> item list
+val code_lines_sorted_by_loc : document -> code_line list
+val sentences_sorted_by_loc : document -> sentence list
 
 val get_sentence : document -> sentence_id -> sentence option
 val sentences_before : document -> int -> sentence list
@@ -114,6 +115,6 @@ val range_of_id_with_blank_space : document -> Stateid.t -> Range.t
 module Internal : sig
 
   val string_of_sentence : sentence -> string
-  val string_of_item : item -> string
+  val string_of_item : code_line -> string
 
 end
