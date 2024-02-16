@@ -13,7 +13,7 @@
   outputs = { self, nixpkgs, flake-utils, coq-master }:
     flake-utils.lib.eachDefaultSystem (system:
   
-   let vscoq_version = "2.1.0"; in
+   let vscoq_version = "2.1.1"; in
    let coq = coq-master.defaultPackage.${system}; in
    rec {
 
