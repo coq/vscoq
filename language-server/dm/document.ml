@@ -338,8 +338,16 @@ let rec parse_more synterp_state stream raw parsed errors =
           parse_more synterp_state stream raw parsed errors
         with exn ->
           let e, info = Exninfo.capture exn in
-          let loc = Loc.get_loc @@ info in
-          handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
+          match e with
+          | Synterp.UnmappedLibrary (_, qid) ->
+            let loc = qid.loc in
+            handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
+          | Synterp.NotFoundLibrary (_, qid) ->
+              let loc = qid.loc in
+              handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
+          | _ ->
+            let loc = Loc.get_loc @@ info in
+            handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
         end
     | exception (E msg as exn) ->
       let loc = Loc.get_loc @@ Exninfo.info exn in
