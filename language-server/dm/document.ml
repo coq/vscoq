@@ -302,6 +302,20 @@ exception E = Stream.Error
 exception E = Grammar.Error
 [%%endif]
 
+[%%if coq = "8.18" || coq = "8.19"]
+let get_loc_from_info_or_exn exn =
+  let e, info = Exninfo.capture exn in
+  match e with
+  | Synterp.UnmappedLibrary (_, qid) -> qid.loc
+  | Synterp.NotFoundLibrary (_, qid) -> qid.loc
+  | _ -> Loc.get_loc @@ info
+[%%else]
+let get_loc_from_info_or_exn exn =
+  let _, info = Exninfo.capture exn in
+  Loc.get_loc @@ info
+[%%endif]
+
+
 let rec parse_more synterp_state stream raw parsed errors =
   let handle_parse_error start msg =
     log @@ "handling parse error at " ^ string_of_int start;
@@ -338,16 +352,8 @@ let rec parse_more synterp_state stream raw parsed errors =
           parse_more synterp_state stream raw parsed errors
         with exn ->
           let e, info = Exninfo.capture exn in
-          match e with
-          | Synterp.UnmappedLibrary (_, qid) ->
-            let loc = qid.loc in
-            handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
-          | Synterp.NotFoundLibrary (_, qid) ->
-              let loc = qid.loc in
-              handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
-          | _ ->
-            let loc = Loc.get_loc @@ info in
-            handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
+          let loc = get_loc_from_info_or_exn exn in
+          handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info))
         end
     | exception (E msg as exn) ->
       let loc = Loc.get_loc @@ Exninfo.info exn in
