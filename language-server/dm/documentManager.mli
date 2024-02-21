@@ -78,12 +78,7 @@ val interpret_in_background : state -> (state * events)
 val reset : state -> state * events
 (** resets Coq *)
 
-type exec_overview = {
-  processing : Range.t list;
-  processed : Range.t list;
-}
-
-val executed_ranges : state -> exec_overview
+val executed_ranges : state -> ExecutionManager.exec_overview
 (** returns the ranges corresponding to the sentences
     that have been executed and remotely executes *)
 

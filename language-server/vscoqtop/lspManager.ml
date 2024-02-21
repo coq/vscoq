@@ -180,7 +180,7 @@ let publish_diagnostics uri doc =
   output_notification (Std diag_notification)
 
 let send_highlights uri doc =
-  let { Dm.DocumentManager.processing;  processed } =
+  let { Dm.ExecutionManager.processing;  processed } =
     Dm.DocumentManager.executed_ranges doc in
   let notification = Notification.Server.UpdateHighlights {
     uri;

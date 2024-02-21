@@ -60,12 +60,7 @@ let inject_em_event x = Sel.Event.map (fun e -> ExecutionManagerEvent e) x
 let inject_em_events events = List.map inject_em_event events
 
 type events = event Sel.Event.t list
-
-type exec_overview = {
-  processing : Range.t list;
-  processed : Range.t list;
-}
-
+(* 
 let merge_adjacent_ranges (r1,l) r2 =
   if Position.compare r1.Range.end_ r2.Range.start == 0 then
     Range.{ start = r1.Range.start; end_ = r2.Range.end_ }, l
@@ -80,9 +75,9 @@ let compress_sorted_ranges = function
 
 let compress_ranges ranges =
   let ranges = List.sort (fun { Range.start = s1 } { Range.start = s2 } -> Position.compare s1 s2) ranges in
-  compress_sorted_ranges ranges
+  compress_sorted_ranges ranges *)
 
-let executed_ranges doc execution_state loc =
+(* let executed_ranges doc execution_state loc =
   let ranges_of l =
     compress_ranges @@ List.map (Document.range_of_id_with_blank_space doc) l
   in
@@ -92,9 +87,11 @@ let executed_ranges doc execution_state loc =
   { 
     processing = [];
     processed = ranges_of processed_ids; 
-  }
+  } *)
 
 let executed_ranges st =
+  ExecutionManager.overview st.execution_state
+  (* 
   let loc = match st.observe_id with
   | None -> max_int
   | Some Top -> 0
@@ -102,7 +99,7 @@ let executed_ranges st =
     | None -> failwith "observe_id does not exist"
     | Some { stop } -> stop
   in
-  executed_ranges st.document st.execution_state loc
+  executed_ranges st.document st.execution_state loc *)
 
 let observe_id_range st = 
   let doc = Document.raw_document st.document in
@@ -301,7 +298,7 @@ let reset { uri; opts; init_vs; document; execution_state; observe_id } =
   ExecutionManager.destroy execution_state;
   let execution_state, feedback = ExecutionManager.init init_vs in
   let observe_id = if observe_id = None then None else (Some Top) in
-  let st = { uri; opts; init_vs; document; execution_state; observe_id} in
+  let st = { uri; opts; init_vs; document; execution_state; observe_id } in
   validate_document st, [inject_em_event feedback]
 
 let apply_text_edits state edits =
@@ -325,14 +322,14 @@ let handle_event ev st =
   | Execute { id; vst_for_next_todo; started; todo = task :: todo; background } ->
     (*log "Execute (more tasks)";*)
     let (execution_state,vst_for_next_todo,events,_interrupted) =
-      ExecutionManager.execute st.execution_state (vst_for_next_todo, [], false) task in
+      ExecutionManager.execute ?document:(Some st.document) st.execution_state (vst_for_next_todo, [], false) task in
     (* We do not update the state here because we may have received feedback while
        executing *)
     let priority = if background then None else Some PriorityManager.execution in
     let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started; background }) in
     (Some {st with execution_state}, inject_em_events events @ [event])
   | ExecutionManagerEvent ev ->
-    let execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
+    let execution_state_update, events = ExecutionManager.handle_event ?document:(Some st.document) ev st.execution_state in
     (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
 
 let get_proof st diff_mode pos =

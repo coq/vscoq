@@ -13,6 +13,7 @@
 (**************************************************************************)
 
 open Protocol
+open Protocol.LspWrapper
 open Scheduler
 open Types
 
@@ -26,6 +27,11 @@ let success vernac_st = Success (Some vernac_st)
 let error loc msg vernac_st = Error ((loc,msg),(Some vernac_st))
 
 type sentence_id = Stateid.t
+
+type exec_overview = {
+  processing : Range.t list;
+  processed : Range.t list;
+}
 
 module SM = Map.Make (Stateid)
 
@@ -74,6 +80,7 @@ type state = {
   coq_feeder : coq_feedback_listener;
   sel_feedback_queue : (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)) Queue.t;
   sel_cancellation_handle : Sel.Event.cancellation_handle;
+  overview: exec_overview;
 }
 
 let options = ref default_options
@@ -123,6 +130,7 @@ let pr_event = function
   | LocalFeedback _ -> Pp.str "LocalFeedback"
   | ProofWorkerEvent event -> ProofWorker.pr_event event
 
+let overview st = st.overview
 let inject_proof_event = Sel.Event.map (fun x -> ProofWorkerEvent x)
 let inject_proof_events st l =
   (st, List.map inject_proof_event l)
@@ -228,12 +236,35 @@ let interp_qed_delayed ~proof_using ~state_id ~st =
   let st = { st with interp } in
   st, success st, assign
 
-let update_all id v fl state =
+let update_exec_overview id status state document =
+  let rec insert_or_merge_range r = function
+  | [] -> [r]
+  | r1 :: l ->
+    if Position.compare r1.Range.end_ r.Range.start == 0 then
+      Range.{ start = r1.Range.start; end_ = r.Range.end_ } :: l
+    else
+      r1 :: (insert_or_merge_range r l)
+  in
+  let range = Document.range_of_id_with_blank_space document id in
+  match status with
+  | Success _ ->
+    let {processing; processed} = state.overview in
+    let processed = insert_or_merge_range range processed in
+    let overview = {processing; processed} in
+    {state with overview}
+  | Error _ -> state
+
+let update_all ?document id v fl state =
+  let state = match v with
+  | Done s ->
+    Option.cata (update_exec_overview id s state) state document
+  | _ -> state
+  in
   { state with of_sentence = SM.add id (v, fl) state.of_sentence }
 ;;
-let update state id v =
+let update ?document state id v =
   let fl = try snd (SM.find id state.of_sentence) with Not_found -> [] in
-  update_all id (Done v) fl state
+  update_all ?document id (Done v) fl state
 ;;
 
 let local_feedback feedback_queue : event Sel.Event.t =
@@ -252,6 +283,7 @@ let init vernac_state =
   let coq_feeder = install_feedback_listener doc_id (fun x -> Queue.push x sel_feedback_queue) in
   let event = local_feedback sel_feedback_queue in
   let sel_cancellation_handle = Sel.Event.get_cancellation_handle event in
+  let overview = { processing = []; processed = []} in
   {
     initial = vernac_state;
     of_sentence = SM.empty;
@@ -259,6 +291,7 @@ let init vernac_state =
     coq_feeder;
     sel_feedback_queue;
     sel_cancellation_handle;
+    overview
   },
   event
 
@@ -280,7 +313,7 @@ let handle_feedback id fb state =
         state
     end
 
-let handle_event event state =
+let handle_event ?document event state =
   match event with
   | LocalFeedback (q,_,id,fb) ->
       Some (handle_feedback id fb state), [local_feedback q]
@@ -295,12 +328,12 @@ let handle_event event state =
             match SM.find id state.of_sentence, v with
             | (Delegated (_,completion), fl), _ ->
                 Option.default ignore completion v;
-                Some (update_all id (Done v) fl state)
+                Some (update_all ?document id (Done v) fl state)
             | (Done (Success s), fl), Error (err,_) ->
                 (* This only happens when a Qed closing a delegated proof
                    receives an updated by a worker saying that the proof is
                    not completed *)
-                Some (update_all id (Done (Error (err,s))) fl state)
+                Some (update_all ?document id (Done (Error (err,s))) fl state)
             | (Done _, _), _ -> None
             | exception Not_found -> None (* TODO: is this possible? *)
       in
@@ -404,9 +437,9 @@ let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_
     Feedback.msg_debug @@ Pp.str "==========================================================";
     exit 1
 
-let execute st (vs, events, interrupted) task =
+let execute ?document st (vs, events, interrupted) task =
   if interrupted then begin
-    let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None)) in
+    let st = update ?document st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None)) in
     (st, vs, events, true)
   end else
     try
@@ -416,17 +449,17 @@ let execute st (vs, events, interrupted) task =
             | None -> success vs
             | Some msg -> error None msg vs
           in
-          let st = update st id v in
+          let st = update ?document st id v in
           (st, vs, events, false)
       | PExec { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
           let vs, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
-          let st = update st id v in
+          let st = update ?document st id v in
           (st, vs, events @ ev, false)
       | PQuery { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
           let _, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
-          let st = update st id v in
+          let st = update ?document st id v in
           (st, vs, events @ ev, false)
       | PDelegate { terminator_id; opener_id; last_step_id; tasks; proof_using } ->
           begin match find_fulfilled_opt opener_id st.of_sentence with
@@ -452,7 +485,7 @@ let execute st (vs, events, interrupted) task =
               with exn when CErrors.noncritical exn ->
                 assign (`Exn (CErrors.UserError(Pp.str "error closing proof"), Exninfo.null))
             in
-            let st = update st terminator_id (success last_vs) in
+            let st = update ?document st terminator_id (success last_vs) in
             let st = List.fold_left (fun st id ->
                if Option.equal Stateid.equal (Some id) last_step_id then
                  update_all id (Delegated (job_id,Some complete_job)) [] st
@@ -468,11 +501,11 @@ let execute st (vs, events, interrupted) task =
               (st, last_vs,events @ [inject_proof_event e] ,false)
           | _ ->
             (* If executing the proof opener failed, we skip the proof *)
-            let st = update st terminator_id (success vs) in
+            let st = update ?document st terminator_id (success vs) in
             (st, vs,events,false)
           end
     with Sys.Break ->
-      let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None)) in
+      let st = update ?document st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None)) in
       (st, vs, events, true)
 
 let build_tasks_for sch st id =
