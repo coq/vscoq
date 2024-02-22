@@ -90,16 +90,12 @@ let compress_ranges ranges =
   } *)
 
 let executed_ranges st =
-  ExecutionManager.overview st.execution_state
-  (* 
-  let loc = match st.observe_id with
-  | None -> max_int
-  | Some Top -> 0
-  | Some (Id id) -> match Document.get_sentence st.document id with 
-    | None -> failwith "observe_id does not exist"
-    | Some { stop } -> stop
-  in
-  executed_ranges st.document st.execution_state loc *)
+  match st.observe_id with
+  | None -> ExecutionManager.overview st.execution_state
+  | Some Top -> { processing = []; processed = [] }
+  | Some (Id id) ->
+      let range = Document.range_of_id st.document id in
+      ExecutionManager.overview_until_range st.execution_state range
 
 let observe_id_range st = 
   let doc = Document.raw_document st.document in

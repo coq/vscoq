@@ -131,6 +131,26 @@ let pr_event = function
   | ProofWorkerEvent event -> ProofWorker.pr_event event
 
 let overview st = st.overview
+
+let overview_until_range st range =
+  let find_final_range l = List.find_opt (fun (r: Range.t) -> Range.included ~in_:r range) l in
+  let {processed; processing} = st.overview in
+  let final_range = find_final_range processed  in
+  match final_range with
+  | None ->
+    let final_range = find_final_range processing in
+    begin match final_range with
+    | None -> { processed; processing }
+    | Some { start } ->
+      let processing = (List.filter (fun (r: Range.t) -> not @@ Range.included ~in_:r range) processing) in
+      let processing = List.append processing [Range.create ~start:start ~end_:range.end_] in
+      {processing; processed}
+    end
+  | Some { start } ->
+    let processed = (List.filter (fun (r: Range.t) -> not @@ Range.included ~in_:r range) processed) in
+    let processed = List.append processed [Range.create ~start:start ~end_:range.end_] in
+    { processing; processed }
+
 let inject_proof_event = Sel.Event.map (fun x -> ProofWorkerEvent x)
 let inject_proof_events st l =
   (st, List.map inject_proof_event l)

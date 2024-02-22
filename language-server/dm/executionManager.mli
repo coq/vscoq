@@ -47,6 +47,7 @@ type feedback_message = Feedback.level * Loc.t option * Pp.t
 val pr_event : event -> Pp.t
 
 val overview : state -> exec_overview
+val overview_until_range : state -> Range.t -> exec_overview
 
 val init : Vernacstate.t -> state * event Sel.Event.t
 val destroy : state -> unit
