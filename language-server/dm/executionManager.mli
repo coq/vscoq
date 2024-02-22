@@ -14,7 +14,6 @@
 
 open Types
 open Protocol
-open Protocol.LspWrapper
 
 (** The event manager is in charge of the actual event of tasks (as
     defined by the scheduler), caching event states and invalidating
@@ -36,18 +35,11 @@ val is_diagnostics_enabled: unit -> bool
 (** Execution state, includes the cache *)
 type state
 type event
-type exec_overview = {
-    processing : Range.t list;
-    processed : Range.t list;
-}
 type events = event Sel.Event.t list
 
 type feedback_message = Feedback.level * Loc.t option * Pp.t
 
 val pr_event : event -> Pp.t
-
-val overview : state -> exec_overview
-val overview_until_range : state -> Range.t -> exec_overview
 
 val init : Vernacstate.t -> state * event Sel.Event.t
 val destroy : state -> unit
@@ -74,13 +66,15 @@ val get_initial_context : state -> Evd.evar_map * Environ.env
 val get_vernac_state : state -> sentence_id -> Vernacstate.t option
 
 (** Events for the main loop *)
-val handle_event :  ?document:Document.document -> event -> state -> (state option * events)
+val handle_event : event -> state -> (state option * events)
 
 (** Execution happens in two steps. In particular the event one takes only
     one task at a time to ease checking for interruption *)
 type prepared_task
-val build_tasks_for : Scheduler.schedule -> state -> sentence_id -> Vernacstate.t * prepared_task list
-val execute : ?document:Document.document -> state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool)
+val build_tasks_for : Scheduler.schedule -> state -> sentence_id -> Vernacstate.t * prepared_task list * state
+val execute : state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool)
+
+val update_overview : prepared_task -> prepared_task list -> state -> Document.document -> exec_overview -> exec_overview
 
 (** Coq toplevels for delegation without fork *)
 module ProofWorkerProcess : sig

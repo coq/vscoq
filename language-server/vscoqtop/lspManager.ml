@@ -180,7 +180,7 @@ let publish_diagnostics uri doc =
   output_notification (Std diag_notification)
 
 let send_highlights uri doc =
-  let { Dm.ExecutionManager.processing;  processed } =
+  let { Dm.Types.processing;  processed } =
     Dm.DocumentManager.executed_ranges doc in
   let notification = Notification.Server.UpdateHighlights {
     uri;
@@ -566,6 +566,8 @@ let pr_lsp_event = function
 let output_notification = function
 | QueryResultNotification params ->
   output_notification @@ SearchResult params
+| UpdateHighlightsNotification params ->
+  output_notification @@ UpdateHighlights params
 
 let handle_event = function
   | LspManagerEvent e -> handle_lsp_event e
@@ -588,6 +590,8 @@ let handle_event = function
     begin match notification with 
     | QueryResultNotification _ -> 
       output_notification notification; [inject_notification Dm.SearchQuery.query_feedback]
+    | UpdateHighlightsNotification _ ->
+      output_notification notification; []
     end
   | LogEvent e ->
     Dm.Log.handle_event e; []

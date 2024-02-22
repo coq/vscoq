@@ -12,7 +12,8 @@ import {decorationsManual, decorationsContinuous} from './Decorations';
 export default class Client extends LanguageClient {
 
 	private static _channel: any = vscode.window.createOutputChannel('VsCoq');
-    private _decorations: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
+    private _decorationsProcessed: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
+    private _decorationsProcessing: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
 
 	constructor(
         serverOptions: ServerOptions,
@@ -33,17 +34,21 @@ export default class Client extends LanguageClient {
     }
 
     public saveHighlights(uri: String, processingRange: vscode.Range[], processedRange: vscode.Range[]) {
-        this._decorations.set(uri, processedRange);
+        this._decorationsProcessed.set(uri, processedRange);
+        this._decorationsProcessing.set(uri, processingRange);
     }
 
     public updateHightlights() {
-        for(let entry of this._decorations.entries()) {
+        for(let entry of this._decorationsProcessing.entries()) {
+            this.updateDocumentEditors(entry[0], entry[1], "processing");
+        }
+        for(let entry of this._decorationsProcessed.entries()) {
             this.updateDocumentEditors(entry[0], entry[1]);
         }
     };
 
     public resetHighlights() {
-        for(let entry of this._decorations.entries()) {
+        for(let entry of this._decorationsProcessed.entries()) {
             this.resetDocumentEditors(entry[0]);
         }
     }
@@ -59,17 +64,19 @@ export default class Client extends LanguageClient {
         editors.map(editor => {
             editor.setDecorations(decorationsManual.processed, []);
             editor.setDecorations(decorationsContinuous.processed, []);
+            editor.setDecorations(decorationsManual.processing, []);
+            editor.setDecorations(decorationsContinuous.processing, []);
         });
     }
 
-    private updateDocumentEditors(uri: String, ranges: vscode.Range[]) {
+    private updateDocumentEditors(uri: String, ranges: vscode.Range[], type: String = "processed") {
         const config = vscode.workspace.getConfiguration('vscoq.proof');
         const editors = this.getDocumentEditors(uri);
         editors.map(editor => {
             if(config.mode === 0) {
-                editor.setDecorations(decorationsManual.processed, ranges);
+                editor.setDecorations(type === "processed" ? decorationsManual.processed : decorationsManual.processing, ranges);
             } else {
-                editor.setDecorations(decorationsContinuous.processed, ranges);
+                editor.setDecorations(type === "processed" ? decorationsContinuous.processed : decorationsContinuous.processing, ranges);
             }
         });
     }

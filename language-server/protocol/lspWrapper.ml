@@ -64,5 +64,12 @@ type query_result =
     statement : pp;
   } [@@deriving yojson]
 
+type overview = {
+  uri : DocumentUri.t;
+  processingRange : Range.t list;
+  processedRange : Range.t list;
+} [@@deriving yojson]
+
 type notification =
   | QueryResultNotification of query_result
+  | UpdateHighlightsNotification of overview
