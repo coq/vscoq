@@ -731,7 +731,6 @@
     "start:search-ui": "cd search-ui && yarn run start",
     "build:search-ui": "cd search-ui && yarn run build",
     "build:dev:search-ui": "cd search-ui && yarn run build:dev",
-    "vscode:prepublish": "yarn run package",
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "yarn run install:all && yarn run build:all && webpack --mode production --devtool hidden-source-map",

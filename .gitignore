@@ -5,3 +5,5 @@ language-server/_build
 client/yarn-error.log
 client/.vscode-test/
 client/out/
+.DS_Store
+result
