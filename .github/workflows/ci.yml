@@ -199,10 +199,14 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 16.x
-    - name: Publish on VsCode marketplace
+    - name: Copy licences
       run: |
         cd client
         cp ../LICENSE . && cp ../README.md .
+    - name: Pre publish phase
+      run: |
+        cd client
+        yarn run package
     - name: Publish to Open VSX Registry
       uses: HaaLeo/publish-vscode-extension@v1.6.2
       id: publishToOpenVSX
