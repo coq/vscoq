@@ -43,6 +43,11 @@ jobs:
     - uses: cachix/install-nix-action@v22
       with:
         nix_path: nixpkgs=channel:nixos-unstable
+    - name: Check each yarn.nix up to date
+      run: |
+        cd client && nix-shell -p yarn2nix --run "yarn2nix > new_yarn.nix" && diff new_yarn.nix yarn.nix
+        cd goal-view-ui && nix-shell -p yarn2nix --run "yarn2nix > new_yarn.nix" && diff new_yarn.nix yarn.nix
+        cd ../search-ui && nix-shell -p yarn2nix --run "yarn2nix > new_yarn.nix" && diff new_yarn.nix yarn.nix
     - run: nix develop .#vscoq-language-server-${{ matrix.coq }} -c bash -c "cd language-server && dune build"
     - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
     - run: xvfb-run nix develop .#vscoq-client -c bash -c "cd client && yarn test"
@@ -199,10 +204,14 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 16.x
-    - name: Publish on VsCode marketplace
+    - name: Copy licences
       run: |
         cd client
         cp ../LICENSE . && cp ../README.md .
+    - name: Pre publish phase
+      run: |
+        cd client
+        yarn run package
     - name: Publish to Open VSX Registry
       uses: HaaLeo/publish-vscode-extension@v1.6.2
       id: publishToOpenVSX

@@ -5,7 +5,7 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
-    coq-master = { url = "github:coq/coq/e0058c7b266aa43b3c23fbb4c2e7a127512c8667"; }; # Should be kept in sync with PIN_COQ in CI workflow
+    coq-master = { url = "github:coq/coq/8152d125abb0fb7e8cbecf4bd6cd51d8d3e70d78"; }; # Should be kept in sync with PIN_COQ in CI workflow
     coq-master.inputs.nixpkgs.follows = "nixpkgs";
 
   };
@@ -14,7 +14,7 @@
     flake-utils.lib.eachDefaultSystem (system:
   
    let vscoq_version = "2.1.2"; in
-   let coq = coq-master.defaultPackage.${system}; in
+   let coq = coq-master.packages.${system}; in
    rec {
 
     packages.default = self.packages.${system}.vscoq-language-server-coq-8-19;
@@ -23,11 +23,15 @@
       # Notice the reference to nixpkgs here.
       with import nixpkgs { inherit system; };
       let ocamlPackages = ocaml-ng.ocamlPackages_4_14; in
+
       ocamlPackages.buildDunePackage {
         duneVersion = "3";
         pname = "vscoq-language-server";
         version = vscoq_version;
         src = ./language-server;
+        nativeBuildInputs = [
+          coq_8_18
+        ];
         buildInputs = [
           coq_8_18
           dune_3
@@ -62,6 +66,9 @@
         pname = "vscoq-language-server";
         version = vscoq_version;
         src = ./language-server;
+        nativeBuildInputs = [
+          coq_8_19
+        ];
         buildInputs = [
           coq_8_19
           dune_3
@@ -96,6 +103,9 @@
         pname = "vscoq-language-server";
         version = vscoq_version;
         src = ./language-server;
+        nativeBuildInputs = [
+          coq
+        ];
         buildInputs = [
           coq
           dune_3
@@ -123,15 +133,51 @@
 
     packages.vscoq-client =
       with import nixpkgs { inherit system; };
+
+      let yarn_deps = (name: (path: (mkYarnModules {
+        pname = "${name}_yarn_deps";
+        version = vscoq_version;
+        packageJSON = ./${path}/package.json;
+        yarnLock = ./${path}/yarn.lock;
+        yarnNix = ./${path}/yarn.nix;
+      }))); in
+
+      let client_deps = yarn_deps "client" /client; in
+      let goal_view_ui_deps = yarn_deps "goal_ui" /client/goal-view-ui; in
+      let search_ui_deps = yarn_deps "search_ui" /client/search-ui; in
+      let link_deps = (x: (p: (''
+        ln -s ${x}/node_modules ${p}
+        export PATH=${x}/node_modules/.bin:$PATH
+      ''))); in
+      let links = [
+        (link_deps client_deps ".")
+        (link_deps goal_view_ui_deps "./goal-view-ui")
+        (link_deps search_ui_deps "./search-ui")
+      ]; in
+      let cmds = builtins.concatStringsSep "\n" links; in
+
       stdenv.mkDerivation rec {
 
         name = "vscoq-client";
         src = ./client;
 
-        buildInputs = [
+        nativeBuildInputs = [
           nodejs
           yarn
-        ];
+        ] ++ [client_deps goal_view_ui_deps search_ui_deps];
+
+        buildPhase = cmds + ''
+          cd goal-view-ui
+          yarn run build
+          cd ../search-ui
+          yarn run build
+          cd ..
+          webpack --mode=production --devtool hidden-source-map
+          bash -c "yes y | vsce package"
+          mv *.vsix vscoq-client.vsix
+          mkdir -p $out/bin
+          cp ./vscoq-client.vsix $out/bin
+        '';
 
     };
 

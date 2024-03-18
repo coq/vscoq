@@ -91,7 +91,7 @@ export function activate(context: ExtensionContext) {
     const vscoq1 = extensions.getExtension("coq-community.vscoq1");
     if (vscoq1) {
         if (vscoq1.isActive) {
-            const message = "VsCoq2 is incompatible with VsCoq1 it is recommended that you disable one of them.";
+            const message = "VsCoq2 is incompatible with VsCoq1. it is recommended that you disable one of them.";
             window.showErrorMessage(message, { title: "Disable VsCoq1", id: 0 }, { title: "Disable VsCoq2", id: 1 })
                 .then(act => {
                     if (act?.id === 0) {
