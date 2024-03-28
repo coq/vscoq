@@ -90,6 +90,38 @@ let overview_until_range st range =
     let processed = List.append processed [Range.create ~start:start ~end_:range.end_] in
     { processing; processed; prepared }
 
+let prepare_overview st id =
+  match Document.get_sentence st.document id with
+  | None -> st (*Can't find the sentence, just return the state as is*)
+  | Some { id } ->
+    (* Sentence already executed, no need to prepare*)
+    if ExecutionManager.is_executed st.execution_state id then
+      st
+    else
+      (* Create the correct prepared range *)
+      begin match st.observe_id with
+      | None -> st (* No observe_id means continuous mode, no need to do anything*)
+      | Some Top ->
+        (* Create range from first sentence to id *)
+        let range = Document.range_of_id_with_blank_space st.document id in
+        let start = Position.create ~character:0 ~line:0 in
+        let range = Range.create ~end_: range.end_ ~start: start in
+        let prepared = [range] in
+        let overview = {st.overview with prepared} in
+        {st with overview}
+      | Some (Id o_id) ->
+        (* Create range from o_id to id*)
+        let o_range = Document.range_of_id_with_blank_space st.document o_id in
+        let range = Document.range_of_id_with_blank_space st.document id in
+        if Position.compare o_range.end_ range.end_ < 0 then
+          let range = Range.create ~end_: range.end_ ~start: o_range.end_ in
+          let prepared = [range] in
+          let overview = {st.overview with prepared} in
+          {st with overview}
+        else
+          st
+    end
+
 let executed_ranges st =
   match st.observe_id with
   | None -> st.overview
@@ -186,6 +218,7 @@ let reset_to_top st =
   { st with observe_id = Some Top }
 
 let interpret_to st id =
+  let st = prepare_overview st id in
   let observe_id = if st.observe_id = None then None else (Some (Id id)) in
   let st = { st with observe_id} in
   observe ~background:false st id
@@ -322,7 +355,6 @@ let handle_event ev st =
     (*log "Execute (more tasks)";*)
     let (execution_state,vst_for_next_todo,events,_interrupted) =
       ExecutionManager.execute st.execution_state (vst_for_next_todo, [], false) task in
-
     (* We do not update the state here because we may have received feedback while
        executing *)
     let priority = if background then None else Some PriorityManager.execution in

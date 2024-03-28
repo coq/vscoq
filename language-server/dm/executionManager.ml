@@ -251,7 +251,7 @@ let rec remove_or_truncate_range r = function
   else
     r1 :: (remove_or_truncate_range r l)
 
-let update_processed task state processing processed document =
+let update_processed task state processing processed prepared document =
   match task with
   | PDelegate {opener_id; terminator_id; } ->
     let opener_range = Document.range_of_id_with_blank_space document opener_id in
@@ -263,15 +263,15 @@ let update_processed task state processing processed document =
       | Done s ->
         begin match s with
         | Success _ ->
-          insert_or_merge_range range processed, remove_or_truncate_range range processing
+          insert_or_merge_range range processed, remove_or_truncate_range range processing, remove_or_truncate_range range prepared
         | Error _ ->
-          processed, remove_or_truncate_range range processing
+          processed, remove_or_truncate_range range processing, remove_or_truncate_range range prepared
         end
-      | _ -> processed, processing
+      | _ -> processed, processing, prepared
       end
     | exception Not_found ->
       log @@ "Trying to get overview with non-existing state id " ^ Stateid.to_string terminator_id;
-      processed, processing
+      processed, processing, prepared
     end
   | PSkip { id } | PExec { id } | PQuery { id } ->
     let range = Document.range_of_id_with_blank_space document id in
@@ -281,33 +281,33 @@ let update_processed task state processing processed document =
       | Done s ->
         begin match s with
         | Success _ ->
-          insert_or_merge_range range processed, remove_or_truncate_range range processing
+          insert_or_merge_range range processed, remove_or_truncate_range range processing, remove_or_truncate_range range prepared
         | Error _ ->
-          processed, remove_or_truncate_range range processing
+          processed, remove_or_truncate_range range processing, remove_or_truncate_range range prepared
         end
-      | _ -> processed, processing
+      | _ -> processed, processing, prepared
       end
     | exception Not_found ->
       log @@ "Trying to get overview with non-existing state id " ^ Stateid.to_string id;
-      processed, processing
+      processed, processing, prepared
 
-let update_processing task processing document =
+let update_processing task processing prepared document =
   match task with
   | PDelegate { opener_id; terminator_id; } ->
     let opener_range = Document.range_of_id_with_blank_space document opener_id in
     let terminator_range = Document.range_of_id_with_blank_space document terminator_id in
     let range = Range.create ~end_:terminator_range.end_ ~start:opener_range.start in
-    insert_or_merge_range range processing
-  | PSkip { id } | PExec { id } | PQuery { id } -> 
+    insert_or_merge_range range processing, remove_or_truncate_range range prepared
+  | PSkip { id } | PExec { id } | PQuery { id } ->
     let range = Document.range_of_id_with_blank_space document id in
-    insert_or_merge_range range processing
+    insert_or_merge_range range processing, remove_or_truncate_range range prepared
 
 let update_overview task todo state document overview =
   let { processing; processed; prepared } = overview in
-  let processed, processing = update_processed task state processing processed document in
-  let processing = match todo with
-  | [] -> processing
-  | next :: _ -> update_processing next processing document in
+  let processed, processing, prepared = update_processed task state processing processed prepared document in
+  let processing, prepared = match todo with
+  | [] -> processing, prepared
+  | next :: _ -> update_processing next processing prepared document in
   {processing; processed; prepared}
 
 

@@ -12,6 +12,7 @@ import {decorationsManual, decorationsContinuous} from './Decorations';
 export default class Client extends LanguageClient {
 
 	private static _channel: any = vscode.window.createOutputChannel('VsCoq');
+    private _decorationsPrepared: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
     private _decorationsProcessed: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
     private _decorationsProcessing: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
 
@@ -33,12 +34,16 @@ export default class Client extends LanguageClient {
         Client._channel.appendLine(message);
     }
 
-    public saveHighlights(uri: String, processingRange: vscode.Range[], processedRange: vscode.Range[]) {
-        this._decorationsProcessed.set(uri, processedRange);
+    public saveHighlights(uri: String, preparedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
+        this._decorationsPrepared.set(uri, preparedRange);
         this._decorationsProcessing.set(uri, processingRange);
+        this._decorationsProcessed.set(uri, processedRange);
     }
 
     public updateHightlights() {
+        for(let entry of this._decorationsPrepared.entries()) {
+            this.updateDocumentEditors(entry[0], entry[1], "prepared");
+        }
         for(let entry of this._decorationsProcessing.entries()) {
             this.updateDocumentEditors(entry[0], entry[1], "processing");
         }
@@ -62,10 +67,12 @@ export default class Client extends LanguageClient {
     private resetDocumentEditors(uri: String) {
         const editors = this.getDocumentEditors(uri);
         editors.map(editor => {
-            editor.setDecorations(decorationsManual.processed, []);
-            editor.setDecorations(decorationsContinuous.processed, []);
+            editor.setDecorations(decorationsManual.prepared, []);
+            editor.setDecorations(decorationsContinuous.prepared, []);
             editor.setDecorations(decorationsManual.processing, []);
             editor.setDecorations(decorationsContinuous.processing, []);
+            editor.setDecorations(decorationsManual.processed, []);
+            editor.setDecorations(decorationsContinuous.processed, []);
         });
     }
 
@@ -74,9 +81,25 @@ export default class Client extends LanguageClient {
         const editors = this.getDocumentEditors(uri);
         editors.map(editor => {
             if(config.mode === 0) {
-                editor.setDecorations(type === "processed" ? decorationsManual.processed : decorationsManual.processing, ranges);
+                if(type === "prepared") {
+                    editor.setDecorations(decorationsManual.prepared, ranges);
+                }
+                if(type === "processing") {
+                    editor.setDecorations(decorationsManual.processing, ranges);
+                }
+                if (type === "processed") {
+                    editor.setDecorations(decorationsManual.processed, ranges);
+                }
             } else {
-                editor.setDecorations(type === "processed" ? decorationsContinuous.processed : decorationsContinuous.processing, ranges);
+                if(type === "prepared") {
+                    editor.setDecorations(decorationsContinuous.prepared, ranges);
+                }
+                if(type === "processing") {
+                    editor.setDecorations(decorationsContinuous.processing, ranges);
+                }
+                if (type === "processed") {
+                    editor.setDecorations(decorationsContinuous.processed, ranges);
+                }
             }
         });
     }

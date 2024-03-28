@@ -66,10 +66,10 @@ type query_result =
 
 type overview = {
   uri : DocumentUri.t;
+  preparedRange: Range.t list;
   processingRange : Range.t list;
   processedRange : Range.t list;
 } [@@deriving yojson]
 
 type notification =
   | QueryResultNotification of query_result
-  | UpdateHighlightsNotification of overview
