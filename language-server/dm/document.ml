@@ -269,6 +269,16 @@ let add_sentence parsed parsing_start start stop (ast: sentence_state) synterp_s
   } in
   document, scheduler_state_after
 
+let pre_sentence_to_sentence parsing_start start stop (ast: parsed_ast) synterp_state scheduler_state_before schedule =
+  let id = Stateid.fresh () in
+  let ast' = (ast.ast, ast.classification, synterp_state) in
+  let scheduler_state_after, schedule =
+    Scheduler.schedule_sentence (id, ast') scheduler_state_before schedule
+  in
+  (* FIXME may invalidate scheduler_state_XXX for following sentences -> propagate? *)
+  let sentence = { parsing_start; start; stop; ast; id; synterp_state; scheduler_state_before; scheduler_state_after } in
+  sentence, schedule, scheduler_state_after
+  
 let remove_sentence parsed id =
   match SM.find_opt id parsed.sentences_by_id with
   | None -> parsed
@@ -577,10 +587,13 @@ let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments
               | Some lc -> lc.line_nb, lc.bp, lc.ep
               | None -> assert false
       in
-      let str = String.sub (RawDocument.text raw) begin_char (end_char - begin_char) in
-      let sstr = Stream.of_string str in
-      let lex = CLexer.Lexer.tok_func sstr in
-      let tokens = stream_tok 0 [] lex begin_line begin_char in
+      let tokens = match raw with
+      | None -> []
+      | Some raw ->
+        let str = String.sub (RawDocument.text raw) begin_char (end_char - begin_char) in
+        let sstr = Stream.of_string str in
+        let lex = CLexer.Lexer.tok_func sstr in
+        stream_tok 0 [] lex begin_line begin_char in
       begin
         try
           log (fun () -> "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast));
@@ -714,6 +727,17 @@ let handle_event document = function
   let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
   {document with cancel_handle}, [event], None
 | Invalidate state -> {document with cancel_handle=None}, [], handle_invalidate state document
+
+let parse_text_at_loc loc text document =
+  let (_, synterp_state, scheduler_state) = state_strictly_before document loc in
+  let stream = Stream.of_string text in
+  let new_sentences, _ = parse_more synterp_state stream None in
+  let add_sentence (sentences, schedule, scheduler_state) ({ parsing_start; start; stop; ast; synterp_state } : pre_sentence) =
+    let added_sentence, schedule, schedule_state = pre_sentence_to_sentence parsing_start start stop ast synterp_state scheduler_state schedule in
+    sentences @ [added_sentence], schedule, schedule_state
+  in
+  let sentences, schedule, _ = List.fold_left add_sentence ([],document.schedule, scheduler_state) new_sentences in
+  sentences, schedule
 
 let create_document init_synterp_state text =
   let raw_doc = RawDocument.create text in

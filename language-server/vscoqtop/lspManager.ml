@@ -527,6 +527,15 @@ let sendDocumentProofs id params =
       let proofs = Dm.DocumentManager.get_document_proofs st in
       Ok Request.Client.DocumentProofsResult.{ proofs }, []
 
+let sendCoqPilotResult id params =
+  let Request.Client.CoqPilotParams.{ textDocument; position; text} = params in
+  let uri = textDocument.uri in
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[documentState] ignoring event on non existant document"; Error("Document does not exist"), []
+  | Some st -> 
+    let errors = Dm.DocumentManager.coq_pilot_observe st position text in
+    Ok Request.Client.CoqPilotResult.{ errors }, []
+
 let workspaceDidChangeConfiguration params = 
   let Lsp.Types.DidChangeConfigurationParams.{ settings } = params in
   let settings = Settings.t_of_yojson settings in
@@ -564,6 +573,7 @@ let dispatch_request : type a. Jsonrpc.Id.t -> a Request.Client.t -> (a,error) r
   | Search params -> coqtopSearch id params
   | DocumentState params -> sendDocumentState id params
   | DocumentProofs params -> sendDocumentProofs id params
+  | CoqPilot params -> sendCoqPilotResult id params
 
 let dispatch_std_notification = 
   let open Lsp.Client_notification in function

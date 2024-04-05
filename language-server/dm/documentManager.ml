@@ -330,7 +330,22 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
         {state with execution_state}, events
 
 let reset_to_top st = { st with observe_id = Top }
-
+let coq_pilot_observe st position text =
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) position in
+  match Document.find_sentence_before st.document loc with
+  | None -> log @@ "COQ PILOT ON NON VALID POSITION"; [] (* HANDLE ERROR *)
+  | Some {id} ->
+    let sentences, sch = Document.parse_text_at_loc loc text st.document in
+    let vst_for_next_todo, todo = ExecutionManager.build_tasks_for (Document.schedule st.document) st.execution_state id in
+    let more_todo = ExecutionManager.build_tasks_for_sentences sch sentences in
+    let execute_task (execution_state, vst_for_next_todo) task = 
+      let (execution_state,vst_for_next_todo,_events,_interrupted) =
+      ExecutionManager.execute execution_state (vst_for_next_todo, [], false) task in
+      execution_state, vst_for_next_todo
+    in
+    let execution_state, _ = List.fold_left execute_task (st.execution_state, vst_for_next_todo) (todo @ more_todo) in
+    let all_errors = ExecutionManager.all_errors execution_state in  (* TODO: RETURN ONLY THE NEW ERRORS *)
+    List.map (fun e -> Pp.string_of_ppcmds @@ snd (snd e)) all_errors
 
 let get_document_proofs st =
   let outline = Document.outline st.document in

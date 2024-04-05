@@ -75,6 +75,7 @@ val handle_event : event -> state -> (sentence_id option * state option * events
 type prepared_task
 val get_id_of_executed_task : prepared_task -> sentence_id
 val build_tasks_for : Document.document -> Scheduler.schedule -> state -> sentence_id -> bool -> Vernacstate.t * state * prepared_task option * errored_sentence
+val build_tasks_for_sentences : Scheduler.schedule -> Document.sentence list -> prepared_task list
 val execute : state -> Document.document -> Vernacstate.t * events * bool -> prepared_task -> bool -> (prepared_task option * state * Vernacstate.t * events * errored_sentence)
 
 (* val update_overview : prepared_task -> prepared_task list -> state -> Document.document -> state
