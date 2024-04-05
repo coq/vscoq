@@ -531,7 +531,7 @@ let sendCoqPilotResult id params =
   let Request.Client.CoqPilotParams.{ textDocument; position; text} = params in
   let uri = textDocument.uri in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[documentState] ignoring event on non existant document"; Error("Document does not exist"), []
+  | None -> log @@ "[coqPilotResult] ignoring event on non existant document"; Error("Document does not exist"), []
   | Some st -> 
     let errors = Dm.DocumentManager.coq_pilot_observe st position text in
     log "Sending errors for coqpilot request:";
