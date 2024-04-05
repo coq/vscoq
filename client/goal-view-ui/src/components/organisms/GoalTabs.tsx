@@ -8,6 +8,8 @@ import {
 import GoalBlock from '../molecules/GoalBlock';
 import { Goal } from '../../types';
 
+import classes from './GoalTabs.module.css';
+
 type GoalSectionProps = {
     goals: Goal[];
 };
@@ -54,7 +56,7 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     });
 
     return (
-        <VSCodePanels>
+        <VSCodePanels className={classes.View}>
             {goalPanelTabs}
             {goalPanelViews}
         </VSCodePanels>

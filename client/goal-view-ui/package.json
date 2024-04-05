@@ -9,10 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-hook/resize-observer": "^1.2.6",
     "@vscode/codicons": "^0.0.32",
     "@vscode/webview-ui-toolkit": "^1.2.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "react-hook": "^0.0.1",
     "react-icons": "^4.7.1"
   },
   "devDependencies": {

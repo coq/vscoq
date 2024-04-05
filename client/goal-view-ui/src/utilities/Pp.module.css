@@ -1,0 +1,8 @@
+.Container {
+    display:block;
+    width: 100%;
+}
+
+.Content {
+    white-space: pre;
+}

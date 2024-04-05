@@ -2,7 +2,7 @@ import React, {FunctionComponent} from 'react';
 
 import classes from './PpString.module.css';
 import { Hyp } from '../../types';
-import { fragmentOfPpString } from '../../utilities/pp';
+import PpDisplay from '../../utilities/pp';
 
 type HypothesisProps = {
     content: Hyp;
@@ -14,8 +14,10 @@ const hypothesis: FunctionComponent<HypothesisProps> = (props) => {
 
     return (
         <div className={classes.Hypothesis}>
-            <span className={classes.Content}>{fragmentOfPpString(content, classes)}</span>
-            <br/>
+            <PpDisplay 
+                pp={content}
+                coqCss={classes}
+            />
         </div>
     );
 };

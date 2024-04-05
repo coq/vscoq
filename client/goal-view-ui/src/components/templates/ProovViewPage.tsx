@@ -39,7 +39,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
         ];
 
         const views = [
-            <VSCodePanelView> 
+            <VSCodePanelView className={classes.View}> 
                 <GoalSection 
                     key={"goals"}
                     goals={goals!.main} 
@@ -55,7 +55,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                     }
                 /> 
             </VSCodePanelView>,
-            <VSCodePanelView> 
+            <VSCodePanelView className={classes.View}> 
                 <GoalSection 
                     key="shelved"
                     goals={goals!.shelved} 
@@ -64,7 +64,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                     emptyMessage='There are no shelved goals'
                 /> 
             </VSCodePanelView>,
-            <VSCodePanelView> 
+            <VSCodePanelView className={classes.View}> 
                 <GoalSection
                     key="givenup"
                     goals={goals!.givenUp} 
@@ -76,7 +76,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
         ];
 
         return (
-            <VSCodePanels>
+            <VSCodePanels className={classes.View}>
                 {tabs}
                 {views}
             </VSCodePanels>

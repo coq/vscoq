@@ -1,0 +1,24 @@
+.SpanBox {
+    white-space: nowrap;
+    width: 100%;
+    overflow: hidden;
+    display: block;
+}
+
+.SpanContent {
+    width: max-content;
+    display: inline-block;
+}
+
+.Box {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.Vertical {
+    flex-direction: column;
+}
+
+.Horizontal {
+    flex-direction: row;
+}
