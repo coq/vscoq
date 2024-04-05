@@ -534,6 +534,8 @@ let sendCoqPilotResult id params =
   | None -> log @@ "[documentState] ignoring event on non existant document"; Error("Document does not exist"), []
   | Some st -> 
     let errors = Dm.DocumentManager.coq_pilot_observe st position text in
+    log "Sending errors for coqpilot request:";
+    List.iter (fun e -> log e) errors;
     Ok Request.Client.CoqPilotResult.{ errors }, []
 
 let workspaceDidChangeConfiguration params = 
@@ -573,7 +575,7 @@ let dispatch_request : type a. Jsonrpc.Id.t -> a Request.Client.t -> (a,error) r
   | Search params -> coqtopSearch id params
   | DocumentState params -> sendDocumentState id params
   | DocumentProofs params -> sendDocumentProofs id params
-  | CoqPilot params -> sendCoqPilotResult id params
+  | CoqPilot params -> log "Recieved request: vscoq/coqPilot"; sendCoqPilotResult id params
 
 let dispatch_std_notification = 
   let open Lsp.Client_notification in function
