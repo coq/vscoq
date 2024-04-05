@@ -321,6 +321,9 @@ module Request = struct
     | "vscoq/documentProofs" ->
       let+ params = Lsp.Import.Json.message_params params DocumentProofsParams.t_of_yojson in
       Pack (DocumentProofs params)
+    | "vscoq/coqPilot" ->
+      let+ params = Lsp.Import.Json.message_params params CoqPilotParams.t_of_yojson in
+      Pack (CoqPilot params)
     | _ ->
       let+ E req = Lsp.Client_request.of_jsonrpc req in
       Pack (Std req)
