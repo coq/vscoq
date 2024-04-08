@@ -469,14 +469,27 @@ let locate st pos ~pattern =
       Ok( pp_of_coqpp @@ Notation.locate_notation
         (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) ntn sc)
 
+[%%if coq = "8.18" || coq = "8.19"]
 let print st pos ~pattern = 
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with
   | None -> Error("No context found")
-  | Some (sigma, env) -> 
+  | Some (sigma, env) ->
     let qid = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
     let udecl = None in (*TODO*)
     Ok ( pp_of_coqpp @@ Prettyp.print_name env sigma qid udecl )
+[%%else]
+let print st pos ~pattern =
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
+  match get_context st pos with
+  | None -> Error("No context found")
+  | Some (sigma, env) ->
+    let qid = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
+    let udecl = None in (*TODO*)
+    let access = Library.indirect_accessor[@@warning "-3"] in
+    Ok ( pp_of_coqpp @@ Prettyp.print_name access env sigma qid udecl )
+[%%endif]
+    
 
 module Internal = struct
 
