@@ -118,6 +118,7 @@ const app = () => {
     useEffect(() => {
         const {tabs, currentTab} = queryPanelState;
         if(tabs[currentTab].type === QueryType.search && 
+            (tabs[currentTab].result as SearchResultType).data &&
             (tabs[currentTab].result as SearchResultType).data.length) {
             enableCollapseButton();
             updateCollapseButton(tabs[currentTab].expanded!);
@@ -154,7 +155,9 @@ const app = () => {
                 if(tab.id === notification.id) {
                     //This is only for typescript, but should always be the case
                     if(tab.result.type === QueryType.search) { 
-                        const data = tab.result.data.concat([{name: notification.name, statement: notification.statement, collapsed: false}]);
+                        const data = tab.result.data ?
+                            tab.result.data.concat([{name: notification.name, statement: notification.statement, collapsed: false}]) :
+                            [{name: notification.name, statement: notification.statement, collapsed: false}];
                         return {...tab, result: {...tab.result, data: data}};
                     }
                 }
