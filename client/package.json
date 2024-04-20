@@ -169,7 +169,7 @@
               "Delegate"
             ],
             "enumItemLabels": [
-              "No delegation (all proofs are checked on after the other)",
+              "No delegation (all proofs are checked one after the other)",
               "Skip the proofs which are out of focus. This requires a continuous checking to be off",
               "Delegate proofs"
             ],
