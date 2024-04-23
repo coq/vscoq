@@ -117,7 +117,7 @@
               "List"
             ],
             "default": "List",
-            "description": "Determines wether multiple goals should be displayed in different tabs or as a list of collapsible items."
+            "description": "Determines whether multiple goals should be displayed in different tabs or as a list of collapsible items."
           },
           "vscoq.goals.diff.mode": {
             "type": "string",
@@ -199,7 +199,7 @@
             "type": "number",
             "default": 100,
             "minimum": 0,
-            "description": "Sets the limit for, how many theorems unification is attempted for when attempting code completion for the application of theorems. This detemines which theorems can be marked as applicable. The higher the limit, the better results will be, but the slower code completion will be."
+            "description": "Sets the limit for how many theorems unification is attempted for when attempting code completion for the application of theorems. This determines which theorems can be marked as applicable. The higher the limit, the better results will be, but the slower code completion will be."
           },
           "vscoq.completion.algorithm": {
             "scope": "window",
