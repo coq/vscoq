@@ -288,14 +288,24 @@ let parse_one_sentence stream ~st =
   (* FIXME: handle proof mode correctly *)
   *)
 
+
+[%%if coq = "8.18" || coq = "8.19"]
+let parse_one_sentence stream ~st =
+  Vernacstate.Synterp.unfreeze st;
+  let entry = Pvernac.main_entry (Some (Synterp.get_default_proof_mode ())) in
+  let pa = Pcoq.Parsable.make stream in
+  let sentence = Pcoq.Entry.parse entry pa in
+  (sentence, [])
+[%%else]
 let parse_one_sentence stream ~st =
   Vernacstate.Synterp.unfreeze st;
   Flags.record_comments := true;
   let entry = Pvernac.main_entry (Some (Synterp.get_default_proof_mode ())) in
   let pa = Pcoq.Parsable.make stream in
-    let sentence = Pcoq.Entry.parse entry pa in
-    let comments = Pcoq.Parsable.comments pa in
-    (sentence, comments)
+  let sentence = Pcoq.Entry.parse entry pa in
+  let comments = Pcoq.Parsable.comments pa in
+  (sentence, comments)
+[%%endif]
 
 let rec junk_sentence_end stream =
   match Stream.npeek () 2 stream with
@@ -438,9 +448,6 @@ let validate_document ({ parsed_loc; raw_doc; } as document) =
   let parsing_errors_by_end =
     List.fold_left (fun acc (error : parsing_error) -> LM.add error.stop error acc) errors new_errors
   in
-  log @@ "PARSED NEW COMMENTS: ";
-  List.iter (fun (comment: comment) -> log @@ Format.sprintf "[start: %i, stop: %i, comment %s]" comment.start comment.stop comment.content) new_comments;
-  log @@ "------------------";
   let comments_by_end =
     List.fold_left (fun acc (comment : comment) -> LM.add comment.stop comment acc) comments new_comments
   in
