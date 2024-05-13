@@ -185,15 +185,15 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
 [%%if coq = "8.18"]
 let definition_using e s ~fixnames:_ ~using ~terms =
   Proof_using.definition_using e s ~using ~terms
-[%%elsif coq = "8.19"]
+[%%elif coq = "8.19"]
 let definition_using = Proof_using.definition_using
 [%%endif]
 
 [%%if coq = "8.20"]
-let add_using proof proof_using =
+let add_using proof proof_using _ =
   Declare.Proof.set_proof_using proof proof_using |> snd
 [%%else]
-let add_using proof proof_using =
+let add_using proof proof_using lemmas =
       let env = Global.env () in
       let sigma, _ = Declare.Proof.get_current_context proof in
       let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
@@ -213,7 +213,7 @@ let add_using proof proof_using =
 let interp_qed_delayed ~proof_using ~state_id ~st =
   let lemmas = Option.get @@ st.Vernacstate.interp.lemmas in
   let f proof =
-    let proof = add_using proof proof_using in
+    let proof = add_using proof proof_using lemmas in
     let fix_exn = None in (* FIXME *)
     let f, assign = Future.create_delegate ~blocking:false ~name:"XX" fix_exn in
     Declare.Proof.close_future_proof ~feedback_id:state_id proof f, assign
