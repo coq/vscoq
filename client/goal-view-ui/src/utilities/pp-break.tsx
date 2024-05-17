@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useState, useEffect} from 'react';
+import React, {FunctionComponent} from 'react';
 import {PpMode} from '../types';
 
 type PpBreakProps = {
