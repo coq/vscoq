@@ -6,3 +6,15 @@
 .Content {
     white-space: pre;
 }
+
+.Box {
+    display: inline;
+}
+
+.Box + .Text {
+    vertical-align: bottom;
+}
+
+.Box + .Tag {
+    vertical-align: bottom;
+}

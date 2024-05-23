@@ -2,38 +2,56 @@ import React, {FunctionComponent} from 'react';
 import {PpMode} from '../types';
 
 type PpBreakProps = {
+    id: number,
+    offset: number,
     mode: PpMode,
     horizontalIndent: number, 
     indent: number,
-    lineBreak: boolean 
+    lineBreak: boolean,
 };
 
 const ppBreak: FunctionComponent<PpBreakProps> = (props) => {
     
-    const {mode, lineBreak, indent, horizontalIndent} = props;
-
+    const {mode, lineBreak, indent, horizontalIndent, id, offset} = props;
+    const style = {
+        marginLeft: offset
+    };
+    
+    const breakId = 'break-'+id;
     switch(mode) {
         case PpMode.horizontal:
-            return <span>{" ".repeat(horizontalIndent)}</span>;
+            return <span id={breakId}>{" ".repeat(horizontalIndent)}</span>;
         case PpMode.vertical:
-            return <br/>;
+            return (
+                <span id={breakId}>
+                    <br/>
+                    <span style={style}>
+                        {" ".repeat(indent ? indent : 0)}
+                    </span>
+                </span>
+            );
         case PpMode.hvBox:
             if(lineBreak) {
-                return <br/>;
+                <span id={breakId}>
+                    <br/>
+                    <span style={style}>
+                        {" ".repeat(indent ? indent : 0)}
+                    </span>
+                </span>;
             }
-            return <span> </span>;
+            return <span id={breakId}> </span>;
         case PpMode.hovBox:
             if(lineBreak) {
                 return (
-                    <>
+                    <span id={breakId}>
                         <br/>
-                        <span>
+                        <span style={style}>
                             {" ".repeat(indent ? indent : 0)}
                         </span>
-                    </>
+                    </span>
                 );
             }
-            return <span> </span>;
+            return <span id={breakId}> </span>;
     }
 };
 

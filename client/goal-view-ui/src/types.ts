@@ -28,6 +28,15 @@ export type PpString =
 
 export type Hyp = PpString;
 
+export type FlattenedPpString =
+  | ["Ppcmd_empty"]
+  | ["Ppcmd_string", string]
+  | ["Ppcmd_box", BlockType, PpString[]]
+  | ["Ppcmd_tag", PpTag, PpString]
+  | ["Ppcmd_print_break", integer, integer]
+  | ["Ppcmd_force_newline"]
+  | ["Ppcmd_comment", string[]];
+
 export interface Goal {
     id: string,
     goal: PpString, 

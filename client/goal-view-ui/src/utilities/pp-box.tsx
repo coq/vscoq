@@ -1,15 +1,21 @@
-import React, {FunctionComponent, useEffect, useRef} from 'react';
+import React, {FunctionComponent, useEffect, useState, useLayoutEffect, useRef} from 'react';
 import {PpMode, PpString} from '../types';
 import { fragmentOfPpStringWithMode } from './pp';
+import classes from './Pp.module.css';
+
+type BreakInfo = {
+    id: string,
+    offset: number
+};
 
 type PpBoxProps = {
     pp: PpString,
     mode: PpMode,
-    recordWidth: (id: number, w: number) => void,
+    recordWidth: (id: string, w: number) => void,
     coqCss:CSSModuleClasses,
     indent: number,
     id: number,
-    breaks: number[]
+    breaks: BreakInfo[]
 };
 
 const ppBox: FunctionComponent<PpBoxProps> = (props) => {
@@ -20,12 +26,15 @@ const ppBox: FunctionComponent<PpBoxProps> = (props) => {
     useEffect(() => {
         if(boxElement.current) {
             const boxRect = boxElement.current.getBoundingClientRect();
-            recordWidth(id, boxRect.width);
+            recordWidth("box-"+id, boxRect.width);
+            boxElement.current.closest(classes.Box);
+
         }
     }, [breaks]);
 
+    const boxId = "box-"+id;
     return (
-        <span ref={boxElement}>
+        <span ref={boxElement} id={boxId} className={classes.Box}>
             {fragmentOfPpStringWithMode(pp, mode, coqCss, id + 1, breaks, indent, recordWidth)}
         </span>
     );

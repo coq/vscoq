@@ -14,13 +14,23 @@ type PpProps = {
 };
 
 type Box = {
-    id: number,
+    id: string,
     mode: PpMode;
     indent: number;
     depth: number;
     width: number;
-    possibleBreaks: number[];
-    breaks: number[];
+    possibleBreaks: string[];
+    breaks: string[];
+};
+
+type BreakInfo = {
+    id: string,
+    offset: number
+};
+
+type DisplayState = {
+    breakIds: BreakInfo[];
+    boxes: Box[];
 };
 
 const ppDisplay : FunctionComponent<PpProps> = (props) => {
@@ -28,9 +38,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
     const {pp, coqCss} = props;
 
     const [maxBreaks, setMaxBreaks] = useState<number>(0);
-    const [breakIds, setBreakIds] = useState<number[]>([]);
-    const [boxes, setBoxes] = useState<Box[]>([]);
-    const [saturatedBoxes, setSaturatedBoxes] = useState<number[]>([]);
+    const [displayState, setDisplayState] = useState<DisplayState>({breakIds: [], boxes: []});
     const [lastEntry, setLastEntry] = useState<ResizeObserverEntry|null>(null);
 
     const container = useRef<HTMLDivElement>(null);
@@ -40,19 +48,22 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
         
         if(container.current) {
             if(content.current) {
+                //in this case the window has already been resized
                 if(lastEntry) {
+
+                    //don't trigger a recomputation for small resizes
                     if(Math.abs(entry.contentRect.width - lastEntry.contentRect.width) <= 10) {return;}
                     
-                    //When we enlarge the window we should try and recomputed boxes
+                    //When we enlarge the window we should try and recompute boxes
                     if(entry.contentRect.width > lastEntry.contentRect.width) {
-                        setBreakIds([]);
-                        setBoxes(boxes => {
-                            const newBoxes = boxes.map(box => {
-                                return {...box, breaks: []};
-                            });
-                            return newBoxes;
+                        setDisplayState(ds => {
+                            return {
+                                breakIds: [],
+                                boxes: ds.boxes.map(box => {
+                                    return {...box, possibleBreaks: box.possibleBreaks.concat(box.breaks), breaks: []};
+                                })
+                            };
                         });
-                        setSaturatedBoxes([]);
                     } else {
                         computeNeededBreaks(maxBreaks);
                     }
@@ -67,46 +78,59 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
     useEffect(() => {
         const breaks = computeNumBreaks(pp, 0);
         setMaxBreaks(breaks);
-        setBreakIds([]);
-        setSaturatedBoxes([]);
-        setBoxes(getBoxes(pp, 0, 0, []));
+        setDisplayState({
+            breakIds: [],
+            boxes: getBoxes(pp, 0, 0, [])
+        });
         computeNeededBreaks(breaks);
     }, [pp]);
 
     useLayoutEffect(() => {
+        //computeBoxMargins();
         computeNeededBreaks(maxBreaks);
-    });
+    }, [displayState]);
 
-    const updateBoxWidth = (id: number, width: number) => {
-
-        setBoxes(boxes => {
-            return boxes.map(b => {
-                if(b.id === id) {
-                    return {...b, width: width};
-                }
-                return b;
-            }).sort((b1, b2) => {
-                if(b1.depth !== b2.depth) {
-                    return b1.depth - b2.depth;
-                }
-                else {
-                    return b2.width - b1.width;
-                }
-                
-            });
+    const updateBoxWidth = (id: string, width: number) => {
+        setDisplayState(ds => {
+            return {
+                ...ds,
+                boxes: ds.boxes.map(b => {
+                    if(b.id === id) {
+                        return {...b, width: width};
+                    }
+                    return b;
+                })
+            };
         });
+    };
 
+    const computeBoxMargins = () => {
+        if(content.current) {
+            displayState.boxes.map(box => {
+                if(box.depth = 0) {return;}
+                const id = "box-" + box.id;
+                const boxHtml = content.current!.querySelector(id);
+                if(boxHtml) {
+                    const prev = boxHtml.previousElementSibling;
+                    if(prev) {
+                        const rect = prev.getBoundingClientRect();
+                        boxHtml.setAttribute('style', `marginLeft:${rect.left}`);
+                    }
+                    
+                }
+                return;
+            });
+        }
     };
 
     const computeNeededBreaks = (maxBreaks: number) => {
-
         if(container.current) {
             if(content.current) {
                 const containerRect = container.current.getBoundingClientRect();
                 const contentRect = content.current.getBoundingClientRect();
                 if(containerRect.width < contentRect.width) {
-                    if(breakIds.length < maxBreaks) {
-                        getNextBreak();
+                    if(displayState.breakIds.length < maxBreaks) {
+                        checkBreaks(containerRect.width);
                     }
                 }
             }
@@ -114,55 +138,97 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
 
     };
 
-    const getNextBreak = () => {
-        if(boxes) {
-            // Filter out the boxes that are saturated (all the breaks have been used)
-            // The box widths are sorted by descending order => we always try to break the largest box first
-            const sortedBoxes = boxes.filter(box => !saturatedBoxes.find(id => id === box.id));
+    const checkBreaks = (containerWidth: number) => {
+        if(content.current) {
+            let breakInfo : BreakInfo | null = null;
+            let currBox : Element | null = null;
+            const boxes = content.current.querySelectorAll("."+classes.Box);
+            // const firstBox = displayState.boxes.length ? content.current.querySelector("#"+displayState.boxes[0].id) : null;
+            // const initialOffset = firstBox ? firstBox.getBoundingClientRect().x : 0;
+            for(let box of boxes) {
+                const breaks = box.querySelectorAll(`:scope > :not(.${classes.Box}):not(.${classes.Tag}):not(.${classes.Text})`);
+                for(let br of breaks) {
+                    const breakId = br.id;
+                    if(displayState.breakIds.find(info => info.id === breakId)) {continue; }
 
-            for(let i = 0; i < sortedBoxes.length; i++) {
-                const box = sortedBoxes[i];
-                if(box && box.possibleBreaks) {
-                    //Ignore horizontal or vertical boxes
-                    if(box.mode === PpMode.horizontal) { continue; }
-                    else if (box.mode === PpMode.vertical) { continue; }
-                    //In the case of an hvbox trigger all breaks
-                    else if (box.mode === PpMode.hvBox) {
-                        setBreakIds(breakIds => {
-                            return breakIds.concat(box.possibleBreaks);
-                        });
-                        setSaturatedBoxes(saturatedBoxes => {
-                            return saturatedBoxes.concat([box.id]);
-                        });
+                    const next = br.nextElementSibling;
+                    if(next && next.getBoundingClientRect().right > containerWidth) {
+                        const parentBox = box.closest(`:not(#${box.id}).${classes.Box}`);
+                        const parentOffset = parentBox ? parentBox.getBoundingClientRect().left : 0;
+                        const offset = box.getBoundingClientRect().left - parentOffset;
+                        breakInfo = {id: breakId, offset: offset};
                         break;
                     }
-                    //Otherwise find the next breakId
-                    else {
-                        const breakId = box.possibleBreaks.find((candidateId) => !breakIds.find(id => id === candidateId));
-                        if(breakId) {
-                            setBreakIds(breakIds => {
-                                return breakIds.concat([breakId]);
-                            });
-                            const boxBreaks = box.breaks.concat([breakId]);
-                            setBoxes(boxes => {
-                                return boxes.map(b => {
-                                    if(b.id === box.id) {
-                                        return {...box, breaks: boxBreaks};
-                                    }
-                                    return b;
-                                });
-                            });
-                            if(boxBreaks.length === box.possibleBreaks.length) {
-                                setSaturatedBoxes(saturatedBoxes => {
-                                    return saturatedBoxes.concat([box.id]);
-                                });
-                            }
-                            break;
-                        }
+                }
+                if(breakInfo) {
+                    currBox = box;
+                    break;
+                }
+            };
 
-                    }
+            if(breakInfo && currBox) {
+                setDisplayState(ds => {
+                    return {
+                        breakIds: ds.breakIds.concat([breakInfo!]),
+                        boxes: ds.boxes.map(b => {
+                            if(b.id === currBox!.id) {
+                                return {...b, breaks: b.breaks.concat([breakInfo!.id]), possibleBreaks: b.possibleBreaks.filter(id => id !== breakInfo!.id)};
+                            }
+                            return b;
+                        })
+                    };
+                });
+            }
+        }
+    };
+
+    const getNextBreak = (containerWidth: number) => {
+        if(displayState.boxes) {
+            // Filter out the boxes that are saturated (all the breaks have been used)
+            // The box widths are sorted by descending order => we always try to break the largest box first
+            const candidateBoxes = displayState.boxes.filter(box => (box.width > containerWidth) && (box.possibleBreaks.length > 0));
+            console.log("---------------------------------");
+            console.log("ContainerWidth: ", containerWidth);
+            console.log("BOXES:");
+            console.log(candidateBoxes);
+            console.log("---------------------------------");
+
+            for(let i = 0; i < candidateBoxes.length; i++) {
+                const box = candidateBoxes[i];
+                //Ignore horizontal or vertical boxes
+                if(box.mode === PpMode.horizontal) { continue; }
+                else if (box.mode === PpMode.vertical) { continue; }
+                //In the case of an hvbox trigger all breaks
+                else if (box.mode === PpMode.hvBox) {
+                    setDisplayState(ds => {
+                        return {
+                            breakIds: ds.breakIds.concat(box.possibleBreaks.map(id => {return {id: id, offset: 0}; })),
+                            boxes: ds.boxes.map(b => {
+                                if(b.id === box.id) {
+                                    return {...box, breaks: box.possibleBreaks, possibleBreaks: []};
+                                }
+                                return b;
+                            })
+                        };
+                    });
+                }
+                //Otherwise find the next breakId
+                else {
+
+                    setDisplayState(ds => {
+                        return {
+                            breakIds: ds.breakIds.concat([{id: box.possibleBreaks[0], offset: 0}]),
+                            boxes: ds.boxes.map(b => {
+                                if(b.id === box.id) {
+                                    return {...b, breaks: box.breaks.concat([box.possibleBreaks[0]]), possibleBreaks: box.possibleBreaks.slice(1)};
+                                }
+                                return b;
+                            })
+                        };
+                    });
 
                 }
+
             }
         }
     };
@@ -189,7 +255,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
         }
     };
 
-    const getBoxBreaks = (pp: PpString, id: number, acc: number[]) : number[] => {
+    const getBoxBreaks = (pp: PpString, id: number, acc: string[]) : string[] => {
         switch(pp[0]) {
             case "Ppcmd_empty":
                 return acc;
@@ -204,7 +270,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
             case "Ppcmd_tag":
                 return getBoxBreaks(pp[2], id + 1, acc);
             case "Ppcmd_print_break":
-                return acc.concat([id]);
+                return acc.concat(["break-"+id]);
             case "Ppcmd_force_newline":
                 return acc;
             case "Ppcmd_comment":
@@ -224,12 +290,12 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
             case "Ppcmd_box":
                 const breaks = getBoxBreaks(pp[2], id + 1, []);
                 const box = {
-                    id: id,
+                    id: "box-"+id,
                     mode: pp[1][0],
                     indent: pp[1][1] ? pp[1][1] : 0,
                     depth: depth,
                     width: 0,
-                    possibleBreaks: breaks, //.reverse(),
+                    possibleBreaks: breaks,
                     breaks: []
                 };
                 return getBoxes(pp[2], id + 1, depth + 1, acc.concat([box]));
@@ -247,7 +313,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
     return (
         <div ref={container} className={classes.Container}>
             <span ref={content} className={classes.Content}>
-                {fragmentOfPpString(pp, coqCss, 0, breakIds, updateBoxWidth)}
+                {fragmentOfPpString(pp, coqCss, 0, displayState.breakIds, updateBoxWidth)}
             </span>
         </div>
     );
@@ -260,22 +326,22 @@ export const fragmentOfPpStringWithMode = (
     mode: PpMode,
     coqCss:CSSModuleClasses,
     id: number,
-    breakIds: number[],
+    breakIds: BreakInfo[],
     indent:number = 0,
-    updateBoxWidth: (id: number, width: number) => void,
+    updateBoxWidth: (id: string, width: number) => void,
 ) : ReactFragment => {
     switch (pp[0]) {
         case "Ppcmd_empty":
             return <></>;
         case "Ppcmd_string":
-            return pp[1];
+            return <span className={classes.Text}>{pp[1]}</span>;
         case "Ppcmd_glue":
             return pp[1].map((pp, index) => {
                 return fragmentOfPpStringWithMode(pp, mode, coqCss, id + index + 1, breakIds, indent, updateBoxWidth);
             });
         case "Ppcmd_box":
             const m = pp[1][0];
-            const i = (m !== PpMode.horizontal) ? pp[1][1] + indent : indent;
+            const i = (m !== PpMode.horizontal) ? pp[1][1] : 0;
             return (
                 <PpBox 
                     pp={pp[2]} 
@@ -289,18 +355,22 @@ export const fragmentOfPpStringWithMode = (
             );
         case "Ppcmd_tag":
             return (
-                <span className={coqCss[pp[1].replaceAll(".", "-")]}>
+                <span className={[coqCss[pp[1].replaceAll(".", "-")], classes.Tag].join(' ')}>
                     {fragmentOfPpStringWithMode(pp[2], mode, coqCss, id + 1, breakIds, indent, updateBoxWidth)}
                 </span>
             );
         case "Ppcmd_print_break":
-            const lineBreak = breakIds.find(breakId => breakId === id) !== undefined;
-            return <PpBreak 
-                mode={mode}
-                horizontalIndent={pp[1]}
-                indent={indent}
-                lineBreak={lineBreak}
-            />;
+            const br = breakIds.find(br => br.id === "break-"+id);
+            return (
+                <PpBreak
+                    id={id}
+                    offset={br ? br.offset : 0}
+                    mode={mode}
+                    horizontalIndent={pp[1]}
+                    indent={indent}
+                    lineBreak={br !== undefined}
+                />
+            );
         case "Ppcmd_force_newline":
             return <br/>;
         case "Ppcmd_comment":
@@ -311,8 +381,8 @@ export const fragmentOfPpStringWithMode = (
 const fragmentOfPpString = (
     pp:PpString, coqCss:CSSModuleClasses,
     id: number,
-    breakIds: number[],
-    updateBoxWidth: (id: number, width: number) => void
+    breakIds: BreakInfo[],
+    updateBoxWidth: (id: string, width: number) => void
 ) : ReactFragment => {
     return fragmentOfPpStringWithMode(pp, PpMode.horizontal, coqCss, id, breakIds, 0, updateBoxWidth);
 };
