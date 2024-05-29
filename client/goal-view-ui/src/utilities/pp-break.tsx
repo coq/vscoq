@@ -2,7 +2,7 @@ import React, {FunctionComponent} from 'react';
 import {PpMode} from '../types';
 
 type PpBreakProps = {
-    id: number,
+    id: string,
     offset: number,
     mode: PpMode,
     horizontalIndent: number, 
@@ -16,14 +16,13 @@ const ppBreak: FunctionComponent<PpBreakProps> = (props) => {
     const style = {
         marginLeft: offset
     };
-    
-    const breakId = 'break-'+id;
+
     switch(mode) {
         case PpMode.horizontal:
-            return <span id={breakId}>{" ".repeat(horizontalIndent)}</span>;
+            return <span id={id}>{" ".repeat(horizontalIndent)}</span>;
         case PpMode.vertical:
             return (
-                <span id={breakId}>
+                <span id={id}>
                     <br/>
                     <span style={style}>
                         {" ".repeat(indent ? indent : 0)}
@@ -32,18 +31,18 @@ const ppBreak: FunctionComponent<PpBreakProps> = (props) => {
             );
         case PpMode.hvBox:
             if(lineBreak) {
-                <span id={breakId}>
+                <span id={id}>
                     <br/>
                     <span style={style}>
                         {" ".repeat(indent ? indent : 0)}
                     </span>
                 </span>;
             }
-            return <span id={breakId}> </span>;
+            return <span id={id}> </span>;
         case PpMode.hovBox:
             if(lineBreak) {
                 return (
-                    <span id={breakId}>
+                    <span id={id}>
                         <br/>
                         <span style={style}>
                             {" ".repeat(indent ? indent : 0)}
@@ -51,7 +50,7 @@ const ppBreak: FunctionComponent<PpBreakProps> = (props) => {
                     </span>
                 );
             }
-            return <span id={breakId}> </span>;
+            return <span id={id}> </span>;
     }
 };
 

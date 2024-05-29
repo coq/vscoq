@@ -1,43 +1,58 @@
-import React, {FunctionComponent, useEffect, useState, useLayoutEffect, useRef} from 'react';
-import {PpMode, PpString} from '../types';
-import { fragmentOfPpStringWithMode } from './pp';
+import React, {FunctionComponent, useEffect, useState, useLayoutEffect, useRef, ReactFragment} from 'react';
+import {Box, DisplayType, BreakInfo} from '../types';
+import PpBreak from './pp-break';
 import classes from './Pp.module.css';
 
-type BreakInfo = {
-    id: string,
-    offset: number
-};
-
-type PpBoxProps = {
-    pp: PpString,
-    mode: PpMode,
-    recordWidth: (id: string, w: number) => void,
-    coqCss:CSSModuleClasses,
-    indent: number,
-    id: number,
+interface PpBoxProps extends Box {
+    coqCss: CSSModuleClasses,
     breaks: BreakInfo[]
-};
+}
 
-const ppBox: FunctionComponent<PpBoxProps> = (props) => {
+const PpBox: FunctionComponent<PpBoxProps> = (props) => {
     
-    const {pp, mode, recordWidth, coqCss, id, indent, breaks} = props;
-    const boxElement = useRef<HTMLSpanElement>(null);
+    const {mode, coqCss, id, indent, breaks, boxChildren} = props;
 
-    useEffect(() => {
-        if(boxElement.current) {
-            const boxRect = boxElement.current.getBoundingClientRect();
-            recordWidth("box-"+id, boxRect.width);
-            boxElement.current.closest(classes.Box);
-
+    const inner = boxChildren.map(child => {
+        if(child) {
+            if (child.type === DisplayType.box) {
+                return (
+                    <PpBox
+                        type={child.type}
+                        coqCss={coqCss}
+                        id={child.id}
+                        mode={child.mode}
+                        indent={child.indent}
+                        breaks={breaks}
+                        boxChildren={child.boxChildren}
+                    />
+                );
+            } else if (child.type === DisplayType.break) {
+                const lineBreak = (breaks.find(br => br.id === child.id));
+                return (
+                    <PpBreak
+                        id={child.id}
+                        offset={lineBreak ? lineBreak.offset : 0}
+                        mode={mode}
+                        horizontalIndent={child.horizontalIndent}
+                        indent={indent}
+                        lineBreak={lineBreak !== undefined}
+                    />
+                );
+            } else {
+                return (
+                    <span className={child.classList.join(' ')}>
+                        {child.content}
+                    </span>
+                );
+            }
         }
-    }, [breaks]);
+    });
 
-    const boxId = "box-"+id;
     return (
-        <span ref={boxElement} id={boxId} className={classes.Box}>
-            {fragmentOfPpStringWithMode(pp, mode, coqCss, id + 1, breaks, indent, recordWidth)}
+        <span id={id} className={classes.Box}>
+            {inner}
         </span>
     );
 };
 
-export default ppBox;
+export default PpBox;
