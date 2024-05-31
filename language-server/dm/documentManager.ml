@@ -282,13 +282,20 @@ let validate_document state =
       ) state.execution_state (Stateid.Set.elements invalid_roots) in
   { state with document; execution_state; observe_id }
 
+[%%if coq = "8.18" || coq = "8.19"]
+let start_library top opts = Coqinit.start_library ~top opts
+[%%else]
+let start_library top opts =
+  let intern = Vernacinterp.fs_intern in
+  Coqinit.start_library ~intern ~top opts;
+[%%endif]
+
 let init init_vs ~opts uri ~text observe_id =
   Vernacstate.unfreeze_full_state init_vs;
   let top = try Coqargs.(dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) with
     e -> raise e
   in
-  let intern = Vernacinterp.fs_intern in
-  Coqinit.start_library ~intern ~top opts;
+  start_library top opts;
   let init_vs = Vernacstate.freeze_full_state () in
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in
