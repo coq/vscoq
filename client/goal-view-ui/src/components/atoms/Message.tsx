@@ -2,7 +2,7 @@ import React, {FunctionComponent} from 'react';
 
 import classes from './PpString.module.css';
 import { MessageSeverity, PpString } from '../../types';
-import { fragmentOfPpString } from '../../utilities/pp';
+import PpDisplay from '../../utilities/pp';
 
 type MessageProps = {
     message: PpString,
@@ -35,7 +35,10 @@ const message : FunctionComponent<MessageProps> = (props) => {
 
     return (
         <span className={classNames.join(' ')}>
-            {fragmentOfPpString(message, classes)}
+            <PpDisplay
+                pp={message}
+                coqCss={classes}
+            />
         </span>
     );
 };

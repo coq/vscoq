@@ -5,11 +5,18 @@ type Nullable<T> = T | null;
 
 export type PpTag = string;
 
+export enum PpMode {
+    horizontal = "Pp_hbox",
+    vertical = "Pp_vbox",
+    hvBox = "Pp_hvbox",
+    hovBox = "Pp_hovbox"
+}
+
 export type BlockType =
-  | ["Pp_hbox"]
-  | ["Pp_vbox", integer]
-  | ["Pp_hvbox", integer]
-  | ["Pp_hovbox", integer];
+  | [PpMode.horizontal]
+  | [PpMode.vertical, integer]
+  | [PpMode.hvBox, integer]
+  | [PpMode.hovBox, integer];
 
 export type PpString =
   | ["Ppcmd_empty"]
