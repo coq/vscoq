@@ -287,7 +287,8 @@ let init init_vs ~opts uri ~text observe_id =
   let top = try Coqargs.(dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) with
     e -> raise e
   in
-  Coqinit.start_library ~top opts;
+  let intern = Vernacinterp.fs_intern in
+  Coqinit.start_library ~intern ~top opts;
   let init_vs = Vernacstate.freeze_full_state () in
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in

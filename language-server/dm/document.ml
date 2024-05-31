@@ -361,7 +361,8 @@ let rec parse_more synterp_state stream raw parsed parsed_comments errors =
       let tokens = stream_tok 0 [] lex begin_line begin_char in
       begin
         try
-          let entry = Synterp.synterp_control ast in
+          let intern = Vernacinterp.fs_intern in
+          let entry = Synterp.synterp_control ~intern ast in
           let classification = Vernac_classifier.classify_vernac ast in
           let synterp_state = Vernacstate.Synterp.freeze () in
           let sentence = { parsing_start = start; ast = { ast = entry; classification; tokens }; start = begin_char; stop; synterp_state } in
