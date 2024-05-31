@@ -59,7 +59,8 @@ export interface ProofViewNotification {
 }
 
 export interface UpdateHighlightsNotification {
-    uri: Uri; 
+    uri: Uri;
+    preparedRange: Range[];
     processingRange: Range[];
     processedRange: Range[];
 }
