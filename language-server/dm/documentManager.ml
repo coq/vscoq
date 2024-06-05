@@ -130,19 +130,15 @@ let make_diagnostic doc range oloc message severity code =
 let mk_diag st (id,(lvl,oloc,msg)) =
   let code =
     match lvl with
-    | Feedback.Warning quickfixes when oloc <> None ->
+    | Feedback.Warning quickfixes ->
       let code : Jsonrpc.Id.t * Lsp.Import.Json.t =
         let open Lsp.Import.Json in
         (`String "quickfix-replace",
          quickfixes |> yojson_of_list
-         (fun pp ->
-            let s = Pp.string_of_ppcmds pp in
-            let range =
-              match oloc with
-              | None -> assert false
-              | Some loc ->
-                RawDocument.range_of_loc (Document.raw_document st.document) loc
-            in
+         (fun qf ->
+            let s = Pp.string_of_ppcmds @@ Feedback.Quickfix.pp qf in
+            let loc = Feedback.Quickfix.loc qf in
+            let range = RawDocument.range_of_loc (Document.raw_document st.document) loc in
             QuickFixData.yojson_of_t (QuickFixData.{range; text = s})
         ))
         in
@@ -307,8 +303,8 @@ let validate_document state =
 let start_library top opts = Coqinit.start_library ~top opts
 [%%else]
 let start_library top opts =
-  (* let intern = Vernacinterp.fs_intern in *)
-  Coqinit.start_library ~top opts;
+  let intern = Vernacinterp.fs_intern in
+  Coqinit.start_library ~intern ~top opts;
 [%%endif]
 
 let init init_vs ~opts uri ~text observe_id =
