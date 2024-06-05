@@ -194,8 +194,14 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
             case 'Ppcmd_comment':
             case 'Ppcmd_tag':
             case 'Ppcmd_print_break':
-                console.error('Goal contains non-boxed PpString');
-                return null;
+                console.log('Goal contains non-boxed PpString');
+                return {
+                    id: "box-"+id,
+                    type: DisplayType.box,
+                    mode: PpMode.hovBox,
+                    indent: 0,
+                    boxChildren: getBoxChildren(pp, PpMode.hovBox, 0, id)
+                } as Box;
             case 'Ppcmd_box':
                 const mode = pp[1][0];
                 const indent = (mode !== PpMode.horizontal) ? pp[1][1] : 0;
