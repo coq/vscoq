@@ -149,7 +149,7 @@ let mk_diag st (id,(lvl,oloc,msg)) =
       Some code
       | _ -> None in
   let lvl = DiagnosticSeverity.of_feedback_level lvl in
-  make_diagnostic st.document (Document.range_of_id st.document id) oloc (Pp.string_of_ppcmds msg) lvl
+  make_diagnostic st.document (Document.range_of_id st.document id) oloc (Pp.string_of_ppcmds msg) lvl code
 
 let mk_error_diag st (id,(oloc,msg)) = mk_diag st (id,(Feedback.Error,oloc, msg))
 
@@ -159,7 +159,7 @@ let mk_parsing_error_diag st Document.{ msg = (oloc,msg); start; stop } =
   let start = RawDocument.position_of_loc doc start in
   let end_ = RawDocument.position_of_loc doc stop in
   let range = Range.{ start; end_ } in
-  make_diagnostic st.document range oloc msg severity
+  make_diagnostic st.document range oloc msg severity None
 
 let all_diagnostics st =
   let parse_errors = Document.parse_errors st.document in
@@ -168,45 +168,10 @@ let all_diagnostics st =
   (* we are resilient to a state where invalidate was not called yet *)
   let exists (id,_) = Option.has_some (Document.get_sentence st.document id) in
   let exec_errors = all_exec_errors |> List.filter exists in
-  let warnings_and_errors  (id, (lvl, oloc, msg)) =
-    match lvl with
-    | Feedback.Warning quickfixes when oloc <> None ->
-        let code : Jsonrpc.Id.t * Lsp.Import.Json.t =
-          let open Lsp.Import.Json in
-          (`String "quickfix-replace",
-           quickfixes |> yojson_of_list
-           (fun pp ->
-              let s = Pp.string_of_ppcmds pp in
-              let range =
-                match oloc with
-                | None -> assert false
-                | Some loc ->
-                  RawDocument.range_of_loc (Document.raw_document st.document) loc
-              in
-              yojson_of_list (fun x -> x) [Range.yojson_of_t range;of_string s])
-          )
-          in
-        Some (id, (DiagnosticSeverity.Warning, oloc, msg, Some code))
-    | Feedback.Warning _ -> Some (id, (DiagnosticSeverity.Warning, oloc, msg, None))
-    | Feedback.Error -> Some (id, (DiagnosticSeverity.Error, oloc, msg, None))
-    | _ -> None
-     in
-  let diags = all_feedback |> List.filter exists |> List.filter_map warnings_and_errors in
-  let mk_diag (id,(lvl,oloc,msg,code)) = 
-      make_diagnostic st.document (Document.range_of_id st.document id) oloc msg lvl code
-  in
-  let mk_error_diag (id,(oloc,msg)) = mk_diag (id,(DiagnosticSeverity.Error,oloc,msg,None)) in
-  let mk_parsing_error_diag Document.{ msg = (oloc,msg); start; stop } =
-    let doc = Document.raw_document st.document in
-    let severity = DiagnosticSeverity.Error in
-    let start = RawDocument.position_of_loc doc start in
-    let end_ = RawDocument.position_of_loc doc stop in
-    let range = Range.{ start; end_ } in
-    make_diagnostic st.document range oloc msg severity None
-  in
-  List.map mk_parsing_error_diag parse_errors @
-    List.map mk_error_diag exec_errors @
-    List.map mk_diag diags
+  let feedback = all_feedback |> List.filter exists in
+  List.map (mk_parsing_error_diag st) parse_errors @
+    List.map (mk_error_diag st) exec_errors @
+    List.map (mk_diag st) feedback
 
 let id_of_pos st pos =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
@@ -342,8 +307,8 @@ let validate_document state =
 let start_library top opts = Coqinit.start_library ~top opts
 [%%else]
 let start_library top opts =
-  let intern = Vernacinterp.fs_intern in
-  Coqinit.start_library ~intern ~top opts;
+  (* let intern = Vernacinterp.fs_intern in *)
+  Coqinit.start_library ~top opts;
 [%%endif]
 
 let init init_vs ~opts uri ~text observe_id =

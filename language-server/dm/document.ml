@@ -336,8 +336,8 @@ let get_loc_from_info_or_exn exn =
 let get_entry ast = Synterp.synterp_control ast
 [%%else]
 let get_entry ast =
-  let intern = Vernacinterp.fs_intern in
-  Synterp.synterp_control ~intern ast
+  (* let intern = Vernacinterp.fs_intern in *)
+  Synterp.synterp_control ast
 [%%endif]
 
 let rec parse_more synterp_state stream raw parsed parsed_comments errors =

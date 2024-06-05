@@ -78,8 +78,8 @@ module DiagnosticSeverity = struct
   let t_of_yojson v = Lsp.Types.DiagnosticSeverity.t_of_yojson v
 
   let of_feedback_level = let open DiagnosticSeverity in function
-    | Feedback.Error -> Some Error
-    | Feedback.Warning _ -> Some Warning
+    | Feedback.Error -> Error
+    | Feedback.Warning _ -> Warning
     | Feedback.(Info | Debug | Notice) -> Information
 
 end
@@ -101,7 +101,7 @@ module FeedbackChannel = struct
   | Feedback.Debug -> Some Debug
   | Feedback.Info -> Some Info 
   | Feedback.Notice -> Some Notice 
-  | Feedback.(Error | Warning _) -> Information
+  | Feedback.(Error | Warning _) -> None
 
 end
 
