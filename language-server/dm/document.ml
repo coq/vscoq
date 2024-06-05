@@ -332,6 +332,13 @@ let get_loc_from_info_or_exn exn =
   Loc.get_loc @@ info
 [%%endif]
 
+[%%if coq = "8.18" || coq = "8.19"]
+let get_entry ast = Synterp.synterp_control ast
+[%%else]
+let get_entry ast =
+  let intern = Vernacinterp.fs_intern in
+  Synterp.synterp_control ~intern ast
+[%%endif]
 
 let rec parse_more synterp_state stream raw parsed parsed_comments errors =
   let handle_parse_error start msg =
@@ -361,7 +368,7 @@ let rec parse_more synterp_state stream raw parsed parsed_comments errors =
       let tokens = stream_tok 0 [] lex begin_line begin_char in
       begin
         try
-          let entry = Synterp.synterp_control ast in
+          let entry = get_entry ast in
           let classification = Vernac_classifier.classify_vernac ast in
           let synterp_state = Vernacstate.Synterp.freeze () in
           let sentence = { parsing_start = start; ast = { ast = entry; classification; tokens }; start = begin_char; stop; synterp_state } in
