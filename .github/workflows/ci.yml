@@ -29,6 +29,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         coq: [coq-8-18, coq-8-19, coq-master]
+        profile: [dev, fatalwarnings]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -52,7 +53,7 @@ jobs:
         diff new_yarn.nix yarn.nix
         diff goal-view-ui/new_yarn.nix goal-view-ui/yarn.nix
         diff search-ui/new_yarn.nix search-ui/yarn.nix
-    - run: nix develop .#vscoq-language-server-${{ matrix.coq }} -c bash -c "cd language-server && dune build"
+    - run: nix develop .#vscoq-language-server-${{ matrix.coq }} -c bash -c "cd language-server && dune build --profile ${{ matrix.profile }}"
     - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
     - run: xvfb-run nix develop .#vscoq-client -c bash -c "cd client && yarn test"
       if: runner.os == 'Linux'
@@ -135,6 +136,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         ocaml-compiler: [4.13.x]
+        profile: [dev, fatalwarnings]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -155,7 +157,7 @@ jobs:
     - name: Build vscoq-language-server
       run: |
         eval $(opam env)
-        cd language-server && dune build
+        cd language-server && dune build --profile ${{ matrix.profile }}
 
     - name: Unit tests
       run: |

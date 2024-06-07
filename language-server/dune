@@ -2,5 +2,10 @@
    (name default)
     (deps vscoq-language-server.install))
 (env
- (dev     (flags :standard -w -9))
- (release     (flags :standard -w -9)))
+ (dev
+  (flags :standard -w -9))
+ (fatalwarnings     
+  (flags :standard -w -9 -warn-error +A))
+ (release     
+  (flags :standard -w -9))
+)
