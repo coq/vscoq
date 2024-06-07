@@ -32,12 +32,19 @@ let vscoqtop_specific_usage = Boot.Usage.{
   extra_options = "";
 }
 
+[%%if coq = "8.18" || coq = "8.19"]
+let start_library top opts = Coqinit.start_library ~top opts
+[%%else]
+let start_library top opts =
+  let intern = Vernacinterp.fs_intern in
+  Coqinit.start_library ~intern ~top opts;
+[%%endif]
 
 let _ =
   Coqinit.init_ocaml ();
   let opts, emoptions = Coqinit.parse_arguments ~parse_extra:Dm.ParTactic.TacticWorkerProcess.parse_options ~usage:vscoqtop_specific_usage () in
   let injections = Coqinit.init_runtime opts in
-  Coqinit.start_library ~top:Coqargs.(dirpath_of_top opts.config.logic.toplevel_name) injections;
+  start_library Coqargs.(dirpath_of_top opts.config.logic.toplevel_name) injections;
   log @@ "started";
   Sys.(set_signal sigint Signal_ignore);
   main_worker ~opts emoptions ()

@@ -11,6 +11,7 @@
  (modules vscoqtop_proof_worker)
  (flags -linkall)
  (package vscoq-language-server)
+ (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
  (libraries coq-core.sysinit coq-core.tactics lsp dm protocol))
 
 (executable
@@ -19,4 +20,5 @@
  (modules vscoqtop_tactic_worker)
  (flags -linkall)
  (package vscoq-language-server)
+ (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
  (libraries coq-core.sysinit coq-core.tactics lsp dm protocol))
