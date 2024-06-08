@@ -64,8 +64,9 @@ let get_hyps env sigma goal =
 
 let type_kind_opt sigma t = try Some (kind_of_type sigma t) with _ -> None 
 
-let type_size sigma t : int = 
-  let rec aux u = 
+[%%if coq = "8.18" || coq = "8.19"]
+let type_size sigma t : int =
+  let rec aux u =
     match kind sigma u with
     | Sort _ -> 1
     | Cast (c,_,t) -> aux c + aux t
@@ -78,6 +79,22 @@ let type_size sigma t : int =
     | (Lambda _ | Construct _ | Array _ | Int _ | Float _) -> 1
   in
   aux t
+[%%else]
+let type_size sigma t : int = 
+  let rec aux u = 
+    match kind sigma u with
+    | Sort _ -> 1
+    | Cast (c,_,t) -> aux c + aux t
+    | Prod (_,t,c) -> aux t + aux c
+    | LetIn (_,b,t,c) -> aux b + aux t + aux c
+    | App (c,l) -> Array.map aux l |> Array.fold_left (+) (aux c)
+    | Rel _ -> 1
+    | (Meta _ | Var _ | Evar _ | Const _
+    | Proj _ | Case _ | Fix _ | CoFix _ | Ind _) -> 1
+    | (Lambda _ | Construct _ | Array _ | Int _ | Float _ | String _) -> 1
+  in
+  aux t
+[%%endif]
 
 module TypeIntersection = struct
   let atomic_types sigma t: Atomics.t = 
@@ -133,117 +150,12 @@ module Structured = struct
     | SortUniType of ESorts.t * bruijn_level
     | AtomicUniType of types * unifier array
 
-  let _print_unifier env sigma u =
-    let po u = match kind sigma u with
-    | Sort s -> Printf.eprintf "Sort: ";
-      (match ESorts.kind sigma s with 
-      | SProp -> Printf.eprintf "SProp\n";
-      | Prop -> Printf.eprintf "Prop\n";
-      | Set  -> Printf.eprintf "Set\n";
-      | Type _ -> Printf.eprintf "Type\n";
-      | QSort (_, _) -> Printf.eprintf "QSort\n";
-      )
-    | Cast (c,_,t) -> Printf.eprintf "cast: %s, %s\n" 
-      (Pp.string_of_ppcmds (pr_econstr_env env sigma c))
-      (Pp.string_of_ppcmds (pr_econstr_env env sigma t))
-    | Prod (na,_,_) -> Printf.eprintf "Prod: %s\n"
-      (Name.print na.binder_name |> Pp.string_of_ppcmds)
-    | LetIn (_,b,t,c) -> 
-      Printf.eprintf "LetIn: %s, %s, %s\n" 
-        (Pp.string_of_ppcmds (pr_econstr_env env sigma b))
-        (Pp.string_of_ppcmds (pr_econstr_env env sigma t))
-        (Pp.string_of_ppcmds (pr_econstr_env env sigma c))
-    | App (c,_) -> 
-      Printf.eprintf "App: %s\n" 
-        (Pp.string_of_ppcmds (pr_econstr_env env sigma c))
-    | Rel i -> Printf.eprintf "Rel: %d\n" i
-    | Meta _ -> Printf.eprintf "Meta: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Var _ -> Printf.eprintf "Var: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Evar _ -> Printf.eprintf "Evar: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Const _ -> Printf.eprintf "Const: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Proj _ -> Printf.eprintf "Proj: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Case _ -> Printf.eprintf "Case: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Fix _ -> Printf.eprintf "Fix: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | CoFix _ -> Printf.eprintf "CoFix: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Ind _ -> Printf.eprintf "Ind: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Lambda _ -> Printf.eprintf "Lambda: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Construct _ -> Printf.eprintf "Construct: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Int _ -> Printf.eprintf "Int: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Float _ -> Printf.eprintf "Float: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    | Array _ -> Printf.eprintf "Array: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    in
-    let rec aux i u = 
-      Printf.eprintf "%s" (String.init i (fun _ -> ' '));
-      match u with
-      | SortUniType (s, i) -> Printf.eprintf "Sort %d: %s\n" i
-        (match ESorts.kind sigma s with 
-        | SProp -> "SProp"
-        | Prop -> "Prop"
-        | Set  -> "Set"
-        | Type _ -> "Type"
-        | QSort _ -> "QSort"
-        )
-      | AtomicUniType (t, ta) -> Printf.eprintf "Atomic: ";
-        po t;
-      Array.iter (aux (i+1)) ta
-    in
-    aux 0 u
-
   (* map from bruijn_level to unifier *)
   module UM = Map.Make(struct type t = bruijn_level let compare = compare end)
 
   (* This is extremely slow, we should not convert it to a list. *)
   let filter_options a = 
     a |> Array.to_list |> Option.List.flatten |> Array.of_list
-
-  let _debug_print env sigma t : unit = 
-    let rec aux i u = 
-      Printf.eprintf "%s" (String.init i (fun _ -> ' '));
-      match kind sigma u with
-      | Sort s -> Printf.eprintf "Sort: ";
-        (match ESorts.kind sigma s with 
-        | SProp -> Printf.eprintf "SProp\n";
-        | Prop -> Printf.eprintf "Prop\n";
-        | Set  -> Printf.eprintf "Set\n";
-        | Type _ -> Printf.eprintf "Type\n";
-        | QSort (_, _) -> Printf.eprintf "QSort\n";
-        )
-      | Cast (c,_,t) -> Printf.eprintf "cast: %s, %s\n" 
-        (Pp.string_of_ppcmds (pr_econstr_env env sigma c))
-        (Pp.string_of_ppcmds (pr_econstr_env env sigma t))
-      | Prod (na,t,c) -> Printf.eprintf "Prod: %s\n"
-        (Name.print na.binder_name |> Pp.string_of_ppcmds);
-        aux (i+1) t;
-        aux (i+1) c
-      | LetIn (_,b,t,c) -> 
-        Printf.eprintf "LetIn: %s, %s, %s\n" 
-          (Pp.string_of_ppcmds (pr_econstr_env env sigma b))
-          (Pp.string_of_ppcmds (pr_econstr_env env sigma t))
-          (Pp.string_of_ppcmds (pr_econstr_env env sigma c));
-        aux (i+1) t;
-        aux (i+1) c;
-        aux (i+1) b
-      | App (c,l) -> 
-        Printf.eprintf "App: %s\n" 
-          (Pp.string_of_ppcmds (pr_econstr_env env sigma c));
-        Array.iter (aux (i+1)) l
-      | Rel i -> Printf.eprintf "Rel: %d\n" i
-      | Meta _ -> Printf.eprintf "Meta: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Var _ -> Printf.eprintf "Var: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Evar _ -> Printf.eprintf "Evar: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Const _ -> Printf.eprintf "Const: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Proj _ -> Printf.eprintf "Proj: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Case _ -> Printf.eprintf "Case: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Fix _ -> Printf.eprintf "Fix: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | CoFix _ -> Printf.eprintf "CoFix: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Ind _ -> Printf.eprintf "Ind: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Lambda _ -> Printf.eprintf "Lambda: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Construct _ -> Printf.eprintf "Construct: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Int _ -> Printf.eprintf "Int: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Float _ -> Printf.eprintf "Float: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-      | Array _ -> Printf.eprintf "Array: %s\n" (Pp.string_of_ppcmds (pr_econstr_env env sigma u))
-    in
-    aux 0 t
 
   let unifier_kind sigma (hyps : types HypothesisMap.t) (t : types) : unifier option =
     let rec aux bruijn t = match kind sigma t with
@@ -259,7 +171,7 @@ module Structured = struct
       | (Meta _ | Var _ | Evar _ | Const _
       | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
         -> AtomicUniType (t,[||]) |> Option.make
-      | (Lambda _ | Construct _ | Int _ | Float _ | Array _) -> None
+      | (Lambda _ | Construct _ | _ ) -> None
     in
     aux [] t
 
