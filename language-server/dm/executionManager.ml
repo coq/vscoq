@@ -75,9 +75,22 @@ type state = {
   coq_feeder : coq_feedback_listener;
   sel_feedback_queue : (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)) Queue.t;
   sel_cancellation_handle : Sel.Event.cancellation_handle;
+  overview: exec_overview;
 }
 
 
+let print_exec_overview st =
+  let {processing; processed; prepared} = st.overview in
+  log @@ "--------- Prepared ranges ---------";
+  List.iter (fun r -> log @@ Range.to_string r) prepared;
+  log @@ "-------------------------------------";
+  log @@ "--------- Processing ranges ---------";
+  List.iter (fun r -> log @@ Range.to_string r) processing;
+  log @@ "-------------------------------------";
+  log @@ "--------- Processed ranges ---------";
+  List.iter (fun r -> log @@ Range.to_string r) processed;
+  log @@ "-------------------------------------"
+  
 let options = ref default_options
 
 let set_options o = options := o
@@ -255,35 +268,31 @@ let update_processed_as_Done s range overview =
   let {prepared; processing; processed} = overview in
   match s with
   | Success _ ->
-    log @@ "INSERTING TO PROCESSED";
     let processed = insert_or_merge_range range processed in
-    log @@ "TRUNCATING FROM PROCESSING";
     let processing = remove_or_truncate_range range processing in
-    log @@ "TRUNCATING FROM PREPARED";
     let prepared = remove_or_truncate_range range prepared in
     {prepared; processing; processed}
   | Error _ ->
-    log @@ "TRUNCATING FROM PROCESSING";
     let processing = remove_or_truncate_range range processing in
-    log @@ "TRUNCATING FROM PREPARED";
     let prepared = remove_or_truncate_range range prepared in
     {prepared; processing; processed}
 
-let update_processed id state document overview =
-  log @@ "UPDATING PROCESSED";
+let update_processed id state document =
   let range = Document.range_of_id_with_blank_space document id in
   match SM.find id state.of_sentence with
   | (s, _) ->
     begin match s with
-    | Done s -> update_processed_as_Done s range overview
+    | Done s -> 
+      let overview = update_processed_as_Done s range state.overview in
+      {state with overview}
     | _ -> assert false (* delegated sentences born as such, cannot become it later *)
     end
   | exception Not_found ->
     log @@ "Trying to get overview with non-existing state id " ^ Stateid.to_string id;
-    overview
+    state
 
-let update_processing task processing prepared document =
-  log @@ "UPDATING PROCESSING";
+let update_processing task state document =
+  let {processing; prepared} = state.overview in
   match task with
   | PDelegate { opener_id; terminator_id; tasks } ->
     let proof_opener_id = match tasks with
@@ -299,28 +308,58 @@ let update_processing task processing prepared document =
     let proof_begin_range = Document.range_of_id_with_blank_space document proof_opener_id in
     let proof_end_range = Document.range_of_id_with_blank_space document proof_closer_id in
     let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
-    log @@ "DELEGATED JOB RANGE: " ^ Range.to_string range;
-    log @@ "TRUNCATING FROM PREPARED";
     (* When a job is delegated we shouldn't merge ranges (to get the proper progress report) *)
-    List.append processing [ range ], remove_or_truncate_range range prepared
+    let processing = List.append processing [ range ] in 
+    let prepared = remove_or_truncate_range range prepared in
+    let overview = {state.overview with prepared; processing} in
+    {state with overview}
   | PSkip { id } | PExec { id } | PQuery { id } ->
     let range = Document.range_of_id_with_blank_space document id in
     log @@ "TRUNCATING FROM PREPARED";
-    insert_or_merge_range range processing, remove_or_truncate_range range prepared
+    let processing = insert_or_merge_range range processing in 
+    let prepared = remove_or_truncate_range range prepared in
+    let overview = {state.overview with processing; prepared} in
+    {state with overview}
 
-let update_overview task todo state document overview =
-  let {processed; processing; prepared} = 
-  match task with 
+let update_overview task todo state document =
+  let state = 
+  match task with
   | PDelegate { terminator_id } ->
     let range = Document.range_of_id_with_blank_space document terminator_id in
-    update_processed_as_Done (Success None) range overview
+    let overview = update_processed_as_Done (Success None) range state.overview in
+    {state with overview}
   | PSkip { id } | PExec { id } | PQuery { id } ->
-    update_processed id state document overview
+    update_processed id state document
   in
-  let processing, prepared = match todo with
-  | [] -> processing, prepared
-  | next :: _ -> update_processing next processing prepared document in
-  {processing; processed; prepared}
+  match todo with
+  | [] -> state
+  | next :: _ -> update_processing next state document
+
+let prepare_overview st prepared =
+  let overview = {st.overview with prepared} in
+  {st with overview}
+
+let overview st = st.overview
+
+let overview_until_range st range =
+  print_exec_overview st;
+  let find_final_range l = List.find_opt (fun (r: Range.t) -> Range.included ~in_:r range) l in
+  let {processed; processing; prepared} = st.overview in
+  let final_range = find_final_range processed  in
+  match final_range with
+  | None ->
+    let final_range = find_final_range processing in
+    begin match final_range with
+    | None -> { processed; processing; prepared }
+    | Some { start } ->
+      let processing = (List.filter (fun (r: Range.t) -> not @@ Range.included ~in_:r range) processing) in
+      let processing = List.append processing [Range.create ~start:start ~end_:range.end_] in
+      {processing; processed; prepared}
+    end
+  | Some { start } ->
+    let processed = (List.filter (fun (r: Range.t) -> not @@ Range.included ~in_:r range) processed) in
+    let processed = List.append processed [Range.create ~start:start ~end_:range.end_] in
+    { processing; processed; prepared }
 
 
 let update_all id v fl state =
@@ -354,6 +393,7 @@ let init vernac_state =
     coq_feeder;
     sel_feedback_queue;
     sel_cancellation_handle;
+    overview = empty_overview;
   },
   event
 

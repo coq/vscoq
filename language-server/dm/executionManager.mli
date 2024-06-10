@@ -74,8 +74,12 @@ type prepared_task
 val build_tasks_for : Scheduler.schedule -> state -> sentence_id -> Vernacstate.t * prepared_task list * state
 val execute : state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool)
 
-val update_overview : prepared_task -> prepared_task list -> state -> Document.document -> exec_overview -> exec_overview
-val update_processed : sentence_id -> state -> Document.document -> exec_overview -> exec_overview
+val update_overview : prepared_task -> prepared_task list -> state -> Document.document -> state
+val update_processed : sentence_id -> state -> Document.document -> state
+val prepare_overview : state -> LspWrapper.Range.t list -> state
+val overview : state -> exec_overview
+val overview_until_range : state -> LspWrapper.Range.t -> exec_overview
+val print_exec_overview : state -> unit
 
 (** Coq toplevels for delegation without fork *)
 module ProofWorkerProcess : sig

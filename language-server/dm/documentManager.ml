@@ -37,7 +37,6 @@ type state = {
   document : Document.document;
   execution_state : ExecutionManager.state;
   observe_id : observe_id option;
-  overview: exec_overview;
 }
 
 type event =
@@ -62,37 +61,6 @@ let inject_em_events events = List.map inject_em_event events
 
 type events = event Sel.Event.t list
 
-let print_exec_overview st =
-  let {processing; processed; prepared} = st.overview in
-  log @@ "--------- Prepared ranges ---------";
-  List.iter (fun r -> log @@ Range.to_string r) prepared;
-  log @@ "-------------------------------------";
-  log @@ "--------- Processing ranges ---------";
-  List.iter (fun r -> log @@ Range.to_string r) processing;
-  log @@ "-------------------------------------";
-  log @@ "--------- Processed ranges ---------";
-  List.iter (fun r -> log @@ Range.to_string r) processed;
-  log @@ "-------------------------------------"
-  
-let overview_until_range st range =
-  let find_final_range l = List.find_opt (fun (r: Range.t) -> Range.included ~in_:r range) l in
-  let {processed; processing; prepared} = st.overview in
-  let final_range = find_final_range processed  in
-  match final_range with
-  | None ->
-    let final_range = find_final_range processing in
-    begin match final_range with
-    | None -> { processed; processing; prepared }
-    | Some { start } ->
-      let processing = (List.filter (fun (r: Range.t) -> not @@ Range.included ~in_:r range) processing) in
-      let processing = List.append processing [Range.create ~start:start ~end_:range.end_] in
-      {processing; processed; prepared}
-    end
-  | Some { start } ->
-    let processed = (List.filter (fun (r: Range.t) -> not @@ Range.included ~in_:r range) processed) in
-    let processed = List.append processed [Range.create ~start:start ~end_:range.end_] in
-    { processing; processed; prepared }
-
 let prepare_overview st id =
   match Document.get_sentence st.document id with
   | None -> st (*Can't find the sentence, just return the state as is*)
@@ -110,8 +78,8 @@ let prepare_overview st id =
         let start = Position.create ~character:0 ~line:0 in
         let range = Range.create ~end_: range.end_ ~start: start in
         let prepared = [range] in
-        let overview = {st.overview with prepared} in
-        {st with overview}
+        let execution_state = ExecutionManager.prepare_overview st.execution_state prepared in
+        {st with execution_state}
       | Some (Id o_id) ->
         (* Create range from o_id to id*)
         let o_range = Document.range_of_id_with_blank_space st.document o_id in
@@ -119,19 +87,20 @@ let prepare_overview st id =
         if Position.compare o_range.end_ range.end_ < 0 then
           let range = Range.create ~end_: range.end_ ~start: o_range.end_ in
           let prepared = [range] in
-          let overview = {st.overview with prepared} in
-          {st with overview}
+          let execution_state = ExecutionManager.prepare_overview st.execution_state prepared in
+          {st with execution_state}
         else
           st
     end
 
 let executed_ranges st =
+  ExecutionManager.print_exec_overview st.execution_state;
   match st.observe_id with
-  | None -> st.overview
-  | Some Top -> { processing = []; processed = []; prepared = []; }
+  | None -> ExecutionManager.overview st.execution_state
+  | Some Top -> empty_overview
   | Some (Id id) ->
       let range = Document.range_of_id st.document id in
-      overview_until_range st range
+      ExecutionManager.overview_until_range st.execution_state range
 
 let observe_id_range st = 
   let doc = Document.raw_document st.document in
@@ -329,8 +298,7 @@ let init init_vs ~opts uri ~text observe_id =
   let init_vs = Vernacstate.freeze_full_state () in
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in
-  let overview = { processing = []; processed = []; prepared = []} in
-  let st = { uri; opts; init_vs; document; execution_state; observe_id; overview } in
+  let st = { uri; opts; init_vs; document; execution_state; observe_id } in
   validate_document st, [inject_em_event feedback]
 
 let reset { uri; opts; init_vs; document; execution_state; observe_id } =
@@ -340,8 +308,7 @@ let reset { uri; opts; init_vs; document; execution_state; observe_id } =
   ExecutionManager.destroy execution_state;
   let execution_state, feedback = ExecutionManager.init init_vs in
   let observe_id = if observe_id = None then None else (Some Top) in
-  let overview = { processing = []; processed = []; prepared = []} in
-  let st = { uri; opts; init_vs; document; execution_state; observe_id; overview } in
+  let st = { uri; opts; init_vs; document; execution_state; observe_id } in
   validate_document st, [inject_em_event feedback]
 
 let apply_text_edits state edits =
@@ -370,21 +337,21 @@ let handle_event ev st =
        executing *)
     let priority = if background then None else Some PriorityManager.execution in
     let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started; background }) in
-    let overview = ExecutionManager.update_overview task todo execution_state st.document st.overview in
-    (Some {st with execution_state; overview}, inject_em_events events @ [event])
+    let execution_state = ExecutionManager.update_overview task todo execution_state st.document in
+    (Some {st with execution_state}, inject_em_events events @ [event])
   | ExecutionManagerEvent ev ->
     let id, execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
     let st = 
       match (id, execution_state_update) with
       | Some id, Some exec_st ->
-        let overview = ExecutionManager.update_processed id exec_st st.document st.overview in
-        {st with overview}
+        let execution_state = ExecutionManager.update_processed id exec_st st.document in
+        Some {st with execution_state}
       | Some id, None ->
-        let overview = ExecutionManager.update_processed id st.execution_state st.document st.overview in
-        {st with overview}
-      | _, _ -> st
+        let execution_state = ExecutionManager.update_processed id st.execution_state st.document in
+        Some {st with execution_state}
+      | _, _ -> Option.map (fun execution_state -> {st with execution_state}) execution_state_update
     in
-    (Option.map (fun execution_state -> {st with execution_state}) execution_state_update, inject_em_events events)
+    (st, inject_em_events events)
 
 let get_proof st diff_mode pos =
   let previous_st id =
