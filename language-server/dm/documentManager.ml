@@ -61,7 +61,7 @@ let inject_em_events events = List.map inject_em_event events
 
 type events = event Sel.Event.t list
 
-let prepare_overview st id =
+(* let prepare_overview st id =
   match Document.get_sentence st.document id with
   | None -> st (*Can't find the sentence, just return the state as is*)
   | Some { id } ->
@@ -91,7 +91,7 @@ let prepare_overview st id =
           {st with execution_state}
         else
           st
-    end
+    end *)
 
 let executed_ranges st =
   ExecutionManager.print_exec_overview st.execution_state;
@@ -175,13 +175,13 @@ let observe ~background state id : (state * event Sel.Event.t list) =
   match Document.get_sentence state.document id with
   | None -> (state, []) (* TODO error? *)
   | Some {id } ->
-    let vst_for_next_todo, todo, _ = ExecutionManager.build_tasks_for (Document.schedule state.document) state.execution_state id in
+    let vst_for_next_todo, todo, execution_state = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id in
     if CList.is_empty todo then
-      (state, [])
+      ({state with execution_state}, [])
     else
       let priority = if background then None else Some PriorityManager.execution in
       let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday (); background }) in
-      (state, [ event ] )
+      ({state with execution_state}, [ event ] )
 
 let clear_observe_id st = 
   { st with observe_id = None }
@@ -190,7 +190,6 @@ let reset_to_top st =
   { st with observe_id = Some Top }
 
 let interpret_to st id =
-  let st = prepare_overview st id in
   let observe_id = if st.observe_id = None then None else (Some (Id id)) in
   let st = { st with observe_id} in
   observe ~background:false st id

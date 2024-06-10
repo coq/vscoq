@@ -71,7 +71,7 @@ val handle_event : event -> state -> (sentence_id option * state option * events
 (** Execution happens in two steps. In particular the event one takes only
     one task at a time to ease checking for interruption *)
 type prepared_task
-val build_tasks_for : Scheduler.schedule -> state -> sentence_id -> Vernacstate.t * prepared_task list * state
+val build_tasks_for : Document.document -> Scheduler.schedule -> state -> sentence_id -> Vernacstate.t * prepared_task list * state
 val execute : state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool)
 
 val update_overview : prepared_task -> prepared_task list -> state -> Document.document -> state

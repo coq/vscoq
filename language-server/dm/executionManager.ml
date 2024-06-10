@@ -244,10 +244,15 @@ let interp_qed_delayed ~proof_using ~state_id ~st =
   st, success st, assign
 
 let rec insert_or_merge_range r = function
-| [] -> [r]
+| [] -> log "EMPTY, CREATING"; log @@ Range.to_string r; [r]
 | r1 :: l ->
-  if Position.compare r1.Range.end_ r.Range.start == 0 then
+  log "COMPARING"; log @@ Range.to_string r; log @@ Range.to_string r1; 
+  if Range.included ~in_:r1 r then 
+    r1 :: l
+  else if Position.compare r1.Range.end_ r.Range.start == 0 then
     Range.{ start = r1.Range.start; end_ = r.Range.end_ } :: l
+  else if Position.compare r1.Range.start r.Range.end_ == 0 then
+    Range.{start = r.Range.start; end_ = r.Range.end_} :: l
   else
     r1 :: (insert_or_merge_range r l)
 
@@ -315,10 +320,36 @@ let update_processing task state document =
     {state with overview}
   | PSkip { id } | PExec { id } | PQuery { id } ->
     let range = Document.range_of_id_with_blank_space document id in
-    log @@ "TRUNCATING FROM PREPARED";
     let processing = insert_or_merge_range range processing in 
     let prepared = remove_or_truncate_range range prepared in
     let overview = {state.overview with processing; prepared} in
+    {state with overview}
+
+let update_prepared task document state =
+  let {prepared} = state.overview in
+  match task with
+  | PDelegate { opener_id; terminator_id; tasks } ->
+    let proof_opener_id = match tasks with
+      | [] -> opener_id
+      | (PSkip { id } | PExec { id } | PQuery { id }) :: _ -> id
+      | PDelegate _ :: _ -> assert false
+    in
+    let proof_closer_id = match List.rev tasks with
+      | [] -> terminator_id
+      | (PSkip { id } | PExec { id } | PQuery { id }) :: _ -> id
+      | PDelegate _ :: _ -> assert false
+    in
+    let proof_begin_range = Document.range_of_id_with_blank_space document proof_opener_id in
+    let proof_end_range = Document.range_of_id_with_blank_space document proof_closer_id in
+    let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
+    (* When a job is delegated we shouldn't merge ranges (to get the proper progress report) *)
+    let prepared = List.append prepared [ range ] in
+    let overview = {state.overview with prepared} in
+    {state with overview}
+  | PSkip { id } | PExec { id } | PQuery { id } ->
+    let range = Document.range_of_id_with_blank_space document id in
+    let prepared = insert_or_merge_range range prepared in
+    let overview = {state.overview with prepared} in
     {state with overview}
 
 let update_overview task todo state document =
@@ -326,7 +357,10 @@ let update_overview task todo state document =
   match task with
   | PDelegate { terminator_id } ->
     let range = Document.range_of_id_with_blank_space document terminator_id in
+    let {prepared} = state.overview in
+    let prepared = remove_or_truncate_range range prepared in
     let overview = update_processed_as_Done (Success None) range state.overview in
+    let overview = {overview with prepared} in
     {state with overview}
   | PSkip { id } | PExec { id } | PQuery { id } ->
     update_processed id state document
@@ -611,7 +645,7 @@ let execute st (vs, events, interrupted) task =
       let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None)) in
       (st, vs, events, true)
 
-let build_tasks_for sch st id =
+let build_tasks_for document sch st id =
   let rec build_tasks id tasks st =
     begin match find_fulfilled_opt id st.of_sentence with
     | Some (Success (Some vs)) ->
@@ -633,8 +667,16 @@ let build_tasks_for sch st id =
       end
     end
   in
+  let rec build_prepared_overview tasks state =
+    begin match tasks with
+    | [] -> state
+    | task :: l -> build_prepared_overview l (update_prepared task document state)
+    end
+  in
   let vs, tasks, st = build_tasks id [] st in
-  vs, List.concat_map prepare_task tasks, st
+  let prepared_tasks = List.concat_map prepare_task tasks in
+  let st = build_prepared_overview prepared_tasks st in
+  vs, prepared_tasks, st
 
 let all_errors st =
   List.fold_left (fun acc (id, (p,_)) ->
