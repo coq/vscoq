@@ -425,7 +425,8 @@ let parse_entry st pos entry pattern =
   | None -> Vernacstate.(Synterp.parsing st.init_vs.synterp)
   | Some { synterp_state } -> Vernacstate.Synterp.parsing synterp_state
   in
-  Vernacstate.Parser.parse st entry pa
+  Pcoq.unfreeze st;
+  Pcoq.Entry.parse entry pa
 [%%else]
 let parse_entry st pos entry pattern =
   let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
