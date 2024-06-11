@@ -151,7 +151,7 @@
               "Manual",
               "Continuous"
             ],
-            "default": 1,
+            "default": 0,
             "description": "Configures the proof checking mode for Coq."
           },
           "vscoq.proof.cursor.sticky": {
