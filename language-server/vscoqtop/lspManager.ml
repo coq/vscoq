@@ -31,7 +31,7 @@ let get_init_state () =
 
 let states : (string, Dm.DocumentManager.state) Hashtbl.t = Hashtbl.create 39
 
-let check_mode = ref Settings.Mode.Continuous
+let check_mode = ref Settings.Mode.Manual
 
 let diff_mode = ref Settings.Goals.Diff.Mode.Off
 
