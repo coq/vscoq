@@ -94,7 +94,6 @@ type events = event Sel.Event.t list
     end *)
 
 let executed_ranges st =
-  ExecutionManager.print_exec_overview st.execution_state;
   match st.observe_id with
   | None -> ExecutionManager.overview st.execution_state
   | Some Top -> empty_overview
@@ -276,7 +275,7 @@ let validate_document state =
   in
   let execution_state =
     List.fold_left (fun st id ->
-      ExecutionManager.invalidate (Document.schedule state.document) id st
+      ExecutionManager.invalidate state.document (Document.schedule state.document) id st
       ) state.execution_state (Stateid.Set.elements invalid_roots) in
   { state with document; execution_state; observe_id }
 

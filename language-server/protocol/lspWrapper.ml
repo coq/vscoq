@@ -35,10 +35,32 @@ module Range = struct
   include Lsp.Types.Range
 
   type t = [%import: Lsp.Types.Range.t] [@@deriving sexp]
+  
+  let compare r1 r2 =
+    match Position.compare r1.start r2.start with
+    | 0 -> Position.compare r1.end_ r2.end_
+    | x -> x
+
+  let equals r1 r2 =
+    Position.compare r1.start r2.start == 0 && Position.compare r1.end_ r2.end_ == 0
 
   let included ~in_ { start; end_ } =
     let (<=) x y = Position.compare x y <= 0 in
     in_.start <= start && end_ <= in_.end_
+
+  let strictly_included ~in_ { start; end_ } =
+    let (<) x y = Position.compare x y < 0 in
+    in_.start < start && end_ < in_.end_
+
+  let prefixes ~in_ { start; end_ } =
+    let (<) x y = Position.compare x y < 0 in
+    let (<=) x y = Position.compare x y <= 0 in
+    start <= in_.start && end_ < in_.end_ && in_.start <= end_
+
+  let postfixes ~in_ { start; end_ } =
+    let (<) x y = Position.compare x y < 0 in
+    let (<=) x y = Position.compare x y <= 0 in
+    start <= in_.end_ && in_.start < start && in_.end_ < end_
 
   let to_string range = Format.sprintf ("Range (start: %s, end: %s)") (Position.to_string range.start) (Position.to_string range.end_)
 

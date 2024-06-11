@@ -47,7 +47,7 @@ val destroy : state -> unit
 val get_options : unit -> options
 val set_options : options -> unit
 val set_default_options : unit -> unit
-val invalidate : Scheduler.schedule -> sentence_id -> state -> state
+val invalidate : Document.document -> Scheduler.schedule -> sentence_id -> state -> state
 
 val error : state -> sentence_id -> (Loc.t option * Pp.t) option
 val feedback :  state -> sentence_id -> feedback_message list
