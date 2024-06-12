@@ -22,6 +22,8 @@ type exec_overview = {
   processed : Range.t list;
 }
 
+let empty_overview = {processing = []; processed = []; prepared = []}
+
 type text_edit = Range.t * string
 
 type link = {
