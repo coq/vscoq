@@ -248,10 +248,8 @@ let insert_or_merge_range r ranges =
   let rec insert_or_merge_sorted_ranges r1 = function
     | [] -> [r1]
     | r2 :: l ->
-      log "COMPARING"; log @@ Range.to_string r1; log @@ Range.to_string r2;
       if Range.prefixes ~in_:r2 r1 then
         begin
-          log "MERGING RANGES";
           let range = Range.{start = r1.Range.start; end_ = r2.Range.end_} in
           insert_or_merge_sorted_ranges range l
         end
@@ -262,7 +260,7 @@ let insert_or_merge_range r ranges =
 
 let rec remove_or_truncate_range r = function
 | [] -> []
-| r1 :: l -> log @@ "RANGES"; log @@ "R1: " ^ Range.to_string r1; log @@ "R: " ^ Range.to_string r;
+| r1 :: l ->
   if Range.equals r r1
   then
     l
