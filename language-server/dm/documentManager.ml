@@ -136,8 +136,8 @@ let mk_diag st (id,(lvl,oloc,msg)) =
         (`String "quickfix-replace",
          quickfixes |> yojson_of_list
          (fun qf ->
-            let s = Pp.string_of_ppcmds @@ Feedback.Quickfix.pp qf in
-            let loc = Feedback.Quickfix.loc qf in
+            let s = Pp.string_of_ppcmds @@ Quickfix.pp qf in
+            let loc = Quickfix.loc qf in
             let range = RawDocument.range_of_loc (Document.raw_document st.document) loc in
             QuickFixData.yojson_of_t (QuickFixData.{range; text = s})
         ))
