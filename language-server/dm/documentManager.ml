@@ -147,15 +147,52 @@ let mk_diag st (id,(lvl,oloc,msg)) =
   let lvl = DiagnosticSeverity.of_feedback_level lvl in
   make_diagnostic st.document (Document.range_of_id st.document id) oloc (Pp.string_of_ppcmds msg) lvl code
 
-let mk_error_diag st (id,(oloc,msg)) = mk_diag st (id,(Feedback.Error,oloc, msg))
+let mk_error_diag st (id,(oloc,msg,qf)) = (* mk_diag st (id,(Feedback.Error,oloc, msg)) *)
+  let code = 
+    match qf with
+    | None -> None
+    | Some qf ->
+      let code : Jsonrpc.Id.t * Lsp.Import.Json.t =
+        let open Lsp.Import.Json in
+        (`String "quickfix-replace",
+        qf |> yojson_of_list
+        (fun qf ->
+            let s = Pp.string_of_ppcmds @@ Quickfix.pp qf in
+            let loc = Quickfix.loc qf in
+            let range = RawDocument.range_of_loc (Document.raw_document st.document) loc in
+            QuickFixData.yojson_of_t (QuickFixData.{range; text = s})
+        ))
+        in
+      Some code
+  in
+  let lvl = DiagnosticSeverity.of_feedback_level Feedback.Error in
+  make_diagnostic st.document (Document.range_of_id st.document id) oloc (Pp.string_of_ppcmds msg) lvl code
 
-let mk_parsing_error_diag st Document.{ msg = (oloc,msg); start; stop } =
+
+let mk_parsing_error_diag st Document.{ msg = (oloc,msg); start; stop; qf } =
   let doc = Document.raw_document st.document in
   let severity = DiagnosticSeverity.Error in
   let start = RawDocument.position_of_loc doc start in
   let end_ = RawDocument.position_of_loc doc stop in
   let range = Range.{ start; end_ } in
-  make_diagnostic st.document range oloc msg severity None
+  let code = 
+    match qf with
+    | None -> None
+    | Some qf ->
+      let code : Jsonrpc.Id.t * Lsp.Import.Json.t =
+        let open Lsp.Import.Json in
+        (`String "quickfix-replace",
+         qf |> yojson_of_list
+         (fun qf ->
+            let s = Pp.string_of_ppcmds @@ Quickfix.pp qf in
+            let loc = Quickfix.loc qf in
+            let range = RawDocument.range_of_loc (Document.raw_document st.document) loc in
+            QuickFixData.yojson_of_t (QuickFixData.{range; text = s})
+        ))
+        in
+      Some code
+  in
+  make_diagnostic st.document range oloc msg severity code
 
 let all_diagnostics st =
   let parse_errors = Document.parse_errors st.document in

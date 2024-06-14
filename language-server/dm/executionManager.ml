@@ -21,10 +21,10 @@ let Log log = Log.mk_log "executionManager"
 
 type execution_status =
   | Success of Vernacstate.t option
-  | Error of Pp.t Loc.located * Vernacstate.t option (* State to use for resiliency *)
+  | Error of Pp.t Loc.located * Quickfix.t list option * Vernacstate.t option (* State to use for resiliency *)
 
 let success vernac_st = Success (Some vernac_st)
-let error loc msg vernac_st = Error ((loc,msg),(Some vernac_st))
+let error loc qf msg vernac_st = Error ((loc,msg), qf, (Some vernac_st))
 
 type sentence_id = Stateid.t
 
@@ -202,8 +202,9 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
         log @@ "Failed to execute: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
         *)
         let loc = Loc.get_loc info in
+        let qf = Quickfix.get_qf info in
         let msg = CErrors.iprint (e, info) in
-        let status = error loc msg st in
+        let status = error loc qf msg st in
         let st = interp_error_recovery error_recovery st in
         st, status, []
 
@@ -521,11 +522,11 @@ let handle_event event state =
             | (Delegated (_,completion), fl), _ ->
                 Option.default ignore completion v;
                 Some (update_all id (Done v) fl state), Some id
-            | (Done (Success s), fl), Error (err,_) ->
+            | (Done (Success s), fl), Error (err,qf, _) ->
                 (* This only happens when a Qed closing a delegated proof
                    receives an updated by a worker saying that the proof is
                    not completed *)
-                Some (update_all id (Done (Error (err,s))) fl state), Some id
+                Some (update_all id (Done (Error (err,qf,s))) fl state), Some id
             | (Done _, _), _ -> None, Some id
             | exception Not_found -> None, None (* TODO: is this possible? *)
       in
@@ -577,14 +578,14 @@ let id_of_prepared_task = function
 
 let purge_state = function
   | Success _ -> Success None
-  | Error(e,_) -> Error (e,None)
+  | Error(e,_,_) -> Error (e,None,None)
 
 (* TODO move to proper place *)
 let worker_execute ~doc_id ~send_back (vs,events) = function
   | PSkip { id; error = err } ->
     let v = match err with
       | None -> success vs
-      | Some msg -> error None msg vs
+      | Some msg -> error None None msg vs
     in
     send_back (ProofJob.UpdateExecStatus (id,purge_state v));
     (vs, events)
@@ -612,8 +613,9 @@ let worker_ensure_proof_is_over vs send_back terminator_id =
       with e ->
         let e, info = Exninfo.capture e in
         let loc = Loc.get_loc info in
+        let qf = Quickfix.get_qf info in
         let msg = CErrors.iprint (e, info) in
-        let status = error loc msg vs in
+        let status = error loc qf msg vs in
         send_back (ProofJob.UpdateExecStatus (terminator_id,status))
 
 let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id } ~send_back =
@@ -632,7 +634,7 @@ let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_
 
 let execute st (vs, events, interrupted) task =
   if interrupted then begin
-    let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None)) in
+    let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
     (st, vs, events, true)
   end else
     try
@@ -640,7 +642,7 @@ let execute st (vs, events, interrupted) task =
       | PSkip { id; error = err } ->
           let v = match err with
             | None -> success vs
-            | Some msg -> error None msg vs
+            | Some msg -> error None None msg vs
           in
           let st = update st id v in
           (st, vs, events, false)
@@ -672,7 +674,7 @@ let execute st (vs, events, interrupted) task =
                   assign (`Val (Declare.Proof.return_proof proof))
                 in
                 Vernacstate.LemmaStack.with_top (Option.get @@ vernac_st.Vernacstate.interp.lemmas) ~f
-              | Error ((loc,err),_) ->
+              | Error ((loc,err),_,_) ->
                   log "Aborted future";
                   assign (`Exn (CErrors.UserError err, Option.fold_left Loc.add_loc Exninfo.null loc))
               with exn when CErrors.noncritical exn ->
@@ -698,7 +700,7 @@ let execute st (vs, events, interrupted) task =
             (st, vs,events,false)
           end
     with Sys.Break ->
-      let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None)) in
+      let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
       (st, vs, events, true)
 
 let build_tasks_for document sch st id =
@@ -708,7 +710,7 @@ let build_tasks_for document sch st id =
       (* We reached an already computed state *)
       log @@ "Reached computed state " ^ Stateid.to_string id;
       vs, tasks, st
-    | Some (Error(_,Some vs)) ->
+    | Some (Error(_,_,Some vs)) ->
       (* We try to be resilient to an error *)
       log @@ "Error resiliency on state " ^ Stateid.to_string id;
       vs, tasks, st
@@ -737,13 +739,13 @@ let build_tasks_for document sch st id =
 let all_errors st =
   List.fold_left (fun acc (id, (p,_)) ->
     match p with
-    | Done (Error ((loc,e),_st)) -> (id,(loc,e)) :: acc
+    | Done (Error ((loc,e),qf,_)) -> (id,(loc,e,qf)) :: acc
     | _ -> acc)
     [] @@ SM.bindings st.of_sentence
 
 let error st id =
   match SM.find_opt id st.of_sentence with
-  | Some (Done (Error (err,_st)), _) -> Some err
+  | Some (Done (Error (err,_,_)), _) -> Some err
   | _ -> None
 
 let feedback st id =
@@ -770,10 +772,10 @@ let shift_diagnostics_locs st ~start ~offset =
   in
   let shift_error (sentence_state, feedbacks as orig) =
     let sentence_state' = match sentence_state with
-      | Done (Error ((Some loc,e),st)) ->
+      | Done (Error ((Some loc,e),qf,st)) ->
         let loc' = shift_loc loc in
         if loc' == loc then sentence_state else
-        Done (Error ((Some loc',e),st))
+        Done (Error ((Some loc',e),qf,st))
       | _ -> sentence_state
     in
     let feedbacks' = CList.Smart.map shift_feedback feedbacks in
@@ -790,12 +792,12 @@ let executed_ids st =
 
 let is_executed st id =
   match find_fulfilled_opt id st.of_sentence with
-  | Some (Success (Some _) | Error (_,Some _)) -> true
+  | Some (Success (Some _) | Error (_,_,Some _)) -> true
   | _ -> false
 
 let is_remotely_executed st id =
   match find_fulfilled_opt id st.of_sentence with
-  | Some (Success None | Error (_,None)) -> true
+  | Some (Success None | Error (_,_,None)) -> true
   | _ -> false
 
 let invalidate1 of_sentence id =
@@ -862,10 +864,10 @@ let get_initial_context st =
 let get_vernac_state st id =
   match find_fulfilled_opt id st.of_sentence with
   | None -> log "Cannot find state for get_context"; None
-  | Some (Error (_,None)) -> log "State requested after error with no state"; None
+  | Some (Error (_,_,None)) -> log "State requested after error with no state"; None
   | Some (Success None) -> log "State requested in a remotely checked state"; None
   | Some (Success (Some st))
-  | Some (Error (_, Some st)) ->
+  | Some (Error (_,_, Some st)) ->
     Some st
 
 module ProofWorkerProcess = struct
