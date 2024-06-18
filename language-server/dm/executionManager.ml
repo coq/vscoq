@@ -204,10 +204,7 @@ let definition_using e s ~fixnames:_ ~using ~terms =
 let definition_using = Proof_using.definition_using
 [%%endif]
 
-[%%if coq = "8.20"]
-let add_using proof proof_using _ =
-  Declare.Proof.set_proof_using proof proof_using |> snd
-[%%else]
+[%%if coq = "8.18" || coq = "8.19"]
 let add_using proof proof_using lemmas =
       let env = Global.env () in
       let sigma, _ = Declare.Proof.get_current_context proof in
@@ -223,6 +220,9 @@ let add_using proof proof_using lemmas =
         using;
       let _, pstate = Declare.Proof.set_used_variables proof ~using in
       pstate
+[%%else]
+let add_using proof proof_using _ =
+  Declare.Proof.set_proof_using proof proof_using |> snd
 [%%endif]
 
 let interp_qed_delayed ~proof_using ~state_id ~st =

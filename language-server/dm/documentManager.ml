@@ -383,15 +383,7 @@ let get_completions st pos =
     | None -> Error ("Can't get completions")
     | Some lemmas -> Ok (lemmas)
 
-[%%if coq = "8.20"]
-let parse_entry st pos entry pattern =
-  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
-  let st = match Document.find_sentence_before st.document pos with
-  | None -> Vernacstate.(Synterp.parsing st.init_vs.synterp)
-  | Some { synterp_state } -> Vernacstate.Synterp.parsing synterp_state
-  in
-  Vernacstate.Parser.parse st entry pa
-[%%else]
+[%%if coq = "8.18" || coq = "8.19"]
 let parse_entry st pos entry pattern =
   let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
   let st = match Document.find_sentence_before st.document pos with
@@ -399,6 +391,15 @@ let parse_entry st pos entry pattern =
   | Some { synterp_state } -> synterp_state.Vernacstate.Synterp.parsing
   in
   Vernacstate.Parser.parse st entry pa
+[%%else]
+let parse_entry st pos entry pattern =
+  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
+  let st = match Document.find_sentence_before st.document pos with
+  | None -> Vernacstate.(Synterp.parsing st.init_vs.synterp)
+  | Some { synterp_state } -> Vernacstate.Synterp.parsing synterp_state
+  in  
+  Pcoq.unfreeze st;
+  Pcoq.Entry.parse entry pa
 [%%endif]
 
 let about st pos ~pattern =
