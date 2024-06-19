@@ -66,10 +66,8 @@ let cancel_job (_,id) =
    keep here the conversion (STM) feedback -> (LSP) feedback *)
 
 let install_feedback send =
-  Feedback.add_feeder (fun fb ->
-    match fb.Feedback.contents with
-    | Feedback.Message(lvl,loc,m) -> send (fb.Feedback.route,fb.Feedback.span_id,(lvl,loc,m))
-    | _ -> () (* STM feedbacks are handled differently *))
+  Log.feedback_add_feeder_on_Message (fun route span _ lvl loc _ msg ->
+    send (route,span,(lvl,loc,msg)))
     
 module type Worker = sig
   type job_t

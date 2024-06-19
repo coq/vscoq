@@ -456,11 +456,8 @@ let local_feedback feedback_queue : event Sel.Event.t =
   Sel.On.queue ~name:"feedback" ~priority:PriorityManager.feedback feedback_queue (fun (rid,sid,msg) -> LocalFeedback(feedback_queue,rid,sid,msg))
 
 let install_feedback_listener doc_id send =
-  let open Feedback in
-  add_feeder (fun fb ->
-    match fb.contents with
-    | Feedback.Message(lvl,loc,m) when lvl != Feedback.Debug && fb.doc_id = doc_id -> send (fb.Feedback.route,fb.Feedback.span_id,(lvl,loc,m))
-    | _ -> () (* STM feedbacks are handled differently *))
+  Log.feedback_add_feeder_on_Message (fun route span doc lvl loc _ msg ->
+    if lvl != Feedback.Debug && doc = doc_id then send (route,span,(lvl,loc,msg)))
 
 let init vernac_state =
   let doc_id = fresh_doc_id () in

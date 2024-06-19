@@ -66,10 +66,23 @@ let logs () = List.sort String.compare !logs
 type event = string
 type events = event Sel.Event.t list
 
-let install_debug_feedback f =
+[%% if coq = "8.18" || coq = "8.19"]
+let feedback_add_feeder_on_Message f =
   Feedback.add_feeder (fun fb ->
     match fb.Feedback.contents with
-    | Feedback.Message(Feedback.Debug,None,m) -> f Pp.(string_of_ppcmds m)
+    | Feedback.Message(a,b,c) -> f fb.Feedback.route fb.Feedback.span_id fb.Feedback.doc_id a b [] c
+    | _ -> ())
+[%%else]
+let feedback_add_feeder_on_Message f =
+  Feedback.add_feeder (fun fb ->
+    match fb.Feedback.contents with
+    | Feedback.Message(a,b,c,d) -> f fb.Feedback.route fb.Feedback.span_id fb.Feedback.doc_id a b c d
+    | _ -> ())
+[%%endif]
+let install_debug_feedback f =
+  feedback_add_feeder_on_Message (fun _route _span _doc lvl loc _qf m ->
+    match lvl, loc with
+    | Feedback.Debug,None -> f Pp.(string_of_ppcmds m)
     | _ -> ())
 
 (* We go through a queue in case we receive a debug feedback from Coq before we
