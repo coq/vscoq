@@ -249,8 +249,11 @@ let reset_to_top st =
 let get_document_symbols st =
   let outline = Document.outline st.document in
   let to_document_symbol elem =
-    let Document.{name; statement; range} = elem in
-    let kind = SymbolKind.Function in
+    let Document.{name; statement; range; type_} = elem in
+    let kind = begin match type_ with
+    | TheoremKind _ -> SymbolKind.Function
+    | DefinitionType _ ->SymbolKind.Variable
+    end in
     DocumentSymbol.{name; detail=(Some statement); kind; range; selectionRange=range; children=None; deprecated=None; tags=None;}
   in
   List.map to_document_symbol outline
