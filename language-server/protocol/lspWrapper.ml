@@ -79,7 +79,7 @@ module DiagnosticSeverity = struct
 
   let of_feedback_level = let open DiagnosticSeverity in function
     | Feedback.Error -> Error
-    | Feedback.Warning _ -> Warning
+    | Feedback.Warning -> Warning
     | Feedback.(Info | Debug | Notice) -> Information
 
 end
@@ -101,7 +101,7 @@ module FeedbackChannel = struct
   | Feedback.Debug -> Some Debug
   | Feedback.Info -> Some Info 
   | Feedback.Notice -> Some Notice 
-  | Feedback.(Error | Warning _) -> None
+  | Feedback.(Error | Warning) -> None
 
 end
 

@@ -37,7 +37,7 @@ type state
 type event
 type events = event Sel.Event.t list
 
-type feedback_message = Feedback.level * Loc.t option * Pp.t
+type feedback_message = Feedback.level * Loc.t option * Quickfix.t list * Pp.t
 
 val pr_event : event -> Pp.t
 

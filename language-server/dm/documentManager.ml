@@ -127,15 +127,16 @@ let make_diagnostic doc range oloc message severity code =
     | Some (x,z) -> Some x, Some z in
   Diagnostic.create ?code ?data ~range ~message ~severity ()
 
-let mk_diag st (id,(lvl,oloc,msg)) =
-  let code =
-    match lvl with
-    | Feedback.Warning quickfixes ->
+let mk_diag st (id,(lvl,oloc,qf,msg)) =
+  let code = 
+    match qf with
+    | [] -> None
+    | qf ->
       let code : Jsonrpc.Id.t * Lsp.Import.Json.t =
         let open Lsp.Import.Json in
         (`String "quickfix-replace",
-         quickfixes |> yojson_of_list
-         (fun qf ->
+        qf |> yojson_of_list
+        (fun qf ->
             let s = Pp.string_of_ppcmds @@ Quickfix.pp qf in
             let loc = Quickfix.loc qf in
             let range = RawDocument.range_of_loc (Document.raw_document st.document) loc in
@@ -143,9 +144,9 @@ let mk_diag st (id,(lvl,oloc,msg)) =
         ))
         in
       Some code
-      | _ -> None in
-  let lvl = DiagnosticSeverity.of_feedback_level lvl in
-  make_diagnostic st.document (Document.range_of_id st.document id) oloc (Pp.string_of_ppcmds msg) lvl code
+    in
+    let lvl = DiagnosticSeverity.of_feedback_level lvl in
+    make_diagnostic st.document (Document.range_of_id st.document id) oloc (Pp.string_of_ppcmds msg) lvl code
 
 let mk_error_diag st (id,(oloc,msg,qf)) = (* mk_diag st (id,(Feedback.Error,oloc, msg)) *)
   let code = 
@@ -222,7 +223,7 @@ let get_messages st pos =
   | Some id -> log "get_messages: Found id";
     let error = ExecutionManager.error st.execution_state id in
     let feedback = ExecutionManager.feedback st.execution_state id in
-    let feedback = List.map (fun (lvl,_oloc,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback  in
+    let feedback = List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback  in
     match error with
     | Some (_oloc,msg) -> (DiagnosticSeverity.Error, pp_of_coqpp msg) :: feedback
     | None -> feedback

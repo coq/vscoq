@@ -330,7 +330,7 @@ let get_loc_from_info_or_exn e info =
 let get_loc_from_info_or_exn _ info =
   Loc.get_loc info
 
-let get_qf_from_info info = Quickfix.get_qf info
+(* let get_qf_from_info info = Quickfix.get_qf info *)
 [%%endif]
 
 [%%if coq = "8.18" || coq = "8.19"]
@@ -381,25 +381,25 @@ let rec parse_more synterp_state stream raw parsed parsed_comments errors =
         with exn ->
           let e, info = Exninfo.capture exn in
           let loc = get_loc_from_info_or_exn e info in
-          let qf = get_qf_from_info info in
-          handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info)) qf
+          let qf = Result.value ~default:[] @@ Quickfix.from_exception e in
+          handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info)) (Some qf)
         end
     | exception (E msg as exn) ->
       let loc = Loc.get_loc @@ Exninfo.info exn in
-      let qf = Quickfix.get_qf @@ Exninfo.info exn in
+      let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
       junk_sentence_end stream;
-      handle_parse_error start (loc,msg) qf
+      handle_parse_error start (loc,msg) (Some qf)
     | exception (CLexer.Error.E e as exn) -> (* May be more problematic to handle for the diff *)
       let loc = Loc.get_loc @@ Exninfo.info exn in
-      let qf = Quickfix.get_qf @@ Exninfo.info exn in
+      let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
       junk_sentence_end stream;
-      handle_parse_error start (loc,CLexer.Error.to_string e) qf
+      handle_parse_error start (loc,CLexer.Error.to_string e) (Some qf)
     | exception exn ->
       let e, info = Exninfo.capture exn in
       let loc = Loc.get_loc @@ info in
-      let qf = Quickfix.get_qf @@ Exninfo.info exn in
+      let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
       junk_sentence_end stream;
-      handle_parse_error start (loc, "Unexpected parse error: " ^ Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info)) qf
+      handle_parse_error start (loc, "Unexpected parse error: " ^ Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info)) (Some qf)
   end
 
 let parse_more synterp_state stream raw =

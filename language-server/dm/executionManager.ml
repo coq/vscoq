@@ -19,6 +19,8 @@ open Types
 
 let Log log = Log.mk_log "executionManager"
 
+type feedback_message = Feedback.level * Loc.t option * Quickfix.t list * Pp.t
+
 type execution_status =
   | Success of Vernacstate.t option
   | Error of Pp.t Loc.located * Quickfix.t list option * Vernacstate.t option (* State to use for resiliency *)
@@ -29,8 +31,6 @@ let error loc qf msg vernac_st = Error ((loc,msg), qf, (Some vernac_st))
 type sentence_id = Stateid.t
 
 module SM = Map.Make (Stateid)
-
-type feedback_message = Feedback.level * Loc.t option * Pp.t
 
 type sentence_state =
   | Done of execution_status
@@ -73,7 +73,7 @@ type state = {
   (* ugly stuff to correctly dispatch Coq feedback *)
   doc_id : document_id; (* unique number used to interface with Coq's Feedback *)
   coq_feeder : coq_feedback_listener;
-  sel_feedback_queue : (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)) Queue.t;
+  sel_feedback_queue : (Feedback.route_id * sentence_id * feedback_message) Queue.t;
   sel_cancellation_handle : Sel.Event.cancellation_handle;
   overview: exec_overview;
 }
@@ -113,7 +113,7 @@ type prepared_task =
 module ProofJob = struct
   type update_request =
     | UpdateExecStatus of sentence_id * execution_status
-    | AppendFeedback of Feedback.route_id * Types.sentence_id * (Feedback.level * Loc.t option * Pp.t)
+    | AppendFeedback of Feedback.route_id * Types.sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)
   let appendFeedback (rid,sid) fb = AppendFeedback(rid,sid,fb)
 
   type t = {
@@ -131,7 +131,7 @@ end
 module ProofWorker = DelegationManager.MakeWorker(ProofJob)
 
 type event =
-  | LocalFeedback of (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)) Queue.t * Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Pp.t)
+  | LocalFeedback of (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)) Queue.t * Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)
   | ProofWorkerEvent of ProofWorker.delegation
 type events = event Sel.Event.t list
 let pr_event = function
@@ -202,9 +202,9 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
         log @@ "Failed to execute: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
         *)
         let loc = Loc.get_loc info in
-        let qf = Quickfix.get_qf info in
+        let qf = Result.value ~default:[] @@ Quickfix.from_exception e in
         let msg = CErrors.iprint (e, info) in
-        let status = error loc qf msg st in
+        let status = error loc (Some qf) msg st in
         let st = interp_error_recovery error_recovery st in
         st, status, []
 
@@ -468,8 +468,8 @@ let local_feedback feedback_queue : event Sel.Event.t =
   Sel.On.queue ~name:"feedback" ~priority:PriorityManager.feedback feedback_queue (fun (rid,sid,msg) -> LocalFeedback(feedback_queue,rid,sid,msg))
 
 let install_feedback_listener doc_id send =
-  Log.feedback_add_feeder_on_Message (fun route span doc lvl loc _ msg ->
-    if lvl != Feedback.Debug && doc = doc_id then send (route,span,(lvl,loc,msg)))
+  Log.feedback_add_feeder_on_Message (fun route span doc lvl loc qf msg ->
+    if lvl != Feedback.Debug && doc = doc_id then send (route,span,(lvl,loc, qf, msg)))
 
 let init vernac_state =
   let doc_id = fresh_doc_id () in
@@ -497,8 +497,8 @@ let feedback_cleanup { coq_feeder; sel_feedback_queue; sel_cancellation_handle }
 
 let handle_feedback id fb state =
   match fb with
-  | (Feedback.Info, _, _) -> state
-  | (_, _, msg) ->
+  | (Feedback.Info, _, _, _) -> state
+  | (_, _, _, msg) ->
     begin match SM.find id state.of_sentence with
     | (s,fl) -> update_all id s (fb::fl) state
     | exception Not_found -> 
@@ -613,9 +613,9 @@ let worker_ensure_proof_is_over vs send_back terminator_id =
       with e ->
         let e, info = Exninfo.capture e in
         let loc = Loc.get_loc info in
-        let qf = Quickfix.get_qf info in
+        let qf = Result.value ~default:[] @@ Quickfix.from_exception e in
         let msg = CErrors.iprint (e, info) in
-        let status = error loc qf msg vs in
+        let status = error loc (Some qf) msg vs in
         send_back (ProofJob.UpdateExecStatus (terminator_id,status))
 
 let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_id } ~send_back =
@@ -763,12 +763,12 @@ let shift_diagnostics_locs st ~start ~offset =
     else if loc_stop > start then Loc.shift_loc 0 offset loc
     else loc
   in
-  let shift_feedback (level, oloc, msg as feedback) =
+  let shift_feedback (level, oloc, qf, msg as feedback) =
     match oloc with
     | None -> feedback
     | Some loc ->
       let loc' = shift_loc loc in
-      if loc' == loc then feedback else (level, Some loc', msg)
+      if loc' == loc then feedback else (level, Some loc', qf, msg)
   in
   let shift_error (sentence_state, feedbacks as orig) =
     let sentence_state' = match sentence_state with
