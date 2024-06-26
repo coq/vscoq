@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useRef, useEffect} from 'react';
+import React, {FunctionComponent, useRef, useLayoutEffect} from 'react';
 import {
     VSCodePanels,
     VSCodePanelTab,
@@ -18,9 +18,9 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     
     const {goals} = props;
     const goalRefs = useRef<Array<HTMLDivElement | null>>([]);
-    useEffect(() => {
+    useLayoutEffect(() => {
         goalRefs.current = goalRefs.current.slice(0, goals.length);
-        scrollToBottomOfGoal(0);
+        setTimeout(() => scrollToBottomOfGoal(0), 200);
     }, [goals]);
 
     const scrollToBottomOfGoal = (i : number) => {
