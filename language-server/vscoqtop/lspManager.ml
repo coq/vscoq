@@ -305,12 +305,12 @@ let consider_purge_invisible_tabs () =
 let textDocumentDidClose params =
   let Lsp.Types.DidCloseTextDocumentParams.{ textDocument } = params in
   let path = DocumentUri.to_path textDocument.uri in
-  match Hashtbl.find_opt states path with
+  begin match Hashtbl.find_opt states path with
   | None -> assert false
-  | Some { st } ->
-      replace_state path st false;
-      consider_purge_invisible_tabs ();
-      [] (* TODO handle properly *)
+  | Some { st } -> replace_state path st false
+  end;
+  consider_purge_invisible_tabs ();
+  [] (* TODO handle properly *)
 
 let textDocumentHover id params = 
   let Lsp.Types.HoverParams.{ textDocument; position } = params in
