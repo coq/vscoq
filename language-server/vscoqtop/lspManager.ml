@@ -297,6 +297,9 @@ let consider_purge_invisible_tabs () =
   let usage = current_memory_usage () in
   if usage > 4000000000 (* 4G *) then begin
     purge_invisible_tabs ();
+    let vst, _ = get_init_state () in
+    Vernacstate.unfreeze_full_state vst;
+    Vernacstate.Interp.invalidate_cache ();
     Gc.compact ();
     let new_usage = current_memory_usage () in
     log @@ Printf.sprintf  "memory footprint %d -> %d" usage new_usage;
