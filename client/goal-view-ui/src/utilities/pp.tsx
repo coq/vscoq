@@ -76,7 +76,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
         computeNeededBreaks(maxBreaks);
     }, [displayState]);
 
-    const getPpTag  = (pp: PpString, tag: string) => {
+    const getPpTag  = (pp: PpString, tag: string, indent: number, mode: PpMode) => {
         switch(pp[0]) {
             case 'Ppcmd_empty':
                 console.error('Recieved PpTag with empty');
@@ -88,8 +88,15 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     content: pp[1]
                 } as Term;
             case 'Ppcmd_glue':
-                console.error('Recieved PpTag with glue');
-                return null;
+                const id = uuid();
+                return {
+                    id: "box-"+id,
+                    type: DisplayType.box,
+                    mode: mode,
+                    classList: [tag],
+                    indent: indent,
+                    boxChildren: flattenGlue(pp[1], mode, indent, id)
+                } as Box;
             case 'Ppcmd_force_newline':
                 console.error('Recieved PpTag with fnl');
                 return null;
@@ -138,7 +145,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 case 'Ppcmd_box':
                     return boxifyPpString(pp);
                 case 'Ppcmd_tag':
-                    return getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")]);
+                    return getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")], indent, mode);
                 case 'Ppcmd_print_break':
                     const brId = uuid();
                     return {
@@ -177,7 +184,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 ];
             case 'Ppcmd_tag':
                 return [
-                    getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")])
+                    getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")], indent, mode)
                 ];
             case 'Ppcmd_print_break':
                 return [];
@@ -198,6 +205,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 return {
                     id: "box-"+id,
                     type: DisplayType.box,
+                    classList: [],
                     mode: PpMode.hovBox,
                     indent: 0,
                     boxChildren: getBoxChildren(pp, PpMode.hovBox, 0, id)
@@ -209,6 +217,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     id: "box-"+id,
                     type: DisplayType.box,
                     mode: mode,
+                    classList: [],
                     indent: indent,
                     boxChildren: getBoxChildren(pp[2], mode, indent, id)
                 } as Box;
@@ -301,6 +310,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     <PpBox
                         id={displayState.display.id}
                         coqCss={coqCss}
+                        classList={[]}
                         mode={displayState.display.mode}
                         type={displayState.display.type}
                         boxChildren={displayState.display.boxChildren}

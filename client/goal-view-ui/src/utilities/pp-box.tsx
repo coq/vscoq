@@ -20,6 +20,7 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
                         type={child.type}
                         coqCss={coqCss}
                         id={child.id}
+                        classList={child.classList}
                         mode={child.mode}
                         indent={child.indent}
                         breaks={breaks}

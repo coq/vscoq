@@ -71,6 +71,7 @@ export type BoxDisplay = Break | Term | Box | null;
 export interface Box {
     id: string,
     type: DisplayType.box,
+    classList: string[],
     mode: PpMode,
     indent: number,
     boxChildren: BoxDisplay[]
