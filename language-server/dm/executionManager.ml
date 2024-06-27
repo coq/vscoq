@@ -155,12 +155,23 @@ let interp_error_recovery strategy st : Vernacstate.t =
     | Some lemmas ->
         let proof = Vernacstate.LemmaStack.get_top lemmas in
         let pm = NeList.head program in
-        let pm = f ~pm ~proof in
-        let lemmas = snd (Vernacstate.LemmaStack.pop lemmas) in
-        let program = NeList.map_head (fun _ -> pm) program in
-        Vernacstate.Declare.set (lemmas,program) [@ocaml.warning "-3"];
-        let interp = Vernacstate.Interp.freeze_interp_state () in
-        { st with interp }
+        let result = 
+          try Ok(f ~pm ~proof)
+          with e -> (* we also catch anomalies *)
+          let e, info = Exninfo.capture e in
+          Error (e, info)
+        in
+        match result with
+        | Ok (pm) ->
+          let lemmas = snd (Vernacstate.LemmaStack.pop lemmas) in
+          let program = NeList.map_head (fun _ -> pm) program in
+          Vernacstate.Declare.set (lemmas,program) [@ocaml.warning "-3"];
+          let interp = Vernacstate.Interp.freeze_interp_state () in
+          { st with interp }
+        | Error (Sys.Break, _ as exn) ->
+          Exninfo.iraise exn
+        | Error(_,_) ->
+          st
 
 (* just a wrapper around vernac interp *)
 let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
