@@ -66,7 +66,7 @@ let logs () = List.sort String.compare !logs
 type event = string
 type events = event Sel.Event.t list
 
-[%% if coq = "8.18" || coq = "8.19"]
+[%% if coq = "8.18" || coq = "8.19"  || coq = "8.20"]
 let feedback_add_feeder_on_Message f =
   Feedback.add_feeder (fun fb ->
     match fb.Feedback.contents with
