@@ -77,6 +77,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
     }, [displayState]);
 
     const getPpTag  = (pp: PpString, tag: string, indent: number, mode: PpMode) => {
+        const id = uuid();
         switch(pp[0]) {
             case 'Ppcmd_empty':
                 console.error('Recieved PpTag with empty');
@@ -88,7 +89,6 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     content: pp[1]
                 } as Term;
             case 'Ppcmd_glue':
-                const id = uuid();
                 return {
                     id: "box-"+id,
                     type: DisplayType.box,
@@ -104,8 +104,16 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 console.error('Recieved PpTag with comment');
                 return null;
             case 'Ppcmd_box':
-                console.error('Recieved PpTag with box');
-                return null;
+                const m = pp[1][0];
+                const i = (m !== PpMode.horizontal) ? pp[1][1] : 0;
+                return {
+                    id: "box-"+id,
+                    type: DisplayType.box,
+                    mode: mode,
+                    classList: [tag],
+                    indent: indent,
+                    boxChildren: getBoxChildren(pp[2], m, i, id)
+                } as Box;
             case 'Ppcmd_tag':
                 console.error('Recieved PpTag with tag');
                 return null;
