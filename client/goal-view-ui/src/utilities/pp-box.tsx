@@ -12,11 +12,12 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
     
     const {mode, coqCss, id, indent, breaks, boxChildren} = props;
 
-    const inner = boxChildren.map(child => {
+    const inner = boxChildren.map((child, i) => {
         if(child) {
             if (child.type === DisplayType.box) {
                 return (
                     <PpBox
+                        key={child.id + i}
                         type={child.type}
                         coqCss={coqCss}
                         id={child.id}
@@ -31,6 +32,7 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
                 const lineBreak = (breaks.find(br => br.id === child.id));
                 return (
                     <PpBreak
+                        key={child.id + i}
                         id={child.id}
                         offset={lineBreak ? lineBreak.offset : 0}
                         mode={mode}
@@ -41,7 +43,7 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
                 );
             } else {
                 return (
-                    <span className={child.classList.join(' ')}>
+                    <span key={"term" + i} className={child.classList.join(' ')}>
                         {child.content}
                     </span>
                 );

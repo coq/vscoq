@@ -128,18 +128,17 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
         const g = glue.map(pp => {
             switch(pp[0]) {
                 case 'Ppcmd_empty':
-                    return null;
+                    return [];
                 case 'Ppcmd_string':
-                    return {
+                    return [{
                         type: DisplayType.term,
                         classList: [classes.Text],
                         content: pp[1]
-                    } as Term;
+                    } as Term];
                 case 'Ppcmd_glue':
-                    console.error('Found a PpGlue inside a PpGlue');
-                    return null;
+                    return flattenGlue(pp[1], mode, indent, boxId);
                 case 'Ppcmd_force_newline':
-                    return {
+                    return [{
                         id: "fnl",
                         type: DisplayType.break,
                         offset: 0,
@@ -147,16 +146,16 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                         horizontalIndent: 0, 
                         indent: indent,
                         shouldBreak: true,
-                    } as Break;
+                    } as Break];
                 case 'Ppcmd_comment':
-                    return null;
+                    return [];
                 case 'Ppcmd_box':
-                    return boxifyPpString(pp);
+                    return [boxifyPpString(pp)];
                 case 'Ppcmd_tag':
-                    return getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")], indent, mode);
+                    return [getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")], indent, mode)];
                 case 'Ppcmd_print_break':
                     const brId = uuid();
-                    return {
+                    return [{
                         id: "box-"+boxId+"break-"+brId,
                         type: DisplayType.break,
                         offset: 0,
@@ -164,10 +163,14 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                         horizontalIndent: pp[1],
                         indent: indent,
                         shouldBreak: false
-                    } as Break;
+                    } as Break];
             }
         });
-        return g;
+        const r = g.reduce((acc, curr) => {
+            return acc.concat(curr);
+        }, []);
+
+        return r;
     };
 
     const getBoxChildren = (pp : PpString, mode: PpMode, indent: number, boxId: string) : BoxDisplay[] => {
