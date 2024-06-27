@@ -168,11 +168,9 @@ let interp_error_recovery strategy st : Vernacstate.t =
           Vernacstate.Declare.set (lemmas,program) [@ocaml.warning "-3"];
           let interp = Vernacstate.Interp.freeze_interp_state () in
           { st with interp }
-        | Error(_,_) -> 
-          (* let loc = Loc.get_loc info in
-          let msg = CErrors.iprint (e, info) in
-          let status = error loc msg st in
-          let st = interp_error_recovery error_recovery st in *)
+        | Error (Sys.Break, _ as exn) ->
+          Exninfo.iraise exn
+        | Error(_,_) ->
           st
 
 (* just a wrapper around vernac interp *)
