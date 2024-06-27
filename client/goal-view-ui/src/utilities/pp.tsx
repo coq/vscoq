@@ -76,7 +76,8 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
         computeNeededBreaks(maxBreaks);
     }, [displayState]);
 
-    const getPpTag  = (pp: PpString, tag: string) => {
+    const getPpTag  = (pp: PpString, tag: string, indent: number, mode: PpMode) => {
+        const id = uuid();
         switch(pp[0]) {
             case 'Ppcmd_empty':
                 console.error('Recieved PpTag with empty');
@@ -88,8 +89,14 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     content: pp[1]
                 } as Term;
             case 'Ppcmd_glue':
-                console.error('Recieved PpTag with glue');
-                return null;
+                return {
+                    id: "box-"+id,
+                    type: DisplayType.box,
+                    mode: mode,
+                    classList: [tag],
+                    indent: indent,
+                    boxChildren: flattenGlue(pp[1], mode, indent, id)
+                } as Box;
             case 'Ppcmd_force_newline':
                 console.error('Recieved PpTag with fnl');
                 return null;
@@ -97,8 +104,16 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 console.error('Recieved PpTag with comment');
                 return null;
             case 'Ppcmd_box':
-                console.error('Recieved PpTag with box');
-                return null;
+                const m = pp[1][0];
+                const i = (m !== PpMode.horizontal) ? pp[1][1] : 0;
+                return {
+                    id: "box-"+id,
+                    type: DisplayType.box,
+                    mode: mode,
+                    classList: [tag],
+                    indent: indent,
+                    boxChildren: getBoxChildren(pp[2], m, i, id)
+                } as Box;
             case 'Ppcmd_tag':
                 console.error('Recieved PpTag with tag');
                 return null;
@@ -113,18 +128,17 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
         const g = glue.map(pp => {
             switch(pp[0]) {
                 case 'Ppcmd_empty':
-                    return null;
+                    return [];
                 case 'Ppcmd_string':
-                    return {
+                    return [{
                         type: DisplayType.term,
                         classList: [classes.Text],
                         content: pp[1]
-                    } as Term;
+                    } as Term];
                 case 'Ppcmd_glue':
-                    console.error('Found a PpGlue inside a PpGlue');
-                    return null;
+                    return flattenGlue(pp[1], mode, indent, boxId);
                 case 'Ppcmd_force_newline':
-                    return {
+                    return [{
                         id: "fnl",
                         type: DisplayType.break,
                         offset: 0,
@@ -132,16 +146,16 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                         horizontalIndent: 0, 
                         indent: indent,
                         shouldBreak: true,
-                    } as Break;
+                    } as Break];
                 case 'Ppcmd_comment':
-                    return null;
+                    return [];
                 case 'Ppcmd_box':
-                    return boxifyPpString(pp);
+                    return [boxifyPpString(pp)];
                 case 'Ppcmd_tag':
-                    return getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")]);
+                    return [getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")], indent, mode)];
                 case 'Ppcmd_print_break':
                     const brId = uuid();
-                    return {
+                    return [{
                         id: "box-"+boxId+"break-"+brId,
                         type: DisplayType.break,
                         offset: 0,
@@ -149,10 +163,14 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                         horizontalIndent: pp[1],
                         indent: indent,
                         shouldBreak: false
-                    } as Break;
+                    } as Break];
             }
         });
-        return g;
+        const r = g.reduce((acc, curr) => {
+            return acc.concat(curr);
+        }, []);
+
+        return r;
     };
 
     const getBoxChildren = (pp : PpString, mode: PpMode, indent: number, boxId: string) : BoxDisplay[] => {
@@ -177,7 +195,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 ];
             case 'Ppcmd_tag':
                 return [
-                    getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")])
+                    getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")], indent, mode)
                 ];
             case 'Ppcmd_print_break':
                 return [];
@@ -198,6 +216,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 return {
                     id: "box-"+id,
                     type: DisplayType.box,
+                    classList: [],
                     mode: PpMode.hovBox,
                     indent: 0,
                     boxChildren: getBoxChildren(pp, PpMode.hovBox, 0, id)
@@ -209,6 +228,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     id: "box-"+id,
                     type: DisplayType.box,
                     mode: mode,
+                    classList: [],
                     indent: indent,
                     boxChildren: getBoxChildren(pp[2], mode, indent, id)
                 } as Box;
@@ -301,6 +321,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     <PpBox
                         id={displayState.display.id}
                         coqCss={coqCss}
+                        classList={[]}
                         mode={displayState.display.mode}
                         type={displayState.display.type}
                         boxChildren={displayState.display.boxChildren}
