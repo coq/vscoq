@@ -49,7 +49,9 @@ type parsing_error = {
 val parse_errors : document -> parsing_error list
 (** [parse_errors doc] returns the list of sentences which failed to parse
     (see validate_document) together with their error message *)
-
+val apply_text_edit : document -> text_edit -> document
+(** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
+    text is not parsed or executed. *)
 val apply_text_edits : document -> text_edit list -> document
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
     text is not parsed or executed. *)

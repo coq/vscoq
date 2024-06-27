@@ -252,10 +252,11 @@ let same_tokens (s1 : sentence) (s2 : pre_sentence) =
 let rec diff old_sentences new_sentences =
   match old_sentences, new_sentences with
   | [], [] -> []
-  | [], new_sentences -> [Added new_sentences]
-  | old_sentences, [] -> [Deleted (List.map (fun s -> s.id) old_sentences)]
+  | [], new_sentences -> log "ADDED"; [Added new_sentences]
+  | old_sentences, [] -> log @@ "DELETED"; [Deleted (List.map (fun s -> s.id) old_sentences)]
     (* FIXME something special should be done when `Deleted` is applied to a parsing effect *)
   | old_sentence::old_sentences, new_sentence::new_sentences ->
+    log @@ "EQUAL OR DELETED";
     if same_tokens old_sentence new_sentence then
       Equal [(old_sentence.id,new_sentence)] :: diff old_sentences new_sentences
     else Deleted [old_sentence.id] :: Added [new_sentence] :: diff old_sentences new_sentences
