@@ -20,7 +20,7 @@
       vscodeExtPublisher = "maximedenes";
       vscodeExtName = "vscoq";
       vscodeExtUniqueId = "maximedenes.vscoq";
-      vscoq_version = "2.1.3";
+      vscoq_version = "2.1.4";
       coq = coq-master.packages.${system};
     in rec {
       formatter = nixpkgs.legacyPackages.${system}.alejandra;
