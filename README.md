@@ -70,18 +70,18 @@ or `codium`. Then press F1 to open the command palette, start typing
 the **pre-release version** of the extension and enable it. Finally, go to the extension
 settings and enter the `vscoqtop` full path from above in the field "Vscoq: Path".
 
-If you want top-down processing of Coq files as in VsCoq1, you can go to
-the "Proof: Mode" and select "Manual". Otherwise, processing will asynchronous.
+If you want asynchronous processing of Coq files, you can go to
+the "Proof: Mode" and select "Continuous". Otherwise, processing will step by step and top-down as in VsCoq1.
 
 ## Features
 * Syntax highlighting
 * Asynchronous proof checking
 * Continuous and incremental checking of Coq documents
 
-The new version of vscoq allows for continuous checking, see the goal panel update as you scroll or edit your document.
+The new version of vscoq allows users to opt for continuous checking, see the goal panel update as you scroll or edit your document.
 ![](gif/continuous-mode.gif)
 
-Note that users can opt out and choose to use the classic step by step checking mode. 
+By default vscoq is configured to use classic step by step checking mode. 
 ![](gif/manual-mode.gif)
 
 * Customisable goal panel 
@@ -115,8 +115,8 @@ After installation and activation of the extension:
 * `"vscoq.trace.server": off | messages | verbose` -- Toggles the tracing of communications between the server and client
 
 #### Proof checking
-* `"vscoq.proof.cursor.sticky": bool` -- a toggle to specify wether the cursor should move as Coq interactively navigates a document (step forward, backward, etc...)
-* `"vscoq.proof.mode": Continuous | Manual` -- Decide wether documents should checked continuously or using the classig navigation commmands (defaults to `Continuous`)
+* `"vscoq.proof.cursor.sticky": bool` -- a toggle to specify whether the cursor should move as Coq interactively navigates a document (step forward, backward, etc...)
+* `"vscoq.proof.mode": Continuous | Manual` -- Decide whether documents should checked continuously or using the classic navigation commmands (defaults to `Manual`)
 * `"vscoq.proof.delegation": None | Skip | Delegate` -- Decides which delegation strategy should be used by the server. 
   `Skip` allows to skip proofs which are out of focus and should be used in manual mode. `Delegate` allocates a settable amount of workers
   to delegate proofs. 
@@ -124,8 +124,8 @@ After installation and activation of the extension:
 
 #### Goal and info view panel
 * `"vscoq.goals.diff.mode": on | off | removed` -- Toggles diff mode. If set to `removed`, only removed characters are shown (defaults to `off`)
-* `"vscoq.goals.display": Tabs | List` -- Decide whether to display goals in seperate tabs or as a list of collapsibles.
-* `"vscoq.goals.messages.full": bool` -- A toggle to include warning and errors in the proof view (defaults to `false`)
+* `"vscoq.goals.display": Tabs | List` -- Decide whether to display goals in separate tabs or as a list of collapsibles.
+* `"vscoq.goals.messages.full": bool` -- A toggle to include warnings and errors in the proof view (defaults to `false`)
 
 #### Diagnostics
 * `"vscoq.diagnostics.full": bool` -- Toggles the printing of `Info` level diagnostics (defaults to `false`)
