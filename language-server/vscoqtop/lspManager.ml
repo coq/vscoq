@@ -218,8 +218,6 @@ let replace_state path st visible = Hashtbl.replace states path { st; visible }
 
 let run_documents () =
   let interpret_doc_in_bg path { st : Dm.DocumentManager.state ; visible } events =
-    if not visible then events
-    else
       let st = Dm.DocumentManager.clear_observe_id st in
       let (st, events') = Dm.DocumentManager.interpret_in_background st in
       let uri = DocumentUri.of_path path in
