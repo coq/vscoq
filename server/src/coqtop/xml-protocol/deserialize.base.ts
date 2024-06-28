@@ -289,12 +289,19 @@ export namespace Nodes {
     StatusNode |
     ValueNode;
 
-  export interface FailValueNode {
+  export interface FailValueNodeV1 {
     $name: 'value',
     $: {val: 'fail', loc_s?: string, loc_e?: string},
     $children: {[0]: StateId, [1]: AnnotatedText} & {}[],
   }
 
+  export interface FailValueNodeV2 {
+    $name: 'value',
+    $: {val: 'fail'},
+    $children: {[0]: StateId, [1]: Location|null, [2]: AnnotatedText} & {}[],
+  }
+
+  export type FailValueNode = FailValueNodeV1 | FailValueNodeV2
 
   export function optionIsSome(opt: OptionNode): opt is OptionSomeNode {
     return opt.$.val === 'some';
@@ -376,7 +383,7 @@ export abstract class Deserialize {
   public deserialize(value: Node) : CoqValue {
     return this.doDeserialize(value as any as Nodes.TypedNode);
   }
-
+  
   private doDeserialize(value: Nodes.TypedNode) : CoqValue {
     switch(value.$name)
     {
@@ -468,11 +475,22 @@ export abstract class Deserialize {
         if(Nodes.isGoodValue(value))
           return check(value.$name, {status: 'good', result: value.$children[0]})
         else
-          return check(value.$name, {
-            status: 'fail',
-            stateId: value.$children[0],
-            message: value.$children[1] || "",
-            location: {start: +value.$.loc_s, stop: +value.$.loc_e},
+          if(value.$children.length === 2)
+            // protocol 20230413 (< Coq 8.20)
+            return check(value.$name, {
+              status: 'fail',
+              stateId: value.$children[0],
+              message: value.$children[1] || "",
+              location: {start: +(value as Nodes.FailValueNodeV1).$.loc_s,
+                         stop: +(value as Nodes.FailValueNodeV1).$.loc_e},
+            } as FailValue)
+          else
+            // protocol 20240517 (>= Coq 8.20)
+            return check(value.$name, {
+              status: 'fail',
+              stateId: value.$children[0],
+              location: value.$children[1],
+              message: value.$children[2] || "",
           } as FailValue);
       case 'ltacprof_tactic':
         return check(value.$name, {

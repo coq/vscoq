@@ -7,7 +7,7 @@
     "email": "siegebell@gmail.com",
     "url": "http://people.csail.mit.edu/cj/"
   },
-  "version": "0.4.0",
+  "version": "0.4.1",
   "publisher": "coq-community",
   "license": "MIT",
   "icon": "images/logo.png",
