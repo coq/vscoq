@@ -383,7 +383,7 @@ export abstract class Deserialize {
   public deserialize(value: Node) : CoqValue {
     return this.doDeserialize(value as any as Nodes.TypedNode);
   }
-
+  
   private doDeserialize(value: Nodes.TypedNode) : CoqValue {
     switch(value.$name)
     {
@@ -481,7 +481,8 @@ export abstract class Deserialize {
               status: 'fail',
               stateId: value.$children[0],
               message: value.$children[1] || "",
-              location: {start: +(value as FailValueNodeV1).$.loc_s, stop: +(value as FailValueNodeV1).$.loc_e},
+              location: {start: +(value as Nodes.FailValueNodeV1).$.loc_s,
+                         stop: +(value as Nodes.FailValueNodeV1).$.loc_e},
             } as FailValue)
           else
             // protocol 20240517 (>= Coq 8.20)
