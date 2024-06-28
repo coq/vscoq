@@ -1,3 +1,5 @@
+## 0.4.1
+* Change in the xml-protocol (#811 by @thery)
 ## 0.4.0
 * release of a seperate vscoq1 extension
 ## 0.3.9
