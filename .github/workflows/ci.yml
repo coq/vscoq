@@ -177,7 +177,7 @@ jobs:
 
   create-release:
     runs-on: ubuntu-latest
-    needs: [build-extension, nix-dev-build, install-opam, install-windows, dev-setup-opam]
+    needs: [build-extension, nix-dev-build, install-opam, dev-setup-opam]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
