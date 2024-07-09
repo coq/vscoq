@@ -19,7 +19,7 @@ on:
 jobs:
     publish-extension:
       runs-on: ubuntu-latest
-      if: success() && startsWith(github.ref, 'refs/tags/')
+      if: ${{success() && (startsWith(github.ref, 'refs/tags/') || inputs.preRelease)}}
       steps:
       - name: Checkout
         uses: actions/checkout@v3
