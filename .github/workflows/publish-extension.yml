@@ -1,13 +1,25 @@
 on: 
     workflow_dispatch:
       inputs:
-        tags:
-          description: 'Tag to use for release'  
+        preRelease:
+            description: "Make this a pre-release ?"
+            required: true
+            type: boolean
+            default: true
+        marketplace:
+            description: "On which market place should we publish ?"
+            required: true
+            type: choice
+            default: 'both'
+            options:
+                - vscode
+                - openvsx
+                - both
 
 jobs:
     publish-extension:
       runs-on: ubuntu-latest
-      if: success() && startsWith(github.ref, 'refs/tags/')
+      if: ${{success() && (startsWith(github.ref, 'refs/tags/') || inputs.preRelease)}}
       steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -24,14 +36,16 @@ jobs:
           cd client
           yarn run package
       - name: Publish to Open VSX Registry
+        if: ${{inputs.marketplace == 'openvsx' || inputs.marketplace == 'both'}}
         uses: HaaLeo/publish-vscode-extension@v1.6.2
         id: publishToOpenVSX
         with:
           pat: ${{ secrets.OVSX_PAT }}
           packagePath: ./client/
           yarn: true
-          preRelease: false
+          preRelease: ${{ inputs.preRelease }}
       - name: Publish to Visual Studio Marketplace
+        if: ${{inputs.marketplace == 'vscode' || inputs.marketplace == 'both'}}
         uses: HaaLeo/publish-vscode-extension@v1.6.2
         with:
           pat: ${{ secrets.VSCE_PAT }}
@@ -39,4 +53,4 @@ jobs:
           registryUrl: https://marketplace.visualstudio.com
           extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
           yarn: true
-          preRelease: false
+          preRelease: ${{ inputs.preRelease }}
