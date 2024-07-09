@@ -50,6 +50,14 @@ module Mode = struct
 
 end
 
+module Memory = struct
+
+  type t = {
+    limit: int;
+  } [@@deriving yojson]
+
+end
+
 module Proof = struct
 
   type t = {
@@ -145,4 +153,5 @@ type t = {
   goals: Goals.t;
   completion: Completion.t;
   diagnostics: Diagnostics.t;
+  memory: Memory.t;
 } [@@deriving yojson] [@@yojson.allow_extra_fields]

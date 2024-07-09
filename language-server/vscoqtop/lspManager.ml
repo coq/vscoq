@@ -36,6 +36,7 @@ let states : (string, tab) Hashtbl.t = Hashtbl.create 39
 let check_mode = ref Settings.Mode.Manual
 
 let diff_mode = ref Settings.Goals.Diff.Mode.Off
+let max_memory_usage  = ref 4000000000
 
 let full_diagnostics = ref false
 let full_messages = ref false
@@ -124,7 +125,8 @@ let do_configuration settings =
   check_mode := settings.proof.mode;
   diff_mode := settings.goals.diff.mode;
   full_diagnostics := settings.diagnostics.full;
-  full_messages := settings.goals.messages.full
+  full_messages := settings.goals.messages.full;
+  max_memory_usage := settings.memory.limit * 1000000000
 
 let send_configuration_request () =
   let id = `Int conf_request_id in
@@ -306,7 +308,7 @@ let purge_invisible_tabs () =
 
 let consider_purge_invisible_tabs () =
   let usage = current_memory_usage () in
-  if usage > 4000000000 (* 4G *) then begin
+  if usage > !max_memory_usage (* 4G *) then begin
     purge_invisible_tabs ();
     let vst, _ = get_init_state () in
     Vernacstate.unfreeze_full_state vst;

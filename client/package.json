@@ -106,6 +106,18 @@
         }
       },
       {
+        "title": "Memory management",
+        "type": "object",
+        "properties": {
+            "vscoq.memory.limit": {
+                "scope": "workspace",
+                "type": "number",
+                "default": 4,
+                "description": "Sets the memory limit over which we discard the execution state of documents which have been saved (in Gb). "
+            }
+        }
+      },
+      {
         "title": "Goal and Info view panel",
         "type": "object",
         "properties": {
