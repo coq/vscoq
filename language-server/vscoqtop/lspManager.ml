@@ -237,8 +237,7 @@ let reset_observe_ids =
   in
   Hashtbl.fold reset_doc_observe_id states
 
-let textDocumentDidOpen params =
-  let Lsp.Types.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
+let open_new_document uri text =
   let vst, opts = get_init_state () in
   let observe_id = if !check_mode = Settings.Mode.Continuous then None else Some Dm.DocumentManager.Top in
   let st, events = try Dm.DocumentManager.init vst ~opts uri ~text observe_id with
@@ -253,6 +252,20 @@ let textDocumentDidOpen params =
   Hashtbl.add states (DocumentUri.to_path uri) { st ; visible = true };
   update_view uri st;
   inject_dm_events (uri, events@events')
+
+let textDocumentDidOpen params =
+  let Lsp.Types.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> open_new_document uri text
+  | Some { st } ->
+    let (st, events) = 
+      if !check_mode = Settings.Mode.Continuous then 
+        Dm.DocumentManager.interpret_in_background st 
+      else 
+        (st, [])
+    in
+    update_view uri st;
+    inject_dm_events (uri, events)
 
 let textDocumentDidChange params =
   let Lsp.Types.DidChangeTextDocumentParams.{ textDocument; contentChanges } = params in
