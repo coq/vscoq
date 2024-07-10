@@ -348,7 +348,8 @@ let rec parse_more ?loc synterp_state stream raw parsed parsed_comments errors =
     let stop = Stream.count stream in
     let parsing_error = { msg; start; stop; qf} in
     let errors = parsing_error :: errors in
-    parse_more synterp_state stream raw parsed parsed_comments errors
+    (* TODO: we could count the \n between start and stop and increase Loc.line_nb *)
+    parse_more ?loc synterp_state stream raw parsed parsed_comments errors
   in
   let start = Stream.count stream in
   log @@ "Start of parse is: " ^ (string_of_int start);
