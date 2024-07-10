@@ -291,18 +291,18 @@ let parse_one_sentence stream ~st =
 
 
 [%%if coq = "8.18" || coq = "8.19"]
-let parse_one_sentence stream ~st =
+let parse_one_sentence ?loc stream ~st =
   Vernacstate.Synterp.unfreeze st;
   let entry = Pvernac.main_entry (Some (Synterp.get_default_proof_mode ())) in
-  let pa = Pcoq.Parsable.make stream in
+  let pa = Pcoq.Parsable.make ?loc stream in
   let sentence = Pcoq.Entry.parse entry pa in
   (sentence, [])
 [%%else]
-let parse_one_sentence stream ~st =
+let parse_one_sentence ?loc stream ~st =
   Vernacstate.Synterp.unfreeze st;
   Flags.record_comments := true;
   let entry = Pvernac.main_entry (Some (Synterp.get_default_proof_mode ())) in
-  let pa = Pcoq.Parsable.make stream in
+  let pa = Pcoq.Parsable.make ?loc stream in
   let sentence = Pcoq.Entry.parse entry pa in
   let comments = Pcoq.Parsable.comments pa in
   (sentence, comments)
@@ -342,7 +342,7 @@ let get_entry ast =
 [%%endif]
 
 
-let rec parse_more synterp_state stream raw parsed parsed_comments errors =
+let rec parse_more ?loc synterp_state stream raw parsed parsed_comments errors =
   let handle_parse_error start msg qf =
     log @@ "handling parse error at " ^ string_of_int start;
     let stop = Stream.count stream in
@@ -354,7 +354,7 @@ let rec parse_more synterp_state stream raw parsed parsed_comments errors =
   log @@ "Start of parse is: " ^ (string_of_int start);
   begin
     (* FIXME should we save lexer state? *)
-    match parse_one_sentence stream ~st:synterp_state with
+    match parse_one_sentence ?loc stream ~st:synterp_state with
     | None, _ (* EOI *) -> List.rev parsed, errors, List.rev parsed_comments
     | Some ast, comments ->
       let stop = Stream.count stream in
@@ -377,7 +377,7 @@ let rec parse_more synterp_state stream raw parsed parsed_comments errors =
           let parsed = sentence :: parsed in
           let comments = List.map (fun ((start, stop), content) -> {start; stop; content}) comments in
           let parsed_comments = List.append comments parsed_comments in
-          parse_more synterp_state stream raw parsed parsed_comments errors
+          parse_more ?loc:ast.loc synterp_state stream raw parsed parsed_comments errors
         with exn ->
           let e, info = Exninfo.capture exn in
           let loc = get_loc_from_info_or_exn e info in
