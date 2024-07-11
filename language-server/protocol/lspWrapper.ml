@@ -3,7 +3,7 @@
 (*                                 VSCoq                                  *)
 (*                                                                        *)
 (*                   Copyright INRIA and contributors                     *)
-(*       (see version control and README file for authors & dates)Variables A : Type.        *)
+(*       (see version control and README file for authors & dates)        *)
 (*                                                                        *)
 (**************************************************************************)
 (*                                                                        *)

@@ -24,6 +24,15 @@ type exec_overview = {
 
 let empty_overview = {processing = []; processed = []; prepared = []}
 
+[%%if coq = "8.18" || coq = "8.19"]
+  module Quickfix = struct
+    type t = unit
+    let from_exception _ = Ok([])
+    let pp = Pp.mt
+    let loc _ = Loc.make_loc (0,0)
+  end
+[%%endif]
+
 type text_edit = Range.t * string
 
 type link = {
