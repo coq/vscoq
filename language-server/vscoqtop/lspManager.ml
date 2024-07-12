@@ -444,8 +444,8 @@ let documentSymbol id params =
   let Lsp.Types.DocumentSymbolParams.{ textDocument = {uri}} = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[documentSymbol] ignoring event on non existant document"; Error("Document does not exist"), []
-  | Some st -> log @@ "[documentSymbol] getting symbols";
-    let symbols = Dm.DocumentManager.get_document_symbols st in
+  | Some tab -> log @@ "[documentSymbol] getting symbols";
+    let symbols = Dm.DocumentManager.get_document_symbols tab.st in
     Ok(Some (`DocumentSymbol symbols)), []
 
 let coqtopResetCoq id params =

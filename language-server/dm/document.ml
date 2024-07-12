@@ -193,8 +193,9 @@ let remove_sentence parsed id =
   | Some sentence ->
     let sentences_by_id = SM.remove id parsed.sentences_by_id in
     let sentences_by_end = LM.remove sentence.stop parsed.sentences_by_end in
+    let outline = List.filter (fun (e : outline_element) -> e.id != id) parsed.outline in
     (* TODO clean up the schedule and free cached states *)
-    { parsed with sentences_by_id; sentences_by_end; }
+    { parsed with sentences_by_id; sentences_by_end; outline }
 
 let sentences parsed =
   List.map snd @@ SM.bindings parsed.sentences_by_id
