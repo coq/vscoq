@@ -757,7 +757,6 @@ let all_feedback st =
   List.fold_left (fun acc (id, (_,l)) -> List.map (fun x -> (id, x)) l @ acc) [] @@ SM.bindings st.of_sentence
 
 let shift_overview st ~before ~after ~start ~offset =
-  log @@ "SHIFTING OVERVIEW";
   let shift_loc loc_start loc_end =
     if loc_start >= start then (loc_start + offset, loc_end + offset)
     else if loc_end > start then (loc_start, loc_end + offset)
@@ -773,12 +772,7 @@ let shift_overview st ~before ~after ~start ~offset =
   let processing = CList.Smart.map shift_range st.overview.processing in
   let prepared = CList.Smart.map shift_range st.overview.prepared in
   let overview = {processed; processing; prepared} in
-  log @@ "BEFORE";
-  print_exec_overview st;
-  let st = {st with overview} in
-  log @@ "AFTER";
-  print_exec_overview st;
-  st
+  {st with overview}
 
 let shift_diagnostics_locs st ~start ~offset =
   let shift_loc loc =

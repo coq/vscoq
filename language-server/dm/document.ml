@@ -145,7 +145,7 @@ let compare_code_line x y =
 
 let code_lines_sorted_by_loc parsed =
   List.sort compare_code_line @@ List.concat [
-    (List.map (fun (_,x) -> Sentence x) @@ LM.bindings parsed.sentences_by_end) ;
+    (List.map (fun (_,x) -> Sentence x) @@ SM.bindings parsed.sentences_by_id) ;
     (List.map (fun (_,x) -> ParsingError x) @@ LM.bindings parsed.parsing_errors_by_end) ;
     []  (* todo comments *)
    ]
@@ -257,29 +257,19 @@ type diff =
 
 let same_tokens (s1 : sentence) (s2 : pre_sentence) =
     CList.equal Tok.equal s1.ast.tokens s2.ast.tokens
-
-let print_tokens (s1 : sentence ) (s2 : pre_sentence )=
-  log @@ Format.sprintf "%s vs %s" (string_of_parsed_ast s1.ast) (string_of_parsed_ast s2.ast)
   
-
-
 (* TODO improve diff strategy (insertions,etc) *)
 let rec diff old_sentences new_sentences =
   match old_sentences, new_sentences with
   | [], [] -> []
-  | [], new_sentences -> log "ADDED"; [Added new_sentences]
-  | old_sentences, [] -> log @@ "DELETED"; [Deleted (List.map (fun s -> s.id) old_sentences)]
+  | [], new_sentences -> [Added new_sentences]
+  | old_sentences, [] -> [Deleted (List.map (fun s -> s.id) old_sentences)]
     (* FIXME something special should be done when `Deleted` is applied to a parsing effect *)
   | old_sentence::old_sentences, new_sentence::new_sentences ->
-    if same_tokens old_sentence new_sentence then (
-      log @@ "EQUAL";
-      print_tokens old_sentence new_sentence;
-      Equal [(old_sentence.id,new_sentence)] :: diff old_sentences new_sentences)
-    else (
-      log @@ "DELETED 2";
-      print_tokens old_sentence new_sentence;
+    if same_tokens old_sentence new_sentence then 
+      Equal [(old_sentence.id,new_sentence)] :: diff old_sentences new_sentences
+    else 
       Deleted [old_sentence.id] :: Added [new_sentence] :: diff old_sentences new_sentences
-    )
 
 let string_of_diff_item doc = function
   | Deleted ids ->

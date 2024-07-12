@@ -124,12 +124,12 @@ let task st id spec =
 
 
 let rec handle_events n (events : DocumentManager.event Sel.Todo.t) st =
-  if n <= 0 then (Stdlib.Format.eprintf "handle_events run out of steps:\nTodo = %a\n" (Sel.Todo.pp DocumentManager.pp_event) events; Caml.exit 1)
+  if n <= 0 then (Stdlib.Format.eprintf "handle_events run out of steps:\nTodo = %a\n" (Sel.Todo.pp DocumentManager.pp_event) events; Stdlib.exit 1)
   else if Sel.Todo.is_empty events then st
     
   else begin
     (*Stdlib.Format.eprintf "waiting %a\n%!" Sel.(pp_todo DocumentManager.pp_event) events;*)
-    Caml.flush_all ();
+    Stdlib.flush_all ();
     let (ready, remaining) = Sel.pop_timeout ~stop_after_being_idle_for:0.1 events in
     match ready with
     | None -> 
@@ -164,7 +164,7 @@ let check_diag st specl =
     (range, message, severity) in
   let match_diagnostic r s rex (range, message, severity) =
     Range.included ~in_:r range &&
-    Caml.(=) severity (Some s) &&
+    Stdlib.(=) severity (Some s) &&
     Str.string_match (Str.regexp rex) message 0
   in
   let diagnostics = DocumentManager.all_diagnostics st in
