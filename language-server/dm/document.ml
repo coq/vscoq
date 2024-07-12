@@ -227,16 +227,24 @@ let pos_at_end parsed =
   | Some (stop, _) -> stop
   | None -> -1
 
+let string_of_parsed_ast { tokens } = 
+  (* TODO implement printer for vernac_entry *)
+  "[" ^ String.concat "--" (List.map (Tok.extract_string false) tokens) ^ "]"
+
 let patch_sentence parsed scheduler_state_before id ({ parsing_start; ast; start; stop; synterp_state } : pre_sentence) =
-  log @@ "Patching sentence " ^ Stateid.to_string id;
   let old_sentence = SM.find id parsed.sentences_by_id in
+  log @@ Format.sprintf "Patching sentence %s , %s" (Stateid.to_string id) (string_of_parsed_ast old_sentence.ast);
   let scheduler_state_after, schedule =
     let ast = (ast.ast, ast.classification, synterp_state) in
     Scheduler.schedule_sentence (id,ast) scheduler_state_before parsed.schedule
   in
   let new_sentence = { old_sentence with ast; parsing_start; start; stop; scheduler_state_before; scheduler_state_after } in
   let sentences_by_id = SM.add id new_sentence parsed.sentences_by_id in
-  let sentences_by_end = LM.remove old_sentence.stop parsed.sentences_by_end in
+  let sentences_by_end = match LM.find_opt old_sentence.stop parsed.sentences_by_end with
+  | Some { id } when Stateid.equal id new_sentence.id ->
+    LM.remove old_sentence.stop parsed.sentences_by_end 
+  | _ -> parsed.sentences_by_end
+  in
   let sentences_by_end = LM.add new_sentence.stop new_sentence sentences_by_end in
   { parsed with sentences_by_end; sentences_by_id; schedule }, scheduler_state_after
 
@@ -245,9 +253,11 @@ type diff =
   | Added of pre_sentence list
   | Equal of (sentence_id * pre_sentence) list
 
+
+
 let same_tokens (s1 : sentence) (s2 : pre_sentence) =
     CList.equal Tok.equal s1.ast.tokens s2.ast.tokens
-
+  
 (* TODO improve diff strategy (insertions,etc) *)
 let rec diff old_sentences new_sentences =
   match old_sentences, new_sentences with
@@ -256,13 +266,10 @@ let rec diff old_sentences new_sentences =
   | old_sentences, [] -> [Deleted (List.map (fun s -> s.id) old_sentences)]
     (* FIXME something special should be done when `Deleted` is applied to a parsing effect *)
   | old_sentence::old_sentences, new_sentence::new_sentences ->
-    if same_tokens old_sentence new_sentence then
+    if same_tokens old_sentence new_sentence then 
       Equal [(old_sentence.id,new_sentence)] :: diff old_sentences new_sentences
-    else Deleted [old_sentence.id] :: Added [new_sentence] :: diff old_sentences new_sentences
-
-let string_of_parsed_ast { tokens } = 
-  (* TODO implement printer for vernac_entry *)
-  "[" ^ String.concat "--" (List.map (Tok.extract_string false) tokens) ^ "]" 
+    else 
+      Deleted [old_sentence.id] :: Added [new_sentence] :: diff old_sentences new_sentences
 
 let string_of_diff_item doc = function
   | Deleted ids ->
@@ -434,6 +441,13 @@ let invalidate top_edit top_id parsed_doc new_sentences =
       invalidate_diff parsed_doc scheduler_state invalid_ids diffs
   in
   let (_,_synterp_state,scheduler_state) = state_at_pos parsed_doc top_edit in
+  let sentence_strings = LM.bindings @@ LM.map (fun s -> string_of_parsed_ast s.ast) parsed_doc.sentences_by_end in
+  let sentence_strings = List.map (fun s -> snd s) sentence_strings in
+  let sentence_string = String.concat " " sentence_strings in
+  let sentence_strings_id = SM.bindings @@ SM.map (fun s -> string_of_parsed_ast s.ast) parsed_doc.sentences_by_id in
+  let sentence_strings_id = List.map (fun s -> snd s) sentence_strings_id in
+  let sentence_string_id = String.concat " " sentence_strings_id in
+  log @@ Format.sprintf "Top edit: %i, Doc: %s, Doc by id: %s" top_edit sentence_string sentence_string_id;
   let old_sentences = sentences_after parsed_doc top_edit in
   let diff = diff old_sentences new_sentences in
   let unchanged_id = unchanged_id top_id diff in
