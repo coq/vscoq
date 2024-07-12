@@ -117,19 +117,18 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
   match classif with
   | VtStartProof (_, names) ->
     let vernac_gen_expr = ast.v.expr in
-    let type_ =
-      begin match vernac_gen_expr with
+    let type_ = match vernac_gen_expr with
       | VernacSynterp _ -> None
       | VernacSynPure pure -> 
         match pure with
         | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind)
         | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def)
         | _ -> None
-      end in
-    let name = begin match names with
+    in
+    let name = match names with
     |[] -> "default"
     | n :: _ -> Names.Id.to_string n 
-    end in
+    in
     let statement = "" in
     begin match type_ with
     | None -> outline
@@ -140,19 +139,18 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     end
   | VtSideff (names, _) ->
     let vernac_gen_expr = ast.v.expr in
-    let type_ =
-      begin match vernac_gen_expr with
+    let type_ = match vernac_gen_expr with
       | VernacSynterp _ -> None
       | VernacSynPure pure -> 
         match pure with
         | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind)
         | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def)
         | _ -> None
-      end in
-    let name = begin match names with
+    in
+    let name = match names with
     |[] -> "default"
     | n :: _ -> Names.Id.to_string n 
-    end in
+    in
     let statement = "" in
     begin match type_ with
     | None -> outline
