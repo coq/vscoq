@@ -66,7 +66,7 @@ $ which vscoqtop
 We often roll out pre-release versions. To get the correct language server version please pin the git repo. For example,
 for pre-release ```v2.1.5```:
 ```shell
-$ opam pin add vscoq-language-server https://github.com/coq-community/vscoq.git#v2.1.5
+$ opam pin add vscoq-language-server.2.1.5  https://github.com/coq-community/vscoq/releases/download/v2.1.5/vscoq-language-server-2.1.5.tar.gz
 ```
 
 ### Installing and configuring the extension
