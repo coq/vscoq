@@ -61,6 +61,14 @@ and note the path to this executable:
 $ which vscoqtop
 ```
 
+#### Pre-release versions
+
+We often roll out pre-release versions. To get the correct language server version please pin the git repo. For example,
+for pre-release ```v2.1.5```:
+```shell
+$ opam pin add vscoq-language-server https://github.com/coq-community/vscoq.git#v2.1.5
+```
+
 ### Installing and configuring the extension
 
 To install the [VS Code](https://marketplace.visualstudio.com/items?itemName=maximedenes.vscoq)
@@ -72,6 +80,10 @@ settings and enter the `vscoqtop` full path from above in the field "Vscoq: Path
 
 If you want asynchronous processing of Coq files, you can go to
 the "Proof: Mode" and select "Continuous". Otherwise, processing will step by step and top-down as in VsCoq1.
+
+#### Pre-release versions
+
+In VsCode, from the extensions page, either use the drop down menu from the ```Uninstall``` button and select ```Install another version```, or click on ```Switch to pre-release```.
 
 ## Features
 * Syntax highlighting
