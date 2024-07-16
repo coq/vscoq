@@ -80,7 +80,7 @@ val update_processed : sentence_id -> state -> Document.document -> state
 val prepare_overview : state -> LspWrapper.Range.t list -> state
 val overview : state -> exec_overview
 val overview_until_range : state -> LspWrapper.Range.t -> exec_overview
-val print_exec_overview : state -> unit
+val print_exec_overview_of_state : state -> unit
 
 (** Coq toplevels for delegation without fork *)
 module ProofWorkerProcess : sig
