@@ -11,6 +11,8 @@ import classes from './Pp.module.css';
 import { off } from 'process';
 
 
+const MAX_RECOMPUTE = 50;
+
 type PpProps = {
     pp: PpString;
     coqCss: CSSModuleClasses;
@@ -25,6 +27,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
     
     const {pp, coqCss} = props;
 
+    const [numRecomputes, setNumRecomputes] = useState<number>(0);
     const [maxBreaks, setMaxBreaks] = useState<number>(0);
     const [displayState, setDisplayState] = useState<DisplayState>({breakIds: [], display: null});
     const [lastEntry, setLastEntry] = useState<ResizeObserverEntry|null>(null);
@@ -64,6 +67,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
 
     useEffect(() => {
         const breaks = computeNumBreaks(pp, 0);
+        setNumRecomputes(0);
         setMaxBreaks(breaks);
         setDisplayState({
             breakIds: [],
@@ -73,7 +77,10 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
     }, [pp]);
 
     useLayoutEffect(() => {
-        computeNeededBreaks(maxBreaks);
+        if(numRecomputes < MAX_RECOMPUTE) {
+            computeNeededBreaks(maxBreaks);
+            setNumRecomputes(numRecomputes + 1);
+        }
     }, [displayState]);
 
     const getPpTag  = (pp: PpString, tag: string, indent: number, mode: PpMode) => {
