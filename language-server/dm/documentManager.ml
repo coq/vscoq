@@ -252,7 +252,8 @@ let get_document_symbols st =
     let Document.{name; statement; range; type_} = elem in
     let kind = begin match type_ with
     | TheoremKind _ -> SymbolKind.Function
-    | DefinitionType _ ->SymbolKind.Variable
+    | DefinitionType _ -> SymbolKind.Variable
+    | Other -> SymbolKind.Null
     end in
     DocumentSymbol.{name; detail=(Some statement); kind; range; selectionRange=range; children=None; deprecated=None; tags=None;}
   in

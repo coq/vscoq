@@ -25,6 +25,7 @@ module SM = Map.Make (Stateid)
 type proof_block_type =
   | TheoremKind of Decls.theorem_kind
   | DefinitionType of Decls.definition_object_kind
+  | Other
 
 type outline_element = {
   id: sentence_id;
@@ -140,6 +141,7 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
   | VtSideff (names, _) ->
     let vernac_gen_expr = ast.v.expr in
     let type_ = match vernac_gen_expr with
+      | VernacSynterp (Synterp.EVernacExtend _) when names <> [] -> Some Other
       | VernacSynterp _ -> None
       | VernacSynPure pure -> 
         match pure with

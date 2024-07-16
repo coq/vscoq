@@ -25,6 +25,7 @@ type document
 type proof_block_type =
   | TheoremKind of Decls.theorem_kind
   | DefinitionType of Decls.definition_object_kind
+  | Other
 
 type outline_element = {
     id: sentence_id;
