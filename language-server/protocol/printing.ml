@@ -13,6 +13,8 @@
 (**************************************************************************)
 open Util
 
+open Ppx_yojson_conv_lib.Yojson_conv.Primitives
+
 type pp_tag = string [@@deriving yojson]
 
 type block_type = Pp.block_type =

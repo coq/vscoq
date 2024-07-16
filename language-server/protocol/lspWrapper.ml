@@ -15,6 +15,8 @@ open Lsp.Types
 open Sexplib.Std
 open Printing
 
+open Ppx_yojson_conv_lib.Yojson_conv.Primitives
+
 module Position = struct
 
   include Lsp.Types.Position
