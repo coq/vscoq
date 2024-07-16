@@ -78,9 +78,8 @@ type state = {
   overview: exec_overview;
 }
 
-
-let print_exec_overview st =
-  let {processing; processed; prepared} = st.overview in
+let print_exec_overview overview =
+  let {processing; processed; prepared } = overview in
   log @@ "--------- Prepared ranges ---------";
   List.iter (fun r -> log @@ Range.to_string r) prepared;
   log @@ "-------------------------------------";
@@ -90,6 +89,9 @@ let print_exec_overview st =
   log @@ "--------- Processed ranges ---------";
   List.iter (fun r -> log @@ Range.to_string r) processed;
   log @@ "-------------------------------------"
+
+
+let print_exec_overview_of_state st = print_exec_overview st.overview
   
 let options = ref default_options
 
@@ -260,7 +262,9 @@ let insert_or_merge_range r ranges =
   let rec insert_or_merge_sorted_ranges r1 = function
     | [] -> [r1]
     | r2 :: l ->
-      if Range.prefixes ~in_:r2 r1 then
+      if Range.included ~in_:r1 r2 then (*since the ranges are sorted, only r2 can be included in r1*)
+        insert_or_merge_sorted_ranges r1 l
+      else if Range.prefixes ~in_:r2 r1 then
         begin
           let range = Range.{start = r1.Range.start; end_ = r2.Range.end_} in
           insert_or_merge_sorted_ranges range l
@@ -453,6 +457,7 @@ let overview_until_range st range =
   | Some { start } ->
     let processed = (List.filter (fun (r: Range.t) -> (not @@ Range.included ~in_:r range) && (Position.compare r.start range.end_ <= 0)) processed) in
     let processed = List.append processed [Range.create ~start:start ~end_:range.end_] in
+    print_exec_overview {processing; processed;prepared};
     { processing; processed; prepared }
 
 
