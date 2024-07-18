@@ -26,7 +26,8 @@ type DisplayState = {
 const ppDisplay : FunctionComponent<PpProps> = (props) => {
     
     const {pp, coqCss} = props;
-
+    
+    const maxDepth = 10;
     const [numRecomputes, setNumRecomputes] = useState<number>(0);
     const [maxBreaks, setMaxBreaks] = useState<number>(0);
     const [displayState, setDisplayState] = useState<DisplayState>({breakIds: [], display: null});
@@ -83,7 +84,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
         }
     }, [displayState]);
 
-    const getPpTag  = (pp: PpString, tag: string, indent: number, mode: PpMode) => {
+    const getPpTag  = (pp: PpString, tag: string, indent: number, mode: PpMode, depth: number) => {
         const id = uuid();
         switch(pp[0]) {
             case 'Ppcmd_empty':
@@ -102,7 +103,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     mode: mode,
                     classList: [tag],
                     indent: indent,
-                    boxChildren: flattenGlue(pp[1], mode, indent, id)
+                    boxChildren: flattenGlue(pp[1], mode, indent, id, depth + 1)
                 } as Box;
             case 'Ppcmd_force_newline':
                 console.error('Recieved PpTag with fnl');
@@ -119,7 +120,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     mode: mode,
                     classList: [tag],
                     indent: indent,
-                    boxChildren: getBoxChildren(pp[2], m, i, id)
+                    boxChildren: getBoxChildren(pp[2], m, i, id, depth + 1)
                 } as Box;
             case 'Ppcmd_tag':
                 console.error('Recieved PpTag with tag');
@@ -130,7 +131,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
         }
     };
 
-    const flattenGlue = (glue: PpString[], mode: PpMode, indent: number, boxId: string) : BoxDisplay[] => {
+    const flattenGlue = (glue: PpString[], mode: PpMode, indent: number, boxId: string, depth: number) : BoxDisplay[] => {
 
         const g = glue.map(pp => {
             switch(pp[0]) {
@@ -143,7 +144,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                         content: pp[1]
                     } as Term];
                 case 'Ppcmd_glue':
-                    return flattenGlue(pp[1], mode, indent, boxId);
+                        return flattenGlue(pp[1], mode, indent, boxId, depth);
                 case 'Ppcmd_force_newline':
                     return [{
                         id: "fnl",
@@ -157,9 +158,9 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 case 'Ppcmd_comment':
                     return [];
                 case 'Ppcmd_box':
-                    return [boxifyPpString(pp)];
+                    return [boxifyPpString(pp, depth)];
                 case 'Ppcmd_tag':
-                    return [getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")], indent, mode)];
+                    return [getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")], indent, mode, depth)];
                 case 'Ppcmd_print_break':
                     const brId = uuid();
                     return [{
@@ -180,12 +181,12 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
         return r;
     };
 
-    const getBoxChildren = (pp : PpString, mode: PpMode, indent: number, boxId: string) : BoxDisplay[] => {
+    const getBoxChildren = (pp : PpString, mode: PpMode, indent: number, boxId: string, depth: number) : BoxDisplay[] => {
         switch(pp[0]) {
             case "Ppcmd_empty":
                 return [];
             case "Ppcmd_glue":
-                return flattenGlue(pp[1], mode, indent, boxId);
+                return flattenGlue(pp[1], mode, indent, boxId, depth);
             case 'Ppcmd_string':
                 return [{
                     type: DisplayType.term,
@@ -198,18 +199,18 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 return [];
             case 'Ppcmd_box':
                 return [
-                    boxifyPpString(pp)
+                    boxifyPpString(pp, depth)
                 ];
             case 'Ppcmd_tag':
                 return [
-                    getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")], indent, mode)
+                    getPpTag(pp[2], coqCss[pp[1].replaceAll(".", "-")], indent, mode, depth)
                 ];
             case 'Ppcmd_print_break':
                 return [];
         }
     };
 
-    const boxifyPpString = (pp : PpString) => {
+    const boxifyPpString = (pp : PpString, depth : number = 0) => {
         const id = uuid();
         switch (pp[0]) {
             case 'Ppcmd_empty':
@@ -223,10 +224,11 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 return {
                     id: "box-"+id,
                     type: DisplayType.box,
+                    depth: depth,
                     classList: [],
                     mode: PpMode.hovBox,
                     indent: 0,
-                    boxChildren: getBoxChildren(pp, PpMode.hovBox, 0, id)
+                    boxChildren: getBoxChildren(pp, PpMode.hovBox, 0, id, depth + 1)
                 } as Box;
             case 'Ppcmd_box':
                 const mode = pp[1][0];
@@ -234,10 +236,11 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 return {
                     id: "box-"+id,
                     type: DisplayType.box,
+                    depth: depth,
                     mode: mode,
                     classList: [],
                     indent: indent,
-                    boxChildren: getBoxChildren(pp[2], mode, indent, id)
+                    boxChildren: getBoxChildren(pp[2], mode, indent, id, depth + 1)
                 } as Box;
         }
     };
@@ -328,6 +331,8 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     <PpBox
                         id={displayState.display.id}
                         coqCss={coqCss}
+                        depth={0}
+                        maxDepth={maxDepth}
                         classList={[]}
                         mode={displayState.display.mode}
                         type={displayState.display.type}

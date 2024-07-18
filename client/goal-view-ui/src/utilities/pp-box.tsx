@@ -5,20 +5,29 @@ import classes from './Pp.module.css';
 
 interface PpBoxProps extends Box {
     coqCss: CSSModuleClasses,
-    breaks: BreakInfo[]
+    breaks: BreakInfo[],
+    maxDepth: number
 }
 
 const PpBox: FunctionComponent<PpBoxProps> = (props) => {
     
-    const {mode, coqCss, id, indent, breaks, boxChildren} = props;
+    const {mode, depth, coqCss, id, indent, breaks, boxChildren, maxDepth} = props;
 
-    const inner = boxChildren.map((child, i) => {
+    const ellpisis = (
+        <span>
+            [...]
+        </span>
+    );
+
+    const inner = depth >= maxDepth ? ellpisis : boxChildren.map((child, i) => {
         if(child) {
             if (child.type === DisplayType.box) {
                 return (
                     <PpBox
                         key={child.id + i}
                         type={child.type}
+                        depth={child.depth}
+                        maxDepth={maxDepth}
                         coqCss={coqCss}
                         id={child.id}
                         classList={child.classList}
