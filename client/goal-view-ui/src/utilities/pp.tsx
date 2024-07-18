@@ -32,6 +32,26 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
     const [maxBreaks, setMaxBreaks] = useState<number>(0);
     const [displayState, setDisplayState] = useState<DisplayState>({breakIds: [], display: null});
     const [lastEntry, setLastEntry] = useState<ResizeObserverEntry|null>(null);
+    const [hovered, setHovered] = useState<boolean>(false);
+    useEffect(() => {
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        return () => {
+            window.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('keyup', onKeyUp);
+        };
+    }, []);
+
+    const onKeyDown = (e : KeyboardEvent) => {
+        if(e.altKey) {
+            setHovered(true);
+        }
+    };
+
+    const onKeyUp = (_: KeyboardEvent) => {
+        setHovered(false);
+    };
+
 
     const container = useRef<HTMLDivElement>(null);
     const content = useRef<HTMLSpanElement>(null);
@@ -333,6 +353,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                         coqCss={coqCss}
                         depth={0}
                         hide={false}
+                        hovered={hovered}
                         maxDepth={maxDepth}
                         classList={[]}
                         mode={displayState.display.mode}

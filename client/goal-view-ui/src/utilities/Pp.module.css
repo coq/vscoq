@@ -26,8 +26,14 @@
     vertical-align: bottom;
 }
 
-.Box:not(:has(.Box:hover)):hover {
+.Hovered:not(:has(.Hovered:hover)):hover {
     border-width: 1px;
     border-style: dashed;
     border-color: white;
 }
+
+/* .Box:not(:has(.Box:hover)):hover {
+    border-width: 1px;
+    border-style: dashed;
+    border-color: white;
+} */
