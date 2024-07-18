@@ -332,6 +332,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                         id={displayState.display.id}
                         coqCss={coqCss}
                         depth={0}
+                        hide={false}
                         maxDepth={maxDepth}
                         classList={[]}
                         mode={displayState.display.mode}

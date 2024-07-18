@@ -6,20 +6,22 @@ import classes from './Pp.module.css';
 interface PpBoxProps extends Box {
     coqCss: CSSModuleClasses,
     breaks: BreakInfo[],
-    maxDepth: number
+    maxDepth: number,
+    hide: boolean,
 }
 
 const PpBox: FunctionComponent<PpBoxProps> = (props) => {
     
     const {mode, depth, coqCss, id, indent, breaks, boxChildren, maxDepth} = props;
+    const [hide, setHide] = useState<boolean>(depth >= maxDepth);
 
     const ellpisis = (
-        <span>
+        <span className={classes.Ellipsis}>
             [...]
         </span>
     );
 
-    const inner = depth >= maxDepth ? ellpisis : boxChildren.map((child, i) => {
+    const inner = hide ? ellpisis : boxChildren.map((child, i) => {
         if(child) {
             if (child.type === DisplayType.box) {
                 return (
@@ -27,6 +29,7 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
                         key={child.id + i}
                         type={child.type}
                         depth={child.depth}
+                        hide={hide}
                         maxDepth={maxDepth}
                         coqCss={coqCss}
                         id={child.id}
@@ -61,7 +64,11 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
     });
 
     return (
-        <span id={id} className={classes.Box}>
+        <span 
+            id={id} 
+            className={classes.Box}
+            onClick={(e) => {e.stopPropagation(); setHide(!hide);}}
+        >
             {inner}
         </span>
     );
