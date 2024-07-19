@@ -145,6 +145,11 @@
             "type": "boolean",
             "default": true,
             "markdownDescription": "Include warning and errors in proofview messages"
+          },
+          "vscoq.goals.maxDepth": {
+            "type": "number",
+            "default": 10,
+            "markdownDescription": "The maximum depth in goals over which an ellipsis will be displayed (instead of the sub-terms)."
           }
         }
       },

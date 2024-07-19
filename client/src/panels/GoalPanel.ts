@@ -124,6 +124,15 @@ export default class GoalPanel {
 
   }
 
+  public static changeGoalDisplayDepth() {
+
+    if(GoalPanel.currentPanel) {
+        Client.writeToVscoq2Channel("[GoalPanel] Changing goal depth");
+        GoalPanel.currentPanel._updateGoalDepth(GoalPanel.currentPanel._panel.webview);
+    }
+
+  }
+
   // /////////////////////////////////////////////////////////////////////////////
   // Reset the goal panel
   //
@@ -208,6 +217,11 @@ export default class GoalPanel {
   private _updateDisplaySettings(webview: Webview) {
     const config = workspace.getConfiguration('vscoq.goals');
     webview.postMessage({ "command": "updateDisplaySettings", "text": config.display });
+  };
+
+  private _updateGoalDepth(webview: Webview) {
+    const config = workspace.getConfiguration('vscoq.goals');
+    webview.postMessage({ "command": "updateGoalDepth", "text": config.maxDepth });
   };
 
   /**

@@ -3,12 +3,19 @@
     width: 100%;
 }
 
+.Ellipsis {
+    color: var(--vscode-coq-termReference);
+    font-style: italic;
+    cursor: pointer;
+}
+
 .Content {
     white-space: pre;
 }
 
 .Box {
     display: inline;
+    cursor: pointer;
 }
 
 .Box + .Text {
@@ -18,3 +25,15 @@
 .Box + .Tag {
     vertical-align: bottom;
 }
+
+.Hovered:not(:has(.Hovered:hover)):hover {
+    border-width: 1px;
+    border-style: dashed;
+    border-color: white;
+}
+
+/* .Box:not(:has(.Box:hover)):hover {
+    border-width: 1px;
+    border-style: dashed;
+    border-color: white;
+} */

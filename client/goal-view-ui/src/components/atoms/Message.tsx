@@ -6,12 +6,13 @@ import PpDisplay from '../../utilities/pp';
 
 type MessageProps = {
     message: PpString,
-    severity: MessageSeverity
+    severity: MessageSeverity,
+    maxDepth: number
 };
 
 const message : FunctionComponent<MessageProps> = (props) => {
     
-    const {message, severity} = props;
+    const {message, severity, maxDepth} = props;
 
     const classNames = [classes.Message]; 
 
@@ -38,6 +39,7 @@ const message : FunctionComponent<MessageProps> = (props) => {
             <PpDisplay
                 pp={message}
                 coqCss={classes}
+                maxDepth={maxDepth}
             />
         </span>
     );

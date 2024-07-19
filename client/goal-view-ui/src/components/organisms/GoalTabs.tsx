@@ -12,11 +12,12 @@ import classes from './GoalTabs.module.css';
 
 type GoalSectionProps = {
     goals: Goal[];
+    maxDepth: number
 };
 
 const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     
-    const {goals} = props;
+    const {goals, maxDepth} = props;
     const goalRefs = useRef<Array<HTMLDivElement | null>>([]);
     useLayoutEffect(() => {
         goalRefs.current = goalRefs.current.slice(0, goals.length);
@@ -49,7 +50,7 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
         const viewId = "view-" + index;
         return (
             <VSCodePanelView id={viewId} key={viewId}>
-                <GoalBlock goal={goal} goalIndicator={index + 1 + " / " + goals.length}/>
+                <GoalBlock goal={goal} goalIndicator={index + 1 + " / " + goals.length} maxDepth={maxDepth}/>
                 <div ref={el => goalRefs.current[index] = el}/>
             </VSCodePanelView>
         );

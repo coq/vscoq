@@ -9,11 +9,15 @@ const app = () => {
   const [goals, setGoals] = useState<ProofViewGoals>(null);
   const [messages, setMessages] = useState<ProofViewMessage[]>([]);
   const [goalDisplaySetting, setGoalDisplaySetting] = useState<string>("List");
+  const [goalDepth, setGoalDepth] = useState<number>(10);
 
   const handleMessage = useCallback ((msg: any) => {
     switch (msg.data.command) {
         case 'updateDisplaySettings':
             setGoalDisplaySetting(msg.data.text);
+            break;
+        case 'updateGoalDepth':
+            setGoalDepth(msg.data.text);
             break;
         case 'renderProofView':
             const allGoals = msg.data.proofView.proof;
@@ -64,7 +68,7 @@ const app = () => {
 
   return (
     <main>
-        <ProofViewPage goals={goals} messages={messages} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting}/>
+        <ProofViewPage goals={goals} messages={messages} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting} maxDepth={goalDepth}/>
     </main>
   );
 };

@@ -1,24 +1,38 @@
-import React, {FunctionComponent, useEffect, useState, useLayoutEffect, useRef, ReactFragment} from 'react';
+import React, {FunctionComponent, useEffect, useState, useLayoutEffect, useRef, ReactFragment, SyntheticEvent} from 'react';
 import {Box, DisplayType, BreakInfo} from '../types';
 import PpBreak from './pp-break';
 import classes from './Pp.module.css';
 
 interface PpBoxProps extends Box {
     coqCss: CSSModuleClasses,
-    breaks: BreakInfo[]
+    breaks: BreakInfo[],
+    maxDepth: number,
+    hide: boolean,
+    hovered: boolean
 }
 
 const PpBox: FunctionComponent<PpBoxProps> = (props) => {
     
-    const {mode, coqCss, id, indent, breaks, boxChildren} = props;
+    const {mode, depth, coqCss, id, indent, breaks, boxChildren, hovered, maxDepth} = props;
+    const [hide, setHide] = useState<boolean>(depth >= maxDepth);
 
-    const inner = boxChildren.map((child, i) => {
+    const ellpisis = (
+        <span className={classes.Ellipsis}>
+            [...]
+        </span>
+    );
+
+    const inner = hide ? ellpisis : boxChildren.map((child, i) => {
         if(child) {
             if (child.type === DisplayType.box) {
                 return (
                     <PpBox
                         key={child.id + i}
                         type={child.type}
+                        depth={child.depth}
+                        hide={hide}
+                        hovered={hovered}
+                        maxDepth={maxDepth}
                         coqCss={coqCss}
                         id={child.id}
                         classList={child.classList}
@@ -51,8 +65,17 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
         }
     });
 
+    const classNames = hovered ? [classes.Box, classes.Hovered] : [classes.Box];
+
     return (
-        <span id={id} className={classes.Box}>
+        <span 
+            id={id} 
+            className={classNames.join(' ')}
+            onClick={(e) => {
+                e.stopPropagation();
+                if(e.altKey) { setHide(!hide); };
+            }}
+        >
             {inner}
         </span>
     );

@@ -5,19 +5,20 @@ import Accordion from '../atoms/Accordion';
 import { CollapsibleGoal } from '../../types';
 
 type CollapsibleGoalBlockProps = {
-    goal: CollapsibleGoal
+    goal: CollapsibleGoal,
     collapseHandler: (id: string) => void, 
-    goalIndex: number
-    goalIndicator: string
+    goalIndex: number,
+    goalIndicator: string,
+    maxDepth: number
 };
 
 const collapsibleGoalBlock: FunctionComponent<CollapsibleGoalBlockProps> = (props) => {
     
-    const {goal, goalIndex, goalIndicator, collapseHandler} = props;
+    const {goal, goalIndex, goalIndicator, collapseHandler, maxDepth} = props;
 
     return (
         <Accordion title={"Goal " + goalIndex} collapsed={!goal.isOpen} collapseHandler={() => collapseHandler(goal.id)}>
-            <GoalBlock goal={goal} goalIndicator={goalIndicator} />
+            <GoalBlock goal={goal} goalIndicator={goalIndicator} maxDepth={maxDepth}/>
         </Accordion>
     );
 

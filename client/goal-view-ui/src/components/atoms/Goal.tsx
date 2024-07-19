@@ -5,18 +5,20 @@ import { PpString } from '../../types';
 import PpDisplay from '../../utilities/pp';
 
 type GoalProps = {
-    goal: PpString, 
+    goal: PpString,
+    maxDepth: number
 };
 
 const goal : FunctionComponent<GoalProps> = (props) => {
     
-    const {goal} = props;
+    const {goal, maxDepth} = props;
 
     return (
         <div className={classes.Goal}>
             <PpDisplay 
                 pp={goal}
                 coqCss={classes}
+                maxDepth={maxDepth}
             />
         </div>
     );

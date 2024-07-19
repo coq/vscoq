@@ -21,11 +21,12 @@ type ProofViewPageProps = {
     messages: ProofViewMessage[],
     collapseGoalHandler: (id: string, key: ProofViewGoalsKey) => void,
     displaySetting: string;
+    maxDepth: number;
 };
 
 const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
 
-    const {goals, messages, displaySetting, collapseGoalHandler} = props;
+    const {goals, messages, displaySetting, collapseGoalHandler, maxDepth} = props;
 
     const renderGoals = () => {
         const goalBadge = <VSCodeBadge>{goals!.main.length}</VSCodeBadge>;
@@ -53,6 +54,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                     emptyIcon={
                         goals!.shelved.length === 0 && goals!.givenUp.length === 0 ? <VscPass /> : <VscWarning />
                     }
+                    maxDepth={maxDepth}
                 /> 
             </VSCodePanelView>,
             <VSCodePanelView className={classes.View}> 
@@ -62,6 +64,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                     collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.shelved)} 
                     displaySetting={displaySetting}
                     emptyMessage='There are no shelved goals'
+                    maxDepth={maxDepth}
                 /> 
             </VSCodePanelView>,
             <VSCodePanelView className={classes.View}> 
@@ -71,6 +74,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                     collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.givenUp)} 
                     displaySetting={displaySetting}
                     emptyMessage='There are no given up goals'
+                    maxDepth={maxDepth}
                 /> 
             </VSCodePanelView>
         ];
@@ -85,7 +89,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
 
     const displayMessages = messages.map(m => {
         return (
-            <Message message={m[1]} severity={m[0]}/>
+            <Message message={m[1]} severity={m[0]} maxDepth={maxDepth}/>
         );
     });
     
