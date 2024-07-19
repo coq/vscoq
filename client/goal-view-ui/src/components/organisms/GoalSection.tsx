@@ -12,12 +12,13 @@ type GoalSectionProps = {
     collapseGoalHandler: (id: string) => void, 
     displaySetting: string;
     emptyMessage: string;
-    emptyIcon?: JSX.Element
+    emptyIcon?: JSX.Element;
+    maxDepth: number;
 };
 
 const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     
-    const {goals, collapseGoalHandler, displaySetting, emptyMessage, emptyIcon} = props;
+    const {goals, collapseGoalHandler, displaySetting, emptyMessage, emptyIcon, maxDepth} = props;
     const emptyMessageRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -41,8 +42,8 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
             <div ref={emptyMessageRef}/>
         </>
     : displaySetting === 'Tabs' ?
-        <GoalTabSection goals={goals} />
-        : <GoalCollapsibleSection goals={goals} collapseGoalHandler={collapseGoalHandler} />;
+        <GoalTabSection goals={goals} maxDepth={maxDepth} />
+        : <GoalCollapsibleSection goals={goals} collapseGoalHandler={collapseGoalHandler} maxDepth={maxDepth}/>;
 
     return section;
 };

@@ -16,6 +16,7 @@ const MAX_RECOMPUTE = 50;
 type PpProps = {
     pp: PpString;
     coqCss: CSSModuleClasses;
+    maxDepth: number;
 };
 
 type DisplayState = {
@@ -25,9 +26,8 @@ type DisplayState = {
 
 const ppDisplay : FunctionComponent<PpProps> = (props) => {
     
-    const {pp, coqCss} = props;
+    const {pp, coqCss, maxDepth} = props;
     
-    const maxDepth = 10;
     const [numRecomputes, setNumRecomputes] = useState<number>(0);
     const [maxBreaks, setMaxBreaks] = useState<number>(0);
     const [displayState, setDisplayState] = useState<DisplayState>({breakIds: [], display: null});

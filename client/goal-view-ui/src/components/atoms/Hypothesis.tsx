@@ -6,17 +6,19 @@ import PpDisplay from '../../utilities/pp';
 
 type HypothesisProps = {
     content: Hyp;
+    maxDepth: number;
 };
 
 const hypothesis: FunctionComponent<HypothesisProps> = (props) => {
     
-    const {content} = props;
+    const {content, maxDepth} = props;
 
     return (
         <div className={classes.Hypothesis}>
             <PpDisplay 
                 pp={content}
                 coqCss={classes}
+                maxDepth={maxDepth}
             />
         </div>
     );

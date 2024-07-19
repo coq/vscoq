@@ -7,14 +7,15 @@ import { Hyp } from '../../types';
 
 type HypothesesBlockProps = {
     hypotheses: Hyp[];
+    maxDepth: number
 };
 
 const hypothesesBlock: FunctionComponent<HypothesesBlockProps> = (props) => {
 
-    const {hypotheses} = props;
+    const {hypotheses, maxDepth} = props;
 
     const hypothesesComponents = hypotheses.map((hyp, index) => {
-        return <Hypothesis key={index} content={hyp} />;
+        return <Hypothesis key={index} content={hyp} maxDepth={maxDepth}/>;
     });
 
     return (

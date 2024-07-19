@@ -295,6 +295,10 @@ Path: \`${coqTM.getVsCoqTopPath()}\`
                 if(event.affectsConfiguration('vscoq.goals.display')) {
                     GoalPanel.toggleGoalDisplaySettings();
                 }
+
+                if(event.affectsConfiguration('vscoq.goals.maxDepth')) {
+                    GoalPanel.changeGoalDisplayDepth();
+                }
             }));
 
             let goalsHook = window.onDidChangeTextEditorSelection(
