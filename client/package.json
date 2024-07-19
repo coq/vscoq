@@ -254,12 +254,6 @@
         "title": "Reset"
       },
       {
-        "command": "extension.coq.displayGoals",
-        "category": "Coq",
-        "title": "Display Goals",
-        "description": "Displays the goal view"
-      },
-      {
         "command": "extension.coq.query.search",
         "category": "Coq",
         "title": "Search",
