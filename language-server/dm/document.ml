@@ -25,6 +25,7 @@ module SM = Map.Make (Stateid)
 type proof_block_type =
   | TheoremKind of Decls.theorem_kind
   | DefinitionType of Decls.definition_object_kind
+  | Other
 
 type outline_element = {
   id: sentence_id;
@@ -117,19 +118,18 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
   match classif with
   | VtStartProof (_, names) ->
     let vernac_gen_expr = ast.v.expr in
-    let type_ = match vernac_gen_expr with
-      | VernacSynterp _ -> None
+    let type_, statement = match vernac_gen_expr with
+      | VernacSynterp _ -> None, ""
       | VernacSynPure pure -> 
         match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind)
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def)
-        | _ -> None
+        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theorem"
+        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
+        | _ -> None, ""
     in
     let name = match names with
     |[] -> "default"
     | n :: _ -> Names.Id.to_string n 
     in
-    let statement = "" in
     begin match type_ with
     | None -> outline
     | Some type_ ->
@@ -139,19 +139,19 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     end
   | VtSideff (names, _) ->
     let vernac_gen_expr = ast.v.expr in
-    let type_ = match vernac_gen_expr with
-      | VernacSynterp _ -> None
+    let type_, statement = match vernac_gen_expr with
+      | VernacSynterp (Synterp.EVernacExtend _) when names <> [] -> Some Other, "external"
+      | VernacSynterp _ -> None, ""
       | VernacSynPure pure -> 
         match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind)
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def)
-        | _ -> None
+        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theroem"
+        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
+        | _ -> None, ""
     in
     let name = match names with
     |[] -> "default"
     | n :: _ -> Names.Id.to_string n 
     in
-    let statement = "" in
     begin match type_ with
     | None -> outline
     | Some type_ ->
