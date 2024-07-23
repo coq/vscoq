@@ -12,6 +12,7 @@ import {decorationsManual, decorationsContinuous} from './Decorations';
 export default class Client extends LanguageClient {
 
 	private static _channel: any = vscode.window.createOutputChannel('VsCoq');
+    private static _coq_log: any = vscode.window.createOutputChannel('Coq Log');
     private _decorationsPrepared: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
     private _decorationsProcessed: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
     private _decorationsProcessing: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
@@ -32,6 +33,10 @@ export default class Client extends LanguageClient {
 
     public static writeToVscoq2Channel(message: string) {
         Client._channel.appendLine(message);
+    }
+
+    public static writeCoqMessageLog(message: string) {
+        Client._coq_log.appendLine(message);
     }
 
     public saveHighlights(uri: String, preparedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {

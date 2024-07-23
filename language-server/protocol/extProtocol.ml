@@ -102,6 +102,15 @@ module Notification = struct
 
     end
 
+    module CoqLogMessageParams = struct
+      
+      type t = {
+        uri: DocumentUri.t;
+        message: string;
+      } [@@deriving yojson]
+
+    end
+
     type t =
     | Std of Lsp.Server_notification.t
     | UpdateHighlights of overview
