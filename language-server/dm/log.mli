@@ -26,6 +26,7 @@ val handle_event : event -> unit
 val worker_initialization_begins : unit -> unit
 val worker_initialization_done : fwd_event:(event -> unit) -> unit
 
+(* debug messages coming from either the language server of Coq *)
 val debug : event Sel.Event.t
 
 [%% if coq = "8.18" || coq = "8.19" || coq = "8.20" ]
