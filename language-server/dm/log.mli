@@ -17,7 +17,7 @@ open Types
 val mk_log : string -> (string -> unit) log
 val logs : unit -> string list
 
-type event
+type event = string
 type events = event Sel.Event.t list
 
 val lsp_initialization_done : unit -> events

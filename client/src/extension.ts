@@ -250,9 +250,9 @@ export function activate(context: ExtensionContext) {
             GoalPanel.proofViewNotification(context.extensionUri, editor, proofView);
         });
 
-        client.onNotification("vscoq/message", (coqMessage: CoqLogMessage) => {
-            const {uri, message} = coqMessage;
-            const messageString = `[${uri.toString()}] - ${message}`;
+        client.onNotification("vscoq/debugMessage", (coqMessage: CoqLogMessage) => {
+            const {message} = coqMessage;
+            const messageString = `${message}`;
             Client.writeCoqMessageLog(messageString);
         });
 

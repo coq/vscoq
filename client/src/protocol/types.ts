@@ -59,7 +59,6 @@ export interface ProofViewNotification {
 }
 
 export interface CoqLogMessage {
-    uri: Uri;
     message: string;
 }
 
