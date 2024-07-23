@@ -502,7 +502,7 @@ let feedback_cleanup { coq_feeder; sel_feedback_queue; sel_cancellation_handle }
 
 let handle_feedback id fb state =
   match fb with
-  | (Feedback.Info, _, _, _) -> state
+  | (Feedback.Info, _, _, m) -> log @@ "Ignoring Info level feedback: " ^ Pp.string_of_ppcmds m; state
   | (_, _, _, msg) ->
     begin match SM.find id state.of_sentence with
     | (s,fl) -> update_all id s (fb::fl) state

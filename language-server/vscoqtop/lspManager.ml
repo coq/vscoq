@@ -654,7 +654,7 @@ let handle_event = function
       output_notification notification; [inject_notification Dm.SearchQuery.query_feedback]
     end
   | LogEvent e ->
-    Dm.Log.handle_event e; []
+    Dm.Log.handle_event e; [inject_debug_event Dm.Log.debug]
   | SendProofView (uri, position) -> 
     begin match Hashtbl.find_opt states (DocumentUri.to_path uri) with
     | None -> log @@ "ignoring event on non existant document"; []
