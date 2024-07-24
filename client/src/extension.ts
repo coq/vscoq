@@ -28,6 +28,7 @@ import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
 import {
+    CoqLogMessage,
     MoveCursorNotification, 
     ProofViewNotification, 
     ResetCoqRequest, 
@@ -247,6 +248,12 @@ export function activate(context: ExtensionContext) {
         client.onNotification("vscoq/proofView", (proofView: ProofViewNotification) => {
             const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
             GoalPanel.proofViewNotification(context.extensionUri, editor, proofView);
+        });
+
+        client.onNotification("vscoq/debugMessage", (coqMessage: CoqLogMessage) => {
+            const {message} = coqMessage;
+            const messageString = `${message}`;
+            Client.writeCoqMessageLog(messageString);
         });
 
         context.subscriptions.push(commands.registerCommand(QUICKFIX_COMMAND, (data) => {

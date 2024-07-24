@@ -104,11 +104,22 @@ module Notification = struct
 
     end
 
+    module CoqLogMessageParams = struct
+      
+      type t = {
+        (* currently we don't have access to the Uri *)
+        (* uri: DocumentUri.t; *)
+        message: string;
+      } [@@deriving yojson]
+
+    end
+
     type t =
     | Std of Lsp.Server_notification.t
     | UpdateHighlights of overview
     | MoveCursor of MoveCursorParams.t
     | ProofView of ProofViewParams.t
+    | CoqLogMessage of CoqLogMessageParams.t
     | SearchResult of query_result
 
     let to_jsonrpc = function
@@ -131,9 +142,15 @@ module Notification = struct
         Jsonrpc.Notification.{ method_; params }      
       | MoveCursor params -> 
         let method_ = "vscoq/moveCursor" in 
-        let params = MoveCursorParams.yojson_of_t params in 
+        let params = MoveCursorParams.yojson_of_t params in
         let params = Some (Jsonrpc.Structured.t_of_yojson params) in
-        Jsonrpc.Notification.{ method_; params }   
+        Jsonrpc.Notification.{ method_; params }
+      | CoqLogMessage params ->
+        let method_ = "vscoq/debugMessage" in
+        let params = CoqLogMessageParams.yojson_of_t params in
+        let params = Some (Jsonrpc.Structured.t_of_yojson params) in
+        Jsonrpc.Notification.{ method_; params }
+
 
     end
 

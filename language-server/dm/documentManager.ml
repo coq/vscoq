@@ -201,8 +201,13 @@ let all_diagnostics st =
   let all_feedback = ExecutionManager.all_feedback st.execution_state in
   (* we are resilient to a state where invalidate was not called yet *)
   let exists (id,_) = Option.has_some (Document.get_sentence st.document id) in
+  let not_info (_, (lvl, _, _, _)) = 
+    match lvl with
+    | Feedback.Info -> false
+    | _ -> true
+  in
   let exec_errors = all_exec_errors |> List.filter exists in
-  let feedback = all_feedback |> List.filter exists in
+  let feedback = all_feedback |> List.filter exists |> List.filter not_info in
   List.map (mk_parsing_error_diag st) parse_errors @
     List.map (mk_error_diag st) exec_errors @
     List.map (mk_diag st) feedback
@@ -227,6 +232,19 @@ let get_messages st pos =
     match error with
     | Some (_oloc,msg) -> (DiagnosticSeverity.Error, pp_of_coqpp msg) :: feedback
     | None -> feedback
+
+let get_info_messages st pos =
+  match id_of_pos_opt st pos with
+  | None -> log "get_messages: Could not find id";[]
+  | Some id -> log "get_messages: Found id";
+    let info (lvl, _, _, _) = 
+      match lvl with
+      | Feedback.Info -> true
+      | _ -> false
+    in
+    let feedback = ExecutionManager.feedback st.execution_state id in
+    let feedback = feedback |> List.filter info in
+    List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback
 
 let observe ~background state id : (state * event Sel.Event.t list) =
   match Document.get_sentence state.document id with

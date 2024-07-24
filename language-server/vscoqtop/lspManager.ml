@@ -206,6 +206,10 @@ let send_move_cursor uri range =
   let notification = Notification.Server.MoveCursor {uri;range} in 
   output_notification notification
 
+let send_coq_debug message =
+  let notification = Notification.Server.CoqLogMessage {message} in
+  output_notification notification
+
 let send_error_notification message =
   let type_ = MessageType.Error in
   let params = ShowMessageParams.{type_; message} in
@@ -654,7 +658,7 @@ let handle_event = function
       output_notification notification; [inject_notification Dm.SearchQuery.query_feedback]
     end
   | LogEvent e ->
-    Dm.Log.handle_event e; []
+    send_coq_debug e; [inject_debug_event Dm.Log.debug]
   | SendProofView (uri, position) -> 
     begin match Hashtbl.find_opt states (DocumentUri.to_path uri) with
     | None -> log @@ "ignoring event on non existant document"; []

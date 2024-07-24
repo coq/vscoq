@@ -73,6 +73,5 @@ let _ =
   let opts, () = Coqinit.parse_arguments ~usage:vscoqtop_specific_usage ~initial_args ~parse_extra:(fun x -> skip_xd [] x) () in
   let injections = Coqinit.init_runtime opts in
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
-  Flags.quiet := true;
   Sys.(set_signal sigint Signal_ignore);
   loop injections

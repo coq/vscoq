@@ -58,6 +58,10 @@ export interface ProofViewNotification {
     messages: CoqMessage[];
 }
 
+export interface CoqLogMessage {
+    message: string;
+}
+
 export interface UpdateHighlightsNotification {
     uri: Uri;
     preparedRange: Range[];
