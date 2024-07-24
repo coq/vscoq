@@ -73,9 +73,10 @@ val handle_event : event -> state -> (sentence_id option * state option * events
     one task at a time to ease checking for interruption *)
 type prepared_task
 val build_tasks_for : Document.document -> Scheduler.schedule -> state -> sentence_id -> Vernacstate.t * prepared_task list * state
-val execute : state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool)
+val execute : state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool * bool)
 
 val update_overview : prepared_task -> prepared_task list -> state -> Document.document -> state
+val cut_overview : prepared_task -> state -> Document.document -> state
 val update_processed : sentence_id -> state -> Document.document -> state
 val prepare_overview : state -> LspWrapper.Range.t list -> state
 val overview : state -> exec_overview

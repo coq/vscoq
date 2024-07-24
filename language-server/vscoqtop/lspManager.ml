@@ -41,6 +41,8 @@ let max_memory_usage  = ref 4000000000
 let full_diagnostics = ref false
 let full_messages = ref false
 
+let block_on_first_error = ref true
+
 let Dm.Types.Log log = Dm.Log.mk_log "lspManager"
 
 let conf_request_id = max_int
@@ -643,7 +645,7 @@ let handle_event = function
       log @@ "ignoring event on non-existing document";
       []
     | Some { st; visible } ->
-      let (ost, events) = Dm.DocumentManager.handle_event e st in
+      let (ost, events) = Dm.DocumentManager.handle_event e st !block_on_first_error in
       begin match ost with
         | None -> ()
         | Some st ->

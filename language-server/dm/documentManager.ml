@@ -413,36 +413,64 @@ let apply_text_edits state edits =
   let state = List.fold_left apply_edit_and_shift_diagnostics_locs_and_overview state edits in
   validate_document state
 
-let handle_event ev st =
+let execution_finished st id started =
+  let time = Unix.gettimeofday () -. started in
+  log (Printf.sprintf "ExecuteToLoc %d ends after %2.3f" (Stateid.to_int id) time);
+  (* We update the state to trigger a publication of diagnostics *)
+  (Some st, [])
+
+let execute st id vst_for_next_todo started task todo background block =
+  (*log "Execute (more tasks)";*)
+  let (execution_state,vst_for_next_todo,events,_interrupted, exec_error) =
+    ExecutionManager.execute st.execution_state (vst_for_next_todo, [], false) task in
+  (* We do not update the state here because we may have received feedback while
+     executing *)
+  let priority = if background then None else Some PriorityManager.execution in
+  let event, execution_state, observe_id = match (block, exec_error) with
+    | false, _ | _ , false ->
+      [Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started; background })],
+      ExecutionManager.update_overview task todo execution_state st.document,
+      None
+    | true, true ->
+      let o_id = match Document.get_sentence st.document id with
+      | None -> None (* TODO error ?*)
+      | Some {start} ->
+        match Document.find_sentence_before st.document start with
+        | None -> Some Top
+        | Some { id } -> Some (Id id)
+      in
+      [],
+      ExecutionManager.cut_overview task execution_state st.document,
+      o_id
+  in
+  let st = match observe_id with
+  | None -> {st with execution_state}
+  | Some Top | Some (Id _) -> {st with execution_state; observe_id}
+  in
+  (Some st, inject_em_events events @ event)
+
+let handle_execution_manager_event st ev =
+  let id, execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
+  let st = 
+    match (id, execution_state_update) with
+    | Some id, Some exec_st ->
+      let execution_state = ExecutionManager.update_processed id exec_st st.document in
+      Some {st with execution_state}
+    | Some id, None ->
+      let execution_state = ExecutionManager.update_processed id st.execution_state st.document in
+      Some {st with execution_state}
+    | _, _ -> Option.map (fun execution_state -> {st with execution_state}) execution_state_update
+  in
+  (st, inject_em_events events)
+
+let handle_event ev st block =
   match ev with
   | Execute { id; todo = []; started } -> (* the vst_for_next_todo is also in st.execution_state *)
-    let time = Unix.gettimeofday () -. started in
-    log (Printf.sprintf "ExecuteToLoc %d ends after %2.3f" (Stateid.to_int id) time);
-    (* We update the state to trigger a publication of diagnostics *)
-    (Some st, [])
+    execution_finished st id started
   | Execute { id; vst_for_next_todo; started; todo = task :: todo; background } ->
-    (*log "Execute (more tasks)";*)
-    let (execution_state,vst_for_next_todo,events,_interrupted) =
-      ExecutionManager.execute st.execution_state (vst_for_next_todo, [], false) task in
-    (* We do not update the state here because we may have received feedback while
-       executing *)
-    let priority = if background then None else Some PriorityManager.execution in
-    let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started; background }) in
-    let execution_state = ExecutionManager.update_overview task todo execution_state st.document in
-    (Some {st with execution_state}, inject_em_events events @ [event])
+    execute st id vst_for_next_todo started task todo background block
   | ExecutionManagerEvent ev ->
-    let id, execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
-    let st = 
-      match (id, execution_state_update) with
-      | Some id, Some exec_st ->
-        let execution_state = ExecutionManager.update_processed id exec_st st.document in
-        Some {st with execution_state}
-      | Some id, None ->
-        let execution_state = ExecutionManager.update_processed id st.execution_state st.document in
-        Some {st with execution_state}
-      | _, _ -> Option.map (fun execution_state -> {st with execution_state}) execution_state_update
-    in
-    (st, inject_em_events events)
+    handle_execution_manager_event st ev
 
 let get_proof st diff_mode pos =
   let previous_st id =

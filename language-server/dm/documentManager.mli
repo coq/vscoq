@@ -101,7 +101,7 @@ val get_proof : state -> Settings.Goals.Diff.Mode.t -> Position.t option -> Proo
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 
-val handle_event : event -> state -> (state option * events)
+val handle_event : event -> state -> bool -> (state option * events)
 (** handles events and returns a new state if it was updated *)
 
 val search : state -> id:string -> Position.t -> string -> notification Sel.Event.t list
