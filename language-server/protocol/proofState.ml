@@ -14,6 +14,8 @@
 
 open Printing
 
+open Ppx_yojson_conv_lib.Yojson_conv.Primitives
+
 type goal = {
   id: int;
   hypotheses: pp list;

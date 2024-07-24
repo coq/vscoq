@@ -15,6 +15,8 @@ open Lsp.Types
 open LspWrapper
 open Printing
 
+open Ppx_yojson_conv_lib.Yojson_conv.Primitives
+
 module Notification = struct
 
   module Client = struct

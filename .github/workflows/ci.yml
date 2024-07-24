@@ -67,7 +67,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        ocaml-compiler: [4.13.x]
+        ocaml-compiler: [4.14.x]
         coq: [8.18.0, 8.19.0, dev]
     runs-on: ${{ matrix.os }}
     steps:
@@ -136,7 +136,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        ocaml-compiler: [4.13.x]
+        ocaml-compiler: [4.14.x]
         profile: [dev, fatalwarnings]
     runs-on: ${{ matrix.os }}
     steps:
