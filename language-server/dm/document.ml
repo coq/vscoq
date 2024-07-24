@@ -220,6 +220,13 @@ let code_lines_sorted_by_loc parsed =
     []  (* todo comments *)
    ]
 
+let code_lines_by_end_sorted_by_loc parsed =
+  List.sort compare_code_line @@ List.concat [
+    (List.map (fun (_,x) -> Sentence x) @@ LM.bindings parsed.sentences_by_end) ;
+    (List.map (fun (_,x) -> ParsingError x) @@ LM.bindings parsed.parsing_errors_by_end) ;
+    []  (* todo comments *)
+   ]
+
 let sentences_sorted_by_loc parsed =
   List.sort (fun ({start = s1} : sentence) {start = s2} -> s1 - s2) @@ List.map snd @@ SM.bindings parsed.sentences_by_id
 
