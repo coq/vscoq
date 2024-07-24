@@ -102,6 +102,7 @@ type code_line =
 
 val sentences : document -> sentence list
 val code_lines_sorted_by_loc : document -> code_line list
+val code_lines_by_end_sorted_by_loc : document -> code_line list
 val sentences_sorted_by_loc : document -> sentence list
 
 val get_sentence : document -> sentence_id -> sentence option

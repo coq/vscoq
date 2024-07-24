@@ -613,7 +613,8 @@ module Internal = struct
     validate_document st
 
   let string_of_state st =
-    let code_lines = Document.code_lines_sorted_by_loc st.document in
+    let code_lines_by_id = Document.code_lines_sorted_by_loc st.document in
+    let code_lines_by_end = Document.code_lines_by_end_sorted_by_loc st.document in
     let string_of_state id =
       if ExecutionManager.is_executed st.execution_state id then "(executed)"
       else if ExecutionManager.is_remotely_executed st.execution_state id then "(executed in worker)"
@@ -626,6 +627,8 @@ module Internal = struct
         | ParsingError _ -> "(error)"
         | Comment _ -> "(comment)"
     in
-    String.concat "\n" @@ List.map string_of_item code_lines
+    let string_by_id = String.concat "\n" @@ List.map string_of_item code_lines_by_id in
+    let string_by_end = String.concat "\n" @@ List.map string_of_item code_lines_by_end in
+    String.concat "\n" ["Document using sentences_by_id map\n"; string_by_id; "\nDocument using sentences_by_end map\n"; string_by_end]
 
 end
