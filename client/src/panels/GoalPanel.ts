@@ -46,6 +46,7 @@ export default class GoalPanel {
 
     //init the app settings
     this._updateDisplaySettings(this._panel.webview);
+    this._updateGoalDepth(this._panel.webview);
   }
 
   /**
