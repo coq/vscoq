@@ -66,6 +66,12 @@ let command_focus = Proof.new_focus_kind ()
 let command_focus = Proof.new_focus_kind "vscoq_command_focus"
 [%%endif]
 
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+let get_ustate sigma = Evd.evar_universe_context sigma
+[%%else]
+let get_ustate sigma = Evd.ustate sigma
+[%%endif]
+
 let worker_solve_one_goal { TacticJob.state; ast; goalno; goal } ~send_back =
   let focus_cond = Proof.no_cond command_focus in
   let pr_goal g = string_of_int (Evar.repr g) in
@@ -86,7 +92,7 @@ let worker_solve_one_goal { TacticJob.state; ast; goalno; goal } ~send_back =
         if Evar.Set.is_empty evars then
           let t = EConstr.Unsafe.to_constr t in
           log @@ "closed goal " ^ pr_goal goal;
-          send_back (TacticJob.UpdateSolution (goal,TacticJob.Solved(t, Evd.evar_universe_context sigma)))
+          send_back (TacticJob.UpdateSolution (goal,TacticJob.Solved(t, get_ustate sigma)))
         else
           CErrors.user_err
             Pp.(str"The par: selector requires a tactic that makes no progress or fully" ++
