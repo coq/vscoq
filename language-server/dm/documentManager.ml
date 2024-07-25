@@ -250,7 +250,7 @@ let observe ~background state id : (state * event Sel.Event.t list) =
   match Document.get_sentence state.document id with
   | None -> (state, []) (* TODO error? *)
   | Some {id } ->
-    let vst_for_next_todo, todo, execution_state = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id in
+    let vst_for_next_todo, todo, execution_state, _ = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id true in
     if CList.is_empty todo then
       ({state with execution_state}, [])
     else

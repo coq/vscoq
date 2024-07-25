@@ -735,23 +735,23 @@ let execute st (vs, events, interrupted) task =
       let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
       (st, vs, events, true, false)
 
-let build_tasks_for document sch st id =
+let build_tasks_for document sch st id block =
   let rec build_tasks id tasks st =
     begin match find_fulfilled_opt id st.of_sentence with
     | Some (Success (Some vs)) ->
       (* We reached an already computed state *)
       log @@ "Reached computed state " ^ Stateid.to_string id;
-      vs, tasks, st
+      vs, tasks, st, None
     | Some (Error(_,_,Some vs)) ->
       (* We try to be resilient to an error *)
       log @@ "Error resiliency on state " ^ Stateid.to_string id;
-      vs, tasks, st
+      vs, tasks, st, Some id
     | _ ->
       log @@ "Non (locally) computed state " ^ Stateid.to_string id;
       let (base_id, task) = task_for_sentence sch id in
       begin match base_id with
       | None -> (* task should be executed in initial state *)
-        st.initial, task :: tasks, st
+        st.initial, task :: tasks, st, None
       | Some base_id ->
         build_tasks base_id (task::tasks) st
       end
@@ -763,10 +763,14 @@ let build_tasks_for document sch st id =
     | task :: l -> build_prepared_overview l (update_prepared task document state)
     end
   in
-  let vs, tasks, st = build_tasks id [] st in
-  let prepared_tasks = List.concat_map prepare_task tasks in
-  let st = build_prepared_overview prepared_tasks st in
-  vs, prepared_tasks, st
+  let vs, tasks, st, error_id = build_tasks id [] st in
+  match error_id, block with
+  | _, false | None, _ ->
+    let prepared_tasks = List.concat_map prepare_task tasks in
+    let st = build_prepared_overview prepared_tasks st in
+    vs, prepared_tasks, st, None
+  | Some id, true ->
+    vs, [], st, Some id
 
 let all_errors st =
   List.fold_left (fun acc (id, (p,_)) ->
