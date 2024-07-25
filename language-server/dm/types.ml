@@ -24,7 +24,7 @@ type exec_overview = {
 
 let empty_overview = {processing = []; processed = []; prepared = []}
 
-[%%if coq = "8.18" || coq = "8.19"]
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
   module Quickfix = struct
     type t = unit
     let from_exception _ = Ok([])
