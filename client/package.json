@@ -148,7 +148,7 @@
           },
           "vscoq.goals.maxDepth": {
             "type": "number",
-            "default": 10,
+            "default": 50,
             "markdownDescription": "The maximum depth in goals over which an ellipsis will be displayed (instead of the sub-terms)."
           }
         }
