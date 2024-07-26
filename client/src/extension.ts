@@ -29,6 +29,7 @@ import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
 import {
     CoqLogMessage,
+    ErrorAlertNotification,
     MoveCursorNotification, 
     ProofViewNotification, 
     ResetCoqRequest, 
@@ -248,6 +249,18 @@ export function activate(context: ExtensionContext) {
         client.onNotification("vscoq/proofView", (proofView: ProofViewNotification) => {
             const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
             GoalPanel.proofViewNotification(context.extensionUri, editor, proofView);
+        });
+
+        client.onNotification("vscoq/blockOnError", (notification: ErrorAlertNotification) => {
+            const {uri, range} = notification;
+            const editors = window.visibleTextEditors.filter(editor => {
+                return editor.document.uri.toString() === uri.toString();
+            });
+            editors.map(editor => {
+                editor.selections = [new Selection(range.end, range.end)];
+                editor.revealRange(range, TextEditorRevealType.Default);
+            });
+            client.createErrorAnimation(uri.toString(), [range]);
         });
 
         client.onNotification("vscoq/debugMessage", (coqMessage: CoqLogMessage) => {

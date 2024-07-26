@@ -10,6 +10,7 @@ interface Decorations {
 
 export let decorationsContinuous : Decorations;
 export let decorationsManual : Decorations;
+export let decorationsErrorAnimation : vscode.TextEditorDecorationType[];
 
 export function initializeDecorations(context: vscode.ExtensionContext) {
   
@@ -55,6 +56,21 @@ export function initializeDecorations(context: vscode.ExtensionContext) {
             dark: {backgroundColor: 'rgba(0,150,0,0.2)'},
         }),
     };
+
+    const opacities = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+    const opacityRange = opacities.concat([1]).concat(opacities.reverse());
+
+
+    decorationsErrorAnimation = opacityRange.map( opacity => {
+        return create({
+            dark: {
+                backgroundColor: `rgba(150,0,0,${opacity})`,
+            },
+            light: {
+                backgroundColor: `rgba(150,0,0,${opacity})`,
+            }
+        });
+    });
 
 }
 

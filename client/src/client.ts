@@ -7,12 +7,12 @@ import {
   integer
 } from 'vscode-languageclient/node';
 
-import {decorationsManual, decorationsContinuous} from './Decorations';
+import {decorationsManual, decorationsContinuous, decorationsErrorAnimation} from './Decorations';
 
 export default class Client extends LanguageClient {
 
 	private static _channel: any = vscode.window.createOutputChannel('VsCoq');
-    private static _coq_log: any = vscode.window.createOutputChannel('Coq Log');
+    private static _coqLog: any = vscode.window.createOutputChannel('Coq Log');
     private _decorationsPrepared: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
     private _decorationsProcessed: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
     private _decorationsProcessing: Map<String, vscode.Range[]> = new Map<String, vscode.Range[]>();
@@ -36,7 +36,7 @@ export default class Client extends LanguageClient {
     }
 
     public static writeCoqMessageLog(message: string) {
-        Client._coq_log.appendLine(message);
+        Client._coqLog.appendLine(message);
     }
 
     public saveHighlights(uri: String, preparedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
@@ -61,6 +61,26 @@ export default class Client extends LanguageClient {
         for(let entry of this._decorationsProcessed.entries()) {
             this.resetDocumentEditors(entry[0]);
         }
+    }
+
+    public createErrorAnimation(uri: String, ranges: vscode.Range[]) {
+        const timing = 50;
+        const editors = this.getDocumentEditors(uri);
+        //Create a flash animation by gradually increasing opacities
+        //Then decreasing them and then removing them completely
+        editors.map(editor => {
+            decorationsErrorAnimation.map((decoration, i) => {
+                setTimeout(() => {
+                    editor.setDecorations(decoration, ranges);
+                    setTimeout(() => {
+                        editor.setDecorations(decoration, []);
+                    }, timing);
+                }, i * timing);
+            });
+            // setTimeout(() => {
+            //     decorationsErrorAnimation.map(decoration => editor.setDecorations(decoration, []));
+            // }, decorationsErrorAnimation.length * timing);
+        });
     }
 
     private getDocumentEditors(uri: String) {

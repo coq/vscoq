@@ -63,6 +63,7 @@ type event =
  | LogEvent of Dm.Log.event
  | SendProofView of DocumentUri.t * Position.t option
  | SendMoveCursor of DocumentUri.t * Range.t
+ | SendBlockOnError of DocumentUri.t * Range.t
 
 type events = event Sel.Event.t list
 
@@ -206,6 +207,10 @@ let send_proof_view pv =
 
 let send_move_cursor uri range = 
   let notification = Notification.Server.MoveCursor {uri;range} in 
+  output_notification notification
+
+let send_block_on_error uri range = 
+  let notification = Notification.Server.BlockOnError {uri;range} in 
   output_notification notification
 
 let send_coq_debug message =
@@ -361,6 +366,11 @@ let mk_move_cursor_event uri range =
   let priority = Dm.PriorityManager.move_cursor in
   Sel.now ~priority @@ SendMoveCursor (uri, range)
 
+let mk_block_on_error_event uri range = 
+  let priority = Dm.PriorityManager.move_cursor in
+  Sel.now ~priority @@ SendBlockOnError (uri, range)
+
+
 let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
@@ -375,7 +385,7 @@ let coqtopInterpretToPoint params =
     | None ->
       sel_events @ [ mk_proof_view_event uri (Some position)]
     | Some range ->
-      sel_events @ [ mk_move_cursor_event uri range]
+      sel_events @ [ mk_block_on_error_event uri range]
  
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri }; position } = params in
@@ -419,7 +429,7 @@ let coqtopStepForward params =
       update_view uri st;
       match range, error_range with
         | None, None -> inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
-        | _, Some range -> inject_dm_events (uri,events) @ [mk_move_cursor_event uri range]
+        | _, Some err_range -> inject_dm_events (uri,events) @ [mk_block_on_error_event uri err_range]
         | Some range, None -> [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
         
   
@@ -486,7 +496,11 @@ let coqtopInterpretToEnd params =
     let (st, events, error_range) = Dm.DocumentManager.interpret_to_end st in
     replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
-    inject_dm_events (uri,events) @ [ mk_proof_view_event uri None]
+    match error_range with
+    | None ->
+      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None]
+    | Some range ->
+      inject_dm_events (uri,events) @ [ mk_block_on_error_event uri range]
 
 let coqtopLocate id params = 
   let Request.Client.LocateParams.{ textDocument = { uri }; position; pattern } = params in
@@ -653,17 +667,17 @@ let handle_event = function
       log @@ "ignoring event on non-existing document";
       []
     | Some { st; visible } ->
-      let (ost, events, range) = Dm.DocumentManager.handle_event e st !block_on_first_error in
+      let (ost, events, error_range) = Dm.DocumentManager.handle_event e st !block_on_first_error in
       begin match ost with
         | None -> ()
         | Some st ->
           replace_state (DocumentUri.to_path uri) st visible;
           update_view uri st
       end;
-      match range with
+      match error_range with
       | None ->
         inject_dm_events (uri, events)
-      | Some range -> inject_dm_events (uri, events) @ [mk_move_cursor_event uri range]
+      | Some range -> inject_dm_events (uri, events) @ [mk_block_on_error_event uri range]
     end
   | Notification notification ->
     begin match notification with 
@@ -686,6 +700,8 @@ let handle_event = function
     end
   | SendMoveCursor (uri, range) -> 
     send_move_cursor uri range; []
+  | SendBlockOnError (uri, range) ->
+    send_block_on_error uri range; []
 
 let pr_event = function
   | LspManagerEvent e -> pr_lsp_event e
@@ -695,6 +711,7 @@ let pr_event = function
   | LogEvent _ -> Pp.str"debug"
   | SendProofView _ -> Pp.str"proofview"
   | SendMoveCursor _ -> Pp.str"move cursor"
+  | SendBlockOnError _ -> Pp.str"block on error"
 
 let init injections =
   init_state := Some (Vernacstate.freeze_full_state (), injections);

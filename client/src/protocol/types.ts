@@ -74,6 +74,11 @@ export interface MoveCursorNotification {
     range: Range; 
 }
 
+export interface ErrorAlertNotification {
+    uri: Uri;
+    range: Range;
+}
+
 export interface SearchCoqRequest {
     id: string;
     textDocument: VersionedTextDocumentIdentifier;
