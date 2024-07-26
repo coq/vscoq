@@ -229,7 +229,7 @@ let replace_state path st visible = Hashtbl.replace states path { st; visible }
 let run_documents () =
   let interpret_doc_in_bg path { st : Dm.DocumentManager.state ; visible } events =
       let st = Dm.DocumentManager.clear_observe_id st in
-      let (st, events') = Dm.DocumentManager.interpret_in_background st in
+      let (st, events', _) = Dm.DocumentManager.interpret_in_background st in
       let uri = DocumentUri.of_path path in
       replace_state path st visible;
       update_view uri st;
@@ -254,8 +254,9 @@ let open_new_document uri text =
     e -> raise e
   in
   let (st, events') = 
-    if !check_mode = Settings.Mode.Continuous then 
-      Dm.DocumentManager.interpret_in_background st 
+    if !check_mode = Settings.Mode.Continuous then
+      let (st, events, _) = Dm.DocumentManager.interpret_in_background st in
+      (st, events)
     else 
       (st, [])
   in
@@ -269,8 +270,9 @@ let textDocumentDidOpen params =
   | None -> open_new_document uri text
   | Some { st } ->
     let (st, events) = 
-      if !check_mode = Settings.Mode.Continuous then 
-        Dm.DocumentManager.interpret_in_background st 
+      if !check_mode = Settings.Mode.Continuous then
+        let (st, events, _) = Dm.DocumentManager.interpret_in_background st in
+        (st, events)
       else 
         (st, [])
     in
@@ -289,8 +291,9 @@ let textDocumentDidChange params =
       let text_edits = List.map mk_text_edit contentChanges in
       let st = Dm.DocumentManager.apply_text_edits st text_edits in
       let (st, events) = 
-        if !check_mode = Settings.Mode.Continuous then 
-          Dm.DocumentManager.interpret_in_background st 
+        if !check_mode = Settings.Mode.Continuous then
+          let (st, events, _) = Dm.DocumentManager.interpret_in_background st in
+          (st, events)
         else 
           (st, [])
       in
@@ -364,11 +367,15 @@ let coqtopInterpretToPoint params =
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[interpretToPoint] ignoring event on non existant document"; []
   | Some { st; visible } ->
-    let (st, events) = Dm.DocumentManager.interpret_to_position st position in
+    let (st, events, error_range) = Dm.DocumentManager.interpret_to_position st position in
     replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
     let sel_events = inject_dm_events (uri, events) in
-    sel_events @ [ mk_proof_view_event uri (Some position)]
+    match error_range with
+    | None ->
+      sel_events @ [ mk_proof_view_event uri (Some position)]
+    | Some range ->
+      sel_events @ [ mk_move_cursor_event uri range]
  
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri }; position } = params in
@@ -383,7 +390,7 @@ let coqtopStepBackward params =
         | None -> []
         | Some range -> [mk_move_cursor_event uri range]
     else
-      let (st, events) = Dm.DocumentManager.interpret_to_previous st in
+      let (st, events, _) = Dm.DocumentManager.interpret_to_previous st in
       let range = Dm.DocumentManager.observe_id_range st in
       replace_state (DocumentUri.to_path uri) st visible;
       update_view uri st;
@@ -406,15 +413,15 @@ let coqtopStepForward params =
         | None -> []
         | Some range -> [mk_move_cursor_event uri range]
     else
-      let (st, events) = Dm.DocumentManager.interpret_to_next st in
+      let (st, events, error_range) = Dm.DocumentManager.interpret_to_next st in
       let range = Dm.DocumentManager.observe_id_range st in
       replace_state (DocumentUri.to_path uri) st visible;
       update_view uri st;
-      match range with 
-      | None ->
-        inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
-      | Some range ->
-        [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+      match range, error_range with
+        | None, None -> inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+        | _, Some range -> inject_dm_events (uri,events) @ [mk_move_cursor_event uri range]
+        | Some range, None -> [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+        
   
   let make_CompletionItem i item : CompletionItem.t = 
     let (label, insertText, typ, path) = Dm.CompletionItems.pp_completion_item item in
@@ -462,7 +469,8 @@ let coqtopResetCoq id params =
     let st, events = Dm.DocumentManager.reset st in
     let (st, events') =
       if !check_mode = Settings.Mode.Continuous then
-        Dm.DocumentManager.interpret_in_background st
+        let (st, events, _) = Dm.DocumentManager.interpret_in_background st in
+        (st, events)
       else
         (st, [])
     in
@@ -475,7 +483,7 @@ let coqtopInterpretToEnd params =
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[interpretToEnd] ignoring event on non existant document"; []
   | Some { st; visible } ->
-    let (st, events) = Dm.DocumentManager.interpret_to_end st in
+    let (st, events, error_range) = Dm.DocumentManager.interpret_to_end st in
     replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
     inject_dm_events (uri,events) @ [ mk_proof_view_event uri None]
@@ -645,14 +653,17 @@ let handle_event = function
       log @@ "ignoring event on non-existing document";
       []
     | Some { st; visible } ->
-      let (ost, events) = Dm.DocumentManager.handle_event e st !block_on_first_error in
+      let (ost, events, range) = Dm.DocumentManager.handle_event e st !block_on_first_error in
       begin match ost with
         | None -> ()
         | Some st ->
           replace_state (DocumentUri.to_path uri) st visible;
           update_view uri st
       end;
-      inject_dm_events (uri, events)
+      match range with
+      | None ->
+        inject_dm_events (uri, events)
+      | Some range -> inject_dm_events (uri, events) @ [mk_move_cursor_event uri range]
     end
   | Notification notification ->
     begin match notification with 

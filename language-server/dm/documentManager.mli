@@ -54,24 +54,24 @@ val get_next_range : state -> Position.t -> Range.t option
 val get_previous_range : state -> Position.t -> Range.t option
 (** [get_previous_pos st pos] get the range of the previous sentence relative to pos *)
 
-val interpret_to_position : state -> Position.t -> (state * events)
+val interpret_to_position : state -> Position.t -> (state * events * Range.t option)
 (** [interpret_to_position stateful doc pos] navigates to the last sentence ending
     before or at [pos] and returns the resulting state. The [stateful] flag 
     determines if we record the resulting position in the state. *)
 
-val interpret_to_previous : state -> (state * events)
+val interpret_to_previous : state -> (state * events * Range.t option)
 (** [interpret_to_previous doc] navigates to the previous sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_to_next : state -> (state * events)
+val interpret_to_next : state -> (state * events * Range.t option)
 (** [interpret_to_next doc] navigates to the next sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_to_end : state -> (state * events)
+val interpret_to_end : state -> (state * events * Range.t option)
 (** [interpret_to_end doc] navigates to the last sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_in_background : state -> (state * events)
+val interpret_in_background : state -> (state * events * Range.t option)
 (** [interpret_in_background doc] same as [interpret_to_end] but computation 
     is done in background (with lower priority) *)
 
@@ -101,7 +101,7 @@ val get_proof : state -> Settings.Goals.Diff.Mode.t -> Position.t option -> Proo
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 
-val handle_event : event -> state -> bool -> (state option * events)
+val handle_event : event -> state -> bool -> (state option * events * Range.t option)
 (** handles events and returns a new state if it was updated *)
 
 val search : state -> id:string -> Position.t -> string -> notification Sel.Event.t list
