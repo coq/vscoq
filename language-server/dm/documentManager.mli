@@ -26,6 +26,8 @@ open CompletionItems
 
 type observe_id = Id of Types.sentence_id | Top
 
+type blocking_error = Range.t option
+
 type state
 
 type event
@@ -54,24 +56,24 @@ val get_next_range : state -> Position.t -> Range.t option
 val get_previous_range : state -> Position.t -> Range.t option
 (** [get_previous_pos st pos] get the range of the previous sentence relative to pos *)
 
-val interpret_to_position : state -> Position.t -> (state * events * Range.t option)
+val interpret_to_position : state -> Position.t -> (state * events * blocking_error)
 (** [interpret_to_position stateful doc pos] navigates to the last sentence ending
     before or at [pos] and returns the resulting state. The [stateful] flag 
     determines if we record the resulting position in the state. *)
 
-val interpret_to_previous : state -> (state * events * Range.t option)
+val interpret_to_previous : state -> (state * events * blocking_error)
 (** [interpret_to_previous doc] navigates to the previous sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_to_next : state -> (state * events * Range.t option)
+val interpret_to_next : state -> (state * events * blocking_error)
 (** [interpret_to_next doc] navigates to the next sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_to_end : state -> (state * events * Range.t option)
+val interpret_to_end : state -> (state * events * blocking_error)
 (** [interpret_to_end doc] navigates to the last sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_in_background : state -> (state * events * Range.t option)
+val interpret_in_background : state -> (state * events * blocking_error)
 (** [interpret_in_background doc] same as [interpret_to_end] but computation 
     is done in background (with lower priority) *)
 

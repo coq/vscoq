@@ -22,6 +22,8 @@ let Log log = Log.mk_log "documentManager"
 
 type observe_id = Id of Types.sentence_id | Top
 
+type blocking_error = Range.t option
+
 let to_sentence_id = function
 | Top -> None
 | Id id -> Some id
@@ -246,7 +248,7 @@ let get_info_messages st pos =
     let feedback = feedback |> List.filter info in
     List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback
 
-let observe ~background state id : (state * event Sel.Event.t list * Range.t option) =
+let observe ~background state id : (state * event Sel.Event.t list * blocking_error) =
   match Document.get_sentence state.document id with
   | None -> (state, [], None) (* TODO error? *)
   | Some {id } ->
