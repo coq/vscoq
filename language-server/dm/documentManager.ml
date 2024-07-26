@@ -267,7 +267,8 @@ let observe ~background state id : (state * event Sel.Event.t list * blocking_er
             ({state with execution_state}, [], None)
           | Some { id } ->
             let range = Document.range_of_id_with_blank_space state.document id in
-            ({state with execution_state}, [], Some range)
+            let observe_id = Some (Id id) in
+            ({state with execution_state; observe_id}, [], Some range)
     else
       let priority = if background then None else Some PriorityManager.execution in
       let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday (); background }) in
