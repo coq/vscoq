@@ -136,9 +136,9 @@ let rec handle_events n (events : DocumentManager.event Sel.Todo.t) st =
       st
     | Some ev ->
       let st, new_events =
-        match DocumentManager.handle_event ev st with
-        | None, events' -> st, events'
-        | Some st, events' -> st, events'
+        match DocumentManager.handle_event ev st false with
+        | None, events', _ -> st, events'
+        | Some st, events', _ -> st, events'
       in
       let todo = Sel.Todo.add remaining new_events in
       handle_events (n-1) todo st
