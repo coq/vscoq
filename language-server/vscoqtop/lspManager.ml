@@ -369,7 +369,7 @@ let mk_move_cursor_event uri range =
 let mk_block_on_error_event uri last_range error_range = 
   let priority = Dm.PriorityManager.move_cursor in
   let event = Sel.now ~priority @@ SendBlockOnError (uri, error_range) in
-  [event] @ [mk_move_cursor_event uri last_range] @ [mk_proof_view_event uri (Some last_range.end_)]
+  [event] @ [mk_move_cursor_event uri last_range] @ [mk_proof_view_event uri (Some error_range.end_)]
 
 
 let coqtopInterpretToPoint params =
