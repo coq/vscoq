@@ -444,11 +444,11 @@ let execute st id vst_for_next_todo started task todo background block =
   let priority = if background then None else Some PriorityManager.execution in
   let event, execution_state, observe_id = 
     match (block, exec_error) with
-      | false, _ | _ , false ->
+      | false, _ | _ , None ->
         [Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started; background })],
         ExecutionManager.update_overview task todo execution_state st.document,
         None
-      | true, true ->
+      | true, Some id ->
         let o_id = match Document.get_sentence st.document id with
         | None -> None (* TODO error ?*)
         | Some {start} ->

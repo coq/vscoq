@@ -30,6 +30,8 @@ let error loc qf msg vernac_st = Error ((loc,msg), qf, (Some vernac_st))
 
 type sentence_id = Stateid.t
 
+type errored_sentence = sentence_id option
+
 module SM = Map.Make (Stateid)
 
 type sentence_state =
@@ -663,7 +665,7 @@ let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_
 let execute st (vs, events, interrupted) task =
   if interrupted then begin
     let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
-    (st, vs, events, true, false)
+    (st, vs, events, true, None)
   end else
     try
       match task with
@@ -673,13 +675,13 @@ let execute st (vs, events, interrupted) task =
             | Some msg -> error None None msg vs
           in
           let st = update st id v in
-          (st, vs, events, false, false)
+          (st, vs, events, false, None)
       | PExec { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
           let vs, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let exec_error = match v with
-            | Success _ -> false
-            | Error _ -> true
+            | Success _ -> None
+            | Error _ -> Some id
           in
           let st = update st id v in
           (st, vs, events @ ev, false, exec_error)
@@ -687,7 +689,7 @@ let execute st (vs, events, interrupted) task =
           let vs = { vs with Vernacstate.synterp } in
           let _, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let st = update st id v in
-          (st, vs, events @ ev, false, false)
+          (st, vs, events @ ev, false, None)
       | PDelegate { terminator_id; opener_id; last_step_id; tasks; proof_using } ->
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
@@ -725,15 +727,15 @@ let execute st (vs, events, interrupted) task =
                   ~feedback_cleanup:(fun () -> feedback_cleanup st)
                 in
               Queue.push (job_id, Sel.Event.get_cancellation_handle e, job) jobs;
-              (st, last_vs,events @ [inject_proof_event e] ,false, false)
+              (st, last_vs,events @ [inject_proof_event e] ,false, None)
           | _ ->
             (* If executing the proof opener failed, we skip the proof *)
             let st = update st terminator_id (success vs) in
-            (st, vs,events,false, false)
+            (st, vs,events,false, None)
           end
     with Sys.Break ->
       let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
-      (st, vs, events, true, false)
+      (st, vs, events, true, None)
 
 let build_tasks_for document sch st id block =
   let rec build_tasks id tasks st =

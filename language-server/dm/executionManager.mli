@@ -36,6 +36,7 @@ val is_diagnostics_enabled: unit -> bool
 type state
 type event
 type events = event Sel.Event.t list
+type errored_sentence = sentence_id option
 
 type feedback_message = Feedback.level * Loc.t option * Quickfix.t list * Pp.t
 
@@ -73,7 +74,7 @@ val handle_event : event -> state -> (sentence_id option * state option * events
     one task at a time to ease checking for interruption *)
 type prepared_task
 val build_tasks_for : Document.document -> Scheduler.schedule -> state -> sentence_id -> bool -> Vernacstate.t * prepared_task list * state * sentence_id option
-val execute : state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool * bool)
+val execute : state -> Vernacstate.t * events * bool -> prepared_task -> (state * Vernacstate.t * events * bool * errored_sentence)
 
 val update_overview : prepared_task -> prepared_task list -> state -> Document.document -> state
 val cut_overview : prepared_task -> state -> Document.document -> state
