@@ -366,9 +366,10 @@ let mk_move_cursor_event uri range =
   let priority = Dm.PriorityManager.move_cursor in
   Sel.now ~priority @@ SendMoveCursor (uri, range)
 
-let mk_block_on_error_event uri range = 
+let mk_block_on_error_event uri last_range error_range = 
   let priority = Dm.PriorityManager.move_cursor in
-  Sel.now ~priority @@ SendBlockOnError (uri, range)
+  let event = Sel.now ~priority @@ SendBlockOnError (uri, error_range) in
+  [event] @ [mk_move_cursor_event uri last_range] @ [mk_proof_view_event uri (Some last_range.end_)]
 
 
 let coqtopInterpretToPoint params =
@@ -384,8 +385,8 @@ let coqtopInterpretToPoint params =
     match error_range with
     | None ->
       sel_events @ [ mk_proof_view_event uri (Some position)]
-    | Some range ->
-      sel_events @ [ mk_block_on_error_event uri range]
+    | Some {last_range; error_range} ->
+      sel_events @ mk_block_on_error_event uri last_range error_range
  
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri }; position } = params in
@@ -429,7 +430,7 @@ let coqtopStepForward params =
       update_view uri st;
       match range, error_range with
         | None, None -> inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
-        | _, Some err_range -> inject_dm_events (uri,events) @ [mk_block_on_error_event uri err_range]
+        | _, Some {last_range; error_range} -> inject_dm_events (uri,events) @ mk_block_on_error_event uri last_range error_range
         | Some range, None -> [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
         
   
@@ -499,8 +500,8 @@ let coqtopInterpretToEnd params =
     match error_range with
     | None ->
       inject_dm_events (uri,events) @ [ mk_proof_view_event uri None]
-    | Some range ->
-      inject_dm_events (uri,events) @ [ mk_block_on_error_event uri range]
+    | Some {last_range; error_range} ->
+      inject_dm_events (uri,events) @ mk_block_on_error_event uri last_range error_range
 
 let coqtopLocate id params = 
   let Request.Client.LocateParams.{ textDocument = { uri }; position; pattern } = params in
@@ -677,7 +678,7 @@ let handle_event = function
       match error_range with
       | None ->
         inject_dm_events (uri, events)
-      | Some range -> inject_dm_events (uri, events) @ [mk_block_on_error_event uri range]
+      | Some {last_range; error_range} -> inject_dm_events (uri, events) @ mk_block_on_error_event uri last_range error_range
     end
   | Notification notification ->
     begin match notification with 

@@ -22,7 +22,10 @@ let Log log = Log.mk_log "documentManager"
 
 type observe_id = Id of Types.sentence_id | Top
 
-type blocking_error = Range.t option
+type blocking_error = {
+  last_range: Range.t;
+  error_range: Range.t
+}
 
 let to_sentence_id = function
 | Top -> None
@@ -248,27 +251,33 @@ let get_info_messages st pos =
     let feedback = feedback |> List.filter info in
     List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback
 
-let observe ~background state id : (state * event Sel.Event.t list * blocking_error) =
+let observe ~background state id : (state * event Sel.Event.t list * blocking_error option) =
   match Document.get_sentence state.document id with
   | None -> (state, [], None) (* TODO error? *)
-  | Some {id } ->
+  | Some { id } ->
     let vst_for_next_todo, todo, execution_state, error_id = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id true in
     if CList.is_empty todo then
       match error_id with
       | None ->
         ({state with execution_state}, [], None)
-      | Some id ->
-        match Document.get_sentence state.document id with
+      | Some error_id ->
+        match Document.get_sentence state.document error_id with
         | None ->
           ({state with execution_state}, [], None)
         | Some { start } ->
           match Document.find_sentence_before state.document start with
           | None ->
-            ({state with execution_state}, [], None)
+            let start = Position.{line=0; character=0} in
+            let end_ = Position.{line=0; character=0} in
+            let last_range = Range.{start; end_} in
+            let error_range = Document.range_of_id_with_blank_space state.document error_id in
+            let observe_id = Some Top in
+            ({state with execution_state; observe_id}, [], Some {last_range; error_range})
           | Some { id } ->
-            let range = Document.range_of_id_with_blank_space state.document id in
+            let last_range = Document.range_of_id_with_blank_space state.document id in
+            let error_range = Document.range_of_id_with_blank_space state.document error_id in
             let observe_id = Some (Id id) in
-            ({state with execution_state; observe_id}, [], Some range)
+            ({state with execution_state; observe_id}, [], Some {last_range; error_range})
     else
       let priority = if background then None else Some PriorityManager.execution in
       let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday (); background }) in
@@ -442,12 +451,12 @@ let execute st id vst_for_next_todo started task todo background block =
   (* We do not update the state here because we may have received feedback while
      executing *)
   let priority = if background then None else Some PriorityManager.execution in
-  let event, execution_state, observe_id = 
+  let event, execution_state, observe_id, error_id =
     match (block, exec_error) with
       | false, _ | _ , None ->
         [Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started; background })],
         ExecutionManager.update_overview task todo execution_state st.document,
-        None
+        None, None
       | true, Some id ->
         let o_id = match Document.get_sentence st.document id with
         | None -> None (* TODO error ?*)
@@ -458,12 +467,20 @@ let execute st id vst_for_next_todo started task todo background block =
         in
         [],
         ExecutionManager.cut_overview task execution_state st.document,
-        o_id
+        o_id, Some id
   in
-  let st, range = match observe_id with
-  | None -> {st with execution_state}, None
-  | Some Top -> {st with execution_state; observe_id}, None
-  | Some (Id id) -> {st with execution_state; observe_id}, Some (Document.range_of_id_with_blank_space st.document id)
+  let st, range = match observe_id, error_id with
+  | None, None | None, Some _ | Some _, None -> {st with execution_state}, None
+  | Some Top, Some id ->
+    let start = Position.{line=0; character=0} in
+    let end_ = Position.{line=0; character=0} in
+    let last_range = Range.{start; end_} in
+    let error_range = Document.range_of_id_with_blank_space st.document id in
+    {st with execution_state; observe_id}, Some {last_range; error_range}
+  | Some (Id o_id), Some id ->
+    let last_range = Document.range_of_id_with_blank_space st.document o_id in
+    let error_range = Document.range_of_id_with_blank_space st.document id in
+    {st with execution_state; observe_id}, Some {last_range; error_range}
   in
   (Some st, inject_em_events events @ event, range)
 
