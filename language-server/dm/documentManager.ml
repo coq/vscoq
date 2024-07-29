@@ -251,11 +251,11 @@ let get_info_messages st pos =
     let feedback = feedback |> List.filter info in
     List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback
 
-let observe ~background state id : (state * event Sel.Event.t list * blocking_error option) =
+let observe ~background state id ~should_block_on_error : (state * event Sel.Event.t list * blocking_error option) =
   match Document.get_sentence state.document id with
   | None -> (state, [], None) (* TODO error? *)
   | Some { id } ->
-    let vst_for_next_todo, todo, execution_state, error_id = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id true in
+    let vst_for_next_todo, todo, execution_state, error_id = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id should_block_on_error in
     if CList.is_empty todo then
       match error_id with
       | None ->
@@ -302,15 +302,15 @@ let get_document_symbols st =
   in
   List.map to_document_symbol outline
 
-let interpret_to st id =
+let interpret_to st id ~should_block_on_error =
   let observe_id = if st.observe_id = None then None else (Some (Id id)) in
   let st = { st with observe_id} in
-  observe ~background:false st id
+  observe ~background:false st id ~should_block_on_error
 
-let interpret_to_position st pos =
+let interpret_to_position st pos ~should_block_on_error =
   match id_of_pos st pos with
   | None -> (st, [], None) (* document is empty *)
-  | Some id -> interpret_to st id
+  | Some id -> interpret_to st id ~should_block_on_error
 
 let get_next_range st pos =
   match id_of_pos st pos with
@@ -346,15 +346,15 @@ let interpret_to_previous st =
       | None -> 
         Vernacstate.unfreeze_full_state st.init_vs; 
         { st with observe_id=(Some Top)}, [], None
-      | Some { id } -> interpret_to st id
+      | Some { id } -> interpret_to st id ~should_block_on_error:false
 
-let interpret_to_next st =
+let interpret_to_next st ~should_block_on_error =
   match st.observe_id with
   | None -> failwith "interpret to next with no observe_id"
   | Some Top ->
     begin match Document.get_first_sentence st.document with
     | None -> (st, [], None) (*The document is empty*)
-    | Some {id} -> interpret_to st id
+    | Some {id} -> interpret_to st id ~should_block_on_error
     end
   | Some (Id id) ->
     match Document.get_sentence st.document id with
@@ -362,17 +362,17 @@ let interpret_to_next st =
     | Some { stop } ->
       match Document.find_sentence_after st.document (stop+1) with
       | None -> (st, [], None)
-      | Some {id } -> interpret_to st id
+      | Some {id } -> interpret_to st id ~should_block_on_error
 
-let interpret_to_end st =
+let interpret_to_end st ~should_block_on_error =
   match Document.get_last_sentence st.document with
   | None -> (st, [], None)
-  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to st id
+  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to st id ~should_block_on_error
 
-let interpret_in_background st =
+let interpret_in_background st ~should_block_on_error =
   match Document.get_last_sentence st.document with
   | None -> (st, [], None)
-  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); observe ~background:true st id
+  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); observe ~background:true st id ~should_block_on_error
 
 let is_above st id1 id2 =
   let range1 = Document.range_of_id st id1 in

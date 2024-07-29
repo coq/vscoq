@@ -234,7 +234,7 @@ let replace_state path st visible = Hashtbl.replace states path { st; visible }
 let run_documents () =
   let interpret_doc_in_bg path { st : Dm.DocumentManager.state ; visible } events =
       let st = Dm.DocumentManager.clear_observe_id st in
-      let (st, events', _) = Dm.DocumentManager.interpret_in_background st in
+      let (st, events', _) = Dm.DocumentManager.interpret_in_background st ~should_block_on_error:!block_on_first_error in
       let uri = DocumentUri.of_path path in
       replace_state path st visible;
       update_view uri st;
@@ -260,7 +260,7 @@ let open_new_document uri text =
   in
   let (st, events') = 
     if !check_mode = Settings.Mode.Continuous then
-      let (st, events, _) = Dm.DocumentManager.interpret_in_background st in
+      let (st, events, _) = Dm.DocumentManager.interpret_in_background st ~should_block_on_error:!block_on_first_error in
       (st, events)
     else 
       (st, [])
@@ -276,7 +276,7 @@ let textDocumentDidOpen params =
   | Some { st } ->
     let (st, events) = 
       if !check_mode = Settings.Mode.Continuous then
-        let (st, events, _) = Dm.DocumentManager.interpret_in_background st in
+        let (st, events, _) = Dm.DocumentManager.interpret_in_background st ~should_block_on_error:!block_on_first_error in
         (st, events)
       else 
         (st, [])
@@ -297,7 +297,7 @@ let textDocumentDidChange params =
       let st = Dm.DocumentManager.apply_text_edits st text_edits in
       let (st, events) = 
         if !check_mode = Settings.Mode.Continuous then
-          let (st, events, _) = Dm.DocumentManager.interpret_in_background st in
+          let (st, events, _) = Dm.DocumentManager.interpret_in_background st ~should_block_on_error:!block_on_first_error in
           (st, events)
         else 
           (st, [])
@@ -378,7 +378,7 @@ let coqtopInterpretToPoint params =
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[interpretToPoint] ignoring event on non existant document"; []
   | Some { st; visible } ->
-    let (st, events, error_range) = Dm.DocumentManager.interpret_to_position st position in
+    let (st, events, error_range) = Dm.DocumentManager.interpret_to_position st position ~should_block_on_error:!block_on_first_error in
     replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
     let sel_events = inject_dm_events (uri, events) in
@@ -424,7 +424,7 @@ let coqtopStepForward params =
         | None -> []
         | Some range -> [mk_move_cursor_event uri range]
     else
-      let (st, events, error_range) = Dm.DocumentManager.interpret_to_next st in
+      let (st, events, error_range) = Dm.DocumentManager.interpret_to_next st ~should_block_on_error:!block_on_first_error in
       let range = Dm.DocumentManager.observe_id_range st in
       replace_state (DocumentUri.to_path uri) st visible;
       update_view uri st;
@@ -480,7 +480,7 @@ let coqtopResetCoq id params =
     let st, events = Dm.DocumentManager.reset st in
     let (st, events') =
       if !check_mode = Settings.Mode.Continuous then
-        let (st, events, _) = Dm.DocumentManager.interpret_in_background st in
+        let (st, events, _) = Dm.DocumentManager.interpret_in_background st ~should_block_on_error:!block_on_first_error in
         (st, events)
       else
         (st, [])
@@ -494,7 +494,7 @@ let coqtopInterpretToEnd params =
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[interpretToEnd] ignoring event on non existant document"; []
   | Some { st; visible } ->
-    let (st, events, error_range) = Dm.DocumentManager.interpret_to_end st in
+    let (st, events, error_range) = Dm.DocumentManager.interpret_to_end st ~should_block_on_error:!block_on_first_error in
     replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
     match error_range with
