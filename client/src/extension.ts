@@ -253,13 +253,6 @@ export function activate(context: ExtensionContext) {
 
         client.onNotification("vscoq/blockOnError", (notification: ErrorAlertNotification) => {
             const {uri, range} = notification;
-            const editors = window.visibleTextEditors.filter(editor => {
-                return editor.document.uri.toString() === uri.toString();
-            });
-            editors.map(editor => {
-                editor.selections = [new Selection(range.end, range.end)];
-                editor.revealRange(range, TextEditorRevealType.Default);
-            });
             client.createErrorAnimation(uri.toString(), [range]);
         });
 
