@@ -387,7 +387,10 @@ let coqtopInterpretToPoint params =
     | None ->
       sel_events @ [ mk_proof_view_event uri (Some position)]
     | Some {last_range; error_range} ->
-      sel_events @ mk_block_on_error_event uri last_range error_range
+      if !check_mode = Settings.Mode.Manual then
+        sel_events @ mk_block_on_error_event uri last_range error_range
+      else
+        sel_events @ [mk_proof_view_event uri (Some error_range.end_)]
  
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri }; position } = params in
@@ -679,7 +682,11 @@ let handle_event = function
       match error_range with
       | None ->
         inject_dm_events (uri, events)
-      | Some {last_range; error_range} -> inject_dm_events (uri, events) @ mk_block_on_error_event uri last_range error_range
+      | Some {last_range; error_range} ->
+        if !check_mode = Settings.Mode.Manual then
+          inject_dm_events (uri, events) @ mk_block_on_error_event uri last_range error_range
+        else
+          inject_dm_events (uri, events)
     end
   | Notification notification ->
     begin match notification with 
