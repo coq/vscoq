@@ -428,7 +428,7 @@ let coqtopStepForward params =
         | None -> []
         | Some range -> [mk_move_cursor_event uri range]
     else
-      let (st, events, error_range) = Dm.DocumentManager.interpret_to_next st ~should_block_on_error:!block_on_first_error in
+      let (st, events, error_range) = Dm.DocumentManager.interpret_to_next st ~should_block_on_error:true in
       let range = Dm.DocumentManager.observe_id_range st in
       replace_state (DocumentUri.to_path uri) st visible;
       update_view uri st;
