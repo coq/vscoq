@@ -66,6 +66,7 @@ module Proof = struct
     delegation: DelegationMode.t;
     workers: int option;
     mode: Mode.t;
+    block: bool;
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end

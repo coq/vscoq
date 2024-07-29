@@ -129,7 +129,8 @@ let do_configuration settings =
   diff_mode := settings.goals.diff.mode;
   full_diagnostics := settings.diagnostics.full;
   full_messages := settings.goals.messages.full;
-  max_memory_usage := settings.memory.limit * 1000000000
+  max_memory_usage := settings.memory.limit * 1000000000;
+  block_on_first_error := settings.proof.block
 
 let send_configuration_request () =
   let id = `Int conf_request_id in
