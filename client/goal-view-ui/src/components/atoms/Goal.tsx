@@ -1,4 +1,4 @@
-import React, {FunctionComponent} from 'react';
+import React, {FunctionComponent, MouseEvent, KeyboardEvent} from 'react';
 
 import classes from './PpString.module.css';
 import { PpString } from '../../types';
@@ -26,7 +26,8 @@ const goal : FunctionComponent<GoalProps> = (props) => {
                 if(setHelpMessage !== undefined) {
                     setHelpMessage("");
                 }
-            }}>
+            }}
+        >
             <PpDisplay 
                 pp={goal}
                 coqCss={classes}

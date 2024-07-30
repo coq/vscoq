@@ -109,7 +109,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
     return (
         <div className={classes.Page}>
             <div className={classes.ButtonContainer}>
-                <span className={classes.HelpMessage}>{helpMessage}</span>
+                <div className={classes.HelpMessage}>{helpMessage}</div>
                 <VSCodeButton appearance={'icon'} onClick={settingsClickHandler} aria-label='Settings'>
                     <VscGear/>
                 </VSCodeButton>

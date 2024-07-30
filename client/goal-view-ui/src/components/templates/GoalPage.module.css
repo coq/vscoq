@@ -9,14 +9,17 @@
     align-items: center;
     width: 100%;
     height: fit-content;
-    text-align: right;
     margin-bottom: 12px;
 }
 
 .HelpMessage {
     font-style: italic;
-    opacity: 0.4;
+    opacity: .4;
     font-size: 12px;
+    text-overflow: ellipsis;
+    flex-basis: auto;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .Panel {
