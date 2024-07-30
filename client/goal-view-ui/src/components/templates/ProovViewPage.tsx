@@ -26,11 +26,13 @@ type ProofViewPageProps = {
     displaySetting: string;
     maxDepth: number;
     settingsClickHandler: () => void;
+    helpMessage: string;
+    helpMessageHandler: (message: string) => void;
 };
 
 const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
 
-    const {goals, messages, displaySetting, collapseGoalHandler, maxDepth, settingsClickHandler} = props;
+    const {goals, messages, displaySetting, collapseGoalHandler, maxDepth, settingsClickHandler, helpMessage, helpMessageHandler} = props;
 
     const renderGoals = () => {
         const goalBadge = <VSCodeBadge>{goals!.main.length}</VSCodeBadge>;
@@ -59,6 +61,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                         goals!.shelved.length === 0 && goals!.givenUp.length === 0 ? <VscPass /> : <VscWarning />
                     }
                     maxDepth={maxDepth}
+                    helpMessageHandler={helpMessageHandler}
                 /> 
             </VSCodePanelView>,
             <VSCodePanelView className={classes.View}> 
@@ -69,6 +72,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                     displaySetting={displaySetting}
                     emptyMessage='There are no shelved goals'
                     maxDepth={maxDepth}
+                    helpMessageHandler={helpMessageHandler}
                 /> 
             </VSCodePanelView>,
             <VSCodePanelView className={classes.View}> 
@@ -79,6 +83,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                     displaySetting={displaySetting}
                     emptyMessage='There are no given up goals'
                     maxDepth={maxDepth}
+                    helpMessageHandler={helpMessageHandler}
                 /> 
             </VSCodePanelView>
         ];
@@ -104,6 +109,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
     return (
         <div className={classes.Page}>
             <div className={classes.ButtonContainer}>
+                <span className={classes.HelpMessage}>{helpMessage}</span>
                 <VSCodeButton appearance={'icon'} onClick={settingsClickHandler} aria-label='Settings'>
                     <VscGear/>
                 </VSCodeButton>

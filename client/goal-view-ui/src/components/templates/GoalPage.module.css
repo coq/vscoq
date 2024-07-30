@@ -4,10 +4,19 @@
 }
 
 .ButtonContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     width: 100%;
     height: fit-content;
     text-align: right;
     margin-bottom: 12px;
+}
+
+.HelpMessage {
+    font-style: italic;
+    opacity: 0.4;
+    font-size: 12px;
 }
 
 .Panel {

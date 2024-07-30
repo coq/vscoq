@@ -12,6 +12,7 @@ const app = () => {
   const [messages, setMessages] = useState<ProofViewMessage[]>([]);
   const [goalDisplaySetting, setGoalDisplaySetting] = useState<string>("List");
   const [goalDepth, setGoalDepth] = useState<number>(10);
+  const [helpMessage, setHelpMessage] = useState<string>("");
 
   const handleMessage = useCallback ((msg: any) => {
     switch (msg.data.command) {
@@ -76,7 +77,16 @@ const app = () => {
 
   return (
     <main>
-        <ProofViewPage goals={goals} messages={messages} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting} maxDepth={goalDepth} settingsClickHandler={settingsClickHandler}/>
+        <ProofViewPage 
+            goals={goals} 
+            messages={messages} 
+            collapseGoalHandler={collapseGoalHandler} 
+            displaySetting={goalDisplaySetting} 
+            maxDepth={goalDepth} 
+            settingsClickHandler={settingsClickHandler}
+            helpMessage={helpMessage}
+            helpMessageHandler={(message: string) => setHelpMessage(message)}
+        />
     </main>
   );
 };

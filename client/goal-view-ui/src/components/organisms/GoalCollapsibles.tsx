@@ -8,12 +8,13 @@ import classes from './GoalCollapsibles.module.css';
 type GoalSectionProps = {
     goals: CollapsibleGoal[],
     collapseGoalHandler: (id: string) => void,
-    maxDepth: number
+    maxDepth: number,
+    helpMessageHandler: (message: string) => void
 };
 
 const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     
-    const {goals, collapseGoalHandler, maxDepth} = props;
+    const {goals, collapseGoalHandler, maxDepth, helpMessageHandler} = props;
     const firstGoalRef = useRef<HTMLDivElement>(null);
     
     useEffect(() => {
@@ -35,14 +36,14 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
         if(index === 0) {
             return (
                 <>
-                    <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} goalIndicator={index + 1 + " / " + goals.length} collapseHandler={collapseGoalHandler} maxDepth={maxDepth}/>
+                    <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} goalIndicator={index + 1 + " / " + goals.length} collapseHandler={collapseGoalHandler} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler}/>
                     <div ref={firstGoalRef}/>
                 </>
             );
         }
 
         return (
-            <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} goalIndicator={index + 1 + " / " + goals.length} collapseHandler={collapseGoalHandler} maxDepth={maxDepth}/>
+            <CollapsibleGoalBlock goal={goal} goalIndex={index + 1} goalIndicator={index + 1 + " / " + goals.length} collapseHandler={collapseGoalHandler} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler}/>
         );
     });
 

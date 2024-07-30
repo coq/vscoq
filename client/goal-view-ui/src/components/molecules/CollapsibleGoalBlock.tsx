@@ -9,16 +9,17 @@ type CollapsibleGoalBlockProps = {
     collapseHandler: (id: string) => void, 
     goalIndex: number,
     goalIndicator: string,
-    maxDepth: number
+    maxDepth: number,
+    helpMessageHandler: (message: string) => void
 };
 
 const collapsibleGoalBlock: FunctionComponent<CollapsibleGoalBlockProps> = (props) => {
     
-    const {goal, goalIndex, goalIndicator, collapseHandler, maxDepth} = props;
+    const {goal, goalIndex, goalIndicator, collapseHandler, maxDepth, helpMessageHandler} = props;
 
     return (
         <Accordion title={"Goal " + goalIndex} collapsed={!goal.isOpen} collapseHandler={() => collapseHandler(goal.id)}>
-            <GoalBlock goal={goal} goalIndicator={goalIndicator} maxDepth={maxDepth}/>
+            <GoalBlock goal={goal} goalIndicator={goalIndicator} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler}/>
         </Accordion>
     );
 
