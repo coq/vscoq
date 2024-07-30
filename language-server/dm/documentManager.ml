@@ -271,12 +271,18 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
             let end_ = Position.{line=0; character=0} in
             let last_range = Range.{start; end_} in
             let error_range = Document.range_of_id_with_blank_space state.document error_id in
-            let observe_id = Some Top in
+            let observe_id = match state.observe_id with
+              | None -> None
+              | Some _ -> Some Top
+            in
             ({state with execution_state; observe_id}, [], Some {last_range; error_range})
           | Some { id } ->
             let last_range = Document.range_of_id_with_blank_space state.document id in
             let error_range = Document.range_of_id_with_blank_space state.document error_id in
-            let observe_id = Some (Id id) in
+            let observe_id = match state.observe_id with
+              | None -> None
+              | Some _ -> Some (Id id)
+            in
             ({state with execution_state; observe_id}, [], Some {last_range; error_range})
     else
       let priority = if background then None else Some PriorityManager.execution in
@@ -476,10 +482,18 @@ let execute st id vst_for_next_todo started task todo background block =
     let end_ = Position.{line=0; character=0} in
     let last_range = Range.{start; end_} in
     let error_range = Document.range_of_id_with_blank_space st.document id in
+    let observe_id = match st.observe_id with
+      | None -> None
+      | Some _ -> observe_id
+    in
     {st with execution_state; observe_id}, Some {last_range; error_range}
   | Some (Id o_id), Some id ->
     let last_range = Document.range_of_id_with_blank_space st.document o_id in
     let error_range = Document.range_of_id_with_blank_space st.document id in
+    let observe_id = match st.observe_id with
+      | None -> None
+      | Some _ -> observe_id
+    in
     {st with execution_state; observe_id}, Some {last_range; error_range}
   in
   (Some st, inject_em_events events @ event, range)
