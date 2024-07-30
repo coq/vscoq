@@ -367,7 +367,12 @@ let mk_move_cursor_event uri range =
   let priority = Dm.PriorityManager.move_cursor in
   Sel.now ~priority @@ SendMoveCursor (uri, range)
 
-let mk_block_on_error_event uri last_range error_range = 
+let mk_block_on_error_event_no_move uri error_range =
+  let priority = Dm.PriorityManager.move_cursor in
+  let event = Sel.now ~priority @@ SendBlockOnError (uri, error_range) in
+  [event] @ [mk_proof_view_event uri (Some error_range.end_)]
+
+let mk_block_on_error_event uri last_range error_range =
   let priority = Dm.PriorityManager.move_cursor in
   let event = Sel.now ~priority @@ SendBlockOnError (uri, error_range) in
   [event] @ [mk_move_cursor_event uri last_range] @ [mk_proof_view_event uri (Some error_range.end_)]
@@ -434,7 +439,7 @@ let coqtopStepForward params =
       update_view uri st;
       match range, error_range with
         | None, None -> inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
-        | _, Some {last_range; error_range} -> inject_dm_events (uri,events) @ mk_block_on_error_event uri last_range error_range
+        | _, Some { last_range; error_range} -> inject_dm_events (uri,events) @ mk_block_on_error_event_no_move uri error_range
         | Some range, None -> [ mk_move_cursor_event uri range] @ inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
         
   
