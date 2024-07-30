@@ -4,8 +4,11 @@ import {
     VSCodeBadge, 
     VSCodePanels, 
     VSCodePanelTab, 
-    VSCodePanelView 
+    VSCodePanelView,
+    VSCodeButton
 } from '@vscode/webview-ui-toolkit/react';
+
+import { VscGear } from 'react-icons/vsc';
 
 import GoalSection from '../organisms/GoalSection';
 import EmptyState from '../atoms/EmptyState';
@@ -22,11 +25,12 @@ type ProofViewPageProps = {
     collapseGoalHandler: (id: string, key: ProofViewGoalsKey) => void,
     displaySetting: string;
     maxDepth: number;
+    settingsClickHandler: () => void;
 };
 
 const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
 
-    const {goals, messages, displaySetting, collapseGoalHandler, maxDepth} = props;
+    const {goals, messages, displaySetting, collapseGoalHandler, maxDepth, settingsClickHandler} = props;
 
     const renderGoals = () => {
         const goalBadge = <VSCodeBadge>{goals!.main.length}</VSCodeBadge>;
@@ -99,6 +103,11 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
     
     return (
         <div className={classes.Page}>
+            <div className={classes.ButtonContainer}>
+                <VSCodeButton appearance={'icon'} onClick={settingsClickHandler} aria-label='Settings'>
+                    <VscGear/>
+                </VSCodeButton>
+            </div>
             <Accordion title={'Proof'} collapsed={false}>
                 {collapsibleGoalsDisplay}
             </Accordion>

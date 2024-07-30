@@ -3,12 +3,20 @@
     width: 100%;
 }
 
+.ButtonContainer {
+    width: 100%;
+    height: fit-content;
+    text-align: right;
+    margin-bottom: 12px;
+}
+
 .Panel {
     display: flex;
     flex-direction: column;
     width: 100%;
     overflow: auto;
 }
+
 
 .View {
     width: 100%;

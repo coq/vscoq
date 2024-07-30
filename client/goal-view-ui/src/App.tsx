@@ -4,6 +4,8 @@ import "./App.css";
 import ProofViewPage from './components/templates/ProovViewPage';
 import {Goal, ProofViewGoals, ProofViewGoalsKey, ProofViewMessage} from './types';
 
+import { vscode } from "./utilities/vscode";
+
 const app = () => {
 
   const [goals, setGoals] = useState<ProofViewGoals>(null);
@@ -66,9 +68,15 @@ const app = () => {
         });
     };
 
+    const settingsClickHandler = () => {
+        vscode.postMessage({
+            command: "openGoalSettings",
+        });
+    };
+
   return (
     <main>
-        <ProofViewPage goals={goals} messages={messages} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting} maxDepth={goalDepth}/>
+        <ProofViewPage goals={goals} messages={messages} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting} maxDepth={goalDepth} settingsClickHandler={settingsClickHandler}/>
     </main>
   );
 };

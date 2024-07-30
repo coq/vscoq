@@ -1,4 +1,4 @@
-import { Disposable, Webview, WebviewPanel, window, workspace, Uri, ViewColumn, TextEditor, Position } from "vscode";
+import { Disposable, Webview, WebviewPanel, window, workspace, Uri, ViewColumn, TextEditor, Position, commands } from "vscode";
 import { ProofViewNotification } from '../protocol/types';
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
@@ -238,6 +238,8 @@ export default class GoalPanel {
         const text = message.text;
 
         switch (command) {
+            case 'openGoalSettings':
+                commands.executeCommand('workbench.action.openSettings', 'vscoq.goals');
             // Add more switch case statements here as more webview message commands
             // are created within the webview context (i.e. inside media/main.js)
         }
