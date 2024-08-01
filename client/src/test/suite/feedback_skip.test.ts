@@ -14,6 +14,7 @@ suite('Should get diagnostics in the appropriate tab', function () {
 		await ext.activate();
 
 		vscode.workspace.getConfiguration().update('vscoq.proof.delegation','Skip');
+		vscode.workspace.getConfiguration().update('vscoq.proof.mode','Continuous');
 
 		const doc1 = await common.openTextFile('delegate_proof.v');
 
