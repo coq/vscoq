@@ -198,6 +198,12 @@
             "type": "number",
             "default": 1,
             "description": "Amount of workers assigned to proofs in delegation mode"
+          },
+          "vscoq.proof.block": {
+              "scope": "window",
+              "type": "boolean",
+              "default": true,
+              "description": "Should execution be halted after reaching the first error ? "
           }
         }
       },

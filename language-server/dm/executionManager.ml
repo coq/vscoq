@@ -30,6 +30,8 @@ let error loc qf msg vernac_st = Error ((loc,msg), qf, (Some vernac_st))
 
 type sentence_id = Stateid.t
 
+type errored_sentence = sentence_id option
+
 module SM = Map.Make (Stateid)
 
 type sentence_state =
@@ -288,6 +290,30 @@ let rec remove_or_truncate_range r = function
     Range.{ start = r1.Range.start; end_ = r.Range.start} :: l
   else
     r1 :: (remove_or_truncate_range r l)
+
+
+let rec cut_from_range r = function
+| [] -> []
+| r1 :: l ->
+  let (<=) x y = Position.compare x y <= 0 in
+  if r.Range.start <= r1.Range.start then
+    l
+  else if r.Range.start <= r1.Range.end_ then
+    Range.{start = r1.Range.start; end_ = r.Range.start} :: l
+  else
+    r1 :: (cut_from_range r l)
+
+let cut_overview task state document =
+  let range = match task with
+  | PDelegate { terminator_id } -> Document.range_of_id_with_blank_space document terminator_id
+  | PSkip { id } | PExec { id } | PQuery { id } ->
+    Document.range_of_id_with_blank_space document id
+  in
+  let {prepared; processing; processed} = state.overview in
+  let prepared = cut_from_range range prepared in
+  let processing = cut_from_range range processing in
+  let overview = {prepared; processing; processed} in
+  {state with overview}
 
 let update_processed_as_Done s range overview =
   let {prepared; processing; processed} = overview in
@@ -639,7 +665,7 @@ let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_
 let execute st (vs, events, interrupted) task =
   if interrupted then begin
     let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
-    (st, vs, events, true)
+    (st, vs, events, true, None)
   end else
     try
       match task with
@@ -649,17 +675,21 @@ let execute st (vs, events, interrupted) task =
             | Some msg -> error None None msg vs
           in
           let st = update st id v in
-          (st, vs, events, false)
+          (st, vs, events, false, None)
       | PExec { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
           let vs, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
+          let exec_error = match v with
+            | Success _ -> None
+            | Error _ -> Some id
+          in
           let st = update st id v in
-          (st, vs, events @ ev, false)
+          (st, vs, events @ ev, false, exec_error)
       | PQuery { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
           let _, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let st = update st id v in
-          (st, vs, events @ ev, false)
+          (st, vs, events @ ev, false, None)
       | PDelegate { terminator_id; opener_id; last_step_id; tasks; proof_using } ->
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
@@ -697,33 +727,33 @@ let execute st (vs, events, interrupted) task =
                   ~feedback_cleanup:(fun () -> feedback_cleanup st)
                 in
               Queue.push (job_id, Sel.Event.get_cancellation_handle e, job) jobs;
-              (st, last_vs,events @ [inject_proof_event e] ,false)
+              (st, last_vs,events @ [inject_proof_event e] ,false, None)
           | _ ->
             (* If executing the proof opener failed, we skip the proof *)
             let st = update st terminator_id (success vs) in
-            (st, vs,events,false)
+            (st, vs,events,false, None)
           end
     with Sys.Break ->
       let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
-      (st, vs, events, true)
+      (st, vs, events, true, None)
 
-let build_tasks_for document sch st id =
+let build_tasks_for document sch st id block =
   let rec build_tasks id tasks st =
     begin match find_fulfilled_opt id st.of_sentence with
     | Some (Success (Some vs)) ->
       (* We reached an already computed state *)
       log @@ "Reached computed state " ^ Stateid.to_string id;
-      vs, tasks, st
+      vs, tasks, st, None
     | Some (Error(_,_,Some vs)) ->
       (* We try to be resilient to an error *)
       log @@ "Error resiliency on state " ^ Stateid.to_string id;
-      vs, tasks, st
+      vs, tasks, st, Some id
     | _ ->
       log @@ "Non (locally) computed state " ^ Stateid.to_string id;
       let (base_id, task) = task_for_sentence sch id in
       begin match base_id with
       | None -> (* task should be executed in initial state *)
-        st.initial, task :: tasks, st
+        st.initial, task :: tasks, st, None
       | Some base_id ->
         build_tasks base_id (task::tasks) st
       end
@@ -735,10 +765,14 @@ let build_tasks_for document sch st id =
     | task :: l -> build_prepared_overview l (update_prepared task document state)
     end
   in
-  let vs, tasks, st = build_tasks id [] st in
-  let prepared_tasks = List.concat_map prepare_task tasks in
-  let st = build_prepared_overview prepared_tasks st in
-  vs, prepared_tasks, st
+  let vs, tasks, st, error_id = build_tasks id [] st in
+  match error_id, block with
+  | _, false | None, _ ->
+    let prepared_tasks = List.concat_map prepare_task tasks in
+    let st = build_prepared_overview prepared_tasks st in
+    vs, prepared_tasks, st, None
+  | Some id, true ->
+    vs, [], st, Some id
 
 let all_errors st =
   List.fold_left (fun acc (id, (p,_)) ->

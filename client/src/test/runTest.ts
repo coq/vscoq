@@ -25,6 +25,7 @@ async function main() {
 			"vscoq.path": vscoqPath,
 			"vscoq.args": vscoqArgs,
             "vscoq.proof.mode": 1,
+            "vscoq.proof.block": false
         };
 
 		await fs.mkdir(userSettingsPath, { recursive: true });

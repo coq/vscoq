@@ -95,6 +95,15 @@ module Notification = struct
 
     end
 
+    module BlockOnErrorParams = struct
+      
+      type t = {
+        uri: DocumentUri.t; 
+        range: Range.t;
+      } [@@deriving yojson]
+
+    end
+
     module ProofViewParams = struct
 
       type t = {
@@ -118,6 +127,7 @@ module Notification = struct
     | Std of Lsp.Server_notification.t
     | UpdateHighlights of overview
     | MoveCursor of MoveCursorParams.t
+    | BlockOnError of BlockOnErrorParams.t
     | ProofView of ProofViewParams.t
     | CoqLogMessage of CoqLogMessageParams.t
     | SearchResult of query_result
@@ -140,9 +150,14 @@ module Notification = struct
         let params = yojson_of_query_result params in
         let params = Some (Jsonrpc.Structured.t_of_yojson params) in
         Jsonrpc.Notification.{ method_; params }      
-      | MoveCursor params -> 
+      | MoveCursor params ->
         let method_ = "vscoq/moveCursor" in 
         let params = MoveCursorParams.yojson_of_t params in
+        let params = Some (Jsonrpc.Structured.t_of_yojson params) in
+        Jsonrpc.Notification.{ method_; params }
+      | BlockOnError params ->
+        let method_ = "vscoq/blockOnError" in 
+        let params = BlockOnErrorParams.yojson_of_t params in
         let params = Some (Jsonrpc.Structured.t_of_yojson params) in
         Jsonrpc.Notification.{ method_; params }
       | CoqLogMessage params ->
