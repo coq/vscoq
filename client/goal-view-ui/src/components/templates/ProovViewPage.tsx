@@ -53,7 +53,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                     collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.main)} 
                     displaySetting={displaySetting}
                     emptyMessage={
-                        goals!.shelved.length ? "There are shelved goals. Try using unshelved" :
+                        goals!.shelved.length ? "There are shelved goals. Try using `Unshelve.`" :
                         goals!.givenUp.length ? "There are some goals you gave up. Go back and solve them, or use `Admitted.`" :
                         "There are no more subgoals"
                     }
