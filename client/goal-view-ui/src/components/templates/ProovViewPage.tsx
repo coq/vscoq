@@ -110,7 +110,17 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
         <div className={classes.Page}>
             <div className={classes.ButtonContainer}>
                 <div className={classes.HelpMessage}>{helpMessage}</div>
-                <VSCodeButton appearance={'icon'} onClick={settingsClickHandler} aria-label='Settings'>
+                <VSCodeButton 
+                    appearance={'icon'} 
+                    onClick={settingsClickHandler}
+                    onMouseOver={() => {
+                        helpMessageHandler("Open proof view panel settings.");
+                    }}
+                    onMouseOut={() => {
+                        helpMessageHandler("");
+                    }}
+                    aria-label='Settings'
+                >
                     <VscGear/>
                 </VSCodeButton>
             </div>
