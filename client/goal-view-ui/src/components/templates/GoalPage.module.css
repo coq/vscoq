@@ -3,12 +3,32 @@
     width: 100%;
 }
 
+.ButtonContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: fit-content;
+    margin-bottom: 12px;
+}
+
+.HelpMessage {
+    font-style: italic;
+    opacity: .4;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    flex-basis: auto;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
 .Panel {
     display: flex;
     flex-direction: column;
     width: 100%;
     overflow: auto;
 }
+
 
 .View {
     width: 100%;

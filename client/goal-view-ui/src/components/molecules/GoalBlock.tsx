@@ -12,19 +12,20 @@ import { Goal } from '../../types';
 type GoalBlockProps = {
     goal: Goal
     goalIndicator?: string,
-    maxDepth: number
+    maxDepth: number,
+    helpMessageHandler: (message: string) => void
 };
 
 const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {
     
-    const {goal, goalIndicator, maxDepth} = props;
+    const {goal, goalIndicator, maxDepth, helpMessageHandler} = props;
     const indicator = goalIndicator ? <span className={classes.GoalIndex} >({goalIndicator})</span> : null;
 
     return (
         <div className={classes.Block}>
             <HypothesesBlock hypotheses={goal.hypotheses} maxDepth={maxDepth}/>
             <div className={classes.SeparatorZone}> {indicator} <Separator /> </div>
-            <GoalComponent goal={goal.goal} maxDepth={maxDepth}/>
+            <GoalComponent goal={goal.goal} maxDepth={maxDepth} setHelpMessage={helpMessageHandler}/>
         </div>
     );
 };

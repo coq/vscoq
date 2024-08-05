@@ -361,6 +361,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                         boxChildren={displayState.display.boxChildren}
                         indent={displayState.display.indent}
                         breaks={displayState.breakIds}
+                        addedDepth={0}
                     />
                     : null
                 }

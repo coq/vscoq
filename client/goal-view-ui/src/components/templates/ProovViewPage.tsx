@@ -4,8 +4,11 @@ import {
     VSCodeBadge, 
     VSCodePanels, 
     VSCodePanelTab, 
-    VSCodePanelView 
+    VSCodePanelView,
+    VSCodeButton
 } from '@vscode/webview-ui-toolkit/react';
+
+import { VscGear } from 'react-icons/vsc';
 
 import GoalSection from '../organisms/GoalSection';
 import EmptyState from '../atoms/EmptyState';
@@ -22,11 +25,14 @@ type ProofViewPageProps = {
     collapseGoalHandler: (id: string, key: ProofViewGoalsKey) => void,
     displaySetting: string;
     maxDepth: number;
+    settingsClickHandler: () => void;
+    helpMessage: string;
+    helpMessageHandler: (message: string) => void;
 };
 
 const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
 
-    const {goals, messages, displaySetting, collapseGoalHandler, maxDepth} = props;
+    const {goals, messages, displaySetting, collapseGoalHandler, maxDepth, settingsClickHandler, helpMessage, helpMessageHandler} = props;
 
     const renderGoals = () => {
         const goalBadge = <VSCodeBadge>{goals!.main.length}</VSCodeBadge>;
@@ -55,6 +61,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                         goals!.shelved.length === 0 && goals!.givenUp.length === 0 ? <VscPass /> : <VscWarning />
                     }
                     maxDepth={maxDepth}
+                    helpMessageHandler={helpMessageHandler}
                 /> 
             </VSCodePanelView>,
             <VSCodePanelView className={classes.View}> 
@@ -65,6 +72,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                     displaySetting={displaySetting}
                     emptyMessage='There are no shelved goals'
                     maxDepth={maxDepth}
+                    helpMessageHandler={helpMessageHandler}
                 /> 
             </VSCodePanelView>,
             <VSCodePanelView className={classes.View}> 
@@ -75,6 +83,7 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                     displaySetting={displaySetting}
                     emptyMessage='There are no given up goals'
                     maxDepth={maxDepth}
+                    helpMessageHandler={helpMessageHandler}
                 /> 
             </VSCodePanelView>
         ];
@@ -99,6 +108,22 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
     
     return (
         <div className={classes.Page}>
+            <div className={classes.ButtonContainer}>
+                <div className={classes.HelpMessage}>{helpMessage}</div>
+                <VSCodeButton 
+                    appearance={'icon'} 
+                    onClick={settingsClickHandler}
+                    onMouseOver={() => {
+                        helpMessageHandler("Open proof view panel settings.");
+                    }}
+                    onMouseOut={() => {
+                        helpMessageHandler("");
+                    }}
+                    aria-label='Settings'
+                >
+                    <VscGear/>
+                </VSCodeButton>
+            </div>
             <Accordion title={'Proof'} collapsed={false}>
                 {collapsibleGoalsDisplay}
             </Accordion>

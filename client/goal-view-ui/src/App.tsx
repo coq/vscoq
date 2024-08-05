@@ -4,12 +4,15 @@ import "./App.css";
 import ProofViewPage from './components/templates/ProovViewPage';
 import {Goal, ProofViewGoals, ProofViewGoalsKey, ProofViewMessage} from './types';
 
+import { vscode } from "./utilities/vscode";
+
 const app = () => {
 
   const [goals, setGoals] = useState<ProofViewGoals>(null);
   const [messages, setMessages] = useState<ProofViewMessage[]>([]);
   const [goalDisplaySetting, setGoalDisplaySetting] = useState<string>("List");
   const [goalDepth, setGoalDepth] = useState<number>(10);
+  const [helpMessage, setHelpMessage] = useState<string>("");
 
   const handleMessage = useCallback ((msg: any) => {
     switch (msg.data.command) {
@@ -66,9 +69,24 @@ const app = () => {
         });
     };
 
+    const settingsClickHandler = () => {
+        vscode.postMessage({
+            command: "openGoalSettings",
+        });
+    };
+
   return (
     <main>
-        <ProofViewPage goals={goals} messages={messages} collapseGoalHandler={collapseGoalHandler} displaySetting={goalDisplaySetting} maxDepth={goalDepth}/>
+        <ProofViewPage 
+            goals={goals} 
+            messages={messages} 
+            collapseGoalHandler={collapseGoalHandler} 
+            displaySetting={goalDisplaySetting} 
+            maxDepth={goalDepth} 
+            settingsClickHandler={settingsClickHandler}
+            helpMessage={helpMessage}
+            helpMessageHandler={(message: string) => setHelpMessage(message)}
+        />
     </main>
   );
 };
