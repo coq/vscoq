@@ -8,13 +8,17 @@ interface PpBoxProps extends Box {
     breaks: BreakInfo[],
     maxDepth: number,
     hide: boolean,
-    hovered: boolean
+    hovered: boolean,
+    addedDepth: number,
 }
+
+const ADDED_DEPTH_FACTOR = 10;
 
 const PpBox: FunctionComponent<PpBoxProps> = (props) => {
     
-    const {mode, depth, coqCss, id, indent, breaks, boxChildren, hovered, maxDepth} = props;
+    const {mode, depth, coqCss, id, indent, breaks, boxChildren, hovered, maxDepth, addedDepth} = props;
     const [hide, setHide] = useState<boolean>(depth >= maxDepth);
+    const [depthOpen, setDepthOpen] = useState<number>(addedDepth);
 
     const ellpisis = (
         <span className={classes.Ellipsis}>
@@ -40,6 +44,7 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
                         indent={child.indent}
                         breaks={breaks}
                         boxChildren={child.boxChildren}
+                        addedDepth={addedDepth + depthOpen}
                     />
                 );
             } else if (child.type === DisplayType.break) {
@@ -73,7 +78,16 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
             className={classNames.join(' ')}
             onClick={(e) => {
                 e.stopPropagation();
-                if(e.altKey) { setHide(!hide); };
+                if(e.altKey) { 
+                    if(hide) {
+                        setDepthOpen(depthOpen + ADDED_DEPTH_FACTOR);
+                        setHide(false);
+                    }
+                    else {
+                        setDepthOpen(Math.max(depthOpen - ADDED_DEPTH_FACTOR, 0));
+                        setHide(true);
+                    }
+                };
             }}
         >
             {inner}
