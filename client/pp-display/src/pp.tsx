@@ -3,13 +3,10 @@ import useResizeObserver from '@react-hook/resize-observer';
 import {ResizeObserverEntry} from '@juggle/resize-observer';
 import { v4 as uuid } from 'uuid';
 
-import { PpString, PpMode, BoxDisplay, Term, Break, Box, DisplayType, BreakInfo } from '../types';
-import PpBreak from './pp-break';
+import { PpString, PpMode, BoxDisplay, Term, Break, Box, DisplayType, BreakInfo } from './types';
 import PpBox from './pp-box';
 
 import classes from './Pp.module.css';
-import { off } from 'process';
-
 
 const MAX_RECOMPUTE = 50;
 

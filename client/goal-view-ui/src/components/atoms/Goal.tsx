@@ -1,8 +1,7 @@
 import React, {FunctionComponent, MouseEvent, KeyboardEvent} from 'react';
 
 import classes from './PpString.module.css';
-import { PpString } from '../../types';
-import PpDisplay from '../../utilities/pp';
+import { PpDisplay, PpString } from 'pp-display';
 
 type GoalProps = {
     goal: PpString,

@@ -1,11 +1,10 @@
 import React, {FunctionComponent} from 'react';
 
 import classes from './PpString.module.css';
-import { Hyp } from '../../types';
-import PpDisplay from '../../utilities/pp';
+import { PpDisplay, PpString } from 'pp-display';
 
 type HypothesisProps = {
-    content: Hyp;
+    content: PpString;
     maxDepth: number;
 };
 
