@@ -184,8 +184,8 @@ This extension is currently developed and maintained as part of
 [Enrico Tassi](https://github.com/gares),
 [Romain Tetley](https://github.com/rtetley).
 
-**VsCoq Legacy** is no longer actively developped but is still maintained for compatibility
-purposes. It was developped and maintained by
+**VsCoq Legacy** is no longer actively developed but is still maintained for compatibility
+purposes. It was developed and maintained by
 [Maxime Dénès](https://github.com/maximedenes),
 [Paolo G. Giarrusso](https://github.com/Blaisorblade),
 [Huỳnh Trần Khanh](https://github.com/huynhtrankhanh),
