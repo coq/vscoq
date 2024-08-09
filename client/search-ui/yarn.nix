@@ -394,6 +394,14 @@
       };
     }
     {
+      name = "_juggle_resize_observer___resize_observer_3.4.0.tgz";
+      path = fetchurl {
+        name = "_juggle_resize_observer___resize_observer_3.4.0.tgz";
+        url  = "https://registry.yarnpkg.com/@juggle/resize-observer/-/resize-observer-3.4.0.tgz";
+        sha512 = "dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==";
+      };
+    }
+    {
       name = "_microsoft_fast_element___fast_element_1.11.0.tgz";
       path = fetchurl {
         name = "_microsoft_fast_element___fast_element_1.11.0.tgz";
@@ -423,6 +431,30 @@
         name = "_microsoft_fast_web_utilities___fast_web_utilities_5.4.1.tgz";
         url  = "https://registry.yarnpkg.com/@microsoft/fast-web-utilities/-/fast-web-utilities-5.4.1.tgz";
         sha512 = "ReWYncndjV3c8D8iq9tp7NcFNc1vbVHvcBFPME2nNFKNbS1XCesYZGlIlf3ot5EmuOXPlrzUHOWzQ2vFpIkqDg==";
+      };
+    }
+    {
+      name = "_react_hook_latest___latest_1.0.3.tgz";
+      path = fetchurl {
+        name = "_react_hook_latest___latest_1.0.3.tgz";
+        url  = "https://registry.yarnpkg.com/@react-hook/latest/-/latest-1.0.3.tgz";
+        sha512 = "dy6duzl+JnAZcDbNTfmaP3xHiKtbXYOaz3G51MGVljh548Y8MWzTr+PHLOfvpypEVW9zwvl+VyKjbWKEVbV1Rg==";
+      };
+    }
+    {
+      name = "_react_hook_passive_layout_effect___passive_layout_effect_1.2.1.tgz";
+      path = fetchurl {
+        name = "_react_hook_passive_layout_effect___passive_layout_effect_1.2.1.tgz";
+        url  = "https://registry.yarnpkg.com/@react-hook/passive-layout-effect/-/passive-layout-effect-1.2.1.tgz";
+        sha512 = "IwEphTD75liO8g+6taS+4oqz+nnroocNfWVHWz7j+N+ZO2vYrc6PV1q7GQhuahL0IOR7JccFTsFKQ/mb6iZWAg==";
+      };
+    }
+    {
+      name = "_react_hook_resize_observer___resize_observer_1.2.6.tgz";
+      path = fetchurl {
+        name = "_react_hook_resize_observer___resize_observer_1.2.6.tgz";
+        url  = "https://registry.yarnpkg.com/@react-hook/resize-observer/-/resize-observer-1.2.6.tgz";
+        sha512 = "DlBXtLSW0DqYYTW3Ft1/GQFZlTdKY5VAFIC4+km6IK5NiPPDFchGbEJm1j6pSgMqPRHbUQgHJX7RaR76ic1LWA==";
       };
     }
     {
@@ -945,12 +977,21 @@
         sha512 = "PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==";
       };
     }
+
     {
       name = "react_dom___react_dom_17.0.2.tgz";
       path = fetchurl {
         name = "react_dom___react_dom_17.0.2.tgz";
         url  = "https://registry.yarnpkg.com/react-dom/-/react-dom-17.0.2.tgz";
         sha512 = "s4h96KtLDUQlsENhMn1ar8t2bEa+q/YAtj8pPPdIjPDGBDIVNsrD9aXNWqspUe6AzKCIG0C1HZZLqLV7qpOBGA==";
+      };
+    }
+    {
+      name = "react_hook___react_hook_0.0.1.tgz";
+      path = fetchurl {
+        name = "react_hook___react_hook_0.0.1.tgz";
+        url  = "https://registry.yarnpkg.com/react-hook/-/react-hook-0.0.1.tgz";
+        sha512 = "2/Guf88/dGyFgUT7QDtBJ1l7V5yqTcAHlNRIZNTu2xg0KkDjaiYZp79ah49NDaLMI/J7voWcKLU8wMONG4A/1g==";
       };
     }
     {
