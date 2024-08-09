@@ -1,8 +1,8 @@
 import React, {FunctionComponent} from 'react';
 
 import classes from './PpString.module.css';
-import { MessageSeverity, PpString } from '../../types';
-import PpDisplay from '../../utilities/pp';
+import { MessageSeverity } from '../../types';
+import { PpDisplay, PpString } from 'pp-display';
 
 type MessageProps = {
     message: PpString,

@@ -1,12 +1,13 @@
 import React, {FunctionComponent} from 'react';
 
+import { PpString } from 'pp-display';
+
 import Hypothesis from '../atoms/Hypothesis';
 
 import classes from './HypothesesBlock.module.css';
-import { Hyp } from '../../types';
 
 type HypothesesBlockProps = {
-    hypotheses: Hyp[];
+    hypotheses: PpString[];
     maxDepth: number
 };
 

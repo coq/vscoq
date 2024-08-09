@@ -1,5 +1,5 @@
 import React, {FunctionComponent, useEffect, useState, useLayoutEffect, useRef, ReactFragment, SyntheticEvent} from 'react';
-import {Box, DisplayType, BreakInfo} from '../types';
+import {Box, DisplayType, BreakInfo} from './types';
 import PpBreak from './pp-break';
 import classes from './Pp.module.css';
 

@@ -1,5 +1,5 @@
 import React, {FunctionComponent} from 'react';
-import {PpMode} from '../types';
+import {PpMode} from './types';
 
 type PpBreakProps = {
     id: string,
