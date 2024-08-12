@@ -257,7 +257,8 @@
       {
         "command": "extension.coq.reset",
         "category": "Coq",
-        "title": "Reset"
+        "title": "Reset",
+        "icon": "$(fold-up)"
       },
       {
         "command": "extension.coq.query.search",
@@ -294,24 +295,28 @@
         "category": "Coq",
         "title": "Interpret to point",
         "description": "Interprets the current coq file until the given point",
-        "enablement": "config.vscoq.proof.mode == 0"
+        "enablement": "config.vscoq.proof.mode == 0",
+        "icon": "$(arrow-right)"
       },
       {
         "command": "extension.coq.interpretToEnd",
         "category": "Coq",
         "title": "Interpret to end",
         "description": "Interprets the current coq file until the end",
-        "enablement": "config.vscoq.proof.mode == 0"
+        "enablement": "config.vscoq.proof.mode == 0",
+        "icon": "$(fold-down)"
       },
       {
         "command": "extension.coq.stepForward",
         "title": "Step Forward",
-        "category": "Coq"
+        "category": "Coq",
+        "icon": "$(arrow-down)"
       },
       {
         "command": "extension.coq.stepBackward",
         "title": "Step Backward",
-        "category": "Coq"
+        "category": "Coq",
+        "icon": "$(arrow-up)"
       },
       {
         "command": "extension.coq.documentState",
@@ -340,11 +345,38 @@
       }
     ],
     "menus": {
+      "editor/title": [
+        {
+            "when": "resourceLangId == coq",
+            "command": "extension.coq.interpretToPoint",
+            "group": "navigation@98"
+        },
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.stepForward",
+          "group": "navigation@96"
+        },
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.stepBackward",
+          "group": "navigation@97"
+        },
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.interpretToEnd",
+          "group": "navigation@99"
+        },
+        {
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.reset",
+          "group": "navigation@100"
+        }
+      ],
       "editor/context": [
         {
           "when": "resourceLangId == coq",
           "command": "extension.coq.interpretToPoint",
-          "group": "navigation"
+          "group": "navigation@coq"
         },
         {
           "when": "resourceLangId == coq",
