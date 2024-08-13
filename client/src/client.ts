@@ -39,6 +39,10 @@ export default class Client extends LanguageClient {
         Client._coqLog.appendLine(message);
     }
 
+    public static showLog() {
+        Client._channel.show(true);
+    };
+
     public saveHighlights(uri: String, preparedRange: vscode.Range[], processingRange: vscode.Range[], processedRange: vscode.Range[]) {
         this._decorationsPrepared.set(uri, preparedRange);
         this._decorationsProcessing.set(uri, processingRange);
