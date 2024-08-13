@@ -255,6 +255,11 @@
     ],
     "commands": [
       {
+        "command": "extension.coq.walkthrough",
+        "category": "Coq",
+        "title": "Docs: Show setup guide"
+      },
+      {
         "command": "extension.coq.showSetup",
         "category": "Coq",
         "title": "Troubleshooting: Show setup"
@@ -359,49 +364,60 @@
         {
             "when": "resourceLangId == coq",
             "command": "extension.coq.interpretToPoint",
-            "group": "navigation@98"
+            "group": "navigation@3"
         },
         {
           "when": "resourceLangId == coq",
           "command": "extension.coq.stepForward",
-          "group": "navigation@96"
+          "group": "navigation@1"
         },
         {
           "when": "resourceLangId == coq",
           "command": "extension.coq.stepBackward",
-          "group": "navigation@97"
+          "group": "navigation@2"
         },
         {
           "when": "resourceLangId == coq",
           "command": "extension.coq.interpretToEnd",
-          "group": "navigation@99"
+          "group": "navigation@4"
         },
         {
           "when": "resourceLangId == coq",
           "command": "extension.coq.reset",
-          "group": "navigation@100"
+          "group": "navigation@5"
         },
         {
           "when": "resourceLangId == coq",
           "submenu": "vscoq.menu",
-          "group": "navigation@101"
+          "group": "navigation@0"
         }
       ],
       "vscoq.menu":[
         {
           "when": "resourceLangId == coq",
           "command": "extension.coq.documentState",
-          "group": "troubleshooting@1"
+          "group": "1_troubleshooting@1"
         },
         {
           "when": "resourceLangId == coq",
           "command": "extension.coq.showSetup",
-          "group": "troubleshooting@2"
+          "group": "1_troubleshooting@2"
         },
         {
           "when": "resourceLangId == coq",
           "command": "extension.coq.showLog",
-          "group": "troubleshooting@2"
+          "group": "1_troubleshooting@2"
+        },
+        {
+          "when": "resourceLangId == coq",
+          "submenu": "vscoq.menu.doc",
+          "group": "2_documentation@0"
+        }
+      ],
+      "vscoq.menu.doc":[
+        {
+            "when": "resourceLangId == coq",
+            "command": "extension.coq.walkthrough"
         }
       ],
       "editor/context": [
@@ -458,6 +474,10 @@
           "light": "./assets/vscoq-mini-light.svg"
         },
         "label": "Coq"
+      },
+      {
+        "id": "vscoq.menu.doc",
+        "label": "Documentation"
       }
     ],
     "keybindings": [
@@ -811,6 +831,48 @@
           "highContrast": "#ffa500"
         }
       }
+    ],
+    "walkthroughs": [
+        {
+            "id": "coq.welcome",
+            "title": "Coq Setup",
+            "description": "Getting started with Coq",
+            "steps": [
+                {
+                    "id": "coq.welcome.openHelpPage",
+                    "title": "Re-open the setup page",
+                    "description": "This page is accessible at any moment by opening an empty file, clicking on the Coq menu and selecting ``Documentation > Docs: Show Setup Guide`` from the drop down menu.",
+                    "media": {
+                        "image": "./media/open_walkthrough.png",
+                        "altText": "Click on the Coq symbol and go to ```Docs: Show Setup Guide``` to re-open this walkthrough."
+                    }
+                },
+                {
+                    "id": "coq.welcome.books",
+                    "title": "Ressources to get started in the Coq world",
+                    "description": "You can find helpful books, documentations, and tutorials in this page",
+                    "media": {
+                        "markdown": "./media/books.md"
+                    }
+                },
+                {
+                    "id": "coq.welcome.install",
+                    "title": "Install dependencies",
+                    "description": "How to install Coq, setup VsCoq and its dependencies",
+                    "media": {
+                        "markdown": "./media/install.md"
+                    }
+                },
+                {
+                    "id": "coq.welcome.troubleshooting",
+                    "title": "Getting help",
+                    "description": "If you have any questions or are having problem with any of the previous step, please head over to the [Coq zulip chat](https://coq.zulipchat.com/) so we can help you.",
+                    "media": {
+                        "markdown": "./media/troubleshooting.md"
+                    }
+                }
+            ]
+        }
     ]
   },
   "scripts": {

@@ -245,6 +245,9 @@ export function activate(context: ExtensionContext) {
                     }
                 });
         });
+        registerVscoqTextCommand('walkthrough', () => {
+            commands.executeCommand('workbench.action.openWalkthrough', 'maximedenes.vscoq#coq.welcome', false); 
+        });
             
         client.onNotification("vscoq/updateHighlights", (notification) => {
         
