@@ -1,4 +1,4 @@
-import {workspace, window, commands, languages, ExtensionContext,
+import {workspace, window, commands, languages, ExtensionContext, env,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
   TextEditor,
@@ -109,7 +109,24 @@ export function activate(context: ExtensionContext) {
         }
     }
 
+    const getConfigString = (serverInfo : any) => {
+        return (
 
+    `**Coq Installation**
+    
+    ${coqTM.getversionFullOutput()}
+    
+    Path: \`${coqTM.getCoqPath()}\`
+    ---
+    
+    **vscoqtop** ${serverInfo?.version}
+    
+    Path: \`${coqTM.getVsCoqTopPath()}\`
+    `
+
+        );
+
+    };
 
     function registerVscoqTextCommand(command: string, callback: (textEditor: TextEditor, ...args: any[]) => void) {
         context.subscriptions.push(commands.registerTextEditorCommand('extension.coq.' + command, callback));
@@ -215,6 +232,19 @@ export function activate(context: ExtensionContext) {
             }); 
             
         });
+        registerVscoqTextCommand('showLog', () => {
+            Client.showLog();
+        });
+        registerVscoqTextCommand('showSetup', () => {
+            const serverInfo = client.initializeResult!.serverInfo;
+            const configString = getConfigString(serverInfo);
+            window.showInformationMessage(configString, {modal: true}, { title: "Copy to clipboard", id: 0 })
+                .then(act => {
+                    if (act?.id === 0) {
+                        env.clipboard.writeText(configString);
+                    }
+                });
+        });
             
         client.onNotification("vscoq/updateHighlights", (notification) => {
         
@@ -277,8 +307,7 @@ export function activate(context: ExtensionContext) {
             
             checkVersion(client, context);
             const serverInfo = client.initializeResult!.serverInfo;
-            statusBar.text = `${serverInfo?.name} ${serverInfo?.version}, coq ${coqTM.getCoqVersion()}`;
-            statusBar.tooltip = new MarkdownString(
+            const configString = new MarkdownString(
                 
 `**Coq Installation**
 
@@ -291,7 +320,9 @@ Path: \`${coqTM.getCoqPath()}\`
 
 Path: \`${coqTM.getVsCoqTopPath()}\`
 `
-            );
+                            );
+            statusBar.text = `${serverInfo?.name} ${serverInfo?.version}, coq ${coqTM.getCoqVersion()}`;
+            statusBar.tooltip = configString;
             statusBar.show();
 
             initializeDecorations(context);
