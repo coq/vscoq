@@ -123,6 +123,9 @@ We now support a document outline, which displays theorems and definitions in th
 
 Goals can now be ellided. First through the `"vscoq.goals.maxDepth"` setting which ellides a goal if the display becomes to large.
 Finally by clicking on the goal view as showcased here.
+The following modifiers can be used: 
+- ```Alt + Click```: open/close an ellipsis (only opens partially).
+- ```Shift + Alt + Click```: fully open an ellipsis (all children are also opened).
 
 ![](gif/goal-ellipsis.gif)
 
