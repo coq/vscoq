@@ -18,7 +18,7 @@ export const checkVersion = (client: Client, context: ExtensionContext) => {
             Client.writeToVscoq2Channel("Could not run compatibility tests: failed to get serverInfo");
         }  
     } else {
-        Client.writeToVscoq2Channel("Could not run compatibility tests: failed to recieve initializeResult");
+        Client.writeToVscoq2Channel("Could not run compatibility tests: failed to receive initializeResult");
     }
 
 };

@@ -1,13 +1,25 @@
 import React, {FunctionComponent, useEffect, useState, useLayoutEffect, useRef, ReactFragment, SyntheticEvent} from 'react';
-import {Box, DisplayType, BreakInfo} from './types';
+import {Box, DisplayType, BreakInfo, HideStates } from './types';
 import PpBreak from './pp-break';
 import classes from './Pp.module.css';
+
+/**
+ * Computes the optimal hide state given a hide state for the current box and the hide state for the parent box .
+ */
+const ComputeHideState = (self : HideStates, parent : HideStates) => {
+  // If "parent" state dictates "self", then follow it
+  if (parent === HideStates.HIDE || parent === HideStates.EXPAND_ALL) {
+    return parent;
+  }
+  // Otherwise, follow the self state
+  return self;
+}
 
 interface PpBoxProps extends Box {
     coqCss: CSSModuleClasses,
     breaks: BreakInfo[],
     maxDepth: number,
-    hide: boolean,
+    parentHide: HideStates,
     hovered: boolean,
     addedDepth: number,
 }
@@ -16,8 +28,8 @@ const ADDED_DEPTH_FACTOR = 10;
 
 const PpBox: FunctionComponent<PpBoxProps> = (props) => {
     
-    const {mode, depth, coqCss, id, indent, breaks, boxChildren, hovered, maxDepth, addedDepth} = props;
-    const [hide, setHide] = useState<boolean>(depth >= maxDepth);
+    const {mode, depth, coqCss, id, indent, breaks, boxChildren, parentHide, hovered, maxDepth, addedDepth} = props;
+    const [selfHide, setSelfHide] = useState<HideStates>(ComputeHideState(depth >= maxDepth ? HideStates.HIDE : HideStates.UNHIDE, parentHide));
     const [depthOpen, setDepthOpen] = useState<number>(addedDepth);
 
     const ellpisis = (
@@ -26,7 +38,7 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
         </span>
     );
 
-    const inner = hide ? ellpisis : boxChildren.map((child, i) => {
+    const inner = selfHide === HideStates.HIDE ? ellpisis : boxChildren.map((child, i) => {
         if(child) {
             if (child.type === DisplayType.box) {
                 return (
@@ -34,7 +46,7 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
                         key={child.id + i}
                         type={child.type}
                         depth={child.depth}
-                        hide={hide}
+                        parentHide={selfHide}
                         hovered={hovered}
                         maxDepth={maxDepth}
                         coqCss={coqCss}
@@ -79,13 +91,13 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
             onClick={(e) => {
                 e.stopPropagation();
                 if(e.altKey) { 
-                    if(hide) {
-                        setDepthOpen(depthOpen + ADDED_DEPTH_FACTOR);
-                        setHide(false);
-                    }
-                    else {
-                        setDepthOpen(Math.max(depthOpen - ADDED_DEPTH_FACTOR, 0));
-                        setHide(true);
+                    if (selfHide === HideStates.HIDE) {
+                      setDepthOpen(depthOpen + ADDED_DEPTH_FACTOR);
+                      setSelfHide(e.shiftKey ? HideStates.EXPAND_ALL : HideStates.UNHIDE);
+                    } else {
+                      // We must be in a visible state, so turn to hide
+                      setDepthOpen(Math.max(depthOpen - ADDED_DEPTH_FACTOR, 0));
+                      setSelfHide(HideStates.HIDE);
                     }
                 };
             }}
