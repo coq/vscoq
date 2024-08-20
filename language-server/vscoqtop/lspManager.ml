@@ -595,17 +595,17 @@ let dispatch_request : type a. Jsonrpc.Id.t -> a Request.Client.t -> (a,string) 
 
 let dispatch_std_notification = 
   let open Lsp.Client_notification in function
-  | TextDocumentDidOpen params -> log "Recieved notification: textDocument/didOpen";
+  | TextDocumentDidOpen params -> log "Received notification: textDocument/didOpen";
     begin try textDocumentDidOpen params with
       exn -> let info = Exninfo.capture exn in
       let message = "Error while opening document. " ^ Pp.string_of_ppcmds @@ CErrors.iprint_no_report info in
       send_error_notification message; []
     end
-  | TextDocumentDidChange params -> log "Recieved notification: textDocument/didChange";
+  | TextDocumentDidChange params -> log "Received notification: textDocument/didChange";
     textDocumentDidChange params
-  | TextDocumentDidClose params ->  log "Recieved notification: textDocument/didClose";
+  | TextDocumentDidClose params ->  log "Received notification: textDocument/didClose";
     textDocumentDidClose params
-  | ChangeConfiguration params -> log "Recieved notification: workspace/didChangeConfiguration";
+  | ChangeConfiguration params -> log "Received notification: workspace/didChangeConfiguration";
     workspaceDidChangeConfiguration params
   | Initialized -> []
   | Exit ->

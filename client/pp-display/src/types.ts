@@ -8,6 +8,12 @@ export enum PpMode {
     hovBox = "Pp_hovbox"
 }
 
+export enum HideStates {
+  HIDE, // Hide self and all below
+  UNHIDE, // Do not hide self, but set nothing for children
+  EXPAND_ALL, // Unhide self and all below
+}
+
 export type BlockType =
   | [PpMode.horizontal]
   | [PpMode.vertical, integer]
