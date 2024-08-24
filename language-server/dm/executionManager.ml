@@ -530,7 +530,7 @@ let handle_feedback id fb state =
   match fb with
   | (_, _, _, msg) ->
     begin match SM.find id state.of_sentence with
-    | (s,fl) -> update_all id s (fb::fl) state
+    | (s,fl) -> update_all id s (fl @ [fb]) state
     | exception Not_found -> 
         log @@ "Received feedback on non-existing state id " ^ Stateid.to_string id ^ ": " ^ Pp.string_of_ppcmds msg;
         state
