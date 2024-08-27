@@ -248,6 +248,9 @@ export function activate(context: ExtensionContext) {
         registerVscoqTextCommand('walkthrough', () => {
             commands.executeCommand('workbench.action.openWalkthrough', 'maximedenes.vscoq#coq.welcome', false); 
         });
+        registerVscoqTextCommand('showManual', () => {
+            commands.executeCommand('simpleBrowser.show', 'https://coq.inria.fr/doc/master/refman/index.html'); 
+        });
             
         client.onNotification("vscoq/updateHighlights", (notification) => {
         

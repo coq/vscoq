@@ -255,6 +255,11 @@
     ],
     "commands": [
       {
+        "command": "extension.coq.showManual",
+        "category": "Coq",
+        "title": "Docs: Show manual"
+      },
+      {
         "command": "extension.coq.walkthrough",
         "category": "Coq",
         "title": "Docs: Show setup guide"
@@ -418,6 +423,10 @@
         {
             "when": "resourceLangId == coq",
             "command": "extension.coq.walkthrough"
+        },
+        {
+            "when": "resourceLangId == coq",
+            "command": "extension.coq.showManual"
         }
       ],
       "editor/context": [
