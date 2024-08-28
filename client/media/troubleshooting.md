@@ -4,4 +4,4 @@ When you encounter a problem using this extension, it is helpful to paste the ou
 
 ![Troubleshooting menu options](./troubleshooting.png)
 
-When asking a question on zulip, please try to use minimal examples.
+When asking a question on [zulip](https://coq.zulipchat.com/), please try to use minimal examples.

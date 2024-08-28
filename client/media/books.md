@@ -6,6 +6,8 @@ Here is a curated list of useful books to learn Coq.
 - [Software Foundations](https://softwarefoundations.cis.upenn.edu/) (Benjamin Pierce et al., 2007, with regular updates), a series of Coq-based textbooks on logic, functional programming and foundations of programming languages , much acclaimed for being accessible to beginners, but rather oriented to computer scientists.
 - [Certified Programming with Dependent Types](http://adam.chlipala.net/cpdt/) (Adam Chlipala, 2008), a textbook about practical engineering with Coq, teaches advanced practical tricks and a very specific style of proof.
 - [Mathematical Components](https://math-comp.github.io/mcb/) (Assia Mahboubi and Enrico Tassi, 2018), a book that is more oriented towards mathematically inclined users, to dive into Coq with the SSReflect proof language, and the Mathematical Components library.
+- I. Sergey. [Programs and Proofs: Mechanizing Mathematics with Dependent Types](https://ilyasergey.net/pnp/). Lecture Notes.
+- G. Smolka. [Modeling and Proving in Computational Type Theory Using the Coq Proof Assistant](https://www.ps.uni-saarland.de/~smolka/drafts/mpctt.pdf). Lecture Notes.
 
 # Shorter introductions and tutorials
 

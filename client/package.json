@@ -859,7 +859,7 @@
                 {
                     "id": "coq.welcome.books",
                     "title": "Ressources to get started in the Coq world",
-                    "description": "You can find helpful books, documentations, and tutorials in this page",
+                    "description": "You can find helpful books, documentations, and tutorials on this page",
                     "media": {
                         "markdown": "./media/books.md"
                     }
@@ -875,7 +875,7 @@
                 {
                     "id": "coq.welcome.troubleshooting",
                     "title": "Getting help",
-                    "description": "If you have any questions or are having problem with any of the previous step, please head over to the [Coq zulip chat](https://coq.zulipchat.com/) so we can help you.",
+                    "description": "If you have any questions or are having problem with any of the previous steps, please head over to the [Coq zulip chat](https://coq.zulipchat.com/) so we can help you.",
                     "media": {
                         "markdown": "./media/troubleshooting.md"
                     }

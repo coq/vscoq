@@ -6,7 +6,7 @@ It is recommended to use the [coq-platform](https://github.com/coq/platform?tab=
 
 ## Opam
 
-[opam](https://opam.ocaml.org/) is the main OCaml package manager. It is the easyiest way to install Coq and Coq packages.
+[opam](https://opam.ocaml.org/) is the main OCaml package manager. It is the easiest way to install Coq and Coq packages.
 
 ### Installing opam
 The quickest way to install opam is to run this script.
@@ -20,7 +20,7 @@ Invoke-Expression "& { $(Invoke-RestMethod https://raw.githubusercontent.com/oca
 Detailed install instructions can be found [here](https://opam.ocaml.org/doc/Install.html).
 
 ### opam switch
-Central to using opam is the concept of "switch". A switch is an independant installation prefix with its own set of compiler and **pinned** packages.
+Central to using opam is the concept of "switch". A switch is an independent installation prefix with its own set of compiler and **pinned** packages.
 With this, a user can seamlesly switch from an environment with different Coq versions and packages installed.
 To create a new opam switch simply type:
 ```
