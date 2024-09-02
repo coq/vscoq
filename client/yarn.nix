@@ -2146,11 +2146,11 @@
       };
     }
     {
-      name = "micromatch___micromatch_4.0.5.tgz";
+      name = "micromatch___micromatch_4.0.8.tgz";
       path = fetchurl {
-        name = "micromatch___micromatch_4.0.5.tgz";
-        url  = "https://registry.yarnpkg.com/micromatch/-/micromatch-4.0.5.tgz";
-        sha512 = "DMy+ERcEW2q8Z2Po+WNXuw3c5YaUSFjAO5GsJqfEl7UjvtIuFKO6ZrKvcItdy98dwFI2N1tg3zNIdKaQT+aNdA==";
+        name = "micromatch___micromatch_4.0.8.tgz";
+        url  = "https://registry.yarnpkg.com/micromatch/-/micromatch-4.0.8.tgz";
+        sha512 = "PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==";
       };
     }
     {
