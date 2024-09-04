@@ -1258,6 +1258,14 @@
       };
     }
     {
+      name = "eslint_config_prettier___eslint_config_prettier_9.1.0.tgz";
+      path = fetchurl {
+        name = "eslint_config_prettier___eslint_config_prettier_9.1.0.tgz";
+        url  = "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-9.1.0.tgz";
+        sha512 = "NSWl5BFQWEPi1j4TjVNItzYV7dZXZ+wP6I6ZhrBGpChQhZRUaElihE9uRRkcbRnNb76UMKDF3r+WTmNcGPKsqw==";
+      };
+    }
+    {
       name = "eslint_scope___eslint_scope_5.1.1.tgz";
       path = fetchurl {
         name = "eslint_scope___eslint_scope_5.1.1.tgz";
@@ -2519,6 +2527,22 @@
         name = "prelude_ls___prelude_ls_1.2.1.tgz";
         url  = "https://registry.yarnpkg.com/prelude-ls/-/prelude-ls-1.2.1.tgz";
         sha512 = "vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==";
+      };
+    }
+    {
+      name = "prettier_plugin_organize_imports___prettier_plugin_organize_imports_4.0.0.tgz";
+      path = fetchurl {
+        name = "prettier_plugin_organize_imports___prettier_plugin_organize_imports_4.0.0.tgz";
+        url  = "https://registry.yarnpkg.com/prettier-plugin-organize-imports/-/prettier-plugin-organize-imports-4.0.0.tgz";
+        sha512 = "vnKSdgv9aOlqKeEFGhf9SCBsTyzDSyScy1k7E0R1Uo4L0cTcOV7c1XQaT7jfXIOc/p08WLBfN2QUQA9zDSZMxA==";
+      };
+    }
+    {
+      name = "prettier___prettier_3.3.3.tgz";
+      path = fetchurl {
+        name = "prettier___prettier_3.3.3.tgz";
+        url  = "https://registry.yarnpkg.com/prettier/-/prettier-3.3.3.tgz";
+        sha512 = "i2tDNA0O5IrMO757lfrdQZCc2jPNDVntV0m/+4whiDfWaTKfMNgR7Qz0NAeGz/nRqF4m5/6CLzbP4/liHt12Ew==";
       };
     }
     {
