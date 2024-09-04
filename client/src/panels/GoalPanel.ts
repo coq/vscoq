@@ -21,6 +21,7 @@ import Client from "../client";
 export default class GoalPanel {
 
   public static currentPanel: GoalPanel | undefined;
+  public static currentPv: ProofViewNotification | undefined;
   private readonly _panel: WebviewPanel;
   private _disposables: Disposable[] = [];
 
@@ -151,21 +152,34 @@ export default class GoalPanel {
   // Create the goal panel if it doesn't exit and then 
   // handle a proofview notification
   // /////////////////////////////////////////////////////////////////////////////
-  public static proofViewNotification(extensionUri: Uri, editor: TextEditor, pv: ProofViewNotification) {
+  public static proofViewNotification(extensionUri: Uri, editor: TextEditor, pv: ProofViewNotification, autoDisplay: boolean) {
     
     Client.writeToVscoq2Channel("[GoalPanel] Received proofview notification");
 
     if(!GoalPanel.currentPanel) {
-        GoalPanel.render(editor, extensionUri, (goalPanel) => {
-            Client.writeToVscoq2Channel("[GoalPanel] Created new goal panel");
-            goalPanel._handleProofViewResponseOrNotification(pv);
-        });
+        //If autoDisplay is set then render the proofview immediately
+        if(autoDisplay) {
+            GoalPanel.render(editor, extensionUri, (goalPanel) => {
+                Client.writeToVscoq2Channel("[GoalPanel] Created new goal panel");
+                goalPanel._handleProofViewResponseOrNotification(pv);
+            });
+        }
+        //Otherwise record the current proofview notification to render on user prompt
+        else {
+            GoalPanel.currentPv = pv;
+        }
     }
     else {
         Client.writeToVscoq2Channel("[GoalPanel] Rendered in current panel");
         GoalPanel.currentPanel._handleProofViewResponseOrNotification(pv);
     }
     
+  }
+
+  public static displayProofView(extensionUri: Uri, editor: TextEditor) {
+    if(GoalPanel.currentPv) {
+        GoalPanel.proofViewNotification(extensionUri, editor, GoalPanel.currentPv, true);
+    }
   }
 
   private _reset() {
