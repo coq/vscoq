@@ -1,6 +1,5 @@
 import {workspace, window, commands, languages, ExtensionContext, env,
   TextEditorSelectionChangeEvent,
-  TextEditorSelectionChangeKind,
   TextEditor,
   ViewColumn,
   TextEditorRevealType,
@@ -10,7 +9,6 @@ import {workspace, window, commands, languages, ExtensionContext, env,
   extensions,
   StatusBarAlignment,
   MarkdownString,
-  TextEdit,
   WorkspaceEdit
 } from 'vscode';
 
@@ -251,6 +249,10 @@ export function activate(context: ExtensionContext) {
         registerVscoqTextCommand('showManual', () => {
             commands.executeCommand('simpleBrowser.show', 'https://coq.inria.fr/doc/master/refman/index.html'); 
         });
+        registerVscoqTextCommand('displayProofView', () => {
+            const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
+            GoalPanel.displayProofView(context.extensionUri, editor);
+        });
             
         client.onNotification("vscoq/updateHighlights", (notification) => {
         
@@ -284,7 +286,8 @@ export function activate(context: ExtensionContext) {
 
         client.onNotification("vscoq/proofView", (proofView: ProofViewNotification) => {
             const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
-            GoalPanel.proofViewNotification(context.extensionUri, editor, proofView);
+            const autoDisplay = workspace.getConfiguration('vscoq.goals').auto;
+            GoalPanel.proofViewNotification(context.extensionUri, editor, proofView, autoDisplay);
         });
 
         client.onNotification("vscoq/blockOnError", (notification: ErrorAlertNotification) => {

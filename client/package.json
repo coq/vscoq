@@ -121,6 +121,12 @@
         "title": "Goal and Info view panel",
         "type": "object",
         "properties": {
+          "vscoq.goals.auto": {
+            "scope": "window",
+            "type": "boolean",
+            "default": "true",
+            "description": "Should the goal view automatically display when navigating a coq document."
+          },
           "vscoq.goals.display": {
             "scope": "window",
             "type": "string",
@@ -339,6 +345,12 @@
         "icon": "$(arrow-up)"
       },
       {
+        "command": "extension.coq.displayProofView",
+        "title": "Display Proof View",
+        "category": "Coq",
+        "icon": "$(open-preview)"
+      },
+      {
         "command": "extension.coq.documentState",
         "title": "Troubleshooting: Get current document state",
         "category": "Coq"
@@ -390,6 +402,11 @@
           "when": "resourceLangId == coq",
           "command": "extension.coq.reset",
           "group": "navigation@5"
+        },
+        {
+          "when": "resourceLangId == coq && !config.vscoq.goals.auto",
+          "command": "extension.coq.displayProofView",
+          "group": "navigation@0"
         },
         {
           "when": "resourceLangId == coq",
