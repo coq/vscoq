@@ -162,6 +162,7 @@ After installation and activation of the extension:
 
 #### Proof checking
 * `"vscoq.proof.mode": Continuous | Manual` -- Decide whether documents should checked continuously or using the classic navigation commmands (defaults to `Manual`)
+* `"vscoq.proof.pointInterpretationMode": Cursor | NextCommand` -- Determines the point to which the proof should be check to when using the 'Interpret to point' command. 
 * `"vscoq.proof.cursor.sticky": bool` -- a toggle to specify whether the cursor should move as Coq interactively navigates a document (step forward, backward, etc...)
 * `"vscoq.proof.delegation": None | Skip | Delegate` -- Decides which delegation strategy should be used by the server. 
   `Skip` allows to skip proofs which are out of focus and should be used in manual mode. `Delegate` allocates a settable amount of workers

@@ -77,6 +77,26 @@ let loc_of_position raw Position.{ line; character } =
   let charloc = get_character_loc linestr character in
   raw.lines.(line) + charloc
 
+let loc_of_next_position raw Position.{ line; character } =
+  let file_text = raw.text in
+  let linestr = line_text raw line in
+  let charloc = get_character_loc linestr character in
+  let curInd = raw.lines.(line) + charloc in
+  (* Search backwards until we find non-whitespace char *)
+  let first_non_whitespace_ind = Str.search_backward (Str.regexp "[^ \t\n\r]") file_text curInd in
+  let command_regex = Str.regexp "[-.{}*+]" in
+  (* Search forward until we find a command delimiting char *)
+  let command_ind = Str.search_forward command_regex file_text first_non_whitespace_ind in
+  if ((command_ind + 3 < String.length file_text) && (String.sub file_text command_ind 3) = "...") then
+    command_ind + 3
+  else
+    (* Now search forward until the end of a possible repeatable 
+      command delimiter
+    *)
+    let repeatable_regex = Str.regexp "[^*+-]" in
+    let repeatable_ind = Str.search_forward repeatable_regex file_text command_ind in
+    repeatable_ind + 1
+
 let end_loc raw =
   String.length raw.text
 

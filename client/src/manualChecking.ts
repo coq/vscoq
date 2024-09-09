@@ -1,6 +1,7 @@
 import {
     TextEditor,
-    commands
+    commands,
+    workspace
 } from 'vscode';
 
 import {
@@ -16,7 +17,12 @@ import { makeVersionedDocumentId } from './utilities/utils';
 export const sendInterpretToPoint = (editor: TextEditor,  client: Client) => {
     const textDocument = makeVersionedDocumentId(editor);
     const position = editor.selection.active;
-    client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position});
+    const mode = workspace.getConfiguration("vscoq.proof").pointInterpretationMode;
+    if(mode === 0) {
+        client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position});
+    } else {
+        client.sendNotification("vscoq/interpretToNextPoint", {textDocument: textDocument, position: position});
+    }
 };
 
 export const sendInterpretToEnd = (editor: TextEditor,  client: Client) => {

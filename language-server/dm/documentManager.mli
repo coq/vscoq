@@ -96,6 +96,9 @@ val get_messages : state -> Position.t option -> (DiagnosticSeverity.t * pp) lis
 val get_info_messages : state -> Position.t option -> (DiagnosticSeverity.t * pp) list
 (** returns the Feedback.Info level messages associated to a given position *)
 
+val get_position_of_next_sentence : state -> Position.t -> Position.t
+(** returns the position of the next sentence *)
+
 val get_document_symbols : state -> DocumentSymbol.t list
 
 val all_diagnostics : state -> Diagnostic.t list

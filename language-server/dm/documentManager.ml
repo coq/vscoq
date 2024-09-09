@@ -238,6 +238,11 @@ let get_messages st pos =
     | Some (_oloc,msg) -> (DiagnosticSeverity.Error, pp_of_coqpp msg) :: feedback
     | None -> feedback
 
+let get_position_of_next_sentence st start_pos =
+  let raw_doc = Document.raw_document st.document in
+  RawDocument.position_of_loc raw_doc @@
+  RawDocument.loc_of_next_position raw_doc start_pos
+
 let get_info_messages st pos =
   match id_of_pos_opt st pos with
   | None -> log "get_messages: Could not find id";[]

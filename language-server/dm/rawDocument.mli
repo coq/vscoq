@@ -22,6 +22,7 @@ val text : t -> string
 
 val position_of_loc : t -> int -> Position.t
 val loc_of_position : t -> Position.t -> int
+val loc_of_next_position : t -> Position.t -> int
 val end_loc : t -> int
 
 val range_of_loc : t -> Loc.t -> Range.t
