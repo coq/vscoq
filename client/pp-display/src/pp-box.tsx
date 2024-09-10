@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useEffect, useState, useLayoutEffect, useRef, ReactFragment, SyntheticEvent} from 'react';
+import React, {FunctionComponent, useState,} from 'react';
 import {Box, DisplayType, BreakInfo, HideStates } from './types';
 import PpBreak from './pp-break';
 import classes from './Pp.module.css';
@@ -28,7 +28,7 @@ const ADDED_DEPTH_FACTOR = 10;
 
 const PpBox: FunctionComponent<PpBoxProps> = (props) => {
     
-    const {mode, depth, coqCss, id, indent, breaks, boxChildren, parentHide, hovered, maxDepth, addedDepth} = props;
+    const {mode, depth, coqCss, id, breaks, boxChildren, parentHide, hovered, maxDepth, addedDepth} = props;
     const [selfHide, setSelfHide] = useState<HideStates>(ComputeHideState(depth >= maxDepth ? HideStates.HIDE : HideStates.UNHIDE, parentHide));
     const [depthOpen, setDepthOpen] = useState<number>(addedDepth);
 
@@ -68,7 +68,6 @@ const PpBox: FunctionComponent<PpBoxProps> = (props) => {
                         offset={lineBreak ? lineBreak.offset : 0}
                         mode={mode}
                         horizontalIndent={child.horizontalIndent}
-                        indent={indent}
                         lineBreak={lineBreak !== undefined}
                     />
                 );

@@ -1,14 +1,12 @@
-import { FunctionComponent, ReactFragment, useRef, useState, useEffect, useLayoutEffect} from 'react';
+import { FunctionComponent, useRef, useState, useEffect, useLayoutEffect} from 'react';
 import useResizeObserver from '@react-hook/resize-observer';
 import {ResizeObserverEntry} from '@juggle/resize-observer';
 import { v4 as uuid } from 'uuid';
 
-import { PpString, PpMode, BoxDisplay, Term, Break, Box, DisplayType, BreakInfo, HideStates } from './types';
+import { PpString, PpMode, BoxDisplay, Term, Break, Box, DisplayType, BreakInfo, HideStates, Token, TokenType } from './types';
 import PpBox from './pp-box';
 
 import classes from './Pp.module.css';
-
-const MAX_RECOMPUTE = 50;
 
 type PpProps = {
     pp: PpString;
@@ -19,15 +17,14 @@ type PpProps = {
 type DisplayState = {
     breakIds: BreakInfo[];
     display: Box | null;
+    tokenStream: Token[] | null;
+    context: CanvasRenderingContext2D | null
 };
 
 const ppDisplay : FunctionComponent<PpProps> = (props) => {
     
     const {pp, coqCss, maxDepth} = props;
-    
-    const [numRecomputes, setNumRecomputes] = useState<number>(0);
-    const [maxBreaks, setMaxBreaks] = useState<number>(0);
-    const [displayState, setDisplayState] = useState<DisplayState>({breakIds: [], display: null});
+    const [displayState, setDisplayState] = useState<DisplayState>({breakIds: [], display: null, tokenStream: null, context: null});
     const [lastEntry, setLastEntry] = useState<ResizeObserverEntry|null>(null);
     const [hovered, setHovered] = useState<boolean>(false);
     useEffect(() => {
@@ -52,6 +49,8 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
 
     const container = useRef<HTMLDivElement>(null);
     const content = useRef<HTMLSpanElement>(null);
+    //this ref prevents a recomputing loop when resizing
+    const alreadyComputed = useRef<boolean>(false);
 
     useResizeObserver(container, (entry) => {
         
@@ -59,47 +58,49 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
             if(content.current) {
                 //in this case the window has already been resized
                 if(lastEntry) {
-
                     //don't trigger a recomputation for small resizes
                     if(Math.abs(entry.contentRect.width - lastEntry.contentRect.width) <= 10) {return;}
-                    
-                    //When we enlarge the window we should try and recompute boxes
-                    if(entry.contentRect.width > lastEntry.contentRect.width) {
-                        //Reinit breaks
-                        setDisplayState(ds => {
-                            return {
-                                ...ds,
-                                breakIds: []
-                            };
-                        });
-                    } else {
-                        computeNeededBreaks(maxBreaks);
-                    }
-                } else {
-                    computeNeededBreaks(maxBreaks);
                 }
+                //setting the display state triggers the recomputation
+                alreadyComputed.current = false;
+                setDisplayState(ds => {
+                    return {
+                        ...ds,
+                        breakIds: []
+                    };
+                });
             }
         }
+
         setLastEntry(entry);
     });
 
     useEffect(() => {
-        const breaks = computeNumBreaks(pp, 0);
-        setNumRecomputes(0);
-        setMaxBreaks(breaks);
-        setDisplayState({
-            breakIds: [],
-            display: boxifyPpString(pp)
-        });
-        computeNeededBreaks(breaks);
+        intializeDisplay(pp);
     }, [pp]);
 
     useLayoutEffect(() => {
-        if(numRecomputes < MAX_RECOMPUTE) {
-            computeNeededBreaks(maxBreaks);
-            setNumRecomputes(numRecomputes + 1);
+        if(!alreadyComputed.current) {
+            alreadyComputed.current = true;
+            computeNeededBreaks();
         }
     }, [displayState]);
+
+    const intializeDisplay = (pp: PpString) => {
+        if(content.current) {
+            const context = getContext();
+            context!.font = getComputedStyle(content.current).font || 'monospace' ;
+            const display = boxifyPpString(pp);
+            const tokenStream = buildTokenStream(display, context!);
+            alreadyComputed.current = false;
+            setDisplayState({
+                breakIds: [],
+                display: display,
+                tokenStream: tokenStream,
+                context: context
+            });
+        }
+    };
 
     const getPpTag  = (pp: PpString, tag: string, indent: number, mode: PpMode, depth: number) => {
         const id = uuid();
@@ -186,7 +187,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                         offset: 0,
                         mode: mode,
                         horizontalIndent: pp[1],
-                        indent: indent,
+                        indent: pp[2],
                         shouldBreak: false
                     } as Break];
             }
@@ -262,82 +263,129 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
         }
     };
 
-    const computeNeededBreaks = (maxBreaks: number) => {
+    const computeNeededBreaks = () => {
         if(container.current) {
-            if(content.current) {
-                const containerRect = container.current.getBoundingClientRect();
-                const contentRect = content.current.getBoundingClientRect();
-                if(containerRect.width < contentRect.width) {
-                    if(displayState.breakIds.length < maxBreaks) {
-                        checkBreaks(containerRect.width);
-                    }
-                }
+            const containerRect = container.current.getBoundingClientRect();
+            if(displayState.tokenStream && displayState.context) {
+                scanTokenStream(displayState.tokenStream, containerRect.width, displayState.context);
             }
         }
 
     };
 
-    const checkBreaks = (containerWidth: number) => {
-        if(content.current) {
-            let breakInfo : BreakInfo | null = null;
-            const boxes = content.current.querySelectorAll("."+classes.Box);
-            
-            for(let box of boxes) {
+    //create a canvas and get its context to compute character width
+    const getContext = ()  => {
+        const fragment = document.createDocumentFragment();
+        const canvas = document.createElement('canvas');
+        fragment.appendChild(canvas);
+        return canvas.getContext('2d');
+    };
 
-                const parentBox = box.closest(`:not(#${box.id}).${classes.Box}`);
-                const parentOffset = parentBox ? parentBox.getBoundingClientRect().left : 0;
-                const offset =parentBox ? box.getBoundingClientRect().left - parentOffset : 0;
+    const estimateBoxWidth = (box: Box, context: CanvasRenderingContext2D) : number => {
+        let currentWidth = 0;
+        for (let childBox of box.boxChildren) {
+            if(childBox) {
+                switch(childBox.type) {
+                    case DisplayType.box:
+                        currentWidth += estimateBoxWidth(childBox, context);
+                        break;
+                    case DisplayType.break:
+                        break;
+                    case DisplayType.term:
+                        currentWidth += context.measureText(childBox.content).width;
+                        break;
+                }
+            }
+        }
+        return currentWidth;
+    };
 
-                const breaks = box.querySelectorAll(`:scope > :not(.${classes.Box}):not(.${classes.Tag}):not(.${classes.Text})`);
-
-                for(let br of breaks) {
-                    const breakId = br.id;
-                    if(displayState.breakIds.find(info => info.id === breakId)) { continue; }
-
-                    const next = br.nextElementSibling;
-                    if(next && next.getBoundingClientRect().right > containerWidth) {
-                        // const offset = offsetLevel;
-                        breakInfo = {id: breakId, offset: offset};
+    const scanTokenStream = (tokenStream: Token[], containerWidth: number, context: CanvasRenderingContext2D) => {
+        let currentLineWidth = 0;
+        let breakAll : boolean[] = [];
+        let breaks : BreakInfo[] = [];
+        let currentOffset : number[] = [0];
+        for(let token of tokenStream) {
+            switch(token.type) {
+                case TokenType.term:
+                    currentLineWidth += token.length;
+                    break;
+                case TokenType.open:
+                    if((token.mode === PpMode.hvBox && currentLineWidth + token.length > containerWidth)
+                        || token.mode === PpMode.vertical
+                    ) {
+                        breakAll.push(true);
+                    } else {
+                        breakAll.push(false);
+                    }
+                    currentOffset.push(token.offset + currentLineWidth);
+                    break;
+                case TokenType.close:
+                    if(breakAll.length > 0) { breakAll.pop(); }
+                    currentOffset.pop();
+                    break;
+                case TokenType.break:
+                    if(currentLineWidth + token.length > containerWidth || breakAll[breakAll.length - 1]) {
+                        const offset = currentOffset[currentOffset.length - 1];
+                        breaks.push({id: token.id, offset: offset + token.indent});
+                        currentLineWidth = offset + token.indent;
                         break;
                     }
-                }
-
-                if(breakInfo) {
+                    currentLineWidth += context.measureText(" ").width;
                     break;
-                }
-            };
-
-            if(breakInfo) {
-                setDisplayState(ds => {
-                    return {
-                        ...ds,
-                        breakIds: ds.breakIds.concat([breakInfo!])
-                    };
-                });
             }
         }
+        setDisplayState(ds => {
+            return {
+                ...ds,
+                breakIds: breaks
+            };
+        });
     };
 
-    const computeNumBreaks = (pp: PpString, acc: number) : number => {
-        switch(pp[0]) {
-            case "Ppcmd_empty":
-                return acc;
-            case "Ppcmd_string":
-                return acc;
-            case "Ppcmd_glue":
-                const nbBreaks = pp[1].map(pp => computeNumBreaks(pp, 0));
-                const nb = nbBreaks.reduce((pv, cv) => {return pv + cv;}, 0);
-                return acc + nb;
-            case "Ppcmd_box":
-            case "Ppcmd_tag":
-                return computeNumBreaks(pp[2], acc);
-            case "Ppcmd_print_break":
-                return acc + 1;
-            case "Ppcmd_force_newline":
-                return acc;
-            case "Ppcmd_comment":
-                return acc;
+    const buildTokenStream = (box: Box, context: CanvasRenderingContext2D) : Token[] => {
+        let tokenStream : Token[] = [];
+        for (let i = 0; i < box.boxChildren.length; i++) {
+            let childBox = box.boxChildren[i];
+            if(childBox) {
+                switch(childBox.type) {
+                    case DisplayType.box:
+                        const blockWidth = estimateBoxWidth(childBox, context);
+                        const blockTokenStream = buildTokenStream(childBox, context);
+                        const offset = context.measureText(" ".repeat(childBox.indent)).width;
+                        tokenStream = tokenStream.concat([{type: TokenType.open, length: blockWidth, mode: childBox.mode, offset: offset}])
+                                             .concat(blockTokenStream)
+                                             .concat([{type: TokenType.close}]);
+                        break;
+                    case DisplayType.break:
+                        let blockLength = 0;
+                        for(let j = i + 1; j < box.boxChildren.length; j++) {
+                            let nextBlock = box.boxChildren[j];
+                            if(nextBlock) {
+                                switch(nextBlock.type) {
+                                    case DisplayType.box:
+                                        blockLength += estimateBoxWidth(nextBlock, context);
+                                        break;
+                                    case DisplayType.break:
+                                        break;
+                                    case DisplayType.term:
+                                        blockLength += context.measureText(nextBlock.content).width;
+                                }
+                                if(nextBlock.type === DisplayType.break) {
+                                    break;
+                                }
+                            }
+                        }
+                        const indent = context.measureText(" ").width * childBox.indent;
+                        tokenStream = tokenStream.concat([{type: TokenType.break, id: childBox.id, length: blockLength, indent: indent}]);
+                        break;
+                    case DisplayType.term:
+                        tokenStream = tokenStream.concat({type: TokenType.term, length: context.measureText(childBox.content).width});
+                        break;
+                }
+            }
         }
+        return tokenStream;
     };
 
     return (
