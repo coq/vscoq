@@ -51,6 +51,27 @@ import { QUICKFIX_COMMAND, CoqWarningQuickFix } from './QuickFixProvider';
 let client: Client;
 
 export function activate(context: ExtensionContext) {
+
+    // Function to check for Coq files present in the workspace
+    function checkCoqFilesPresent() {
+      if (workspace.workspaceFolders) {
+        // Search for Coq files (*.v) in the current workspace
+        workspace.findFiles('**/*.v').then(files => {
+          const hasCoqFiles = files.length > 0;
+          commands.executeCommand('setContext', 'coqFilesPresent', hasCoqFiles);
+        });
+      } else {
+        commands.executeCommand('setContext', 'coqFilesPresent', false);
+      }
+    }
+
+    // Set initially on extension activation
+    checkCoqFilesPresent();
+
+    // Watch for changes to the workspace and files being added or removed
+    workspace.onDidChangeWorkspaceFolders(checkCoqFilesPresent);
+    workspace.onDidCreateFiles(checkCoqFilesPresent);
+    workspace.onDidDeleteFiles(checkCoqFilesPresent);
     
     const coqTM = new VsCoqToolchainManager();
     coqTM.intialize().then(

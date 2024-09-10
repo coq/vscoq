@@ -73,7 +73,8 @@
         {
           "type": "webview",
           "id": "vscoq.search",
-          "name": "Query"
+          "name": "Query",
+          "when": "coqFilesPresent"
         }
       ]
     },
