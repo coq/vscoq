@@ -87,7 +87,7 @@ let range_of_loc raw loc =
   }
 
 let word_at_position raw pos : string option =
-  let r = Str.regexp {|\([a-zA-Z_][a-zA-Z_0-9]*\)|} in
+  let r = Str.regexp {|\([a-zA-Z_.][a-zA-Z_0-9.']*\)|} in
   let start = ref (loc_of_position raw pos) in
   let word = ref None in
   while (start.contents >= 0 && Str.string_match r raw.text start.contents) do
