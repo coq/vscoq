@@ -87,15 +87,20 @@ let range_of_loc raw loc =
   }
 
 let word_at_position raw pos : string option =
-  let back_reg = Str.regexp {|[^a-zA-Z_0-9.']|} in
-  let start_ind = loc_of_position raw pos in
-  (* Search backwards until we find a character that cannot be part of a word *)
-  let first_non_word_ind = Str.search_backward back_reg raw.text start_ind in
-  let forward_reg = Str.regexp {|\([a-zA-Z_][a-zA-Z_0-9.']*[a-zA-Z_0-9']*\)|} in
-  (* Search forwards ensuring that all characters are part of a well defined word. (Cannot start with [0-9'.] and cannot end with .)*)
-  if Str.string_match forward_reg raw.text (first_non_word_ind + 1)
-  then Some (Str.matched_string raw.text)
-  else None
+  try
+    let back_reg = Str.regexp {|[^a-zA-Z_0-9.']|} in
+    let start_ind = loc_of_position raw pos in
+    (* Search backwards until we find a character that cannot be part of a word *)
+    let first_non_word_ind = Str.search_backward back_reg raw.text start_ind in
+    let forward_reg = Str.regexp {|[^a-zA-Z_0-9']|} in
+    (* Search forwards ensuring that all characters are part of a well defined word. (Cannot start with [0-9'.] and cannot end with .)*)
+    let last_word_ind = Str.search_forward forward_reg raw.text start_ind in
+    let word = String.sub raw.text first_non_word_ind (last_word_ind - first_non_word_ind) in
+    Some word
+  with Not_found ->
+    None
+  (* then Some (Str.matched_string raw.text)
+  else None *)
 
 let apply_text_edit raw (Range.{start; end_}, editText) =
   let start = loc_of_position raw start in
