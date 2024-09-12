@@ -223,6 +223,20 @@ let id_of_pos st pos =
   | None -> None
   | Some { id } -> Some id
 
+let id_of_sentence_after_pos st pos =
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
+  (* if the current loc falls squarely within a sentence *)
+  match Document.find_sentence st.document loc with
+  | Some { id } -> Some id
+  | None -> 
+    (** otherwise the sentence start is before the loc,
+        so we must be in the whitespace before the sentence
+        and need to interpret to the sentence before instead
+    *)
+    match Document.find_sentence_before st.document loc with
+    | None -> None
+    | Some { id } -> Some id
+
 let id_of_pos_opt st = function
   | None -> begin match st.observe_id with None | Some Top  -> None | Some Id id -> Some id end
   | Some pos -> id_of_pos st pos
@@ -237,11 +251,6 @@ let get_messages st pos =
     match error with
     | Some (_oloc,msg) -> (DiagnosticSeverity.Error, pp_of_coqpp msg) :: feedback
     | None -> feedback
-
-let get_position_of_next_sentence st start_pos =
-  let raw_doc = Document.raw_document st.document in
-  RawDocument.position_of_loc raw_doc @@
-  RawDocument.loc_of_next_position raw_doc start_pos
 
 let get_info_messages st pos =
   match id_of_pos_opt st pos with
@@ -322,6 +331,14 @@ let interpret_to_position st pos ~should_block_on_error =
   match id_of_pos st pos with
   | None -> (st, [], None) (* document is empty *)
   | Some id -> interpret_to st id ~should_block_on_error
+
+let interpret_to_next_position st pos ~should_block_on_error =
+  match id_of_sentence_after_pos st pos with
+  | None -> (st, [], None, pos) (* document is empty *)
+  | Some id ->
+    let new_pos = (Document.range_of_id st.document id).end_ in
+    let (st, events, blocking_errs) = interpret_to st id ~should_block_on_error in
+    (st, events, blocking_errs, new_pos)
 
 let get_next_range st pos =
   match id_of_pos st pos with

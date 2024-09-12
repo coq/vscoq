@@ -60,9 +60,12 @@ val get_previous_range : state -> Position.t -> Range.t option
 (** [get_previous_pos st pos] get the range of the previous sentence relative to pos *)
 
 val interpret_to_position : state -> Position.t -> should_block_on_error:bool -> (state * events * blocking_error option)
-(** [interpret_to_position stateful doc pos] navigates to the last sentence ending
-    before or at [pos] and returns the resulting state. The [stateful] flag 
-    determines if we record the resulting position in the state. *)
+(** [interpret_to_position state pos should_block] navigates to the 
+    last sentence ending before or at [pos] and returns the resulting state, events that need to take place, and a possible blocking error. *)
+
+val interpret_to_next_position : state -> Position.t -> should_block_on_error:bool -> (state * events * blocking_error option * Position.t)
+(** [interpret_to_next_position state pos should_block] navigates 
+    to the first sentence after or at [pos] (excluding whitespace) and returns the resulting state, events that need to take place, a possible blocking error, and the position of the sentence that was interpreted until. *)
 
 val interpret_to_previous : state -> (state * events * blocking_error option)
 (** [interpret_to_previous doc] navigates to the previous sentence in [doc]
@@ -95,9 +98,6 @@ val get_messages : state -> Position.t option -> (DiagnosticSeverity.t * pp) lis
 
 val get_info_messages : state -> Position.t option -> (DiagnosticSeverity.t * pp) list
 (** returns the Feedback.Info level messages associated to a given position *)
-
-val get_position_of_next_sentence : state -> Position.t -> Position.t
-(** returns the position of the next sentence *)
 
 val get_document_symbols : state -> DocumentSymbol.t list
 

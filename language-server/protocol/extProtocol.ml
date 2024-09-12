@@ -26,15 +26,7 @@ module Notification = struct
       type t = {
         textDocument : VersionedTextDocumentIdentifier.t;
         position : Position.t;
-      } [@@deriving yojson]
-
-    end
-
-    module InterpretToNextPointParams = struct
-
-      type t = {
-        textDocument : VersionedTextDocumentIdentifier.t;
-        position : Position.t;
+        to_next_point : bool
       } [@@deriving yojson]
 
     end
@@ -69,7 +61,6 @@ module Notification = struct
     | Std of Lsp.Client_notification.t
     | InterpretToEnd of InterpretToEndParams.t
     | InterpretToPoint of InterpretToPointParams.t
-    | InterpretToNextPoint of InterpretToNextPointParams.t
     | StepForward of StepForwardParams.t
     | StepBackward of StepBackwardParams.t
 
@@ -79,9 +70,6 @@ module Notification = struct
       | "vscoq/interpretToPoint" ->
         let+ params = Lsp.Import.Json.message_params params InterpretToPointParams.t_of_yojson in
         InterpretToPoint params
-      | "vscoq/interpretToNextPoint" ->
-        let+ params = Lsp.Import.Json.message_params params InterpretToNextPointParams.t_of_yojson in
-        InterpretToNextPoint params
       | "vscoq/stepBackward" ->
         let+ params = Lsp.Import.Json.message_params params StepBackwardParams.t_of_yojson in
         StepBackward params

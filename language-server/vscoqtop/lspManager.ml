@@ -379,12 +379,18 @@ let mk_block_on_error_event uri last_range error_range =
 
 
 let coqtopInterpretToPoint params =
-  let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
+  let Notification.Client.InterpretToPointParams.{ textDocument; position; to_next_point } = params in
   let uri = textDocument.uri in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[interpretToPoint] ignoring event on non existent document"; []
   | Some { st; visible } ->
-    let (st, events, error_range) = Dm.DocumentManager.interpret_to_position st position ~should_block_on_error:!block_on_first_error in
+    let (st, events, error_range, position) =
+      if to_next_point
+      then Dm.DocumentManager.interpret_to_next_position st position ~should_block_on_error:!block_on_first_error
+      else 
+        let st, evs, blocking_err = Dm.DocumentManager.interpret_to_position st position ~should_block_on_error:!block_on_first_error in
+        (st, evs, blocking_err, position)
+    in
     replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
     let sel_events = inject_dm_events (uri, events) in
@@ -397,27 +403,6 @@ let coqtopInterpretToPoint params =
       else
         sel_events @ [mk_proof_view_event uri (Some error_range.end_)]
  
-let coqtopInterpretToNextPoint params =
-  let Notification.Client.InterpretToNextPointParams.{ textDocument; position } = params in
-  let uri = textDocument.uri in
-  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[interpretToNextPoint] ignoring event on non existent document"; []
-  | Some { st; visible } ->
-    let next_pos = Dm.DocumentManager.get_position_of_next_sentence st position in
-    let (st, events, error_range) = Dm.DocumentManager.interpret_to_position st next_pos ~should_block_on_error:!block_on_first_error in
-    replace_state (DocumentUri.to_path uri) st visible;
-    update_view uri st;
-    let sel_events = inject_dm_events (uri, events) in
-    match error_range with
-    | None ->
-      sel_events @ [ mk_proof_view_event uri (Some next_pos)]
-    | Some {last_range; error_range} ->
-      if !check_mode = Settings.Mode.Manual then
-        sel_events @ mk_block_on_error_event uri last_range error_range
-      else
-        sel_events @ [mk_proof_view_event uri (Some error_range.end_)]
-  
-
 let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri }; position } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
@@ -636,7 +621,6 @@ let dispatch_std_notification =
 let dispatch_notification =
   let open Notification.Client in function
   | InterpretToPoint params -> log "Received notification: vscoq/interpretToPoint"; coqtopInterpretToPoint params 
-  | InterpretToNextPoint params -> log "Received notification: vscoq/interpretToNextPoint"; coqtopInterpretToNextPoint params
   | InterpretToEnd params -> log "Received notification: vscoq/interpretToEnd"; coqtopInterpretToEnd params
   | StepBackward params -> log "Received notification: vscoq/stepBackward"; coqtopStepBackward params
   | StepForward params -> log "Received notification: vscoq/stepForward"; coqtopStepForward params

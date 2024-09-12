@@ -14,15 +14,11 @@ import GoalPanel from './panels/GoalPanel';
 import Client from './client';
 import { makeVersionedDocumentId } from './utilities/utils';
 
-export const sendInterpretToPoint = (editor: TextEditor,  client: Client) => {
+export const sendInterpretToPoint = (editor: TextEditor, client: Client) => {
     const textDocument = makeVersionedDocumentId(editor);
     const position = editor.selection.active;
     const mode = workspace.getConfiguration("vscoq.proof").pointInterpretationMode;
-    if(mode === 0) {
-        client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position});
-    } else {
-        client.sendNotification("vscoq/interpretToNextPoint", {textDocument: textDocument, position: position});
-    }
+    client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position, to_next_point: mode === 1 });
 };
 
 export const sendInterpretToEnd = (editor: TextEditor,  client: Client) => {
