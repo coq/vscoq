@@ -5,14 +5,13 @@ type PpBreakProps = {
     id: string,
     offset: number,
     mode: PpMode,
-    horizontalIndent: number, 
-    indent: number,
+    horizontalIndent: number,
     lineBreak: boolean,
 };
 
 const ppBreak: FunctionComponent<PpBreakProps> = (props) => {
     
-    const {mode, lineBreak, indent, horizontalIndent, id, offset} = props;
+    const {mode, lineBreak, horizontalIndent, id, offset} = props;
     const style = {
         marginLeft: offset
     };
@@ -20,32 +19,16 @@ const ppBreak: FunctionComponent<PpBreakProps> = (props) => {
     switch(mode) {
         case PpMode.horizontal:
             return <span id={id}>{" ".repeat(horizontalIndent)}</span>;
+        //in the case of PpMode.vertical we always detect the line break in the scan part of the algo
+        //this allows to set the correct offset
         case PpMode.vertical:
-            return (
-                <span id={id}>
-                    <br/>
-                    <span style={style}>
-                        {" ".repeat(indent ? indent : 0)}
-                    </span>
-                </span>
-            );
         case PpMode.hvBox:
-            if(lineBreak) {
-                <span id={id}>
-                    <br/>
-                    <span style={style}>
-                        {" ".repeat(indent ? indent : 0)}
-                    </span>
-                </span>;
-            }
-            return <span id={id}> </span>;
         case PpMode.hovBox:
             if(lineBreak) {
                 return (
                     <span id={id}>
                         <br/>
                         <span style={style}>
-                            {" ".repeat(indent ? indent : 0)}
                         </span>
                     </span>
                 );

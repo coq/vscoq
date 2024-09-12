@@ -57,7 +57,7 @@ export interface Break {
     type: DisplayType.break,
     offset: number,
     mode: PpMode,
-    horizontalIndent: number, 
+    horizontalIndent: number,
     indent: number,
     shouldBreak: boolean,
 }
@@ -69,6 +69,38 @@ export interface Term {
 }
 
 export type BoxDisplay = Break | Term | Box | null;
+
+export enum TokenType {
+    term = "term",
+    open = "open",
+    close = "close",
+    break = "break"
+}
+
+export type TokenTerm = {
+    type: TokenType.term,
+    length: number
+};
+
+export type BlockOpen = {
+    type: TokenType.open,
+    length: number,
+    mode: PpMode,
+    offset: number,
+};
+
+export type BlockClose = {
+    type: TokenType.close
+};
+
+export type TokenBreak = {
+    id: string,
+    length: number,
+    type: TokenType.break,
+    indent: number,
+};
+
+export type Token = TokenTerm | BlockOpen | BlockClose | TokenBreak;
 
 export interface Box {
     id: string,
