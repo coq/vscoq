@@ -99,7 +99,7 @@ let word_at_position raw pos : string option =
     (* we get the substring from the first word index to the last index for the word *)
     let word = String.sub raw.text first_word_ind (last_word_ind - first_word_ind) in
     Some word
-  with Not_found ->
+  with _ ->
     None
 
 let apply_text_edit raw (Range.{start; end_}, editText) =
