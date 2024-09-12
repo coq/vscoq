@@ -617,7 +617,7 @@ let hover st pos =
   match opattern with
   | None -> log "hover: no word found at cursor"; None
   | Some pattern ->
-    log ("hover: found word at cursor: " ^ pattern);
+    log ("hover: found word at cursor: \"" ^ pattern ^ "\"");
     let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
     (* hover at previous sentence *)
     match hover_of_sentence st loc pattern (Document.find_sentence_before st.document loc) with
