@@ -229,7 +229,7 @@ let id_of_sentence_after_pos st pos =
   match Document.find_sentence st.document loc with
   | Some { id } -> Some id
   | None -> 
-    (** otherwise the sentence start is before the loc,
+    (** otherwise the sentence start is after the loc,
         so we must be in the whitespace before the sentence
         and need to interpret to the sentence before instead
     *)
