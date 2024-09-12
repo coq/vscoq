@@ -1,0 +1,32 @@
+{
+  "fileTypes": [
+    "_CoqProject"
+  ],
+  "name": "Coq Project",
+  "scopeName": "source.coq-project",
+  "patterns": [
+    {
+      "name": "comment.line.coq-project",
+      "match": "#.*$"
+    },
+    {
+      "name": "string.quoted.double.coq-project",
+      "begin": "\"",
+      "end": "\""
+    },
+    {
+      "name": "keyword.other.coq-project",
+      "match": "(-arg|-generate-meta-for-package|-docroot|-Q|-R|-I|-native-compiler)"
+    },
+    {
+      "name": "entity.name.file.coq-project",
+      "match": "(.*(\\|/))?(\\S+\\.v)"
+    },
+    {
+      "name": "entity.name.folder.coq-project",
+      "match": "(.*(\\|/))?(\\S+)"
+    }
+  ],
+  "repository": {},
+  "uuid": "94440acd-57c4-46ad-b59b-d05ab6902361"
+}

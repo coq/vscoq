@@ -51,27 +51,17 @@ import { QUICKFIX_COMMAND, CoqWarningQuickFix } from './QuickFixProvider';
 let client: Client;
 
 export function activate(context: ExtensionContext) {
+    commands.executeCommand('setContext', 'inCoqProject', true);
 
-    // Function to check for Coq files present in the workspace
-    function checkCoqFilesPresent() {
-      if (workspace.workspaceFolders) {
-        // Search for Coq files (*.v) in the current workspace
-        workspace.findFiles('**/*.v').then(files => {
-          const hasCoqFiles = files.length > 0;
-          commands.executeCommand('setContext', 'coqFilesPresent', hasCoqFiles);
+    function checkInCoqProject() {
+        workspace.findFiles('**/{*.v,_CoqProject}').then(files => {
+            commands.executeCommand('setContext', 'inCoqProject', files.length > 0);
         });
-      } else {
-        commands.executeCommand('setContext', 'coqFilesPresent', false);
-      }
     }
 
-    // Set initially on extension activation
-    checkCoqFilesPresent();
-
-    // Watch for changes to the workspace and files being added or removed
-    workspace.onDidChangeWorkspaceFolders(checkCoqFilesPresent);
-    workspace.onDidCreateFiles(checkCoqFilesPresent);
-    workspace.onDidDeleteFiles(checkCoqFilesPresent);
+    // Watch for files being added or removed
+    workspace.onDidCreateFiles(checkInCoqProject);
+    workspace.onDidDeleteFiles(checkInCoqProject);
     
     const coqTM = new VsCoqToolchainManager();
     coqTM.intialize().then(
@@ -403,4 +393,6 @@ Path: \`${coqTM.getVsCoqTopPath()}\`
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+    commands.executeCommand('setContext', 'inCoqProject', undefined);
+}
