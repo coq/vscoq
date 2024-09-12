@@ -52,6 +52,16 @@ let client: Client;
 
 export function activate(context: ExtensionContext) {
     commands.executeCommand('setContext', 'inCoqProject', true);
+
+    function checkInCoqProject() {
+        workspace.findFiles('**/{*.v,_CoqProject}').then(files => {
+            commands.executeCommand('setContext', 'inCoqProject', files.length > 0);
+        });
+    }
+
+    // Watch for files being added or removed
+    workspace.onDidCreateFiles(checkInCoqProject);
+    workspace.onDidDeleteFiles(checkInCoqProject);
     
     const coqTM = new VsCoqToolchainManager();
     coqTM.intialize().then(
