@@ -28,11 +28,6 @@ export type PpString =
   | ["Ppcmd_force_newline"]
   | ["Ppcmd_comment", string[]];
 
-interface Error {
-    code: integer; 
-    message: string; 
-}
-
 export interface Goal {
     id: integer;
     goal: PpString;
@@ -43,6 +38,7 @@ export interface ProofViewGoals {
     goals: Goal[];
     shelvedGoals: Goal[];
     givenUpGoals: Goal[];
+    unfocusedGoals: Goal[];
 }
 
 export enum MessageSeverity {

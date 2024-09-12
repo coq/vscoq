@@ -16,6 +16,7 @@ export type ProofViewGoalsType = {
     main: CollapsibleGoal[];
     shelved: CollapsibleGoal[];
     givenUp: CollapsibleGoal[];
+    unfocused: CollapsibleGoal[];
 };
 
 export enum ProofViewGoalsKey {

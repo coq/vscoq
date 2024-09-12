@@ -49,12 +49,13 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
             <VSCodePanelView className={classes.View}> 
                 <GoalSection 
                     key={"goals"}
-                    goals={goals!.main} 
+                    goals={goals!.main}
                     collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.main)} 
                     displaySetting={displaySetting}
                     emptyMessage={
                         goals!.shelved.length ? "There are shelved goals. Try using `Unshelve.`" :
                         goals!.givenUp.length ? "There are some goals you gave up. Go back and solve them, or use `Admitted.`" :
+                        goals!.unfocused.length ? "The subproof is complete, but there are some unfocused goals. Focus next goal with bullet -." :
                         "There are no more subgoals"
                     }
                     emptyIcon={
