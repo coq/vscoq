@@ -50,12 +50,13 @@ const proofViewPage: FunctionComponent<ProofViewPageProps> = (props) => {
                 <GoalSection 
                     key={"goals"}
                     goals={goals!.main}
-                    collapseGoalHandler={(id) => collapseGoalHandler(id, ProofViewGoalsKey.main)} 
+                    unfocusedGoals={goals!.unfocused}
+                    collapseGoalHandler={(id) => collapseGoalHandler(id, goals!.main.length ? ProofViewGoalsKey.main : ProofViewGoalsKey.unfocused)}
                     displaySetting={displaySetting}
                     emptyMessage={
                         goals!.shelved.length ? "There are shelved goals. Try using `Unshelve.`" :
                         goals!.givenUp.length ? "There are some goals you gave up. Go back and solve them, or use `Admitted.`" :
-                        goals!.unfocused.length ? "The subproof is complete, but there are some unfocused goals. Focus next goal with bullet -." :
+                        goals!.unfocused.length ? "The subproof is complete." :
                         "There are no more subgoals"
                     }
                     emptyIcon={

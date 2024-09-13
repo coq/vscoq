@@ -1,0 +1,12 @@
+.UnfocusedView {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.HintText {
+    font-style: italic;
+    font-family: var(--vscode-editor-fonont-family);
+    font-size: small;
+    opacity: 0.5;
+}

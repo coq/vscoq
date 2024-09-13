@@ -22,7 +22,8 @@ export type ProofViewGoalsType = {
 export enum ProofViewGoalsKey {
     main = "main", 
     shelved = "shelved", 
-    givenUp = "givenUp"
+    givenUp = "givenUp",
+    unfocused = "unfocused"
 }
 
 export enum MessageSeverity {
