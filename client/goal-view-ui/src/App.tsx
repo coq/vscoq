@@ -35,8 +35,11 @@ const app = () => {
                     shelved: allGoals.shelvedGoals.map((goal: Goal) => {
                         return {...goal, isOpen: true};
                     }),
-                    givenUp: allGoals.givenUpGoals.map((goal: Goal, index: number) => {
+                    givenUp: allGoals.givenUpGoals.map((goal: Goal) => {
                         return {...goal, isOpen: true}; 
+                    }),
+                    unfocused: allGoals.unfocusedGoals.map((goal: Goal) => {
+                        return {...goal, isOpen: false};
                     })
                 }
             );

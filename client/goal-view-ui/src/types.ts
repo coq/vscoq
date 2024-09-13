@@ -16,12 +16,14 @@ export type ProofViewGoalsType = {
     main: CollapsibleGoal[];
     shelved: CollapsibleGoal[];
     givenUp: CollapsibleGoal[];
+    unfocused: CollapsibleGoal[];
 };
 
 export enum ProofViewGoalsKey {
     main = "main", 
     shelved = "shelved", 
-    givenUp = "givenUp"
+    givenUp = "givenUp",
+    unfocused = "unfocused"
 }
 
 export enum MessageSeverity {

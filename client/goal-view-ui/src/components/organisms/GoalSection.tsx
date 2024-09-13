@@ -1,11 +1,11 @@
-import React, {FunctionComponent, ReactNode, useEffect, useRef, useState} from 'react';
-import { VscPass } from 'react-icons/vsc';
+import React, {FunctionComponent, useEffect, useRef} from 'react';
 
 import GoalCollapsibleSection from './GoalCollapsibles';
 import GoalTabSection from './GoalTabs';
 import EmptyState from '../atoms/EmptyState';
 import { CollapsibleGoal } from '../../types';
 
+import classes from './GoalSection.module.css';
 
 type GoalSectionProps = {
     goals: CollapsibleGoal[],
@@ -13,13 +13,14 @@ type GoalSectionProps = {
     displaySetting: string;
     emptyMessage: string;
     emptyIcon?: JSX.Element;
+    unfocusedGoals?: CollapsibleGoal[],
     maxDepth: number;
     helpMessageHandler: (message: string) => void;
 };
 
 const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     
-    const {goals, collapseGoalHandler, displaySetting, emptyMessage, emptyIcon, maxDepth, helpMessageHandler} = props;
+    const {goals, collapseGoalHandler, displaySetting, unfocusedGoals, emptyMessage, emptyIcon, maxDepth, helpMessageHandler} = props;
     const emptyMessageRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -38,10 +39,19 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     }
 
     const section = goals.length === 0 ?
-        <>
+        unfocusedGoals !== undefined && unfocusedGoals.length > 0 ?
+        <div className={classes.UnfocusedView}>
+            <EmptyState message={emptyMessage} icon={emptyIcon} />
+            <div className={classes.HintText}>
+                Next unfocused goals (focus with bullet):
+            </div>
+            <div ref={emptyMessageRef}/>
+            <GoalCollapsibleSection goals={unfocusedGoals} collapseGoalHandler={collapseGoalHandler} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler} />
+        </div>
+        : <>
             <EmptyState message={emptyMessage} icon={emptyIcon} />
             <div ref={emptyMessageRef}/>
-        </>
+          </>
     : displaySetting === 'Tabs' ?
         <GoalTabSection goals={goals} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler}/>
         : <GoalCollapsibleSection goals={goals} collapseGoalHandler={collapseGoalHandler} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler}/>;

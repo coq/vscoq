@@ -26,6 +26,7 @@ type t = {
   goals: goal list;
   shelvedGoals: goal list;
   givenUpGoals: goal list;
+  unfocusedGoals: goal list;
 } [@@deriving yojson]
 
 open Printer
@@ -106,12 +107,15 @@ let get_proof ~previous diff_mode st =
     in
     let env = Global.env () in
     let proof_data = Proof.data proof in
+    let b_goals = Proof.background_subgoals proof in
     let sigma = proof_data.sigma in
     let goals = List.map (mk_goal env sigma) proof_data.goals in
+    let unfocusedGoals = List.map (mk_goal env sigma) b_goals in
     let shelvedGoals = List.map (mk_goal env sigma) (Evd.shelf sigma) in
     let givenUpGoals = List.map (mk_goal env sigma) (Evar.Set.elements @@ Evd.given_up sigma) in
     Some {
       goals;
       shelvedGoals;
       givenUpGoals;
+      unfocusedGoals;
     }
