@@ -168,6 +168,7 @@ After installation and activation of the extension:
   to delegate proofs. 
 * `"vscoq.proof.workers": int` -- Determines how many workers should be used for proof checking
 * `"vscoq.proof.block": bool` -- Determines if the the execution of a document should halt on first error.  Defaults to true (since version >= 2.1.7).
+* `"vscoq.proof.display-buttons": bool` -- A toggle to control whether buttons related to Coq (step forward/back, reset, etc.) are displayed in the editor actions menu (defaults to `true`)
 
 #### Code completion (experimental)
 * `"vscoq.completion.enable": bool` -- Toggle code completion (defaults to `false`)

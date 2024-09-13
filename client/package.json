@@ -206,10 +206,16 @@
             "description": "Amount of workers assigned to proofs in delegation mode"
           },
           "vscoq.proof.block": {
-              "scope": "window",
-              "type": "boolean",
-              "default": true,
-              "description": "Should execution be halted after reaching the first error ? "
+            "scope": "window",
+            "type": "boolean",
+            "default": true,
+            "description": "Should execution be halted after reaching the first error ? "
+          },
+          "vscoq.proof.display-buttons": {
+            "scope": "workspace",
+            "type": "boolean",
+            "default": true,
+            "description": "Toggles whether the Coq buttons are displayed in the editor actions tab menu."
           }
         }
       },
@@ -379,42 +385,42 @@
     "menus": {
       "editor/title": [
         {
-            "when": "resourceLangId == coq",
-            "command": "extension.coq.interpretToPoint",
-            "group": "navigation@3"
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
+          "command": "extension.coq.interpretToPoint",
+          "group": "navigation@3"
         },
         {
-          "when": "resourceLangId == coq",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "command": "extension.coq.stepForward",
           "group": "navigation@1"
         },
         {
-          "when": "resourceLangId == coq",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "command": "extension.coq.stepBackward",
           "group": "navigation@2"
         },
         {
-          "when": "resourceLangId == coq",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "command": "extension.coq.interpretToEnd",
           "group": "navigation@4"
         },
         {
-          "when": "resourceLangId == coq",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "command": "extension.coq.reset",
           "group": "navigation@5"
         },
         {
-          "when": "resourceLangId == coq && !config.vscoq.goals.auto",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true && !config.vscoq.goals.auto",
           "command": "extension.coq.displayProofView",
           "group": "navigation@0"
         },
         {
-          "when": "resourceLangId == coq",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "submenu": "vscoq.menu",
           "group": "navigation@0"
         }
       ],
-      "vscoq.menu":[
+      "vscoq.menu": [
         {
           "when": "resourceLangId == coq",
           "command": "extension.coq.documentState",
@@ -436,14 +442,14 @@
           "group": "2_documentation@0"
         }
       ],
-      "vscoq.menu.doc":[
+      "vscoq.menu.doc": [
         {
-            "when": "resourceLangId == coq",
-            "command": "extension.coq.walkthrough"
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.walkthrough"
         },
         {
-            "when": "resourceLangId == coq",
-            "command": "extension.coq.showManual"
+          "when": "resourceLangId == coq",
+          "command": "extension.coq.showManual"
         }
       ],
       "editor/context": [
@@ -859,46 +865,46 @@
       }
     ],
     "walkthroughs": [
-        {
-            "id": "coq.welcome",
-            "title": "Coq Setup",
-            "description": "Getting started with Coq",
-            "steps": [
-                {
-                    "id": "coq.welcome.openHelpPage",
-                    "title": "Re-open the setup page",
-                    "description": "This page is accessible at any moment by opening an empty file, clicking on the Coq menu and selecting ``Documentation > Docs: Show Setup Guide`` from the drop down menu.",
-                    "media": {
-                        "image": "./media/open_walkthrough.png",
-                        "altText": "Click on the Coq symbol and go to ```Docs: Show Setup Guide``` to re-open this walkthrough."
-                    }
-                },
-                {
-                    "id": "coq.welcome.books",
-                    "title": "Ressources to get started in the Coq world",
-                    "description": "You can find helpful books, documentations, and tutorials on this page",
-                    "media": {
-                        "markdown": "./media/books.md"
-                    }
-                },
-                {
-                    "id": "coq.welcome.install",
-                    "title": "Install dependencies",
-                    "description": "How to install Coq, setup VsCoq and its dependencies",
-                    "media": {
-                        "markdown": "./media/install.md"
-                    }
-                },
-                {
-                    "id": "coq.welcome.troubleshooting",
-                    "title": "Getting help",
-                    "description": "If you have any questions or are having problem with any of the previous steps, please head over to the [Coq zulip chat](https://coq.zulipchat.com/) so we can help you.",
-                    "media": {
-                        "markdown": "./media/troubleshooting.md"
-                    }
-                }
-            ]
-        }
+      {
+        "id": "coq.welcome",
+        "title": "Coq Setup",
+        "description": "Getting started with Coq",
+        "steps": [
+          {
+            "id": "coq.welcome.openHelpPage",
+            "title": "Re-open the setup page",
+            "description": "This page is accessible at any moment by opening an empty file, clicking on the Coq menu and selecting ``Documentation > Docs: Show Setup Guide`` from the drop down menu.",
+            "media": {
+              "image": "./media/open_walkthrough.png",
+              "altText": "Click on the Coq symbol and go to ```Docs: Show Setup Guide``` to re-open this walkthrough."
+            }
+          },
+          {
+            "id": "coq.welcome.books",
+            "title": "Ressources to get started in the Coq world",
+            "description": "You can find helpful books, documentations, and tutorials on this page",
+            "media": {
+              "markdown": "./media/books.md"
+            }
+          },
+          {
+            "id": "coq.welcome.install",
+            "title": "Install dependencies",
+            "description": "How to install Coq, setup VsCoq and its dependencies",
+            "media": {
+              "markdown": "./media/install.md"
+            }
+          },
+          {
+            "id": "coq.welcome.troubleshooting",
+            "title": "Getting help",
+            "description": "If you have any questions or are having problem with any of the previous steps, please head over to the [Coq zulip chat](https://coq.zulipchat.com/) so we can help you.",
+            "media": {
+              "markdown": "./media/troubleshooting.md"
+            }
+          }
+        ]
+      }
     ]
   },
   "scripts": {
