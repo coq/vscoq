@@ -151,9 +151,6 @@ After installation and activation of the extension:
 * `"vscoq.args": []` -- an array of strings specifying additional command line arguments for `vscoqtop` (typically accepts the same flags as `coqtop`)
 * `"vscoq.trace.server": off | messages | verbose` -- Toggles the tracing of communications between the server and client
 
-### General
-* `"vscoq.general.display-buttons": bool` -- A toggle to control whether buttons related to Coq (step forward/back, reset, etc.) are displayed in the editor actions menu (defaults to `true`)
-
 #### Memory management (since >= 2.1.7)
 * `"vscoq.memory.limit: int` -- specifies the memory limit (in Gb) over which when a user closes a tab, the corresponding document state is discarded in the server to free up memory. Defaults to 4Gb.
 
@@ -171,6 +168,7 @@ After installation and activation of the extension:
   to delegate proofs. 
 * `"vscoq.proof.workers": int` -- Determines how many workers should be used for proof checking
 * `"vscoq.proof.block": bool` -- Determines if the the execution of a document should halt on first error.  Defaults to true (since version >= 2.1.7).
+* `"vscoq.proof.display-buttons": bool` -- A toggle to control whether buttons related to Coq (step forward/back, reset, etc.) are displayed in the editor actions menu (defaults to `true`)
 
 #### Code completion (experimental)
 * `"vscoq.completion.enable": bool` -- Toggle code completion (defaults to `false`)

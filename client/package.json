@@ -106,18 +106,6 @@
         }
       },
       {
-        "title": "General",
-        "type": "object",
-        "properties": {
-          "vscoq.general.display-buttons": {
-            "scope": "workspace",
-            "type": "boolean",
-            "default": true,
-            "description": "Toggles whether the Coq buttons are displayed in the editor actions tab menu."
-          }
-        }
-      },
-      {
         "title": "Memory management",
         "type": "object",
         "properties": {
@@ -222,6 +210,12 @@
             "type": "boolean",
             "default": true,
             "description": "Should execution be halted after reaching the first error ? "
+          },
+          "vscoq.proof.display-buttons": {
+            "scope": "workspace",
+            "type": "boolean",
+            "default": true,
+            "description": "Toggles whether the Coq buttons are displayed in the editor actions tab menu."
           }
         }
       },
@@ -391,37 +385,37 @@
     "menus": {
       "editor/title": [
         {
-          "when": "resourceLangId == coq && config.vscoq.general.display-buttons == true",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "command": "extension.coq.interpretToPoint",
           "group": "navigation@3"
         },
         {
-          "when": "resourceLangId == coq && config.vscoq.general.display-buttons == true",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "command": "extension.coq.stepForward",
           "group": "navigation@1"
         },
         {
-          "when": "resourceLangId == coq && config.vscoq.general.display-buttons == true",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "command": "extension.coq.stepBackward",
           "group": "navigation@2"
         },
         {
-          "when": "resourceLangId == coq && config.vscoq.general.display-buttons == true",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "command": "extension.coq.interpretToEnd",
           "group": "navigation@4"
         },
         {
-          "when": "resourceLangId == coq && config.vscoq.general.display-buttons == true",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "command": "extension.coq.reset",
           "group": "navigation@5"
         },
         {
-          "when": "resourceLangId == coq && config.vscoq.general.display-buttons == true && !config.vscoq.goals.auto",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true && !config.vscoq.goals.auto",
           "command": "extension.coq.displayProofView",
           "group": "navigation@0"
         },
         {
-          "when": "resourceLangId == coq && config.vscoq.general.display-buttons == true",
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "submenu": "vscoq.menu",
           "group": "navigation@0"
         }
