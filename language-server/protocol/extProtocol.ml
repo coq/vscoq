@@ -26,7 +26,6 @@ module Notification = struct
       type t = {
         textDocument : VersionedTextDocumentIdentifier.t;
         position : Position.t;
-        to_next_point : bool
       } [@@deriving yojson]
 
     end

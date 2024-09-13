@@ -17,8 +17,7 @@ import { makeVersionedDocumentId } from './utilities/utils';
 export const sendInterpretToPoint = (editor: TextEditor, client: Client) => {
     const textDocument = makeVersionedDocumentId(editor);
     const position = editor.selection.active;
-    const mode = workspace.getConfiguration("vscoq.proof").pointInterpretationMode;
-    client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position, to_next_point: mode === 1 });
+    client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position });
 };
 
 export const sendInterpretToEnd = (editor: TextEditor,  client: Client) => {

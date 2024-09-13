@@ -41,6 +41,8 @@ let max_memory_usage  = ref 4000000000
 let full_diagnostics = ref false
 let full_messages = ref false
 
+let point_interp_mode = ref Settings.PointInterpretationMode.Cursor
+
 let block_on_first_error = ref true
 
 let Dm.Types.Log log = Dm.Log.mk_log "lspManager"
@@ -130,7 +132,8 @@ let do_configuration settings =
   full_diagnostics := settings.diagnostics.full;
   full_messages := settings.goals.messages.full;
   max_memory_usage := settings.memory.limit * 1000000000;
-  block_on_first_error := settings.proof.block
+  block_on_first_error := settings.proof.block;
+  point_interp_mode := settings.proof.pointInterpretationMode
 
 let send_configuration_request () =
   let id = `Int conf_request_id in
@@ -379,17 +382,18 @@ let mk_block_on_error_event uri last_range error_range =
 
 
 let coqtopInterpretToPoint params =
-  let Notification.Client.InterpretToPointParams.{ textDocument; position; to_next_point } = params in
+  let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[interpretToPoint] ignoring event on non existent document"; []
   | Some { st; visible } ->
     let (st, events, error_range, position) =
-      if to_next_point
-      then Dm.DocumentManager.interpret_to_next_position st position ~should_block_on_error:!block_on_first_error
-      else 
+      match !point_interp_mode with
+      | Settings.PointInterpretationMode.Cursor ->
         let st, evs, blocking_err = Dm.DocumentManager.interpret_to_position st position ~should_block_on_error:!block_on_first_error in
         (st, evs, blocking_err, position)
+      | Settings.PointInterpretationMode.NextCommand ->
+        Dm.DocumentManager.interpret_to_next_position st position ~should_block_on_error:!block_on_first_error
     in
     replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
