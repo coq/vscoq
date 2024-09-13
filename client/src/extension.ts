@@ -161,12 +161,18 @@ export function activate(context: ExtensionContext) {
             if(end.line !== start.line) {return;} //don't allow for multiline selections
             //either use the user selection or if no selection than infer the word under the cursor
             const wordAtCurorRange = (end.character !== start.character) ? selection : editor.document.getWordRangeAtPosition(end);
-            if(!wordAtCurorRange) {return; } //there is no word: do nothing
-            const queryText = editor.document.getText(wordAtCurorRange);
             //focus on the query panel
             commands.executeCommand('vscoq.search.focus');
-            //launch the query
-            searchProvider.launchQuery(queryText, type);
+            //open a prompt with the given word as default
+            window.showInputBox({
+                prompt: type.charAt(0).toUpperCase() + type.slice(1),
+                value: wordAtCurorRange ? editor.document.getText(wordAtCurorRange) : undefined
+            }).then(queryText => {
+                //launch the query
+                if(queryText) {
+                    searchProvider.launchQuery(queryText, type);
+                }
+            });
         };
 
         registerVscoqTextCommand('reset', (editor) => {
