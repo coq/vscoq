@@ -151,6 +151,9 @@ After installation and activation of the extension:
 * `"vscoq.args": []` -- an array of strings specifying additional command line arguments for `vscoqtop` (typically accepts the same flags as `coqtop`)
 * `"vscoq.trace.server": off | messages | verbose` -- Toggles the tracing of communications between the server and client
 
+### General
+* `"vscoq.general.display-buttons": bool` -- A toggle to control whether buttons related to Coq (step forward/back, reset, etc.) are displayed in the editor actions menu (defaults to `true`)
+
 #### Memory management (since >= 2.1.7)
 * `"vscoq.memory.limit: int` -- specifies the memory limit (in Gb) over which when a user closes a tab, the corresponding document state is discarded in the server to free up memory. Defaults to 4Gb.
 
