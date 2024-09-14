@@ -52,6 +52,22 @@ module Mode = struct
 
 end
 
+module PointInterpretationMode = struct
+  type t =
+  | Cursor
+  | NextCommand
+  [@@deriving yojson]
+
+  let yojson_of_t = function
+  | Cursor -> `Int 0
+  | NextCommand -> `Int 1
+
+  let t_of_yojson = function
+  | `Int 0 -> Cursor
+  | `Int 1 -> NextCommand
+  | _ -> Yojson.json_error @@ "invalid value "
+end
+
 module Memory = struct
 
   type t = {
@@ -67,6 +83,7 @@ module Proof = struct
     workers: int option;
     mode: Mode.t;
     block: bool;
+    pointInterpretationMode: PointInterpretationMode.t
   } [@@deriving yojson] [@@yojson.allow_extra_fields]
 
 end

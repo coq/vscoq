@@ -1,6 +1,7 @@
 import {
     TextEditor,
-    commands
+    commands,
+    workspace
 } from 'vscode';
 
 import {
@@ -13,10 +14,10 @@ import GoalPanel from './panels/GoalPanel';
 import Client from './client';
 import { makeVersionedDocumentId } from './utilities/utils';
 
-export const sendInterpretToPoint = (editor: TextEditor,  client: Client) => {
+export const sendInterpretToPoint = (editor: TextEditor, client: Client) => {
     const textDocument = makeVersionedDocumentId(editor);
     const position = editor.selection.active;
-    client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position});
+    client.sendNotification("vscoq/interpretToPoint", {textDocument: textDocument, position: position });
 };
 
 export const sendInterpretToEnd = (editor: TextEditor,  client: Client) => {

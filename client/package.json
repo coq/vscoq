@@ -199,6 +199,20 @@
             "default": 0,
             "description": "Configures the proof checking mode for Coq."
           },
+          "vscoq.proof.pointInterpretationMode": {
+            "scope": "window",
+            "type": "number",
+            "enum": [
+              0,
+              1
+            ],
+            "enumItemLabels": [
+              "Cursor",
+              "NextCommand"
+            ],
+            "default": 0,
+            "description": "Determines the point to which the proof should be checked when using the `Interpret to point` command."
+          },
           "vscoq.proof.cursor.sticky": {
             "scope": "window",
             "type": "boolean",
