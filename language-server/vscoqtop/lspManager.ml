@@ -155,10 +155,12 @@ let do_initialize id params =
   let completionProvider = CompletionOptions.create ~resolveProvider:false () in
   let documentSymbolProvider = `Bool true in
   let hoverProvider = `Bool true in
+  let definitionProvider = `Bool true in
   let capabilities = ServerCapabilities.create
     ~textDocumentSync
     ~completionProvider
     ~hoverProvider
+    ~definitionProvider
     ~documentSymbolProvider
   ()
   in
@@ -357,6 +359,19 @@ let textDocumentHover id params =
     match Dm.DocumentManager.hover st position with
     | Some contents -> Ok (Some (Hover.create ~contents:(`MarkupContent contents) ()))
     | _ -> Ok None (* FIXME handle error case properly *)
+
+let textDocumentDefinition params =
+  let Lsp.Types.DefinitionParams.{ textDocument; position } = params in
+  match Hashtbl.find_opt states (DocumentUri.to_path textDocument.uri) with
+  | None -> log @@ "[textDocumentDefinition] ignoring event on non existing document"; Ok None (* FIXME handle error case properly *)
+  | Some { st } -> 
+    match Dm.DocumentManager.jump_to_definition st position with
+    | None -> log @@ "[textDocumentDefinition] could not find symbol location"; Ok None (* FIXME handle error case properly *)
+    | Some (range, uri) ->
+      let uri = DocumentUri.of_path uri in
+      let location = Location.create ~range:range ~uri:uri in
+      Ok (Some (`Location [location]))
+
 
 let progress_hook uri () =
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
@@ -585,6 +600,8 @@ let dispatch_std_request : type a. Jsonrpc.Id.t -> a Lsp.Client_request.t -> (a,
     do_shutdown id ()
   | TextDocumentCompletion params ->
     textDocumentCompletion id params
+  | TextDocumentDefinition params ->
+    textDocumentDefinition params, []
   | TextDocumentHover params ->
     textDocumentHover id params, []
   | DocumentSymbol params ->
