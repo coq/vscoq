@@ -22,6 +22,8 @@ type error_recovery_strategy =
   | RSkip
   | RAdmitted
 
+type restart =  { id : sentence_id; to_ : sentence_id }
+
 type executable_sentence = {
   id : sentence_id;
   ast : Synterp.vernac_control_entry;
@@ -33,6 +35,7 @@ type executable_sentence = {
 type task =
   | Skip of { id: sentence_id; error: Pp.t option }
   | Exec of executable_sentence
+  | Restart of restart
   | OpaqueProof of { terminator: executable_sentence;
                      opener_id: sentence_id;
                      proof_using: Vernacexpr.section_subset_expr;
@@ -45,9 +48,12 @@ type task =
   | ModuleWithSignature of ast list
 *)
 
+type executable_sentence_or_restart =
+  | E of executable_sentence
+  | R of restart
 
 type proof_block = {
-  proof_sentences : executable_sentence list;
+  proof_sentences : executable_sentence_or_restart list;
   opener_id : sentence_id;
 }
 
@@ -74,12 +80,18 @@ let initial_schedule = {
 }
 
 let push_executable_proof_sentence ex_sentence block =
-  { block with proof_sentences = ex_sentence :: block.proof_sentences }
+  { block with proof_sentences = E ex_sentence :: block.proof_sentences }
 
 let push_ex_sentence ex_sentence st =
   match st.proof_blocks with
   | [] -> { st with document_scope = ex_sentence.id :: st.document_scope }
   | l::q -> { st with proof_blocks = push_executable_proof_sentence ex_sentence l :: q }
+
+let push_restart_command id to_ block = { block with proof_sentences = R { id; to_ } :: block.proof_sentences }
+let push_restart id st =
+  match st.proof_blocks with
+  | [] -> st, Skip { id; error = Some (Pp.str "Restart can only be used inside a proof.")}
+  | l::q -> { st with proof_blocks = push_restart_command id l.opener_id l :: q }, Restart { id; to_ = l.opener_id }
 
 (* Not sure what the base_id for nested lemmas should be, e.g.
 Lemma foo : X.
@@ -94,7 +106,8 @@ let base_id st =
   | block :: l ->
     begin match block.proof_sentences with
     | [] -> aux l
-    | ex_sentence :: _ -> Some ex_sentence.id
+    | E { id } :: _ -> Some id
+    | R { to_ } :: _ -> Some to_
     end
   in
   aux st.proof_blocks
@@ -113,7 +126,7 @@ let flatten_proof_block st =
   match st.proof_blocks with
   | [] -> st
   | [block] ->
-    let document_scope = CList.uniquize @@ List.map (fun x -> x.id) block.proof_sentences @ st.document_scope in
+    let document_scope = CList.uniquize @@ List.map (function E { id } -> id | R { id } -> id) block.proof_sentences @ st.document_scope in
     { st with document_scope; proof_blocks = [] }
   | block1 :: block2 :: tl -> (* Nested proofs. TODO check if we want to extrude one level or directly to document scope *)
     let proof_sentences = CList.uniquize @@ block1.proof_sentences @ block2.proof_sentences in
@@ -155,14 +168,16 @@ let find_proof_using (ast : Synterp.vernac_control_entry) =
    synterp, and if so where its value is stored. *)
 let find_proof_using_annotation { proof_sentences } =
   match List.rev proof_sentences with
-  | ex_sentence :: _ -> find_proof_using ex_sentence.ast
+  | E ex_sentence :: _ -> find_proof_using ex_sentence.ast
   | _ -> None
 
 
 
 let is_opaque_flat_proof terminator section_depth block =
   let open Vernacextend in
-  let has_side_effect { classif } = match classif with
+  let has_side_effect = function
+   | R _ -> true
+   | E { classif } -> match classif with
     | VtStartProof _ | VtSideff _ | VtQed _ | VtProofMode _ | VtMeta -> true
     | VtProofStep _ | VtQuery -> false
   in
@@ -191,7 +206,7 @@ let push_state id ast synterp classif st =
       | Some proof_using ->
         log "opaque proof";
         let terminator = { ex_sentence with error_recovery = RAdmitted } in
-        let tasks = List.rev block.proof_sentences in
+        let tasks = List.rev_map (function E x -> x | R _ -> assert false) block.proof_sentences in
         let st = { st with proof_blocks = pop } in
         base_id st, push_ex_sentence ex_sentence st, OpaqueProof { terminator; opener_id = block.opener_id; tasks; proof_using }
       | None ->
@@ -205,20 +220,28 @@ let push_state id ast synterp classif st =
     base_id st, push_ex_sentence ex_sentence st, Exec ex_sentence
   | VtSideff _ ->
     base_id st, extrude_side_effect ex_sentence st, Exec ex_sentence
-  | VtMeta -> base_id st, push_ex_sentence ex_sentence st, Skip { id; error = Some (Pp.str "Unsupported command") }
+  | VtMeta ->
+      begin match ast.CAst.v.expr with
+      | Vernacexpr.(VernacSynPure VernacRestart) ->
+          let base = base_id st in
+          let st, t = push_restart ex_sentence.id st in
+          base, st, t  (* TOOD: control *)
+      | _ -> base_id st, push_ex_sentence ex_sentence st, Skip { id; error = Some (Pp.str "Unsupported command") }
+      end  
   | VtProofMode _ -> base_id st, push_ex_sentence ex_sentence st, Skip { id; error = Some (Pp.str "Unsupported command") }
 
 let string_of_task (task_id,(base_id,task)) =
   let s = match task with
   | Skip { id } -> Format.sprintf "Skip %s" (Stateid.to_string id)
   | Exec { id } -> Format.sprintf "Exec %s" (Stateid.to_string id)
+  | Restart { id; to_ } -> Format.sprintf "Reset %s -> %s" (Stateid.to_string id) (Stateid.to_string to_)
   | OpaqueProof { terminator; tasks } -> Format.sprintf "OpaqueProof [%s | %s]" (Stateid.to_string terminator.id) (String.concat "," (List.map (fun task -> Stateid.to_string task.id) tasks))
   | Query { id } -> Format.sprintf "Query %s" (Stateid.to_string id)
   in
   Format.sprintf "[%s] : [%s] -> %s" (Stateid.to_string task_id) (Option.cata Stateid.to_string "init" base_id) s
 
 let _string_of_state st =
-  let scopes = (List.map (fun b -> List.map (fun x -> x.id) b.proof_sentences) st.proof_blocks) @ [st.document_scope] in
+  let scopes = (List.map (fun b -> List.map (function E { id } -> id | R { id } -> id) b.proof_sentences) st.proof_blocks) @ [st.document_scope] in
   String.concat "|" (List.map (fun l -> String.concat " " (List.map Stateid.to_string l)) scopes)
 
 let schedule_sentence (id, (ast, classif, synterp_st)) st schedule =

@@ -106,6 +106,7 @@ let get_options () = !options
 type prepared_task =
   | PSkip of { id: sentence_id; error: Pp.t option }
   | PExec of executable_sentence
+  | PRestart of { id : sentence_id; to_ : sentence_id }
   | PQuery of executable_sentence
   | PDelegate of { terminator_id: sentence_id;
                    opener_id: sentence_id;
@@ -306,7 +307,7 @@ let rec cut_from_range r = function
 let cut_overview task state document =
   let range = match task with
   | PDelegate { terminator_id } -> Document.range_of_id_with_blank_space document terminator_id
-  | PSkip { id } | PExec { id } | PQuery { id } ->
+  | PSkip { id } | PExec { id } | PQuery { id } | PRestart {id } ->
     Document.range_of_id_with_blank_space document id
   in
   let {prepared; processing; processed} = state.overview in
@@ -379,7 +380,7 @@ let invalidate_prepared_or_processing task state document =
     let processing = remove_or_truncate_range range processing in
     let overview = {state.overview with prepared; processing} in
     {state with overview}
-  | PSkip { id } | PExec { id } | PQuery { id } ->
+  | PSkip { id } | PExec { id } | PQuery { id } | PRestart {id } ->
     let range = Document.range_of_id_with_blank_space document id in
     let prepared = remove_or_truncate_range range prepared in
     let processing = remove_or_truncate_range range processing in
@@ -400,7 +401,7 @@ let update_processing task state document =
     let prepared = remove_or_truncate_range range prepared in
     let overview = {state.overview with prepared; processing} in
     {state with overview}
-  | PSkip { id } | PExec { id } | PQuery { id } ->
+  | PSkip { id } | PExec { id } | PQuery { id } | PRestart {id } ->
     let range = Document.range_of_id_with_blank_space document id in
     let processing = insert_or_merge_range range processing in 
     let prepared = remove_or_truncate_range range prepared in
@@ -420,7 +421,7 @@ let update_prepared task document state =
     let prepared = List.append prepared [ range ] in
     let overview = {state.overview with prepared} in
     {state with overview}
-  | PSkip { id } | PExec { id } | PQuery { id } ->
+  | PSkip { id } | PExec { id } | PQuery { id } | PRestart {id } ->
     let range = Document.range_of_id_with_blank_space document id in
     let prepared = insert_or_merge_range range prepared in
     let overview = {state.overview with prepared} in
@@ -436,7 +437,7 @@ let update_overview task todo state document =
     let overview = update_processed_as_Done (Success None) range state.overview in
     let overview = {overview with prepared} in
     {state with overview}
-  | PSkip { id } | PExec { id } | PQuery { id } ->
+  | PSkip { id } | PExec { id } | PQuery { id } | PRestart {id } ->
     update_processed id state document
   in
   match todo with
@@ -568,6 +569,7 @@ let prepare_task task : prepared_task list =
   match task with
   | Skip { id; error } -> [PSkip { id; error }]
   | Exec e -> [PExec e]
+  | Restart { id; to_} -> [PRestart { id; to_}]
   | Query e -> [PQuery e]
   | OpaqueProof { terminator; opener_id; tasks; proof_using} ->
       match !options.delegation_mode with
@@ -586,6 +588,7 @@ let id_of_prepared_task = function
   | PSkip { id } -> id
   | PExec ex -> ex.id
   | PQuery ex -> ex.id
+  | PRestart { id } -> id
   | PDelegate { terminator_id } -> terminator_id
 
 let purge_state = function
@@ -634,6 +637,19 @@ let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_
     Feedback.msg_debug @@ Pp.str "==========================================================";
     exit 1
 
+let interp_Restart st id to_ =
+  match SM.find to_ st.of_sentence with
+  | (Done (Success (Some old_vs) as v), _) ->
+      let st = update st id v in
+      st, old_vs
+  | _ -> CErrors.anomaly  ~label:"vscoq" Pp.(str"Restart: to_ is incorrect")
+  | exception Not_found -> assert false
+
+let exec_error_id_of_outcome v id =
+  match v with
+  | Success _ -> None
+  | Error _ -> Some id
+
 let execute st (vs, events, interrupted) task =
   if interrupted then begin
     let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
@@ -647,21 +663,20 @@ let execute st (vs, events, interrupted) task =
             | Some msg -> error None None msg vs
           in
           let st = update st id v in
-          (st, vs, events, false, None)
+          (st, vs, events, false, exec_error_id_of_outcome v id)
       | PExec { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
           let vs, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
-          let exec_error = match v with
-            | Success _ -> None
-            | Error _ -> Some id
-          in
           let st = update st id v in
-          (st, vs, events @ ev, false, exec_error)
+          (st, vs, events @ ev, false, exec_error_id_of_outcome v id)
+      | PRestart { id; to_ } -> 
+          let st, vs = interp_Restart st id to_ in
+          (st, vs, events, false, None)
       | PQuery { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
           let _, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let st = update st id v in
-          (st, vs, events @ ev, false, None)
+          (st, vs, events @ ev, false, exec_error_id_of_outcome v id)
       | PDelegate { terminator_id; opener_id; last_step_id; tasks; proof_using } ->
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
