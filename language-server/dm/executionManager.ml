@@ -104,7 +104,7 @@ let is_diagnostics_enabled () = !options.enableDiagnostics
 let get_options () = !options
 
 type prepared_task =
-  | PSkip of { id: sentence_id; error: Pp.t option }
+  | PSkip of skip
   | PExec of executable_sentence
   | PRestart of { id : sentence_id; to_ : sentence_id }
   | PQuery of executable_sentence
@@ -657,11 +657,8 @@ let execute st (vs, events, interrupted) task =
   end else
     try
       match task with
-      | PSkip { id; error = err } ->
-          let v = match err with
-            | None -> success vs
-            | Some msg -> error None None msg vs
-          in
+      | PSkip { id; error = e } ->
+          let v = error None None e vs in
           let st = update st id v in
           (st, vs, events, false, exec_error_id_of_outcome v id)
       | PExec { id; ast; synterp; error_recovery } ->
