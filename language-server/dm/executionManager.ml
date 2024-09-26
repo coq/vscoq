@@ -111,7 +111,7 @@ type prepared_task =
                    opener_id: sentence_id;
                    proof_using: Vernacexpr.section_subset_expr;
                    last_step_id: sentence_id option; (* only for setting a proof remotely *)
-                   tasks: prepared_task list;
+                   tasks: executable_sentence list;
                  }
 
 module ProofJob = struct
@@ -121,7 +121,7 @@ module ProofJob = struct
   let appendFeedback (rid,sid) fb = AppendFeedback(rid,sid,fb)
 
   type t = {
-    tasks : prepared_task list;
+    tasks : executable_sentence list;
     initial_vernac_state : Vernacstate.t;
     doc_id : int;
     terminator_id : sentence_id;
@@ -358,20 +358,19 @@ let invalidate_processed id state document =
     log @@ "Trying to get overview with non-existing state id " ^ Stateid.to_string id;
     state
 
+let id_of_first_task ~default = function
+  | [] -> default
+  | { id } :: _ -> id
+
+let id_of_last_task ~default l =
+  id_of_first_task ~default (List.rev l)
+
 let invalidate_prepared_or_processing task state document =
   let {prepared; processing} = state.overview in
   match task with
   | PDelegate { opener_id; terminator_id; tasks } ->
-    let proof_opener_id = match tasks with
-      | [] -> opener_id
-      | (PSkip { id } | PExec { id } | PQuery { id }) :: _ -> id
-      | PDelegate _ :: _ -> assert false
-    in
-    let proof_closer_id = match List.rev tasks with
-      | [] -> terminator_id
-      | (PSkip { id } | PExec { id } | PQuery { id }) :: _ -> id
-      | PDelegate _ :: _ -> assert false
-    in
+    let proof_opener_id = id_of_first_task ~default:opener_id tasks in
+    let proof_closer_id = id_of_last_task ~default:terminator_id tasks in
     let proof_begin_range = Document.range_of_id_with_blank_space document proof_opener_id in
     let proof_end_range = Document.range_of_id_with_blank_space document proof_closer_id in
     let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
@@ -391,16 +390,8 @@ let update_processing task state document =
   let {processing; prepared} = state.overview in
   match task with
   | PDelegate { opener_id; terminator_id; tasks } ->
-    let proof_opener_id = match tasks with
-      | [] -> opener_id
-      | (PSkip { id } | PExec { id } | PQuery { id }) :: _ -> id
-      | PDelegate _ :: _ -> assert false
-    in
-    let proof_closer_id = match List.rev tasks with
-      | [] -> terminator_id
-      | (PSkip { id } | PExec { id } | PQuery { id }) :: _ -> id
-      | PDelegate _ :: _ -> assert false
-    in
+    let proof_opener_id = id_of_first_task ~default:opener_id tasks in
+    let proof_closer_id = id_of_last_task ~default:terminator_id tasks in
     let proof_begin_range = Document.range_of_id_with_blank_space document proof_opener_id in
     let proof_end_range = Document.range_of_id_with_blank_space document proof_closer_id in
     let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
@@ -420,16 +411,8 @@ let update_prepared task document state =
   let {prepared} = state.overview in
   match task with
   | PDelegate { opener_id; terminator_id; tasks } ->
-    let proof_opener_id = match tasks with
-      | [] -> opener_id
-      | (PSkip { id } | PExec { id } | PQuery { id }) :: _ -> id
-      | PDelegate _ :: _ -> assert false
-    in
-    let proof_closer_id = match List.rev tasks with
-      | [] -> terminator_id
-      | (PSkip { id } | PExec { id } | PQuery { id }) :: _ -> id
-      | PDelegate _ :: _ -> assert false
-    in
+    let proof_opener_id = id_of_first_task ~default:opener_id tasks in
+    let proof_closer_id = id_of_last_task ~default:terminator_id tasks in
     let proof_begin_range = Document.range_of_id_with_blank_space document proof_opener_id in
     let proof_end_range = Document.range_of_id_with_blank_space document proof_closer_id in
     let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
@@ -591,7 +574,6 @@ let prepare_task task : prepared_task list =
       | DelegateProofsToWorkers _ ->
           log "delegating proofs to workers";
           let last_step_id = last_opt tasks in
-          let tasks = List.map (fun x -> PExec x) tasks in
           [PDelegate {terminator_id = terminator.id; opener_id; last_step_id; tasks; proof_using}]
       | CheckProofsInMaster ->
           log "running the proof in master as per config";
@@ -611,22 +593,12 @@ let purge_state = function
   | Error(e,_,_) -> Error (e,None,None)
 
 (* TODO move to proper place *)
-let worker_execute ~doc_id ~send_back (vs,events) = function
-  | PSkip { id; error = err } ->
-    let v = match err with
-      | None -> success vs
-      | Some msg -> error None None msg vs
-    in
-    send_back (ProofJob.UpdateExecStatus (id,purge_state v));
-    (vs, events)
-  | PExec { id; ast; synterp; error_recovery } ->
-    let vs = { vs with Vernacstate.synterp } in
-    log ("worker interp " ^ Stateid.to_string id);
-    let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
-    send_back (ProofJob.UpdateExecStatus (id,purge_state v));
-    (vs, events @ ev)
-  | _ -> assert false
-
+let worker_execute ~doc_id ~send_back (vs,events) { id; ast; synterp; error_recovery } =
+  let vs = { vs with Vernacstate.synterp } in
+  log ("worker interp " ^ Stateid.to_string id);
+  let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
+  send_back (ProofJob.UpdateExecStatus (id,purge_state v));
+  (vs, events @ ev)
 
 (* The execution of Qed for a non-delegated proof checks the proof is completed.
    When the proof is delegated this step is performed by the worker, which
@@ -720,7 +692,7 @@ let execute st (vs, events, interrupted) task =
                  update_all id (Delegated (job_id,Some complete_job)) [] st
                else
                  update_all id (Delegated (job_id,None)) [] st)
-               st (List.map id_of_prepared_task tasks) in
+               st (List.map (fun { id } -> id) tasks) in
             let e =
                 ProofWorker.worker_available ~jobs
                   ~fork_action:worker_main
@@ -878,7 +850,7 @@ let rec invalidate document schedule id st =
       Queue.push job jobs
     else begin
       Sel.Event.cancel cancellation;
-      removed := tasks :: !removed
+      removed := List.map (fun e -> PExec e) tasks :: !removed
     end) old_jobs;
   let of_sentence = List.fold_left invalidate1 of_sentence
     List.(concat (map (fun tasks -> map id_of_prepared_task tasks) !removed)) in
