@@ -79,6 +79,21 @@ the "Proof: Mode" and select "Continuous". Otherwise, processing will step by st
 
 In VsCode, from the extensions page, either use the drop down menu from the ```Uninstall``` button and select ```Install another version```, or click on ```Switch to pre-release```.
 
+### Troubleshooting
+
+#### Known problems
+
+- Getting an ```Unable to start coqtop``` or ```coqtop-stderr: Don't know what to do with -ideslave``` error.
+This is a known issue if you are updating from a very old version.
+Solution: navigate to your extensions folder (```Extensions: Open Extensions Folder``` from the command palette) and then delete the ```siegbell.vscoq-**version**``` folder.
+
+- Extension hanging: query panel shows a loading bar and shortcuts fail
+This could be due to an old ```vscode``` version. Make sure ```vscode``` is up to date.
+
+#### Getting help
+
+If you are unable to set-up vscoq, feel free to contact us on the ```Vscoq devs and users``` [channel in zulip](https://coq.zulipchat.com/#narrow/stream/237662-VsCoq-devs-.26-users).
+
 ## Features
 * Syntax highlighting
 * Asynchronous proof checking
