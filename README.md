@@ -3,37 +3,26 @@
 [![Code of Conduct][conduct-shield]][conduct-link]
 [![Zulip][zulip-shield]][zulip-link]
 
-[action-shield]: https://github.com/coq-community/vscoq/actions/workflows/ci.yml/badge.svg?branch=main
-[action-link]: https://github.com/coq-community/vscoq/actions?query=workflow:ci
+[action-shield]: https://github.com/coq/vscoq/actions/workflows/ci.yml/badge.svg?branch=main
+[action-link]: https://github.com/coq/vscoq/actions?query=workflow:ci
 
 [contributing-shield]: https://img.shields.io/badge/contributions-welcome-%23f7931e.svg
-[contributing-link]: https://github.com/coq-community/manifesto/blob/master/CONTRIBUTING.md
+[contributing-link]: https://github.com/coq/vscoq/manifesto/blob/master/CONTRIBUTING.md
 
 [conduct-shield]: https://img.shields.io/badge/%E2%9D%A4-code%20of%20conduct-%23f15a24.svg
-[conduct-link]: https://github.com/coq-community/manifesto/blob/master/CODE_OF_CONDUCT.md
+[conduct-link]: https://github.com/coq/vscoq/manifesto/blob/master/CODE_OF_CONDUCT.md
 
 [zulip-shield]: https://img.shields.io/badge/chat-on%20zulip-%23c1272d.svg
 [zulip-link]: https://coq.zulipchat.com/#narrow/stream/237662-VsCoq-devs.20.26.20users
 
 VsCoq is an extension for [Visual Studio Code](https://code.visualstudio.com/)
 (VS Code) and [VSCodium](https://vscodium.com/) which provides support for the [Coq Proof
-Assistant](https://coq.inria.fr/).
-
-VsCoq is distributed in two flavours:
-
-- **VsCoq Legacy** (required for Coq < 8.18, compatible with Coq >= 8.7) is based on the original 
-  VsCoq implementation by [C.J. Bell](https://github.com/siegebell). It uses the legacy XML protocol 
-  spoken by CoqIDE.\
-  For more information, see the [VsCoq Legacy repository](https://github.com/coq-community/vscoq-legacy). 
-  *Please note it is no longer actively developed, but still maintained for compatibility purposes.*
-
-- **VsCoq** (recommended for Coq >= 8.18) is a full reimplementation around a
-  language server which natively speaks the 
-  [LSP protocol](https://learn.microsoft.com/en-us/visualstudio/extensibility/language-server-protocol?view=vs-2022).
+Assistant](https://coq.inria.fr/). It is built around a language server which natively speaks the [LSP protocol](https://learn.microsoft.com/en-us/visualstudio/extensibility/language-server-protocol?view=vs-2022).
 
 ## Supported Coq versions
 
 **VsCoq** supports all recent Coq versions >= 8.18.
+If you are running an Coq < 8.18 you should use [VsCoq Legacy](https://github.com/coq-community/vscoq-legacy).
 
 ## Installing VsCoq
 
@@ -60,7 +49,7 @@ $ which vscoqtop
 We often roll out pre-release versions. To get the correct language server version please pin the git repo. For example,
 for pre-release ```v2.1.5```:
 ```shell
-$ opam pin add vscoq-language-server.2.1.5  https://github.com/coq-community/vscoq/releases/download/v2.1.5/vscoq-language-server-2.1.5.tar.gz
+$ opam pin add vscoq-language-server.2.1.5  https://github.com/coq/vscoq/releases/download/v2.1.5/vscoq-language-server-2.1.5.tar.gz
 ```
 
 ### Installing and configuring the extension
@@ -195,22 +184,13 @@ After installation and activation of the extension:
 * `"vscoq.diagnostics.full": bool` -- Toggles the printing of `Info` level diagnostics (defaults to `false`)
 
 ## For extension developers 
-See [Dev docs](https://github.com/coq-community/vscoq/blob/main/docs/developers.md)
+See [Dev docs](https://github.com/coq/vscoq/blob/main/docs/developers.md)
 
 ## Maintainers
 
-This extension is currently developed and maintained as part of
-[Coq Community](https://github.com/coq-community/manifesto) by
+This extension is currently developed and maintained by
 [Enrico Tassi](https://github.com/gares),
 [Romain Tetley](https://github.com/rtetley).
-
-**VsCoq Legacy** is no longer actively developed but is still maintained for compatibility
-purposes. It was developed and maintained by
-[Maxime Dénès](https://github.com/maximedenes),
-[Paolo G. Giarrusso](https://github.com/Blaisorblade),
-[Huỳnh Trần Khanh](https://github.com/huynhtrankhanh),
-[Laurent Théry](https://github.com/thery),
-and contributors.
 
 ## License
 Unless mentioned otherwise, files in this repository are [distributed under the MIT License](LICENSE).
