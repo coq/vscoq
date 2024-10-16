@@ -15,7 +15,7 @@
       "name": "keyword.control.import.coq"
     },
     {
-      "match": "(Theorem|Lemma|Remark|Fact|Corollary|Property|Proposition|Goal)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
+      "match": "\\b(Theorem|Lemma|Remark|Fact|Corollary|Property|Proposition|Goal)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
       "comment": "Theorem declarations",
       "captures": {
         "1": {
@@ -78,7 +78,7 @@
       }
     },
     {
-      "match": "(CoInductive|Inductive|Variant|Record|Structure|Class)\\s+(>\\s*)?((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
+      "match": "\\b(CoInductive|Inductive|Variant|Record|Structure|Class)\\s+(>\\s*)?((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
       "comment": "Type declarations",
       "captures": {
         "1": {
@@ -90,7 +90,7 @@
       }
     },
     {
-      "match": "(Ltac)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
+      "match": "\\b(Ltac)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
       "comment": "Ltac declarations",
       "captures": {
         "1": {
