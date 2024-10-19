@@ -658,6 +658,69 @@ let hover st pos =
         hover_of_sentence st loc pattern (Document.find_next_qed st.document loc)
     | _ -> None
 
+    (* match loc.Loc.fname with
+    | Loc.ToplevelInput | InFile  { dirpath = None } -> Loc.pr loc
+    | InFile { dirpath = Some dp } ->
+      let f = Loadpath.locate_absolute_library @@ Libnames.dirpath_of_string dp in
+      let f = match f with
+        | Ok f ->
+          let f =  Filename.remove_extension f ^ ".v" in
+          if Sys.file_exists f
+          then str "File " ++ qstring f
+          else str "Library " ++ qstring dp
+        | Error _ -> str "Library " ++ qstring dp
+      in
+      (f ++
+       str", line " ++ int loc.line_nb ++ str", characters " ++
+       int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos)) *)
+
+let jump_to_definition st pos =
+  let raw_doc = Document.raw_document st.document in
+  let loc = RawDocument.loc_of_position raw_doc pos in
+  let opattern = RawDocument.word_at_position raw_doc pos in
+  match opattern with
+  | None -> log "jumpToDef: no word found at cursor"; None
+  | Some pattern ->
+    log ("jumpToDef: found word at cursor: \"" ^ pattern ^ "\"");
+    match st.observe_id with
+    | None -> log "jumpToDef in continuous mode currently not supported"; None
+    | Some Top -> log "jumpToDef with no context"; None
+    | Some (Id id) ->
+      match Document.get_sentence st.document id with
+      | None -> log "jumpToDef: observe_id does not exist"; None
+      | Some { stop } ->
+        let o_pos = RawDocument.position_of_loc raw_doc stop in
+        match get_context st o_pos with
+        | None -> log "No context found"; None
+        | Some _ ->
+          match parse_entry st loc (Pcoq.Prim.smart_global) pattern with
+          | { v = AN qid } -> 
+            begin match Nametab.locate qid with
+              | ConstRef x -> begin match Declare.get_loc x with
+                | None -> None
+                | Some loc ->
+                  begin match loc.Loc.fname with
+                    | Loc.ToplevelInput | InFile  { dirpath = None } -> None
+                    | InFile { dirpath = Some dp } ->
+                        let f = Loadpath.locate_absolute_library @@ Libnames.dirpath_of_string dp in
+                        begin match f with
+                          | Ok f ->
+                            let f =  Filename.remove_extension f ^ ".v" in
+                            (if Sys.file_exists f then
+                              let range = RawDocument.range_of_loc raw_doc loc in
+                              Some (range, f)
+                            else
+                              None
+                            )
+                          | Error _ -> None
+                        end
+                  end
+                end
+              | _ -> None
+            end
+          | _ -> None
+
+
 let check st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with
