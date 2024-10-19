@@ -24,7 +24,7 @@ VsCoq is distributed in two flavours:
 - **VsCoq Legacy** (required for Coq < 8.18, compatible with Coq >= 8.7) is based on the original 
   VsCoq implementation by [C.J. Bell](https://github.com/siegebell). It uses the legacy XML protocol 
   spoken by CoqIDE.\
-  For more information, see the [VsCoq 1 branch](https://github.com/coq-community/vscoq/tree/vscoq1).
+  For more information, see the [VsCoq Legacy repository](https://github.com/coq-community/vscoq-legacy). 
   *Please note it is no longer actively developed, but still maintained for compatibility purposes.*
 
 - **VsCoq** (recommended for Coq >= 8.18) is a full reimplementation around a
