@@ -96,7 +96,7 @@ module type Worker = sig
   
   (* for worker toplevels *)
   type options
-  val parse_options : string list -> options * string list
+  val parse_options : Coqargs.t -> string list -> options * string list
   (* the sentence ids of the remote_mapping being delegated *)
   val setup_plumbing : options -> ((job_update_request -> unit) * job_t)
   
@@ -331,7 +331,7 @@ let setup_plumbing port =
     log_worker @@ Printf.sprintf "error starting: %s: %s: %s" syscall param (Unix.error_message code);
     exit 1
 
-let parse_options extra_args =
+let parse_options _baseopts extra_args =
   match extra_args with
   | [ o ; port ] when o = option_name -> int_of_string port, []
   | _ ->

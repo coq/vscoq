@@ -79,7 +79,7 @@ module type Worker = sig
    
    (* for worker toplevels *)
    type options
-   val parse_options : string list -> options * string list
+   val parse_options : Coqargs.t -> string list -> options * string list
    (* the sentence ids of the remote_mapping being delegated *)
    val setup_plumbing : options -> ((job_update_request -> unit) * job_t)
    
