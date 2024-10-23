@@ -13,7 +13,11 @@
 (**************************************************************************)
 module TacticWorkerProcess : sig
   type options
-  val parse_options : string list -> options * string list
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+   val parse_options : string list -> options * string list
+[%%else]
+   val parse_options : Coqargs.t -> string list -> options * string list
+[%%endif]
   val main : st:Vernacstate.t -> options -> unit
   val log : string -> unit
 end
