@@ -122,8 +122,8 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
       | VernacSynterp _ -> None, ""
       | VernacSynPure pure -> 
         match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theorem"
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
+        | Vernacexpr.VernacDefinition ((_, IsTheoremKind kind), _) -> Some (TheoremKind kind), "theorem"
+        | Vernacexpr.VernacDefinition ((_, IsDefinitionKind def), _) -> Some (DefinitionType def), "definition"
         | _ -> None, ""
     in
     let name = match names with
@@ -144,8 +144,8 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
       | VernacSynterp _ -> None, ""
       | VernacSynPure pure -> 
         match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theroem"
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
+        | Vernacexpr.VernacDefinition ((_, IsTheoremKind kind), _) -> Some (TheoremKind kind), "theroem"
+        | Vernacexpr.VernacDefinition ((_, IsDefinitionKind def), _) -> Some (DefinitionType def), "definition"
         | _ -> None, ""
     in
     let name = match names with
