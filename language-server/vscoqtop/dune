@@ -4,4 +4,5 @@
  (modules vscoqtop lspManager)
  (flags -linkall)
  (package vscoq-language-server)
+ (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
  (libraries coq-core.sysinit coq-core.tactics sel yojson dm lsp))

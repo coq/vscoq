@@ -79,7 +79,11 @@ module type Worker = sig
    
    (* for worker toplevels *)
    type options
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
    val parse_options : string list -> options * string list
+[%%else]
+   val parse_options : Coqargs.t -> string list -> options * string list
+[%%endif]
    (* the sentence ids of the remote_mapping being delegated *)
    val setup_plumbing : options -> ((job_update_request -> unit) * job_t)
    

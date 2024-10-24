@@ -56,6 +56,13 @@ let rec skip_xd acc = function
   | "-vscoq-d" :: _ :: rest -> skip_xd acc rest
   | x :: rest -> skip_xd (x::acc) rest
 
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+let parse_extra x =
+  skip_xd [] x
+[%%else]
+let parse_extra _ x = skip_xd [] x
+[%%endif]
+
 let _ =
   Coqinit.init_ocaml ();
   log "------------------ begin ---------------";
@@ -70,7 +77,7 @@ let _ =
       let args = CoqProject_file.coqtop_args_from_project project in
       log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
       fst @@ Coqargs.parse_args ~usage:vscoqtop_specific_usage ~init:Coqargs.default args in
-  let opts, () = Coqinit.parse_arguments ~usage:vscoqtop_specific_usage ~initial_args ~parse_extra:(fun x -> skip_xd [] x) () in
+  let opts, () = Coqinit.parse_arguments ~usage:vscoqtop_specific_usage ~initial_args ~parse_extra () in
   let injections = Coqinit.init_runtime opts in
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
   Sys.(set_signal sigint Signal_ignore);

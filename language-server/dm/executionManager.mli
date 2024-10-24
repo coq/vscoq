@@ -87,7 +87,11 @@ val print_exec_overview_of_state : state -> unit
 (** Coq toplevels for delegation without fork *)
 module ProofWorkerProcess : sig
   type options
-  val parse_options : string list -> options * string list
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+   val parse_options : string list -> options * string list
+[%%else]
+   val parse_options : Coqargs.t -> string list -> options * string list
+[%%endif]
   val main : st:Vernacstate.t -> options -> unit
   val log : string -> unit
 end
