@@ -59,9 +59,6 @@ let rec skip_xd acc = function
 [%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
 let parse_extra x =
   skip_xd [] x
-[%%else]
-let parse_extra _ x = skip_xd [] x
-[%%endif]
 
 let _ =
   Coqinit.init_ocaml ();
@@ -82,3 +79,26 @@ let _ =
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
   Sys.(set_signal sigint Signal_ignore);
   loop injections
+[%%else]
+let parse_extra _ x = skip_xd [] x
+
+let () =
+  Coqinit.init_ocaml ();
+  log "------------------ begin ---------------";
+  let initial_args =
+    let cwd = Unix.getcwd () in
+    match CoqProject_file.find_project_file ~from:cwd ~projfile_name:"_CoqProject" with
+    | None ->
+      log (Printf.sprintf "No project file found in %s" cwd);
+      Coqargs.default
+    | Some f ->
+      let project = CoqProject_file.read_project_file ~warning_fn:(fun _ -> ()) f in
+      let args = CoqProject_file.coqtop_args_from_project project in
+      log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
+      fst @@ Coqargs.parse_args ~init:Coqargs.default args in
+  let opts, () = Coqinit.parse_arguments ~initial_args ~parse_extra () in
+  let injections = Coqinit.init_runtime ~usage:vscoqtop_specific_usage opts in
+  Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
+  Sys.(set_signal sigint Signal_ignore);
+  loop injections
+[%%endif]

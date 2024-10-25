@@ -429,9 +429,15 @@ let start_library top opts =
   Coqinit.start_library ~intern ~top opts;
 [%%endif]
 
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+let dirpath_of_top = Coqargs.dirpath_of_top
+[%%else]
+let dirpath_of_top = Coqinit.dirpath_of_top
+[%%endif]
+
 let init init_vs ~opts uri ~text observe_id =
   Vernacstate.unfreeze_full_state init_vs;
-  let top = try Coqargs.(dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) with
+  let top = try (dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) with
     e -> raise e
   in
   start_library top opts;

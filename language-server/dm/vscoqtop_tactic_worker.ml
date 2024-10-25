@@ -40,7 +40,8 @@ let start_library top opts =
   Coqinit.start_library ~intern ~top opts;
 [%%endif]
 
-let _ =
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+let () =
   Coqinit.init_ocaml ();
   let opts, emoptions = Coqinit.parse_arguments ~parse_extra:Dm.ParTactic.TacticWorkerProcess.parse_options ~usage:vscoqtop_specific_usage () in
   let injections = Coqinit.init_runtime opts in
@@ -48,3 +49,14 @@ let _ =
   log @@ "started";
   Sys.(set_signal sigint Signal_ignore);
   main_worker ~opts emoptions ()
+[%%else]
+let () =
+  Coqinit.init_ocaml ();
+  let opts, emoptions = Coqinit.parse_arguments ~parse_extra:Dm.ParTactic.TacticWorkerProcess.parse_options () in
+  let injections = Coqinit.init_runtime ~usage:vscoqtop_specific_usage opts in
+  start_library (Coqinit.dirpath_of_top opts.config.logic.toplevel_name) injections;
+  log @@ "started";
+  Sys.(set_signal sigint Signal_ignore);
+  main_worker ~opts emoptions ()
+[%%endif]
+
