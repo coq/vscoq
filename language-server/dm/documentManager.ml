@@ -581,8 +581,11 @@ let get_completions st pos =
     | None -> Error ("Can't get completions")
     | Some lemmas -> Ok (lemmas)
 
-[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+[%%if coq = "8.18" || coq = "8.19"]
+[%%elif coq = "8.20"]
   let parsable_make = Pcoq.Parsable.make
+  let unfreeze = Pcoq.unfreeze
+  let entry_parse = Pcoq.Entry.parse
 [%%else]
   let parsable_make = Procq.Parsable.make
   let unfreeze = Procq.unfreeze
@@ -591,7 +594,7 @@ let get_completions st pos =
 
 [%%if coq = "8.18" || coq = "8.19"]
 let parse_entry st pos entry pattern =
-  let pa = parsable_make (Gramlib.Stream.of_string pattern) in
+  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
   let st = match Document.find_sentence_before st.document pos with
   | None -> st.init_vs.Vernacstate.synterp.parsing
   | Some { synterp_state } -> synterp_state.Vernacstate.Synterp.parsing
