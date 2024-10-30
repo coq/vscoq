@@ -17,12 +17,20 @@ open Base
 open Types
 open Protocol.LspWrapper
 
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
 let injections =
   Coqinit.init_ocaml ();
   let opts, _ = Coqargs.parse_args
     ~usage:(Boot.Usage.{executable_name = ""; extra_args = ""; extra_options = ""})
     ~init:Coqargs.default [] in
   Coqinit.init_runtime opts
+[%%else]
+let injections =
+  Coqinit.init_ocaml ();
+  let opts, _ = Coqargs.parse_args ~init:Coqargs.default [] in
+  let usage = Boot.Usage.{executable_name = ""; extra_args = ""; extra_options = ""} in
+  Coqinit.init_runtime ~usage opts
+[%%endif]
 
 let init_state = Vernacstate.freeze_full_state ()
 
