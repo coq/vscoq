@@ -38,14 +38,17 @@ val pp_event : Format.formatter -> event -> unit
 
 type events = event Sel.Event.t list
 
-val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> observe_id option -> state * events
+val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> background:bool -> block_on_error:bool -> observe_id option -> state * events
 (** [init st opts uri text] initializes the document manager with initial vernac state
-    [st] on which command line opts will be set. *)
+    [st] on which command line opts will be set. [background] indicates if the document should
+    be executed in the background once it is parsed. *)
 
-val apply_text_edits : state -> text_edit list -> state
-(** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
+val apply_text_edits : state -> text_edit list -> background:bool -> block_on_error:bool -> events
+(** [apply_text_edits doc edits] updates the text of [doc] with [edits]. 
+    A ParseEvent is triggered, once processed: the new
     document is parsed, outdated executions states are invalidated, and the observe
-    id is updated. *)
+    id is updated. Finally if [background] is set to true, an execution is launched in
+    the background *)
 
 val clear_observe_id : state -> state
 (** [clear_observe_id state] updates the state to make the observe_id None *)
@@ -83,7 +86,7 @@ val interpret_in_background : state -> should_block_on_error:bool -> (state * ev
 (** [interpret_in_background doc] same as [interpret_to_end] but computation 
     is done in background (with lower priority) *)
 
-val reset : state -> state * events
+val reset : state -> background:bool -> block_on_error:bool -> state * events
 (** resets Coq *)
 
 val executed_ranges : state -> exec_overview
