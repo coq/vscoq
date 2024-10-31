@@ -96,7 +96,7 @@ let () =
       let args = CoqProject_file.coqtop_args_from_project project in
       log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
       fst @@ Coqargs.parse_args ~init:Coqargs.default args in
-  let opts, () = Coqinit.parse_arguments ~initial_args ~parse_extra () in
+  let opts, () = Coqinit.parse_arguments ~initial_args ~parse_extra (List.tl (Array.to_list Sys.argv)) in
   let injections = Coqinit.init_runtime ~usage:vscoqtop_specific_usage opts in
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
   Sys.(set_signal sigint Signal_ignore);
