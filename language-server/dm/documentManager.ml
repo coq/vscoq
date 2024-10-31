@@ -55,11 +55,21 @@ type event =
       background: bool; (* Just to re-set execution priorities later down the loop *)
     }
   | ExecutionManagerEvent of ExecutionManager.event
+  | ParseEvent of {
+    started: float;
+    state: state;
+    background: bool;
+    block_on_error: bool;
+  }
+
 let pp_event fmt = function
   | Execute { id; todo; started; _ } ->
       let time = Unix.gettimeofday () -. started in 
       Stdlib.Format.fprintf fmt "ExecuteToLoc %d (%d tasks left, started %2.3f ago)" (Stateid.to_int id) (List.length todo) time
   | ExecutionManagerEvent _ -> Stdlib.Format.fprintf fmt "ExecutionManagerEvent"
+  | ParseEvent { started; _} -> 
+    let time = Unix.gettimeofday () -. started in 
+    Stdlib.Format.fprintf fmt "ParseEvent (started %2.3f ago)" time
 
 let inject_em_event x = Sel.Event.map (fun e -> ExecutionManagerEvent e) x
 let inject_em_events events = List.map inject_em_event events
@@ -435,7 +445,7 @@ let dirpath_of_top = Coqargs.dirpath_of_top
 let dirpath_of_top = Coqinit.dirpath_of_top
 [%%endif]
 
-let init init_vs ~opts uri ~text observe_id =
+let init init_vs ~opts uri ~text ~background ~block_on_error observe_id =
   Vernacstate.unfreeze_full_state init_vs;
   let top = try (dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) with
     e -> raise e
@@ -444,20 +454,26 @@ let init init_vs ~opts uri ~text observe_id =
   let init_vs = Vernacstate.freeze_full_state () in
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in
-  let st = { uri; opts; init_vs; document; execution_state; observe_id } in
-  validate_document st, [inject_em_event feedback]
+  let state = { uri; opts; init_vs; document; execution_state; observe_id } in
+  let started = Unix.gettimeofday () in
+  let priority = Some PriorityManager.parsing in
+  let event = [Sel.now ?priority (ParseEvent {started; state; background; block_on_error})] in
+  state, event @ [inject_em_event feedback]
 
-let reset { uri; opts; init_vs; document; execution_state; observe_id } =
+let reset { uri; opts; init_vs; document; execution_state; observe_id } ~background ~block_on_error =
   let text = RawDocument.text @@ Document.raw_document document in
   Vernacstate.unfreeze_full_state init_vs;
   let document = Document.create_document init_vs.synterp text in
   ExecutionManager.destroy execution_state;
   let execution_state, feedback = ExecutionManager.init init_vs in
   let observe_id = if observe_id = None then None else (Some Top) in
-  let st = { uri; opts; init_vs; document; execution_state; observe_id } in
-  validate_document st, [inject_em_event feedback]
+  let state = { uri; opts; init_vs; document; execution_state; observe_id } in
+  let started = Unix.gettimeofday () in
+  let priority = Some PriorityManager.parsing in
+  let event = [Sel.now ?priority (ParseEvent {started; state; background; block_on_error})] in
+  state, event @ [inject_em_event feedback]
 
-let apply_text_edits state edits =
+let apply_text_edits state edits ~background ~block_on_error =
   let apply_edit_and_shift_diagnostics_locs_and_overview state (range, new_text as edit) =
     let document = Document.apply_text_edit state.document edit in
     let exec_st = state.execution_state in
@@ -470,7 +486,9 @@ let apply_text_edits state edits =
     {state with execution_state; document}
   in
   let state = List.fold_left apply_edit_and_shift_diagnostics_locs_and_overview state edits in
-  validate_document state
+  let priority = Some PriorityManager.parsing in
+  let started = Unix.gettimeofday () in
+  [Sel.now ?priority (ParseEvent {started; state; background; block_on_error})]
 
 let execution_finished st id started =
   let time = Unix.gettimeofday () -. started in
@@ -548,6 +566,13 @@ let handle_event ev st block =
     execute st id vst_for_next_todo started task todo background block
   | ExecutionManagerEvent ev ->
     handle_execution_manager_event st ev
+  | ParseEvent { state; background; block_on_error } ->
+    let st = validate_document state in
+    if background then
+      let (st, events, blocking_error) = interpret_in_background st ~should_block_on_error:block_on_error in
+      (Some st), events, blocking_error
+    else
+      (Some st), [], None
 
 let get_proof st diff_mode pos =
   let previous_st id =

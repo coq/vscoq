@@ -259,19 +259,12 @@ let reset_observe_ids =
 let open_new_document uri text =
   let vst, opts = get_init_state () in
   let observe_id = if !check_mode = Settings.Mode.Continuous then None else Some Dm.DocumentManager.Top in
-  let st, events = try Dm.DocumentManager.init vst ~opts uri ~text observe_id with
+  let st, events = try Dm.DocumentManager.init vst ~opts uri ~text ~background:(!check_mode = Settings.Mode.Continuous) ~block_on_error:!block_on_first_error observe_id with
     e -> raise e
-  in
-  let (st, events') = 
-    if !check_mode = Settings.Mode.Continuous then
-      let (st, events, _) = Dm.DocumentManager.interpret_in_background st ~should_block_on_error:!block_on_first_error in
-      (st, events)
-    else 
-      (st, [])
   in
   Hashtbl.add states (DocumentUri.to_path uri) { st ; visible = true };
   update_view uri st;
-  inject_dm_events (uri, events@events')
+  inject_dm_events (uri, events)
 
 let textDocumentDidOpen params =
   let Lsp.Types.DidOpenTextDocumentParams.{ textDocument = { uri; text } } = params in
@@ -298,14 +291,7 @@ let textDocumentDidChange params =
         Option.get range, text
       in
       let text_edits = List.map mk_text_edit contentChanges in
-      let st = Dm.DocumentManager.apply_text_edits st text_edits in
-      let (st, events) = 
-        if !check_mode = Settings.Mode.Continuous then
-          let (st, events, _) = Dm.DocumentManager.interpret_in_background st ~should_block_on_error:!block_on_first_error in
-          (st, events)
-        else 
-          (st, [])
-      in
+      let events = Dm.DocumentManager.apply_text_edits st text_edits ~background:(!check_mode = Settings.Mode.Continuous) ~block_on_error:!block_on_first_error in
       replace_state (DocumentUri.to_path uri) st visible;
       update_view uri st;
       inject_dm_events (uri, events)
@@ -496,17 +482,10 @@ let coqtopResetCoq id params =
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[resetCoq] ignoring event on non existent document"; Error("Document does not exist"), []
   | Some { st; visible } -> 
-    let st, events = Dm.DocumentManager.reset st in
-    let (st, events') =
-      if !check_mode = Settings.Mode.Continuous then
-        let (st, events, _) = Dm.DocumentManager.interpret_in_background st ~should_block_on_error:!block_on_first_error in
-        (st, events)
-      else
-        (st, [])
-    in
+    let st, events = Dm.DocumentManager.reset st ~background:(!check_mode = Settings.Mode.Continuous) ~block_on_error:!block_on_first_error in
     replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
-    Ok(()), (uri,events@events') |> inject_dm_events
+    Ok(()), (uri,events) |> inject_dm_events
 
 let coqtopInterpretToEnd params =
   let Notification.Client.InterpretToEndParams.{ textDocument = { uri } } = params in
