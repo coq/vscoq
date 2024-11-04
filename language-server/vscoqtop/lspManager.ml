@@ -58,6 +58,8 @@ type lsp_event =
   | Receive of Jsonrpc.Packet.t option
   | Send of Jsonrpc.Packet.t
 
+type timestamp = float
+
 type event =
  | LspManagerEvent of lsp_event
  | DocumentManagerEvent of DocumentUri.t * Dm.DocumentManager.event
@@ -96,6 +98,7 @@ let output_notification notif =
   output_json @@ Jsonrpc.Notification.yojson_of_t @@ Notification.Server.to_jsonrpc notif
 
 let inject_dm_event uri x : event Sel.Event.t =
+  let time = Unix.gettimeofday () in
   Sel.Event.map (fun e -> DocumentManagerEvent(uri,e)) x
 
 let inject_notification x : event Sel.Event.t =
@@ -657,6 +660,23 @@ let pr_lsp_event = function
 let output_notification = function
 | QueryResultNotification params ->
   output_notification @@ SearchResult params
+
+let is_dm_event = function
+| DocumentManagerEvent _ -> true
+| _ -> false
+
+let filter_events events =
+  let rec get_dm_events = function
+  | [] -> []
+  | e :: l -> match e with
+    | DocumentManagerEvent(uri, e) -> (uri, e) :: get_dm_events l
+    | _ -> get_dm_events l
+  in
+  let dm_events = get_dm_events events in
+  let dm_events = Dm.DocumentManager.filter_events dm_events in
+  let dm_events = List.map (fun (uri, e) -> DocumentManagerEvent(uri, e)) dm_events in
+  let _, other_events = List.partition is_dm_event events in
+  dm_events @ other_events
 
 let handle_event = function
   | LspManagerEvent e -> handle_lsp_event e

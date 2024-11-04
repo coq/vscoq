@@ -44,6 +44,13 @@ type state = {
   observe_id : observe_id option;
 }
 
+type parse_event = {
+  started: float;
+  state: state;
+  background: bool;
+  block_on_error: bool;
+}
+
 type event =
   | Execute of { (* we split the computation to help interruptibility *)
       id : Types.sentence_id; (* sentence of interest *)
@@ -55,12 +62,9 @@ type event =
       background: bool; (* Just to re-set execution priorities later down the loop *)
     }
   | ExecutionManagerEvent of ExecutionManager.event
-  | ParseEvent of {
-    started: float;
-    state: state;
-    background: bool;
-    block_on_error: bool;
-  }
+  | ParseEvent of parse_event
+
+type event_with_uri = DocumentUri.t * event
 
 let pp_event fmt = function
   | Execute { id; todo; started; _ } ->
@@ -557,6 +561,33 @@ let handle_execution_manager_event st ev =
     | _, _ -> Option.map (fun execution_state -> {st with execution_state}) execution_state_update
   in
   (st, inject_em_events events, None)
+
+
+let is_parsing_event = function
+| ParseEvent _ -> true
+| _ -> false
+
+let compare_parsing_events p1 p2 =
+  Float.compare p1.started p2.started
+
+let filter_events events =
+  let timestamp_tbl : (string, float) Hashtbl.t = Hashtbl.create 10 in
+  let rec find_min_timestamps = function
+  | [] -> ()
+  | p :: l -> match p with
+    | uri, ParseEvent { started; } ->
+      begin match Hashtbl.find_opt timestamp_tbl (DocumentUri.to_path uri) with
+        | None -> Hashtbl.add timestamp_tbl (DocumentUri.to_path uri) started
+        | Some time -> Hashtbl.replace timestamp_tbl (DocumentUri.to_path uri) (Float.max time started)
+      end
+    | _ -> find_min_timestamps l
+  in
+  find_min_timestamps events;
+  let predicate = function
+      | uri, ParseEvent {started; } -> (Hashtbl.find timestamp_tbl (DocumentUri.to_path uri)) = started
+      | _ -> true
+    in
+  List.filter predicate events
 
 let handle_event ev st block =
   match ev with

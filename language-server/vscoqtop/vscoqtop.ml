@@ -22,10 +22,18 @@ let loop injections =
   let rec loop (todo : LspManager.event Sel.Todo.t) =
     (*log @@ "looking for next step";*)
     flush_all ();
-    let ready, todo = Sel.pop todo in
+    let events, todo = Sel.wait todo in
+    log @@ "num events before filtering: " ^ string_of_int (List.length events);
+    let events = LspManager.filter_events events in
+    log @@ "num events after filtering: " ^ string_of_int (List.length events);
     let nremaining = Sel.Todo.size todo in
-    log @@ "Main loop event ready: " ^ Pp.string_of_ppcmds (LspManager.pr_event ready) ^ " , " ^ string_of_int nremaining ^ " events waiting";
-    let new_events = LspManager.handle_event ready in
+    let rec handle_events = function
+      | [] -> []
+      | e :: l ->
+        log @@ "Main loop event ready: " ^ Pp.string_of_ppcmds (LspManager.pr_event e) ^ " , " ^ string_of_int nremaining ^ " events waiting";
+        LspManager.handle_event e @ handle_events l
+    in
+    let new_events = handle_events events in
     let todo = Sel.Todo.add todo new_events in
     loop todo
   in

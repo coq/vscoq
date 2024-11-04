@@ -15,6 +15,7 @@
 type event
 type events = event Sel.Event.t list
 
+val filter_events : event list -> event list
 val handle_event : event -> events
 val pr_event : event -> Pp.t
 
