@@ -15,8 +15,7 @@
 type event
 type events = event Sel.Event.t list
 
-val filter_events : event list -> event list
-val handle_event : event -> events
+val handle_events : event list -> events
 val pr_event : event -> Pp.t
 
 val init : Coqargs.injection_command list -> event Sel.Event.t list

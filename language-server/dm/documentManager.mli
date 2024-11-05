@@ -34,7 +34,6 @@ type blocking_error = {
 type state
 
 type event
-type event_with_uri = DocumentUri.t * event
 val pp_event : Format.formatter -> event -> unit
 
 type events = event Sel.Event.t list
@@ -113,9 +112,7 @@ val get_proof : state -> Settings.Goals.Diff.Mode.t -> Position.t option -> Proo
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 
-val filter_events : event_with_uri list -> event_with_uri list
-(** filter document manager events so the contain only the latest parsing event *)
-val handle_event : event -> state -> bool -> (state option * events * blocking_error option)
+val handle_events : event list -> state -> bool -> (state option * events * blocking_error option)
 (** handles events and returns a new state if it was updated *)
 
 val search : state -> id:string -> Position.t -> string -> notification Sel.Event.t list
