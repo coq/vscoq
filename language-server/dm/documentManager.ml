@@ -57,10 +57,10 @@ type event =
   | ExecutionManagerEvent of ExecutionManager.event
   | ParseEvent of {
     started: float;
-    state: state;
     background: bool;
     block_on_error: bool;
   }
+  | ParseMore of Document.event
 
 let pp_event fmt = function
   | Execute { id; todo; started; _ } ->
@@ -70,9 +70,12 @@ let pp_event fmt = function
   | ParseEvent { started; _} -> 
     let time = Unix.gettimeofday () -. started in 
     Stdlib.Format.fprintf fmt "ParseEvent (started %2.3f ago)" time
+  | ParseMore _ -> Stdlib.Format.fprintf fmt "ParseMore event"
 
 let inject_em_event x = Sel.Event.map (fun e -> ExecutionManagerEvent e) x
 let inject_em_events events = List.map inject_em_event events
+let inject_doc_event x = Sel.Event.map (fun e -> ParseMore e) x
+let inject_doc_events events = List.map inject_doc_event events 
 
 type events = event Sel.Event.t list
 
@@ -417,8 +420,7 @@ let is_above st id1 id2 =
   let range2 = Document.range_of_id st id2 in
   Position.compare range1.start range2.start < 0
 
-let validate_document state =
-  let unchanged_id, invalid_roots, document = Document.validate_document state.document in
+let validate_document state unchanged_id invalid_roots document=
   let observe_id = match unchanged_id, state.observe_id with
     | _, None -> None
     | None, Some (Id _) -> None
@@ -457,8 +459,8 @@ let init init_vs ~opts uri ~text ~background ~block_on_error observe_id =
   let state = { uri; opts; init_vs; document; execution_state; observe_id } in
   let started = Unix.gettimeofday () in
   let priority = Some PriorityManager.parsing in
-  let event = [Sel.now ?priority (ParseEvent {started; state; background; block_on_error})] in
-  state, event @ [inject_em_event feedback]
+  let event = Sel.now ?priority (ParseEvent {started; background; block_on_error}) in
+  state, Sel.Event.get_cancellation_handle event, [event] @ [inject_em_event feedback]
 
 let reset { uri; opts; init_vs; document; execution_state; observe_id } ~background ~block_on_error =
   let text = RawDocument.text @@ Document.raw_document document in
@@ -470,8 +472,8 @@ let reset { uri; opts; init_vs; document; execution_state; observe_id } ~backgro
   let state = { uri; opts; init_vs; document; execution_state; observe_id } in
   let started = Unix.gettimeofday () in
   let priority = Some PriorityManager.parsing in
-  let event = [Sel.now ?priority (ParseEvent {started; state; background; block_on_error})] in
-  state, event @ [inject_em_event feedback]
+  let event = Sel.now ?priority (ParseEvent {started; background; block_on_error}) in
+  state, Sel.Event.get_cancellation_handle event, [event] @ [inject_em_event feedback]
 
 let apply_text_edits state edits ~background ~block_on_error =
   let apply_edit_and_shift_diagnostics_locs_and_overview state (range, new_text as edit) =
@@ -488,7 +490,9 @@ let apply_text_edits state edits ~background ~block_on_error =
   let state = List.fold_left apply_edit_and_shift_diagnostics_locs_and_overview state edits in
   let priority = Some PriorityManager.parsing in
   let started = Unix.gettimeofday () in
-  [Sel.now ?priority (ParseEvent {started; state; background; block_on_error})]
+  let sel_event = Sel.now ?priority (ParseEvent {started; background; block_on_error}) in
+  let cancel_handle = Sel.Event.get_cancellation_handle sel_event in
+  state, cancel_handle, [sel_event]
 
 let execution_finished st id started =
   let time = Unix.gettimeofday () -. started in
@@ -566,13 +570,24 @@ let handle_event ev st block =
     execute st id vst_for_next_todo started task todo background block
   | ExecutionManagerEvent ev ->
     handle_execution_manager_event st ev
-  | ParseEvent { state; background; block_on_error } ->
-    let st = validate_document state in
-    if background then
+  | ParseEvent { background; block_on_error } ->
+    let events = Document.validate_document st.document in
+    Some st, inject_doc_events events, None
+    (* if background then
       let (st, events, blocking_error) = interpret_in_background st ~should_block_on_error:block_on_error in
       (Some st), events, blocking_error
     else
-      (Some st), [], None
+      (Some st), [], None *)
+  | ParseMore ev -> 
+    let events, update = Document.handle_event st.document ev in
+    match update with
+    | None -> 
+      let handles = List.map Sel.Event.get_cancellation_handle events in
+      Some st, inject_doc_events events, None
+    | Some (unchanged_id, invalid_roots, document) ->
+      let st = validate_document st unchanged_id invalid_roots document in
+      Some st, [], None
+
 
 let get_proof st diff_mode pos =
   let previous_st id =
