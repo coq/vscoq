@@ -64,8 +64,6 @@ type event =
   | ExecutionManagerEvent of ExecutionManager.event
   | ParseEvent of parse_event
 
-type event_with_uri = DocumentUri.t * event
-
 let pp_event fmt = function
   | Execute { id; todo; started; _ } ->
       let time = Unix.gettimeofday () -. started in 
@@ -562,32 +560,20 @@ let handle_execution_manager_event st ev =
   in
   (st, inject_em_events events, None)
 
+let rec most_recent_parsing_event acc = function
+  | [] -> acc
+  | ParseEvent { started } :: rest -> most_recent_parsing_event (Float.max acc started) rest
+  | _ :: rest -> most_recent_parsing_event acc rest
 
-let is_parsing_event = function
-| ParseEvent _ -> true
-| _ -> false
-
-let compare_parsing_events p1 p2 =
-  Float.compare p1.started p2.started
-
-let filter_events events =
-  let timestamp_tbl : (string, float) Hashtbl.t = Hashtbl.create 10 in
-  let rec find_min_timestamps = function
-  | [] -> ()
-  | p :: l -> match p with
-    | uri, ParseEvent { started; } ->
-      begin match Hashtbl.find_opt timestamp_tbl (DocumentUri.to_path uri) with
-        | None -> Hashtbl.add timestamp_tbl (DocumentUri.to_path uri) started
-        | Some time -> Hashtbl.replace timestamp_tbl (DocumentUri.to_path uri) (Float.max time started)
-      end
-    | _ -> find_min_timestamps l
-  in
-  find_min_timestamps events;
-  let predicate = function
-      | uri, ParseEvent {started; } -> (Hashtbl.find timestamp_tbl (DocumentUri.to_path uri)) = started
-      | _ -> true
-    in
-  List.filter predicate events
+let prune_outdated el =
+  (* remove old parsing events *)
+  let ts = most_recent_parsing_event 0.0 el in
+  let most_recent_pe = function
+      | ParseEvent {started; } -> Float.equal ts started
+      | _ -> true in
+  let el = List.filter most_recent_pe el in
+  (* TODO: filter old exec events *)
+  el
 
 let handle_event ev st block =
   match ev with
@@ -605,6 +591,21 @@ let handle_event ev st block =
     else
       (Some st), [], None
 
+
+let handle_events el st0 block =
+  let el = prune_outdated el in
+  let rec handle st new_events el =
+    match el with
+    | [] -> st, [], None
+    | e :: el ->
+        let st = Option.default st0 st in
+        let st, more_new_events, stop = handle_event e st block in
+        let new_events = new_events @ more_new_events in
+        if Option.is_empty stop then handle st new_events el
+        else st, new_events, stop (* BUG: do something with el *)
+  in
+    handle None [] el 
+      
 let get_proof st diff_mode pos =
   let previous_st id =
     let oid = fst @@ Scheduler.task_for_sentence (Document.schedule st.document) id in

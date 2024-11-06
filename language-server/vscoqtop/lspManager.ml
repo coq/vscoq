@@ -60,14 +60,36 @@ type lsp_event =
 
 type timestamp = float
 
+type my_event =
+  | LspManagerEvent of lsp_event
+  | Notification of notification
+  | SendProofView of DocumentUri.t * Position.t option
+  | SendMoveCursor of DocumentUri.t * Range.t
+  | SendBlockOnError of DocumentUri.t * Range.t
+  | LogEvent of Dm.Log.event
+
 type event =
- | LspManagerEvent of lsp_event
- | DocumentManagerEvent of DocumentUri.t * Dm.DocumentManager.event
- | Notification of notification
- | LogEvent of Dm.Log.event
- | SendProofView of DocumentUri.t * Position.t option
- | SendMoveCursor of DocumentUri.t * Range.t
- | SendBlockOnError of DocumentUri.t * Range.t
+  | DocumentManagerEvent of DocumentUri.t * Dm.DocumentManager.event
+  | MyEvent of my_event
+
+module UriMap = struct
+  include Map.Make(DocumentUri)
+  let append k v t =
+    try let l = find k t in add k (l @ [v]) t
+    with Not_found -> add k [v] t
+end
+
+type events_by_component = {
+  lsp_events : my_event list;
+  dm_events : Dm.DocumentManager.event list UriMap.t;
+}
+let partition_events_by_component l =
+  let rec aux us dm = function
+    | [] -> { lsp_events = List.rev us; dm_events = dm }
+    | DocumentManagerEvent(uri,e) :: rest -> aux us (UriMap.append uri e dm) rest
+    | MyEvent e :: rest -> aux (e :: us) dm rest
+in
+  aux [] UriMap.empty l
 
 type events = event Sel.Event.t list
 
@@ -76,10 +98,10 @@ let lsp : event Sel.Event.t =
     | Ok buff ->
       begin
         log "UI req ready";
-        try LspManagerEvent (Receive (Some (Jsonrpc.Packet.t_of_yojson (Yojson.Safe.from_string (Bytes.to_string buff)))))
+        try MyEvent (LspManagerEvent (Receive (Some (Jsonrpc.Packet.t_of_yojson (Yojson.Safe.from_string (Bytes.to_string buff))))))
         with exn ->
           log @@ "failed to decode json";
-          LspManagerEvent (Receive None)
+          MyEvent (LspManagerEvent (Receive None))
       end
     | Error exn ->
         log @@ ("failed to read message: " ^ Printexc.to_string exn);
@@ -98,14 +120,14 @@ let output_notification notif =
   output_json @@ Jsonrpc.Notification.yojson_of_t @@ Notification.Server.to_jsonrpc notif
 
 let inject_dm_event uri x : event Sel.Event.t =
-  let time = Unix.gettimeofday () in
+  (* let time = Unix.gettimeofday () in *)
   Sel.Event.map (fun e -> DocumentManagerEvent(uri,e)) x
 
 let inject_notification x : event Sel.Event.t =
-  Sel.Event.map (fun x -> Notification(x)) x
+  Sel.Event.map (fun x -> MyEvent (Notification(x))) x
 
 let inject_debug_event x : event Sel.Event.t =
-  Sel.Event.map (fun x -> LogEvent x) x
+  Sel.Event.map (fun x -> MyEvent (LogEvent x)) x
 
 let inject_dm_events (uri,l) =
   List.map (inject_dm_event uri) l
@@ -171,7 +193,7 @@ let do_initialize id params =
   } in
   log "---------------- initialized --------------";
   let debug_events = Dm.Log.lsp_initialization_done () |> inject_debug_events in
-  Ok initialize_result, debug_events@[Sel.now @@ LspManagerEvent (send_configuration_request ())]
+  Ok initialize_result, debug_events@[Sel.now @@ MyEvent (LspManagerEvent (send_configuration_request ()))]
 
 let do_shutdown id params =
   Ok(()), []
@@ -353,20 +375,20 @@ let progress_hook uri () =
   | Some { st } -> update_view uri st
 
 let mk_proof_view_event uri position = 
-  Sel.now ~priority:Dm.PriorityManager.proof_view (SendProofView (uri, position))
+  Sel.now ~priority:Dm.PriorityManager.proof_view (MyEvent (SendProofView (uri, position)))
 
 let mk_move_cursor_event uri range = 
   let priority = Dm.PriorityManager.move_cursor in
-  Sel.now ~priority @@ SendMoveCursor (uri, range)
+  Sel.now ~priority @@ MyEvent (SendMoveCursor (uri, range))
 
 let mk_block_on_error_event_no_move uri error_range =
   let priority = Dm.PriorityManager.move_cursor in
-  let event = Sel.now ~priority @@ SendBlockOnError (uri, error_range) in
+  let event = Sel.now ~priority @@ MyEvent (SendBlockOnError (uri, error_range)) in
   [event] @ [mk_proof_view_event uri (Some error_range.end_)]
 
 let mk_block_on_error_event uri last_range error_range =
   let priority = Dm.PriorityManager.move_cursor in
-  let event = Sel.now ~priority @@ SendBlockOnError (uri, error_range) in
+  let event = Sel.now ~priority @@ MyEvent (SendBlockOnError (uri, error_range)) in
   [event] @ [mk_move_cursor_event uri last_range] @ [mk_proof_view_event uri (Some error_range.end_)]
 
 
@@ -661,32 +683,14 @@ let output_notification = function
 | QueryResultNotification params ->
   output_notification @@ SearchResult params
 
-let is_dm_event = function
-| DocumentManagerEvent _ -> true
-| _ -> false
 
-let filter_events events =
-  let rec get_dm_events = function
-  | [] -> []
-  | e :: l -> match e with
-    | DocumentManagerEvent(uri, e) -> (uri, e) :: get_dm_events l
-    | _ -> get_dm_events l
-  in
-  let dm_events = get_dm_events events in
-  let dm_events = Dm.DocumentManager.filter_events dm_events in
-  let dm_events = List.map (fun (uri, e) -> DocumentManagerEvent(uri, e)) dm_events in
-  let _, other_events = List.partition is_dm_event events in
-  dm_events @ other_events
-
-let handle_event = function
-  | LspManagerEvent e -> handle_lsp_event e
-  | DocumentManagerEvent (uri, e) ->
+let handle_dm_events_for_one_uri uri el new_events =
     begin match Hashtbl.find_opt states (DocumentUri.to_path uri) with
     | None ->
       log @@ "ignoring event on non-existing document";
       []
     | Some { st; visible } ->
-      let (ost, events, error_range) = Dm.DocumentManager.handle_event e st !block_on_first_error in
+      let (ost, events, error_range) = Dm.DocumentManager.handle_events el st !block_on_first_error in
       begin match ost with
         | None -> ()
         | Some st ->
@@ -702,6 +706,13 @@ let handle_event = function
         else
           inject_dm_events (uri, events)
     end
+    :: new_events
+
+let handle_dm_events m =
+  UriMap.fold handle_dm_events_for_one_uri m [] |> List.concat
+
+let handle_my_event = function
+  | LspManagerEvent e -> handle_lsp_event e
   | Notification notification ->
     begin match notification with 
     | QueryResultNotification _ -> 
@@ -726,15 +737,26 @@ let handle_event = function
   | SendBlockOnError (uri, range) ->
     send_block_on_error uri range; []
 
-let pr_event = function
+let handle_my_events l = List.concat_map handle_my_event l
+
+let handle_events l =
+  let { dm_events; lsp_events } = partition_events_by_component l in
+  let new_dm_events = handle_dm_events dm_events in
+  let new_lsp_events = handle_my_events lsp_events in
+  new_lsp_events @ new_dm_events
+
+let pr_my_event = function
   | LspManagerEvent e -> pr_lsp_event e
-  | DocumentManagerEvent (uri, e) ->
-    Pp.str @@ Format.asprintf "%a" Dm.DocumentManager.pp_event e
   | Notification _ -> Pp.str"notif"
-  | LogEvent _ -> Pp.str"debug"
   | SendProofView _ -> Pp.str"proofview"
   | SendMoveCursor _ -> Pp.str"move cursor"
   | SendBlockOnError _ -> Pp.str"block on error"
+  | LogEvent _ -> Pp.str"debug"
+
+let pr_event = function
+  | DocumentManagerEvent (uri, e) ->
+    Pp.str @@ Format.asprintf "%a" Dm.DocumentManager.pp_event e
+  | MyEvent e -> pr_my_event e
 
 let init injections =
   init_state := Some (Vernacstate.freeze_full_state (), injections);
