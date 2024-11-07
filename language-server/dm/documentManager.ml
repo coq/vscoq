@@ -582,6 +582,17 @@ let get_completions st pos =
     | Some lemmas -> Ok (lemmas)
 
 [%%if coq = "8.18" || coq = "8.19"]
+[%%elif coq = "8.20"]
+  let parsable_make = Pcoq.Parsable.make
+  let unfreeze = Pcoq.unfreeze
+  let entry_parse = Pcoq.Entry.parse
+[%%else]
+  let parsable_make = Procq.Parsable.make
+  let unfreeze = Procq.unfreeze
+  let entry_parse = Procq.Entry.parse
+[%%endif]
+
+[%%if coq = "8.18" || coq = "8.19"]
 let parse_entry st pos entry pattern =
   let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
   let st = match Document.find_sentence_before st.document pos with
@@ -591,13 +602,19 @@ let parse_entry st pos entry pattern =
   Vernacstate.Parser.parse st entry pa
 [%%else]
 let parse_entry st pos entry pattern =
-  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
+  let pa = parsable_make (Gramlib.Stream.of_string pattern) in
   let st = match Document.find_sentence_before st.document pos with
   | None -> Vernacstate.(Synterp.parsing st.init_vs.synterp)
   | Some { synterp_state } -> Vernacstate.Synterp.parsing synterp_state
   in  
-  Pcoq.unfreeze st;
-  Pcoq.Entry.parse entry pa
+  unfreeze st;
+  entry_parse entry pa
+[%%endif]
+
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+  let smart_global = Pcoq.Prim.smart_global
+[%%else]
+  let smart_global = Procq.Prim.smart_global
 [%%endif]
 
 let about st pos ~pattern =
@@ -606,7 +623,7 @@ let about st pos ~pattern =
   | None -> Error ("No context found") (*TODO execute *)
   | Some (sigma, env) ->
     try
-      let ref_or_by_not = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
+      let ref_or_by_not = parse_entry st loc (smart_global) pattern in
       let udecl = None (* TODO? *) in
       Ok (pp_of_coqpp @@ Prettyp.print_about env sigma ref_or_by_not udecl)
     with e ->
@@ -627,7 +644,7 @@ let hover_of_sentence st loc pattern sentence =
   | None -> log "hover: no context found"; None
   | Some (sigma, env) ->
     try
-      let ref_or_by_not = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
+      let ref_or_by_not = parse_entry st loc (smart_global) pattern in
       Language.Hover.get_hover_contents env sigma ref_or_by_not
     with e ->
       let e, info = Exninfo.capture e in
@@ -664,12 +681,18 @@ let hover st pos =
         hover_of_sentence st loc pattern (Document.find_next_qed st.document loc)
     | _ -> None
 
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+  let lconstr = Pcoq.Constr.lconstr
+[%%else]
+  let lconstr = Procq.Constr.lconstr
+[%%endif]
+
 let check st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with
   | None -> Error ("No context found") (*TODO execute *)
   | Some (sigma,env) ->
-    let rc = parse_entry st loc Pcoq.Constr.lconstr pattern in
+    let rc = parse_entry st loc lconstr pattern in
     try
       let redexpr = None in
       Ok (pp_of_coqpp @@ Vernacentries.check_may_eval env sigma redexpr rc)
@@ -688,34 +711,29 @@ let locate st pos ~pattern =
   match get_context st pos with
   | None -> Error ("No context found") (*TODO execute *)
   | Some (sigma, env) ->
-    match parse_entry st loc (Pcoq.Prim.smart_global) pattern with
+    match parse_entry st loc (smart_global) pattern with
     | { v = AN qid } -> Ok (pp_of_coqpp @@ print_located_qualid env qid)
     | { v = ByNotation (ntn, sc)} ->
       Ok( pp_of_coqpp @@ Notation.locate_notation
         (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) ntn sc)
 
 [%%if coq = "8.18" || coq = "8.19"]
+  let print_name = Prettyp.print_name
+[%%else]
+  let print_name =
+    let access = Library.indirect_accessor[@@warning "-3"] in
+    Prettyp.print_name access
+[%%endif]
+
 let print st pos ~pattern = 
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with
   | None -> Error("No context found")
   | Some (sigma, env) ->
-    let qid = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
+    let qid = parse_entry st loc (smart_global) pattern in
     let udecl = None in (*TODO*)
-    Ok ( pp_of_coqpp @@ Prettyp.print_name env sigma qid udecl )
-[%%else]
-let print st pos ~pattern =
-  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match get_context st pos with
-  | None -> Error("No context found")
-  | Some (sigma, env) ->
-    let qid = parse_entry st loc (Pcoq.Prim.smart_global) pattern in
-    let udecl = None in (*TODO*)
-    let access = Library.indirect_accessor[@@warning "-3"] in
-    Ok ( pp_of_coqpp @@ Prettyp.print_name access env sigma qid udecl )
-[%%endif]
+    Ok ( pp_of_coqpp @@ print_name env sigma qid udecl )
     
-
 module Internal = struct
 
   let document st =

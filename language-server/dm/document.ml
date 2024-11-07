@@ -359,13 +359,18 @@ let string_of_diff_item doc = function
 let string_of_diff doc l =
   String.concat "\n" (List.flatten (List.map (string_of_diff_item doc) l))
 
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+  let get_keyword_state = Pcoq.get_keyword_state
+[%%else]
+  let get_keyword_state = Procq.get_keyword_state
+[%%endif]
+
 let rec stream_tok n_tok acc str begin_line begin_char =
-  let e = LStream.next (Pcoq.get_keyword_state ()) str in
+  let e = LStream.next (get_keyword_state ()) str in
   if Tok.(equal e EOI) then
     List.rev acc
   else
     stream_tok (n_tok+1) (e::acc) str begin_line begin_char
-
     (*
 let parse_one_sentence stream ~st =
   let pa = Pcoq.Parsable.make stream in
@@ -381,7 +386,7 @@ let parse_one_sentence ?loc stream ~st =
   let pa = Pcoq.Parsable.make ?loc stream in
   let sentence = Pcoq.Entry.parse entry pa in
   (sentence, [])
-[%%else]
+[%%elif coq = "8.20"]
 let parse_one_sentence ?loc stream ~st =
   Vernacstate.Synterp.unfreeze st;
   Flags.record_comments := true;
@@ -389,6 +394,15 @@ let parse_one_sentence ?loc stream ~st =
   let pa = Pcoq.Parsable.make ?loc stream in
   let sentence = Pcoq.Entry.parse entry pa in
   let comments = Pcoq.Parsable.comments pa in
+  (sentence, comments)
+[%%else]
+let parse_one_sentence ?loc stream ~st =
+  Vernacstate.Synterp.unfreeze st;
+  Flags.record_comments := true;
+  let entry = Pvernac.main_entry (Some (Synterp.get_default_proof_mode ())) in
+  let pa = Procq.Parsable.make ?loc stream in
+  let sentence = Procq.Entry.parse entry pa in
+  let comments = Procq.Parsable.comments pa in
   (sentence, comments)
 [%%endif]
 
