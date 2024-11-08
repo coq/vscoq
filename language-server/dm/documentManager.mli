@@ -112,8 +112,10 @@ val get_proof : state -> Settings.Goals.Diff.Mode.t -> Position.t option -> Proo
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 
-val handle_event : event -> state -> bool -> (state option * events * blocking_error option)
-(** handles events and returns a new state if it was updated *)
+val handle_event : event -> state -> bool -> (state option * events * blocking_error option * bool)
+(** handles events and returns a new state if it was updated. On top of the next events, it also returns info
+    on whether execution has halted due to an error and returns a boolean flag stating whether the view
+    should be updated *)
 
 val search : state -> id:string -> Position.t -> string -> notification Sel.Event.t list
 

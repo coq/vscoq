@@ -459,7 +459,7 @@ let init init_vs ~opts uri ~text ~background ~block_on_error observe_id =
   let execution_state, feedback = ExecutionManager.init init_vs in
   let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handles=[] } in
   let started = Unix.gettimeofday () in
-  let priority = Some PriorityManager.parsing in
+  let priority = Some PriorityManager.launch_parsing in
   let event = Sel.now ?priority (ParseEvent {started; background; block_on_error}) in
   state, Sel.Event.get_cancellation_handle event, [event] @ [inject_em_event feedback]
 
@@ -472,7 +472,7 @@ let reset { uri; opts; init_vs; document; execution_state; observe_id; cancel_ha
   let observe_id = if observe_id = None then None else (Some Top) in
   let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handles } in
   let started = Unix.gettimeofday () in
-  let priority = Some PriorityManager.parsing in
+  let priority = Some PriorityManager.launch_parsing in
   let event = Sel.now ?priority (ParseEvent {started; background; block_on_error}) in
   state, Sel.Event.get_cancellation_handle event, [event] @ [inject_em_event feedback]
 
@@ -489,7 +489,7 @@ let apply_text_edits state edits ~background ~block_on_error =
     {state with execution_state; document}
   in
   let state = List.fold_left apply_edit_and_shift_diagnostics_locs_and_overview state edits in
-  let priority = Some PriorityManager.parsing in
+  let priority = Some PriorityManager.launch_parsing in
   let started = Unix.gettimeofday () in
   let sel_event = Sel.now ?priority (ParseEvent {started; background; block_on_error}) in
   let cancel_handle = Sel.Event.get_cancellation_handle sel_event in
@@ -499,7 +499,8 @@ let execution_finished st id started =
   let time = Unix.gettimeofday () -. started in
   log (Printf.sprintf "ExecuteToLoc %d ends after %2.3f" (Stateid.to_int id) time);
   (* We update the state to trigger a publication of diagnostics *)
-  (Some st, [], None)
+  let update_view = true in
+  (Some st, [], None, update_view)
 
 let execute st id vst_for_next_todo started task todo background block =
   (*log "Execute (more tasks)";*)
@@ -547,7 +548,8 @@ let execute st id vst_for_next_todo started task todo background block =
     in
     {st with execution_state; observe_id}, Some {last_range; error_range}
   in
-  (Some st, inject_em_events events @ event, range)
+  let update_view = true in
+  (Some st, inject_em_events events @ event, range, update_view)
 
 let handle_execution_manager_event st ev =
   let id, execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
@@ -561,7 +563,8 @@ let handle_execution_manager_event st ev =
       Some {st with execution_state}
     | _, _ -> Option.map (fun execution_state -> {st with execution_state}) execution_state_update
   in
-  (st, inject_em_events events, None)
+  let update_view = true in
+  (st, inject_em_events events, None, update_view)
 
 let handle_event ev st block =
   match ev with
@@ -575,21 +578,24 @@ let handle_event ev st block =
     List.iter Sel.Event.cancel st.cancel_handles;
     let events = Document.validate_document st.document in
     let cancel_handles = List.map Sel.Event.get_cancellation_handle events in
-    Some {st with cancel_handles}, inject_doc_events events, None
+    let update_view = true in
+    Some {st with cancel_handles}, inject_doc_events events, None, update_view
     (* if background then
       let (st, events, blocking_error) = interpret_in_background st ~should_block_on_error:block_on_error in
       (Some st), events, blocking_error
     else
       (Some st), [], None *)
-  | ParseMore ev -> 
+  | ParseMore ev ->
     let events, update = Document.handle_event st.document ev in
     match update with
     | None -> 
       let cancel_handles = List.map Sel.Event.get_cancellation_handle events in
-      Some {st with cancel_handles}, inject_doc_events events, None
+      let update_view = false in
+      Some {st with cancel_handles}, inject_doc_events events, None, update_view
     | Some (unchanged_id, invalid_roots, document) ->
       let st = validate_document st unchanged_id invalid_roots document in
-      Some st, [], None
+      let update_view = true in
+      Some st, [], None, update_view
 
 
 let get_proof st diff_mode pos =

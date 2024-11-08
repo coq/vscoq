@@ -711,12 +711,12 @@ let handle_event = function
       log @@ "ignoring event on non-existing document";
       []
     | Some { st; visible; cancel_handle } ->
-      let (ost, events, error_range) = Dm.DocumentManager.handle_event e st !block_on_first_error in
+      let (ost, events, error_range, should_update_view) = Dm.DocumentManager.handle_event e st !block_on_first_error in
       begin match ost with
         | None -> ()
         | Some st ->
           replace_state (DocumentUri.to_path uri) st visible cancel_handle;
-          update_view uri st
+          if should_update_view then update_view uri st
       end;
       match error_range with
       | None ->

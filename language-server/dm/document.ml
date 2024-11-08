@@ -93,6 +93,7 @@ type document = {
 }
 
 type parse_state = {
+  started: float;
   stop: int;
   top_id: sentence_id option;
   loc: Loc.t option;
@@ -499,7 +500,7 @@ let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments
           let comments = List.map (fun ((start, stop), content) -> {start; stop; content}) comments in
           let parsed_comments = List.append comments parsed_comments in
           let loc = ast.loc in
-          let parse_state = {parse_state with parsed_comments; parsed; loc} in
+          let parse_state = {parse_state with parsed_comments; parsed; loc; synterp_state} in
           let priority = Some PriorityManager.parsing in
           [Sel.now ?priority (ParseEvent parse_state)]
           
@@ -581,11 +582,16 @@ let validate_document ({ parsed_loc; raw_doc; } as document) =
   let stream = Stream.of_string text in
   while Stream.count stream < stop do Stream.junk () stream done;
   log @@ Format.sprintf "Parsing more from pos %i" stop;
-  let parsed_state = {stop; top_id;synterp_state; stream; raw=raw_doc; parsed=[]; errors=[]; parsed_comments=[]; loc=None} in
+  let started = Unix.gettimeofday () in
+  let parsed_state = {stop; top_id;synterp_state; stream; raw=raw_doc; parsed=[]; errors=[]; parsed_comments=[]; loc=None; started} in
   let priority = Some PriorityManager.parsing in
   [Sel.now ?priority (ParseEvent parsed_state)]
 
-let handle_invalidate {parsed; errors; parsed_comments; stop; top_id;} document =
+let handle_invalidate {parsed; errors; parsed_comments; stop; top_id; started} document =
+  let end_ = Unix.gettimeofday ()in
+  let time = end_ -. started in
+  (* log @@ Format.sprintf "Parsing phase ended in %5.3f" time; *)
+  Format.eprintf "Parsing phase ended in %5.3f\n%!" time;
   let new_sentences = List.rev parsed in
   let new_comments = List.rev parsed_comments in
   let new_errors = errors in
