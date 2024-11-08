@@ -29,7 +29,7 @@ let get_init_state () =
   | Some st -> st
   | None -> CErrors.anomaly Pp.(str "Initial state not available")
 
-type tab = { st : Dm.DocumentManager.state; visible : bool; cancel_handle : Sel.Event.cancellation_handle }
+type tab = { st : Dm.DocumentManager.state; visible : bool }
 
 let states : (string, tab) Hashtbl.t = Hashtbl.create 39
 
@@ -233,14 +233,14 @@ let update_view uri st =
     publish_diagnostics uri st;
   )
 
-let replace_state path st visible cancel_handle = Hashtbl.replace states path { st; visible; cancel_handle }
+let replace_state path st visible = Hashtbl.replace states path { st; visible}
 
 let run_documents () =
-  let interpret_doc_in_bg path { st : Dm.DocumentManager.state ; visible; cancel_handle } events =
+  let interpret_doc_in_bg path { st : Dm.DocumentManager.state ; visible } events =
       let st = Dm.DocumentManager.clear_observe_id st in
       let (st, events', _) = Dm.DocumentManager.interpret_in_background st ~should_block_on_error:!block_on_first_error in
       let uri = DocumentUri.of_path path in
-      replace_state path st visible cancel_handle;
+      replace_state path st visible;
       update_view uri st;
       let events' = inject_dm_events (uri, events') in
       events@events'
@@ -248,10 +248,10 @@ let run_documents () =
   Hashtbl.fold interpret_doc_in_bg states []
 
 let reset_observe_ids =
-  let reset_doc_observe_id path {st : Dm.DocumentManager.state; visible; cancel_handle } events =
+  let reset_doc_observe_id path {st : Dm.DocumentManager.state; visible} events =
     let st = Dm.DocumentManager.reset_to_top st in
     let uri = DocumentUri.of_path path in
-    replace_state path st visible cancel_handle;
+    replace_state path st visible;
     update_view uri st
   in
   Hashtbl.fold reset_doc_observe_id states
@@ -302,10 +302,10 @@ let open_new_document uri text =
   let vst = init_document local_args vst in
 
   let observe_id = if !check_mode = Settings.Mode.Continuous then None else Some Dm.DocumentManager.Top in
-  let st, cancel_handle, events = try Dm.DocumentManager.init vst ~opts uri ~text ~background:(!check_mode = Settings.Mode.Continuous) ~block_on_error:!block_on_first_error observe_id with
+  let st, events = try Dm.DocumentManager.init vst ~opts uri ~text observe_id with
     e -> raise e
   in
-  Hashtbl.add states (DocumentUri.to_path uri) { st ; visible = true; cancel_handle };
+  Hashtbl.add states (DocumentUri.to_path uri) { st ; visible = true; };
   update_view uri st;
   inject_dm_events (uri, events)
 
@@ -329,15 +329,13 @@ let textDocumentDidChange params =
   let uri = textDocument.uri in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
     | None -> log @@ "[textDocumentDidChange] ignoring event on non-existing document"; []
-    | Some { st ; visible; cancel_handle } ->
+    | Some { st; visible } ->
       let mk_text_edit TextDocumentContentChangeEvent.{ range; text } =
         Option.get range, text
       in
       let text_edits = List.map mk_text_edit contentChanges in
-      Printf.eprintf "EVENT SHOULD CANCEL\n";
-      Sel.Event.cancel cancel_handle;
-      let st, cancel_handle, events = Dm.DocumentManager.apply_text_edits st text_edits ~background:(!check_mode = Settings.Mode.Continuous) ~block_on_error:!block_on_first_error in
-      replace_state (DocumentUri.to_path uri) st visible cancel_handle;
+      let st, events = Dm.DocumentManager.apply_text_edits st text_edits in
+      replace_state (DocumentUri.to_path uri) st visible;
       update_view uri st;
       inject_dm_events (uri, events)
 
@@ -374,7 +372,7 @@ let textDocumentDidClose params =
   let path = DocumentUri.to_path textDocument.uri in
   begin match Hashtbl.find_opt states path with
   | None -> assert false
-  | Some { st; cancel_handle } -> replace_state path st false cancel_handle
+  | Some { st } -> replace_state path st false
   end;
   consider_purge_invisible_tabs ();
   [] (* TODO handle properly *)
@@ -417,7 +415,7 @@ let coqtopInterpretToPoint params =
   let uri = textDocument.uri in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[interpretToPoint] ignoring event on non existent document"; []
-  | Some { st; visible; cancel_handle } ->
+  | Some { st; visible } ->
     let (st, events, error_range, position) =
       match !point_interp_mode with
       | Settings.PointInterpretationMode.Cursor ->
@@ -426,7 +424,7 @@ let coqtopInterpretToPoint params =
       | Settings.PointInterpretationMode.NextCommand ->
         Dm.DocumentManager.interpret_to_next_position st position ~should_block_on_error:!block_on_first_error
     in
-    replace_state (DocumentUri.to_path uri) st visible cancel_handle;
+    replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
     let sel_events = inject_dm_events (uri, events) in
     match error_range with
@@ -442,7 +440,7 @@ let coqtopStepBackward params =
   let Notification.Client.StepBackwardParams.{ textDocument = { uri }; position } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log "[stepBackward] ignoring event on non existent document"; []
-  | Some { st; visible; cancel_handle } ->
+  | Some { st; visible } ->
     if !check_mode = Settings.Mode.Continuous then
       match position with
       | None -> []
@@ -453,7 +451,7 @@ let coqtopStepBackward params =
     else
       let (st, events, _) = Dm.DocumentManager.interpret_to_previous st in
       let range = Dm.DocumentManager.observe_id_range st in
-      replace_state (DocumentUri.to_path uri) st visible cancel_handle;
+      replace_state (DocumentUri.to_path uri) st visible;
       update_view uri st;
       match range with
       | None ->
@@ -465,7 +463,7 @@ let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri }; position } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log "[stepForward] ignoring event on non existent document"; []
-  | Some { st; visible; cancel_handle } ->
+  | Some { st; visible } ->
     if !check_mode = Settings.Mode.Continuous then
       match position with
       | None -> []
@@ -476,7 +474,7 @@ let coqtopStepForward params =
     else
       let (st, events, error_range) = Dm.DocumentManager.interpret_to_next st ~should_block_on_error:true in
       let range = Dm.DocumentManager.observe_id_range st in
-      replace_state (DocumentUri.to_path uri) st visible cancel_handle;
+      replace_state (DocumentUri.to_path uri) st visible;
       update_view uri st;
       match range, error_range with
         | None, None -> inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
@@ -527,8 +525,8 @@ let coqtopResetCoq id params =
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[resetCoq] ignoring event on non existent document"; Error("Document does not exist"), []
   | Some { st; visible } -> 
-    let st, cancel_handle, events = Dm.DocumentManager.reset st ~background:(!check_mode = Settings.Mode.Continuous) ~block_on_error:!block_on_first_error in
-    replace_state (DocumentUri.to_path uri) st visible cancel_handle;
+    let st, events = Dm.DocumentManager.reset st in
+    replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
     Ok(()), (uri,events) |> inject_dm_events
 
@@ -536,9 +534,9 @@ let coqtopInterpretToEnd params =
   let Notification.Client.InterpretToEndParams.{ textDocument = { uri } } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[interpretToEnd] ignoring event on non existent document"; []
-  | Some { st; visible; cancel_handle } ->
+  | Some { st; visible } ->
     let (st, events, error_range) = Dm.DocumentManager.interpret_to_end st ~should_block_on_error:!block_on_first_error in
-    replace_state (DocumentUri.to_path uri) st visible cancel_handle;
+    replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
     match error_range with
     | None ->
@@ -710,12 +708,13 @@ let handle_event = function
     | None ->
       log @@ "ignoring event on non-existing document";
       []
-    | Some { st; visible; cancel_handle } ->
-      let (ost, events, error_range, should_update_view) = Dm.DocumentManager.handle_event e st !block_on_first_error in
+    | Some { st; visible } ->
+      let background = !check_mode = Settings.Mode.Continuous in
+      let (ost, events, error_range, should_update_view) = Dm.DocumentManager.handle_event e st !block_on_first_error background in
       begin match ost with
         | None -> ()
         | Some st ->
-          replace_state (DocumentUri.to_path uri) st visible cancel_handle;
+          replace_state (DocumentUri.to_path uri) st visible;
           if should_update_view then update_view uri st
       end;
       match error_range with

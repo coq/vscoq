@@ -31,10 +31,6 @@ let to_sentence_id = function
 | Top -> None
 | Id id -> Some id
 
-(* let observe_id_to_string = function
-| Top -> "Top"
-| Id id -> Stateid.to_string id *)
-
 type state = {
   uri : DocumentUri.t;
   init_vs : Vernacstate.t;
@@ -56,11 +52,7 @@ type event =
       background: bool; (* Just to re-set execution priorities later down the loop *)
     }
   | ExecutionManagerEvent of ExecutionManager.event
-  | ParseEvent of {
-    started: float;
-    background: bool;
-    block_on_error: bool;
-  }
+  | ParseEvent
   | ParseMore of Document.event
 
 let pp_event fmt = function
@@ -68,9 +60,8 @@ let pp_event fmt = function
       let time = Unix.gettimeofday () -. started in 
       Stdlib.Format.fprintf fmt "ExecuteToLoc %d (%d tasks left, started %2.3f ago)" (Stateid.to_int id) (List.length todo) time
   | ExecutionManagerEvent _ -> Stdlib.Format.fprintf fmt "ExecutionManagerEvent"
-  | ParseEvent { started; _} -> 
-    let time = Unix.gettimeofday () -. started in 
-    Stdlib.Format.fprintf fmt "ParseEvent (started %2.3f ago)" time
+  | ParseEvent ->
+    Stdlib.Format.fprintf fmt "ParseEvent"
   | ParseMore _ -> Stdlib.Format.fprintf fmt "ParseMore event"
 
 let inject_em_event x = Sel.Event.map (fun e -> ExecutionManagerEvent e) x
@@ -79,38 +70,6 @@ let inject_doc_event x = Sel.Event.map (fun e -> ParseMore e) x
 let inject_doc_events events = List.map inject_doc_event events 
 
 type events = event Sel.Event.t list
-
-(* let prepare_overview st id =
-  match Document.get_sentence st.document id with
-  | None -> st (*Can't find the sentence, just return the state as is*)
-  | Some { id } ->
-    (* Sentence already executed, no need to prepare*)
-    if ExecutionManager.is_executed st.execution_state id then
-      st
-    else
-      (* Create the correct prepared range *)
-      begin match st.observe_id with
-      | None -> st (* No observe_id means continuous mode, no need to do anything*)
-      | Some Top ->
-        (* Create range from first sentence to id *)
-        let range = Document.range_of_id_with_blank_space st.document id in
-        let start = Position.create ~character:0 ~line:0 in
-        let range = Range.create ~end_: range.end_ ~start: start in
-        let prepared = [range] in
-        let execution_state = ExecutionManager.prepare_overview st.execution_state prepared in
-        {st with execution_state}
-      | Some (Id o_id) ->
-        (* Create range from o_id to id*)
-        let o_range = Document.range_of_id_with_blank_space st.document o_id in
-        let range = Document.range_of_id_with_blank_space st.document id in
-        if Position.compare o_range.end_ range.end_ < 0 then
-          let range = Range.create ~end_: range.end_ ~start: o_range.end_ in
-          let prepared = [range] in
-          let execution_state = ExecutionManager.prepare_overview st.execution_state prepared in
-          {st with execution_state}
-        else
-          st
-    end *)
 
 let executed_ranges st =
   match st.observe_id with
@@ -448,7 +407,7 @@ let dirpath_of_top = Coqargs.dirpath_of_top
 let dirpath_of_top = Coqinit.dirpath_of_top
 [%%endif]
 
-let init init_vs ~opts uri ~text ~background ~block_on_error observe_id =
+let init init_vs ~opts uri ~text observe_id =
   Vernacstate.unfreeze_full_state init_vs;
   let top = try (dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) with
     e -> raise e
@@ -458,12 +417,11 @@ let init init_vs ~opts uri ~text ~background ~block_on_error observe_id =
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in
   let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handles=[] } in
-  let started = Unix.gettimeofday () in
   let priority = Some PriorityManager.launch_parsing in
-  let event = Sel.now ?priority (ParseEvent {started; background; block_on_error}) in
-  state, Sel.Event.get_cancellation_handle event, [event] @ [inject_em_event feedback]
+  let event = Sel.now ?priority ParseEvent in
+  state, [event] @ [inject_em_event feedback]
 
-let reset { uri; opts; init_vs; document; execution_state; observe_id; cancel_handles } ~background ~block_on_error =
+let reset { uri; opts; init_vs; document; execution_state; observe_id; cancel_handles } =
   let text = RawDocument.text @@ Document.raw_document document in
   Vernacstate.unfreeze_full_state init_vs;
   let document = Document.create_document init_vs.synterp text in
@@ -471,12 +429,11 @@ let reset { uri; opts; init_vs; document; execution_state; observe_id; cancel_ha
   let execution_state, feedback = ExecutionManager.init init_vs in
   let observe_id = if observe_id = None then None else (Some Top) in
   let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handles } in
-  let started = Unix.gettimeofday () in
   let priority = Some PriorityManager.launch_parsing in
-  let event = Sel.now ?priority (ParseEvent {started; background; block_on_error}) in
-  state, Sel.Event.get_cancellation_handle event, [event] @ [inject_em_event feedback]
+  let event = Sel.now ?priority ParseEvent in
+  state, [event] @ [inject_em_event feedback]
 
-let apply_text_edits state edits ~background ~block_on_error =
+let apply_text_edits state edits =
   let apply_edit_and_shift_diagnostics_locs_and_overview state (range, new_text as edit) =
     let document = Document.apply_text_edit state.document edit in
     let exec_st = state.execution_state in
@@ -490,10 +447,8 @@ let apply_text_edits state edits ~background ~block_on_error =
   in
   let state = List.fold_left apply_edit_and_shift_diagnostics_locs_and_overview state edits in
   let priority = Some PriorityManager.launch_parsing in
-  let started = Unix.gettimeofday () in
-  let sel_event = Sel.now ?priority (ParseEvent {started; background; block_on_error}) in
-  let cancel_handle = Sel.Event.get_cancellation_handle sel_event in
-  state, cancel_handle, [sel_event]
+  let sel_event = Sel.now ?priority ParseEvent in
+  state, [sel_event]
 
 let execution_finished st id started =
   let time = Unix.gettimeofday () -. started in
@@ -566,7 +521,7 @@ let handle_execution_manager_event st ev =
   let update_view = true in
   (st, inject_em_events events, None, update_view)
 
-let handle_event ev st block =
+let handle_event ev st block background =
   match ev with
   | Execute { id; todo = []; started } -> (* the vst_for_next_todo is also in st.execution_state *)
     execution_finished st id started
@@ -574,17 +529,12 @@ let handle_event ev st block =
     execute st id vst_for_next_todo started task todo background block
   | ExecutionManagerEvent ev ->
     handle_execution_manager_event st ev
-  | ParseEvent { background; block_on_error } ->
+  | ParseEvent ->
     List.iter Sel.Event.cancel st.cancel_handles;
     let events = Document.validate_document st.document in
     let cancel_handles = List.map Sel.Event.get_cancellation_handle events in
     let update_view = true in
     Some {st with cancel_handles}, inject_doc_events events, None, update_view
-    (* if background then
-      let (st, events, blocking_error) = interpret_in_background st ~should_block_on_error:block_on_error in
-      (Some st), events, blocking_error
-    else
-      (Some st), [], None *)
   | ParseMore ev ->
     let events, update = Document.handle_event st.document ev in
     match update with
@@ -595,7 +545,11 @@ let handle_event ev st block =
     | Some (unchanged_id, invalid_roots, document) ->
       let st = validate_document st unchanged_id invalid_roots document in
       let update_view = true in
-      Some st, [], None, update_view
+      if background then
+        let (st, events, blocking_error) = interpret_in_background st ~should_block_on_error:block in
+        (Some st), events, blocking_error, update_view
+      else
+        (Some st), [], None, update_view
 
 
 let get_proof st diff_mode pos =

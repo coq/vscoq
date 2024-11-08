@@ -38,12 +38,12 @@ val pp_event : Format.formatter -> event -> unit
 
 type events = event Sel.Event.t list
 
-val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> background:bool -> block_on_error:bool -> observe_id option -> state * Sel.Event.cancellation_handle * events
+val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> observe_id option -> state * events
 (** [init st opts uri text] initializes the document manager with initial vernac state
     [st] on which command line opts will be set. [background] indicates if the document should
     be executed in the background once it is parsed. *)
 
-val apply_text_edits : state -> text_edit list -> background:bool -> block_on_error:bool -> state * Sel.Event.cancellation_handle * events
+val apply_text_edits : state -> text_edit list -> state * events
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. 
     A ParseEvent is triggered, once processed: the new
     document is parsed, outdated executions states are invalidated, and the observe
@@ -86,7 +86,7 @@ val interpret_in_background : state -> should_block_on_error:bool -> (state * ev
 (** [interpret_in_background doc] same as [interpret_to_end] but computation 
     is done in background (with lower priority) *)
 
-val reset : state -> background:bool -> block_on_error:bool -> state * Sel.Event.cancellation_handle * events 
+val reset : state -> state * events 
 (** resets Coq *)
 
 val executed_ranges : state -> exec_overview
@@ -112,7 +112,7 @@ val get_proof : state -> Settings.Goals.Diff.Mode.t -> Position.t option -> Proo
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 
-val handle_event : event -> state -> bool -> (state option * events * blocking_error option * bool)
+val handle_event : event -> state -> bool -> bool -> (state option * events * blocking_error option * bool)
 (** handles events and returns a new state if it was updated. On top of the next events, it also returns info
     on whether execution has halted due to an error and returns a boolean flag stating whether the view
     should be updated *)
