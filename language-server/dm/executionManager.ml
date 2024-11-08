@@ -103,16 +103,19 @@ let is_diagnostics_enabled () = !options.enableDiagnostics
 
 let get_options () = !options
 
+type delegated_task = { 
+  terminator_id: sentence_id;
+  opener_id: sentence_id;
+  proof_using: Vernacexpr.section_subset_expr;
+  last_step_id: sentence_id option; (* only for setting a proof remotely *)
+  tasks: executable_sentence list;
+}
+
 type prepared_task =
   | PSkip of { id: sentence_id; error: Pp.t option }
   | PExec of executable_sentence
   | PQuery of executable_sentence
-  | PDelegate of { terminator_id: sentence_id;
-                   opener_id: sentence_id;
-                   proof_using: Vernacexpr.section_subset_expr;
-                   last_step_id: sentence_id option; (* only for setting a proof remotely *)
-                   tasks: executable_sentence list;
-                 }
+  | PDelegate of delegated_task
 
 module ProofJob = struct
   type update_request =
@@ -365,26 +368,31 @@ let id_of_first_task ~default = function
 let id_of_last_task ~default l =
   id_of_first_task ~default (List.rev l)
 
-let invalidate_prepared_or_processing task state document =
+let invalidate_prepared_or_processing_sentence id state document =
   let {prepared; processing} = state.overview in
+  let range = Document.range_of_id_with_blank_space document id in
+  let prepared = remove_or_truncate_range range prepared in
+  let processing = remove_or_truncate_range range processing in
+  let overview = {state.overview with prepared; processing} in
+  {state with overview}
+
+let invalidate_prepared_or_processing_delegate { opener_id; terminator_id; tasks } state document =
+  let {prepared; processing} = state.overview in
+  let proof_opener_id = id_of_first_task ~default:opener_id tasks in
+  let proof_closer_id = id_of_last_task ~default:terminator_id tasks in
+  let proof_begin_range = Document.range_of_id_with_blank_space document proof_opener_id in
+  let proof_end_range = Document.range_of_id_with_blank_space document proof_closer_id in
+  let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
+  (* When a job is delegated we shouldn't merge ranges (to get the proper progress report) *)
+  let prepared = remove_or_truncate_range range prepared in
+  let processing = remove_or_truncate_range range processing in
+  let overview = {state.overview with prepared; processing} in
+  {state with overview}
+
+let invalidate_prepared_or_processing task state document =
   match task with
-  | PDelegate { opener_id; terminator_id; tasks } ->
-    let proof_opener_id = id_of_first_task ~default:opener_id tasks in
-    let proof_closer_id = id_of_last_task ~default:terminator_id tasks in
-    let proof_begin_range = Document.range_of_id_with_blank_space document proof_opener_id in
-    let proof_end_range = Document.range_of_id_with_blank_space document proof_closer_id in
-    let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
-    (* When a job is delegated we shouldn't merge ranges (to get the proper progress report) *)
-    let prepared = remove_or_truncate_range range prepared in
-    let processing = remove_or_truncate_range range processing in
-    let overview = {state.overview with prepared; processing} in
-    {state with overview}
-  | PSkip { id } | PExec { id } | PQuery { id } ->
-    let range = Document.range_of_id_with_blank_space document id in
-    let prepared = remove_or_truncate_range range prepared in
-    let processing = remove_or_truncate_range range processing in
-    let overview = {state.overview with prepared; processing} in
-    {state with overview}
+  | PDelegate task -> invalidate_prepared_or_processing_delegate task state document
+  | PSkip { id } | PExec { id } | PQuery { id } -> invalidate_prepared_or_processing_sentence id state document
 
 let update_processing task state document =
   let {processing; prepared} = state.overview in
@@ -841,6 +849,7 @@ let invalidate1 of_sentence id =
 let rec invalidate document schedule id st =
   log @@ "Invalidating: " ^ Stateid.to_string id;
   let st = invalidate_processed id st document in
+  let st = invalidate_prepared_or_processing_sentence id st document in
   let of_sentence = invalidate1 st.of_sentence id in
   let old_jobs = Queue.copy jobs in
   let removed = ref [] in
