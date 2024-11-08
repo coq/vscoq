@@ -62,11 +62,11 @@ val get_next_range : state -> Position.t -> Range.t option
 val get_previous_range : state -> Position.t -> Range.t option
 (** [get_previous_pos st pos] get the range of the previous sentence relative to pos *)
 
-val interpret_to_position : state -> Position.t -> should_block_on_error:bool -> (state * events * blocking_error option)
+val interpret_to_position : state -> Position.t -> (state * events * blocking_error option)
 (** [interpret_to_position state pos should_block] navigates to the 
     last sentence ending before or at [pos] and returns the resulting state, events that need to take place, and a possible blocking error. *)
 
-val interpret_to_next_position : state -> Position.t -> should_block_on_error:bool -> (state * events * blocking_error option * Position.t)
+val interpret_to_next_position : state -> Position.t -> (state * events * blocking_error option * Position.t)
 (** [interpret_to_next_position state pos should_block] navigates 
     to the first sentence after or at [pos] (excluding whitespace) and returns the resulting state, events that need to take place, a possible blocking error, and the position of the sentence that was interpreted until. *)
 
@@ -74,11 +74,11 @@ val interpret_to_previous : state -> (state * events * blocking_error option)
 (** [interpret_to_previous doc] navigates to the previous sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_to_next : state -> should_block_on_error:bool -> (state * events * blocking_error option)
+val interpret_to_next : state -> (state * events * blocking_error option)
 (** [interpret_to_next doc] navigates to the next sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_to_end : state -> should_block_on_error:bool -> (state * events * blocking_error option)
+val interpret_to_end : state -> (state * events * blocking_error option)
 (** [interpret_to_end doc] navigates to the last sentence in [doc]
     and returns the resulting state. *)
 

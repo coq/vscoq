@@ -53,6 +53,7 @@ type event =
     }
   | ExecutionManagerEvent of ExecutionManager.event
   | ParseEvent
+  | Observe of Types.sentence_id
   | ParseMore of Document.event
 
 let pp_event fmt = function
@@ -62,6 +63,8 @@ let pp_event fmt = function
   | ExecutionManagerEvent _ -> Stdlib.Format.fprintf fmt "ExecutionManagerEvent"
   | ParseEvent ->
     Stdlib.Format.fprintf fmt "ParseEvent"
+  | Observe id ->
+    Stdlib.Format.fprintf fmt "Observe %d" (Stateid.to_int id)
   | ParseMore _ -> Stdlib.Format.fprintf fmt "ParseMore event"
 
 let inject_em_event x = Sel.Event.map (fun e -> ExecutionManagerEvent e) x
@@ -295,23 +298,24 @@ let get_document_symbols st =
   in
   List.map to_document_symbol outline
 
-let interpret_to st id ~should_block_on_error =
+let interpret_to st id =
   let observe_id = if st.observe_id = None then None else (Some (Id id)) in
   let st = { st with observe_id} in
-  observe ~background:false st id ~should_block_on_error
+  let priority = Some PriorityManager.execution in
+  st, [Sel.now ?priority (Observe id)], None
 
-let interpret_to_position st pos ~should_block_on_error =
+let interpret_to_position st pos =
   match id_of_pos st pos with
   | None -> (st, [], None) (* document is empty *)
-  | Some id -> interpret_to st id ~should_block_on_error
+  | Some id -> interpret_to st id
 
-let interpret_to_next_position st pos ~should_block_on_error =
+let interpret_to_next_position st pos =
   match id_of_sentence_after_pos st pos with
   | None -> (st, [], None, pos) (* document is empty *)
   | Some id ->
     let new_pos = (Document.range_of_id st.document id).end_ in
-    let (st, events, blocking_errs) = interpret_to st id ~should_block_on_error in
-    (st, events, blocking_errs, new_pos)
+    let st, events, blocking_error = interpret_to st id in
+    (st, events, blocking_error, new_pos)
 
 let get_next_range st pos =
   match id_of_pos st pos with
@@ -347,15 +351,15 @@ let interpret_to_previous st =
       | None -> 
         Vernacstate.unfreeze_full_state st.init_vs; 
         { st with observe_id=(Some Top)}, [], None
-      | Some { id } -> interpret_to st id ~should_block_on_error:false
+      | Some { id } -> interpret_to st id
 
-let interpret_to_next st ~should_block_on_error =
+let interpret_to_next st =
   match st.observe_id with
   | None -> failwith "interpret to next with no observe_id"
   | Some Top ->
     begin match Document.get_first_sentence st.document with
     | None -> (st, [], None) (*The document is empty*)
-    | Some {id} -> interpret_to st id ~should_block_on_error
+    | Some { id } -> interpret_to st id
     end
   | Some (Id id) ->
     match Document.get_sentence st.document id with
@@ -363,12 +367,14 @@ let interpret_to_next st ~should_block_on_error =
     | Some { stop } ->
       match Document.find_sentence_after st.document (stop+1) with
       | None -> (st, [], None)
-      | Some {id } -> interpret_to st id ~should_block_on_error
+      | Some { id } -> interpret_to st id
 
-let interpret_to_end st ~should_block_on_error =
+let interpret_to_end st =
   match Document.get_last_sentence st.document with
   | None -> (st, [], None)
-  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); interpret_to st id ~should_block_on_error
+  | Some {id} -> 
+    log ("interpret_to_end id = " ^ Stateid.to_string id);
+    interpret_to st id
 
 let interpret_in_background st ~should_block_on_error =
   match Document.get_last_sentence st.document with
@@ -529,6 +535,10 @@ let handle_event ev st block background =
     execute st id vst_for_next_todo started task todo background block
   | ExecutionManagerEvent ev ->
     handle_execution_manager_event st ev
+  | Observe id ->
+    let update_view = true in
+    let st, events, blocking_error = observe st id ~should_block_on_error:block ~background in
+    Some st, events, blocking_error, update_view
   | ParseEvent ->
     List.iter Sel.Event.cancel st.cancel_handles;
     let events = Document.validate_document st.document in

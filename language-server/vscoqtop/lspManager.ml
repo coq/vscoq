@@ -419,10 +419,10 @@ let coqtopInterpretToPoint params =
     let (st, events, error_range, position) =
       match !point_interp_mode with
       | Settings.PointInterpretationMode.Cursor ->
-        let st, evs, blocking_err = Dm.DocumentManager.interpret_to_position st position ~should_block_on_error:!block_on_first_error in
+        let st, evs, blocking_err = Dm.DocumentManager.interpret_to_position st position in
         (st, evs, blocking_err, position)
       | Settings.PointInterpretationMode.NextCommand ->
-        Dm.DocumentManager.interpret_to_next_position st position ~should_block_on_error:!block_on_first_error
+        Dm.DocumentManager.interpret_to_next_position st position
     in
     replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
@@ -472,7 +472,7 @@ let coqtopStepForward params =
         | None -> []
         | Some range -> [mk_move_cursor_event uri range]
     else
-      let (st, events, error_range) = Dm.DocumentManager.interpret_to_next st ~should_block_on_error:true in
+      let (st, events, error_range) = Dm.DocumentManager.interpret_to_next st in
       let range = Dm.DocumentManager.observe_id_range st in
       replace_state (DocumentUri.to_path uri) st visible;
       update_view uri st;
@@ -535,7 +535,7 @@ let coqtopInterpretToEnd params =
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[interpretToEnd] ignoring event on non existent document"; []
   | Some { st; visible } ->
-    let (st, events, error_range) = Dm.DocumentManager.interpret_to_end st ~should_block_on_error:!block_on_first_error in
+    let (st, events, error_range) = Dm.DocumentManager.interpret_to_end st in
     replace_state (DocumentUri.to_path uri) st visible;
     update_view uri st;
     match error_range with
