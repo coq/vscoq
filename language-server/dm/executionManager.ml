@@ -262,50 +262,6 @@ let interp_qed_delayed ~proof_using ~state_id ~st =
   let st = { st with interp } in
   st, success st, assign
 
-let insert_or_merge_range r ranges =
-  let ranges = List.sort Range.compare (r :: ranges) in
-  let rec insert_or_merge_sorted_ranges r1 = function
-    | [] -> [r1]
-    | r2 :: l ->
-      if Range.included ~in_:r1 r2 then (*since the ranges are sorted, only r2 can be included in r1*)
-        insert_or_merge_sorted_ranges r1 l
-      else if Range.prefixes ~in_:r2 r1 then
-        begin
-          let range = Range.{start = r1.Range.start; end_ = r2.Range.end_} in
-          insert_or_merge_sorted_ranges range l
-        end
-      else
-        r1 :: (insert_or_merge_sorted_ranges r2 l)
-  in
-  insert_or_merge_sorted_ranges (List.hd ranges) (List.tl ranges)
-
-let rec remove_or_truncate_range r = function
-| [] -> []
-| r1 :: l ->
-  if Range.equals r r1
-  then
-    l
-  else if Range.strictly_included ~in_: r1 r then
-    Range.{ start = r1.Range.start; end_ = r.Range.start} :: Range.{ start = r.Range.end_; end_ = r1.Range.end_} :: l
-  else if Range.prefixes ~in_:r1 r then
-    Range.{ start = r.Range.end_; end_ = r1.Range.end_} :: l
-  else if Range.postfixes ~in_:r1 r then
-    Range.{ start = r1.Range.start; end_ = r.Range.start} :: l
-  else
-    r1 :: (remove_or_truncate_range r l)
-
-
-let rec cut_from_range r = function
-| [] -> []
-| r1 :: l ->
-  let (<=) x y = Position.compare x y <= 0 in
-  if r.Range.start <= r1.Range.start then
-    l
-  else if r.Range.start <= r1.Range.end_ then
-    Range.{start = r1.Range.start; end_ = r.Range.start} :: l
-  else
-    r1 :: (cut_from_range r l)
-
 let cut_overview task state document =
   let range = match task with
   | PDelegate { terminator_id } -> Document.range_of_id_with_blank_space document terminator_id
@@ -313,8 +269,8 @@ let cut_overview task state document =
     Document.range_of_id_with_blank_space document id
   in
   let {prepared; processing; processed} = state.overview in
-  let prepared = cut_from_range range prepared in
-  let processing = cut_from_range range processing in
+  let prepared = RangeList.cut_from_range range prepared in
+  let processing = RangeList.cut_from_range range processing in
   let overview = {prepared; processing; processed} in
   {state with overview}
 
@@ -322,13 +278,13 @@ let update_processed_as_Done s range overview =
   let {prepared; processing; processed} = overview in
   match s with
   | Success _ ->
-    let processed = insert_or_merge_range range processed in
-    let processing = remove_or_truncate_range range processing in
-    let prepared = remove_or_truncate_range range prepared in
+    let processed = RangeList.insert_or_merge_range range processed in
+    let processing = RangeList.remove_or_truncate_range range processing in
+    let prepared = RangeList.remove_or_truncate_range range prepared in
     {prepared; processing; processed}
   | Error _ ->
-    let processing = remove_or_truncate_range range processing in
-    let prepared = remove_or_truncate_range range prepared in
+    let processing = RangeList.remove_or_truncate_range range processing in
+    let prepared = RangeList.remove_or_truncate_range range prepared in
     {prepared; processing; processed}
 
 let update_processed id state document =
@@ -352,7 +308,7 @@ let invalidate_processed id state document =
     | Done _ ->
       let range = Document.range_of_id_with_blank_space document id in
       let {processed} = state.overview in
-      let processed = remove_or_truncate_range range processed in
+      let processed = RangeList.remove_or_truncate_range range processed in
       let overview = {state.overview with processed} in
       {state with overview}
     | _ -> assert false (* delegated sentences born as such, cannot become it later *)
@@ -371,8 +327,8 @@ let id_of_last_task ~default l =
 let invalidate_prepared_or_processing_sentence id state document =
   let {prepared; processing} = state.overview in
   let range = Document.range_of_id_with_blank_space document id in
-  let prepared = remove_or_truncate_range range prepared in
-  let processing = remove_or_truncate_range range processing in
+  let prepared = RangeList.remove_or_truncate_range range prepared in
+  let processing = RangeList.remove_or_truncate_range range processing in
   let overview = {state.overview with prepared; processing} in
   {state with overview}
 
@@ -384,8 +340,8 @@ let invalidate_prepared_or_processing_delegate { opener_id; terminator_id; tasks
   let proof_end_range = Document.range_of_id_with_blank_space document proof_closer_id in
   let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
   (* When a job is delegated we shouldn't merge ranges (to get the proper progress report) *)
-  let prepared = remove_or_truncate_range range prepared in
-  let processing = remove_or_truncate_range range processing in
+  let prepared = RangeList.remove_or_truncate_range range prepared in
+  let processing = RangeList.remove_or_truncate_range range processing in
   let overview = {state.overview with prepared; processing} in
   {state with overview}
 
@@ -405,13 +361,13 @@ let update_processing task state document =
     let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
     (* When a job is delegated we shouldn't merge ranges (to get the proper progress report) *)
     let processing = List.append processing [ range ] in 
-    let prepared = remove_or_truncate_range range prepared in
+    let prepared = RangeList.remove_or_truncate_range range prepared in
     let overview = {state.overview with prepared; processing} in
     {state with overview}
   | PSkip { id } | PExec { id } | PQuery { id } ->
     let range = Document.range_of_id_with_blank_space document id in
-    let processing = insert_or_merge_range range processing in 
-    let prepared = remove_or_truncate_range range prepared in
+    let processing = RangeList.insert_or_merge_range range processing in
+    let prepared = RangeList.remove_or_truncate_range range prepared in
     let overview = {state.overview with processing; prepared} in
     {state with overview}
 
@@ -430,7 +386,7 @@ let update_prepared task document state =
     {state with overview}
   | PSkip { id } | PExec { id } | PQuery { id } ->
     let range = Document.range_of_id_with_blank_space document id in
-    let prepared = insert_or_merge_range range prepared in
+    let prepared = RangeList.insert_or_merge_range range prepared in
     let overview = {state.overview with prepared} in
     {state with overview}
 
@@ -440,7 +396,7 @@ let update_overview task todo state document =
   | PDelegate { terminator_id } ->
     let range = Document.range_of_id_with_blank_space document terminator_id in
     let {prepared} = state.overview in
-    let prepared = remove_or_truncate_range range prepared in
+    let prepared = RangeList.remove_or_truncate_range range prepared in
     let overview = update_processed_as_Done (Success None) range state.overview in
     let overview = {overview with prepared} in
     {state with overview}
