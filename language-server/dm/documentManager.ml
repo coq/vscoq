@@ -49,7 +49,6 @@ type event =
         may have failed and this is a surrogate used for error resiliancy *)
       todo : ExecutionManager.prepared_task list;
       started : float; (* time *)
-      background: bool; (* Just to re-set execution priorities later down the loop *)
     }
   | ExecutionManagerEvent of ExecutionManager.event
   | ParseEvent
@@ -276,7 +275,7 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
             ({state with execution_state; observe_id}, [], Some {last_range; error_range})
     else
       let priority = if background then None else Some PriorityManager.execution in
-      let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday (); background }) in
+      let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () }) in
       ({state with execution_state}, [ event ], None )
 
 let clear_observe_id st = 
@@ -476,7 +475,7 @@ let execute st id vst_for_next_todo started task todo background block =
     let event, execution_state, observe_id, error_id =
       match (block, exec_error) with
         | false, _ | _ , None ->
-          [Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started; background })],
+          [Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started })],
           ExecutionManager.update_overview task todo execution_state st.document,
           None, None
         | true, Some id ->
@@ -534,7 +533,7 @@ let handle_event ev st block background =
   match ev with
   | Execute { id; todo = []; started } -> (* the vst_for_next_todo is also in st.execution_state *)
     execution_finished st id started
-  | Execute { id; vst_for_next_todo; started; todo = task :: todo; background } ->
+  | Execute { id; vst_for_next_todo; started; todo = task :: todo } ->
     execute st id vst_for_next_todo started task todo background block
   | ExecutionManagerEvent ev ->
     handle_execution_manager_event st ev
