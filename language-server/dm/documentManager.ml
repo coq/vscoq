@@ -38,7 +38,7 @@ type state = {
   document : Document.document;
   execution_state : ExecutionManager.state;
   observe_id : observe_id option;
-  cancel_handles : Sel.Event.cancellation_handle list
+  cancel_handle : Sel.Event.cancellation_handle option;
 }
 
 type event =
@@ -272,11 +272,13 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
   match Document.get_sentence state.document id with
   | None -> (state, [], None) (* TODO error? *)
   | Some { id } ->
+    Option.iter Sel.Event.cancel state.cancel_handle;
     let vst_for_next_todo, execution_state, task, error_id = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id should_block_on_error in
     match task with
     | Some task -> 
         let event = create_execution_event background (Execute {id; vst_for_next_todo; task; started = Unix.gettimeofday ()}) in
-        ({state with execution_state}, [event], None)
+        let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
+        ({state with execution_state; cancel_handle}, [event], None)
     | None ->
       match error_id with
       | None ->
@@ -428,19 +430,19 @@ let init init_vs ~opts uri ~text observe_id =
   let init_vs = Vernacstate.freeze_full_state () in
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in
-  let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handles=[] } in
+  let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handle = None } in
   let priority = Some PriorityManager.launch_parsing in
   let event = Sel.now ?priority ParseEvent in
   state, [event] @ [inject_em_event feedback]
 
-let reset { uri; opts; init_vs; document; execution_state; observe_id; cancel_handles } =
+let reset { uri; opts; init_vs; document; execution_state; observe_id } =
   let text = RawDocument.text @@ Document.raw_document document in
   Vernacstate.unfreeze_full_state init_vs;
   let document = Document.create_document init_vs.synterp text in
   ExecutionManager.destroy execution_state;
   let execution_state, feedback = ExecutionManager.init init_vs in
   let observe_id = if observe_id = None then None else (Some Top) in
-  let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handles } in
+  let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handle = None } in
   let priority = Some PriorityManager.launch_parsing in
   let event = Sel.now ?priority ParseEvent in
   state, [event] @ [inject_em_event feedback]
@@ -480,11 +482,13 @@ let execute st id vst_for_next_todo started task background block =
       | None -> st, None
       | Some id -> create_blocking_error_range st id 
       in
-    let event = Option.cata (fun task -> [create_execution_event background (Execute {id; vst_for_next_todo; task; started })]) [] next in
+    let event = Option.map (fun task -> create_execution_event background (Execute {id; vst_for_next_todo; task; started })) next in
     match event, error_range with
-    | [], None -> execution_finished { st with execution_state } id started
+    | None, None -> execution_finished { st with execution_state } id started
     | _ ->
-      let st = {st with execution_state} in
+      let cancel_handle = Option.map Sel.Event.get_cancellation_handle event in
+      let event = Option.cata (fun event -> [event]) [] event in
+      let st = {st with execution_state; cancel_handle} in
       let update_view = true in
       (Some st, inject_em_events events @ event, error_range, update_view)
 
@@ -514,18 +518,15 @@ let handle_event ev st block background =
     let st, events, blocking_error = observe st id ~should_block_on_error:block ~background in
     Some st, events, blocking_error, update_view
   | ParseEvent ->
-    List.iter Sel.Event.cancel st.cancel_handles;
-    let events = Document.validate_document st.document in
-    let cancel_handles = List.map Sel.Event.get_cancellation_handle events in
+    let document, events = Document.validate_document st.document in
     let update_view = true in
-    Some {st with cancel_handles}, inject_doc_events events, None, update_view
+    Some {st with document}, inject_doc_events events, None, update_view
   | ParseMore ev ->
-    let events, update = Document.handle_event st.document ev in
+    let document, events, update = Document.handle_event st.document ev in
     match update with
-    | None -> 
-      let cancel_handles = List.map Sel.Event.get_cancellation_handle events in
+    | None ->
       let update_view = false in
-      Some {st with cancel_handles}, inject_doc_events events, None, update_view
+      Some {st with document}, inject_doc_events events, None, update_view
     | Some (unchanged_id, invalid_roots, document) ->
       let st = validate_document st unchanged_id invalid_roots document in
       let update_view = true in

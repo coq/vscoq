@@ -49,11 +49,11 @@ val create_document : Vernacstate.Synterp.t -> string -> document
 (** [create_document init_synterp_state text] creates a fresh document with content defined by
     [text] under [init_synterp_state]. *)
 
-val validate_document : document -> events
+val validate_document : document -> document * events
 (** [validate_document doc] triggers the parsing of the document line by line without
     launching any execution. *)
 
-val handle_event : document -> event -> events * (sentence_id option * sentence_id_set * document) option
+val handle_event : document -> event -> document * events * (sentence_id option * sentence_id_set * document) option
 (** [handle_event dpc ev] handles a parsing event for the document. One parsing event parses one line
     and prepares the next parsing event. Finally once the full parsing is done, the final event returs
     the id of the bottomost sentence of the prefix which has not changed since the previous validation
