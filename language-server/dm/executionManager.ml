@@ -68,9 +68,25 @@ type document_id = int
 
 type coq_feedback_listener = int
 
+type delegated_task = { 
+  terminator_id: sentence_id;
+  opener_id: sentence_id;
+  proof_using: Vernacexpr.section_subset_expr;
+  last_step_id: sentence_id option; (* only for setting a proof remotely *)
+  tasks: executable_sentence list;
+}
+
+type prepared_task =
+  | PSkip of { id: sentence_id; error: Pp.t option }
+  | PExec of executable_sentence
+  | PQuery of executable_sentence
+  | PDelegate of delegated_task
+
+
 type state = {
   initial : Vernacstate.t;
   of_sentence : (sentence_state * feedback_message list) SM.t;
+  todo: prepared_task list; (* execution queue *)
 
   (* ugly stuff to correctly dispatch Coq feedback *)
   doc_id : document_id; (* unique number used to interface with Coq's Feedback *)
@@ -103,20 +119,6 @@ let is_diagnostics_enabled () = !options.enableDiagnostics
 
 let get_options () = !options
 
-type delegated_task = { 
-  terminator_id: sentence_id;
-  opener_id: sentence_id;
-  proof_using: Vernacexpr.section_subset_expr;
-  last_step_id: sentence_id option; (* only for setting a proof remotely *)
-  tasks: executable_sentence list;
-}
-
-type prepared_task =
-  | PSkip of { id: sentence_id; error: Pp.t option }
-  | PExec of executable_sentence
-  | PQuery of executable_sentence
-  | PDelegate of delegated_task
-
 module ProofJob = struct
   type update_request =
     | UpdateExecStatus of sentence_id * execution_status
@@ -140,6 +142,7 @@ module ProofWorker = DelegationManager.MakeWorker(ProofJob)
 type event =
   | LocalFeedback of (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)) Queue.t * Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)
   | ProofWorkerEvent of ProofWorker.delegation
+
 type events = event Sel.Event.t list
 let pr_event = function
   | LocalFeedback _ -> Pp.str "LocalFeedback"
@@ -390,7 +393,7 @@ let update_prepared task document state =
     let overview = {state.overview with prepared} in
     {state with overview}
 
-let update_overview task todo state document =
+let update_overview task state document =
   let state = 
   match task with
   | PDelegate { terminator_id } ->
@@ -403,7 +406,7 @@ let update_overview task todo state document =
   | PSkip { id } | PExec { id } | PQuery { id } ->
     update_processed id state document
   in
-  match todo with
+  match state.todo with
   | [] -> state
   | next :: _ -> update_processing next state document
 
@@ -458,6 +461,7 @@ let init vernac_state =
   {
     initial = vernac_state;
     of_sentence = SM.empty;
+    todo = [];
     doc_id;
     coq_feeder;
     sel_feedback_queue;
@@ -598,10 +602,11 @@ let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_
     Feedback.msg_debug @@ Pp.str "==========================================================";
     exit 1
 
-let execute st (vs, events, interrupted) task =
+let execute_task st (vs, events, interrupted) task =
   if interrupted then begin
     let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
-    (st, vs, events, true, None)
+    let todo = [] in
+    ({st with todo}, vs, events, true, None)
   end else
     try
       match task with
@@ -673,6 +678,22 @@ let execute st (vs, events, interrupted) task =
       let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
       (st, vs, events, true, None)
 
+let execute st document (vs, events, interrupted) task block_on_first_error =
+  let st, vst_for_next_todo, events, _, exec_error =
+    execute_task st (vs, events, interrupted) task in
+  match block_on_first_error, exec_error with
+  | false, _ | _, None ->
+    let st = update_overview task st document in
+    let next, st = match st.todo with
+      | [] -> None, st
+      | task :: todo -> Some task, { st with todo }
+    in next, st, vst_for_next_todo, events, None
+  | true, Some _ ->
+    let st = cut_overview task st document in
+    let st = { st with todo=[]} in
+    None, st, vst_for_next_todo, events, exec_error
+
+
 let build_tasks_for document sch st id block =
   let rec build_tasks id tasks st =
     begin match find_fulfilled_opt id st.of_sentence with
@@ -704,11 +725,18 @@ let build_tasks_for document sch st id block =
   let vs, tasks, st, error_id = build_tasks id [] st in
   match error_id, block with
   | _, false | None, _ ->
-    let prepared_tasks = List.concat_map prepare_task tasks in
-    let st = build_prepared_overview prepared_tasks st in
-    vs, prepared_tasks, st, None
+    let todo = List.concat_map prepare_task tasks in
+    let task, st = match todo with
+      | task :: todo ->
+        let st = {st with todo} in
+        let st = build_prepared_overview todo st in
+        Some task, st
+      | [] ->
+        None, {st with todo}
+      in
+      vs, st, task, None
   | Some id, true ->
-    vs, [], st, Some id
+    vs, {st with todo=[]}, None, Some id
 
 let all_errors st =
   List.fold_left (fun acc (id, (p,_)) ->

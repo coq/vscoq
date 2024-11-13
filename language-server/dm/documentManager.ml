@@ -47,7 +47,7 @@ type event =
       vst_for_next_todo : Vernacstate.t; (* the state to be used for the next
         todo, it is not necessarily the state of the last sentence, since it
         may have failed and this is a surrogate used for error resiliancy *)
-      todo : ExecutionManager.prepared_task list;
+      task : ExecutionManager.prepared_task;
       started : float; (* time *)
     }
   | ExecutionManagerEvent of ExecutionManager.event
@@ -56,9 +56,9 @@ type event =
   | ParseMore of Document.event
 
 let pp_event fmt = function
-  | Execute { id; todo; started; _ } ->
+  | Execute { id; started; _ } ->
       let time = Unix.gettimeofday () -. started in 
-      Stdlib.Format.fprintf fmt "ExecuteToLoc %d (%d tasks left, started %2.3f ago)" (Stateid.to_int id) (List.length todo) time
+      Stdlib.Format.fprintf fmt "ExecuteToLoc %d (started %2.3f ago)" (Stateid.to_int id) time
   | ExecutionManagerEvent _ -> Stdlib.Format.fprintf fmt "ExecutionManagerEvent"
   | ParseEvent ->
     Stdlib.Format.fprintf fmt "ParseEvent"
@@ -240,43 +240,50 @@ let get_info_messages st pos =
     let feedback = feedback |> List.filter info in
     List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback
 
+let create_execution_event background event =
+  let priority = if background then None else Some PriorityManager.execution in
+  Sel.now ?priority event
+
+let create_blocking_error_range state error_id =
+  match Document.get_sentence state.document error_id with
+  | None -> state, None
+  | Some { start } ->
+    match Document.find_sentence_before state.document start with
+    | None ->
+      let start = Position.{line=0; character=0} in
+      let end_ = Position.{line=0; character=0} in
+      let last_range = Range.{start; end_} in
+      let error_range = Document.range_of_id_with_blank_space state.document error_id in
+      let observe_id = match state.observe_id with
+        | None -> None
+        | Some _ -> Some Top
+      in
+      ({state with observe_id}, Some {last_range; error_range})
+    | Some { id } ->
+      let last_range = Document.range_of_id_with_blank_space state.document id in
+      let error_range = Document.range_of_id_with_blank_space state.document error_id in
+      let observe_id = match state.observe_id with
+        | None -> None
+        | Some _ -> Some (Id id)
+      in
+      ({state with observe_id}, Some {last_range; error_range})
+
 let observe ~background state id ~should_block_on_error : (state * event Sel.Event.t list * blocking_error option) =
   match Document.get_sentence state.document id with
   | None -> (state, [], None) (* TODO error? *)
   | Some { id } ->
-    let vst_for_next_todo, todo, execution_state, error_id = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id should_block_on_error in
-    if CList.is_empty todo then
+    let vst_for_next_todo, execution_state, task, error_id = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id should_block_on_error in
+    match task with
+    | Some task -> 
+        let event = create_execution_event background (Execute {id; vst_for_next_todo; task; started = Unix.gettimeofday ()}) in
+        ({state with execution_state}, [event], None)
+    | None ->
       match error_id with
       | None ->
         ({state with execution_state}, [], None)
       | Some error_id ->
-        match Document.get_sentence state.document error_id with
-        | None ->
-          ({state with execution_state}, [], None)
-        | Some { start } ->
-          match Document.find_sentence_before state.document start with
-          | None ->
-            let start = Position.{line=0; character=0} in
-            let end_ = Position.{line=0; character=0} in
-            let last_range = Range.{start; end_} in
-            let error_range = Document.range_of_id_with_blank_space state.document error_id in
-            let observe_id = match state.observe_id with
-              | None -> None
-              | Some _ -> Some Top
-            in
-            ({state with execution_state; observe_id}, [], Some {last_range; error_range})
-          | Some { id } ->
-            let last_range = Document.range_of_id_with_blank_space state.document id in
-            let error_range = Document.range_of_id_with_blank_space state.document error_id in
-            let observe_id = match state.observe_id with
-              | None -> None
-              | Some _ -> Some (Id id)
-            in
-            ({state with execution_state; observe_id}, [], Some {last_range; error_range})
-    else
-      let priority = if background then None else Some PriorityManager.execution in
-      let event = Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started = Unix.gettimeofday () }) in
-      ({state with execution_state}, [ event ], None )
+        let state, blocking_error_range = create_blocking_error_range state error_id in
+        ({state with execution_state}, [], blocking_error_range)
 
 let clear_observe_id st = 
   { st with observe_id = None }
@@ -462,57 +469,24 @@ let execution_finished st id started =
   let update_view = true in
   (Some st, [], None, update_view)
 
-let execute st id vst_for_next_todo started task todo background block =
+let execute st id vst_for_next_todo started task background block =
   match Document.get_sentence st.document id with
   | None -> Some st, [], None, true (* Sentences have been invalidate, probably because the user edited while executing *)
   | Some _ ->
-    (*log "Execute (more tasks)";*)
-    let (execution_state,vst_for_next_todo,events,_interrupted, exec_error) =
-      ExecutionManager.execute st.execution_state (vst_for_next_todo, [], false) task in
-    (* We do not update the state here because we may have received feedback while
-      executing *)
-    let priority = if background then None else Some PriorityManager.execution in
-    let event, execution_state, observe_id, error_id =
-      match (block, exec_error) with
-        | false, _ | _ , None ->
-          [Sel.now ?priority (Execute {id; vst_for_next_todo; todo; started })],
-          ExecutionManager.update_overview task todo execution_state st.document,
-          None, None
-        | true, Some id ->
-          let o_id = match Document.get_sentence st.document id with
-          | None -> None (* TODO error ?*)
-          | Some {start} ->
-            match Document.find_sentence_before st.document start with
-            | None -> Some Top
-            | Some { id } -> Some (Id id)
-          in
-          [],
-          ExecutionManager.cut_overview task execution_state st.document,
-          o_id, Some id
-    in
-    let st, range = match observe_id, error_id with
-    | None, None | None, Some _ | Some _, None -> {st with execution_state}, None
-    | Some Top, Some id ->
-      let start = Position.{line=0; character=0} in
-      let end_ = Position.{line=0; character=0} in
-      let last_range = Range.{start; end_} in
-      let error_range = Document.range_of_id_with_blank_space st.document id in
-      let observe_id = match st.observe_id with
-        | None -> None
-        | Some _ -> observe_id
+    let (next, execution_state,vst_for_next_todo,events, exec_error) =
+      ExecutionManager.execute st.execution_state st.document (vst_for_next_todo, [], false) task block in
+    let st, error_range =
+      match exec_error with
+      | None -> st, None
+      | Some id -> create_blocking_error_range st id 
       in
-      {st with execution_state; observe_id}, Some {last_range; error_range}
-    | Some (Id o_id), Some id ->
-      let last_range = Document.range_of_id_with_blank_space st.document o_id in
-      let error_range = Document.range_of_id_with_blank_space st.document id in
-      let observe_id = match st.observe_id with
-        | None -> None
-        | Some _ -> observe_id
-      in
-      {st with execution_state; observe_id}, Some {last_range; error_range}
-    in
-    let update_view = true in
-    (Some st, inject_em_events events @ event, range, update_view)
+    let event = Option.cata (fun task -> [create_execution_event background (Execute {id; vst_for_next_todo; task; started })]) [] next in
+    match event, error_range with
+    | [], None -> execution_finished { st with execution_state } id started
+    | _ ->
+      let st = {st with execution_state} in
+      let update_view = true in
+      (Some st, inject_em_events events @ event, error_range, update_view)
 
 let handle_execution_manager_event st ev =
   let id, execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
@@ -531,10 +505,8 @@ let handle_execution_manager_event st ev =
 
 let handle_event ev st block background =
   match ev with
-  | Execute { id; todo = []; started } -> (* the vst_for_next_todo is also in st.execution_state *)
-    execution_finished st id started
-  | Execute { id; vst_for_next_todo; started; todo = task :: todo } ->
-    execute st id vst_for_next_todo started task todo background block
+  | Execute { id; vst_for_next_todo; started; task } ->
+    execute st id vst_for_next_todo started task background block
   | ExecutionManagerEvent ev ->
     handle_execution_manager_event st ev
   | Observe id ->
