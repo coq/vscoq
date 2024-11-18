@@ -16,6 +16,7 @@ open Types
 open Lsp.Types
 open Protocol
 open Protocol.LspWrapper
+open Protocol.ExtProtocol
 open Protocol.Printing
 open CompletionItems
 
@@ -37,6 +38,14 @@ type event
 val pp_event : Format.formatter -> event -> unit
 
 type events = event Sel.Event.t list
+
+type handled_event = {
+    state : state option;
+    events: events;
+    blocking_error: blocking_error option;
+    update_view: bool;
+    notification: Notification.Server.t option;
+}
 
 val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> observe_id option -> state * events
 (** [init st opts uri text] initializes the document manager with initial vernac state
@@ -112,7 +121,7 @@ val get_proof : state -> Settings.Goals.Diff.Mode.t -> Position.t option -> Proo
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 
-val handle_event : event -> state -> bool -> bool -> (state option * events * blocking_error option * bool)
+val handle_event : event -> state -> bool -> bool -> Settings.Goals.Diff.Mode.t -> handled_event
 (** handles events and returns a new state if it was updated. On top of the next events, it also returns info
     on whether execution has halted due to an error and returns a boolean flag stating whether the view
     should be updated *)

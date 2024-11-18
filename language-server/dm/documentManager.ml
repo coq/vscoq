@@ -15,6 +15,7 @@
 open Lsp.Types
 open Protocol
 open Protocol.LspWrapper
+open Protocol.ExtProtocol
 open Protocol.Printing
 open Types
 
@@ -54,6 +55,15 @@ type event =
   | ParseEvent
   | Observe of Types.sentence_id
   | ParseMore of Document.event
+  | SendProofView of Position.t option
+
+type handled_event = {
+    state : state option;
+    events: event Sel.Event.t list;
+    blocking_error: blocking_error option;
+    update_view: bool;
+    notification: Notification.Server.t option;
+}
 
 let pp_event fmt = function
   | Execute { id; started; _ } ->
@@ -65,7 +75,9 @@ let pp_event fmt = function
   | Observe id ->
     Stdlib.Format.fprintf fmt "Observe %d" (Stateid.to_int id)
   | ParseMore _ -> Stdlib.Format.fprintf fmt "ParseMore event"
-
+  | SendProofView pos ->
+    let string_loc = Option.cata Position.to_string "(no position)" pos in
+    Stdlib.Format.fprintf fmt "SendProofView at position %s" @@ string_loc
 let inject_em_event x = Sel.Event.map (fun e -> ExecutionManagerEvent e) x
 let inject_em_events events = List.map inject_em_event events
 let inject_doc_event x = Sel.Event.map (fun e -> ParseMore e) x
@@ -469,73 +481,31 @@ let execution_finished st id started =
   log (Printf.sprintf "ExecuteToLoc %d ends after %2.3f" (Stateid.to_int id) time);
   (* We update the state to trigger a publication of diagnostics *)
   let update_view = true in
-  (Some st, [], None, update_view)
+  let state = Some st in
+  {state; events=[]; blocking_error=None; update_view; notification=None}
 
 let execute st id vst_for_next_todo started task background block =
   match Document.get_sentence st.document id with
-  | None -> Some st, [], None, true (* Sentences have been invalidate, probably because the user edited while executing *)
+  | None -> 
+    {state=Some st; events=[]; blocking_error=None; update_view=true; notification=None} (* Sentences have been invalidate, probably because the user edited while executing *)
   | Some _ ->
     let (next, execution_state,vst_for_next_todo,events, exec_error) =
       ExecutionManager.execute st.execution_state st.document (vst_for_next_todo, [], false) task block in
-    let st, error_range =
+    let st, blocking_error =
       match exec_error with
       | None -> st, None
       | Some id -> create_blocking_error_range st id 
       in
     let event = Option.map (fun task -> create_execution_event background (Execute {id; vst_for_next_todo; task; started })) next in
-    match event, error_range with
-    | None, None -> execution_finished { st with execution_state } id started
-    | _ ->
-      let cancel_handle = Option.map Sel.Event.get_cancellation_handle event in
-      let event = Option.cata (fun event -> [event]) [] event in
-      let st = {st with execution_state; cancel_handle} in
-      let update_view = true in
-      (Some st, inject_em_events events @ event, error_range, update_view)
-
-let handle_execution_manager_event st ev =
-  let id, execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
-  let st = 
-    match (id, execution_state_update) with
-    | Some id, Some exec_st ->
-      let execution_state = ExecutionManager.update_processed id exec_st st.document in
-      Some {st with execution_state}
-    | Some id, None ->
-      let execution_state = ExecutionManager.update_processed id st.execution_state st.document in
-      Some {st with execution_state}
-    | _, _ -> Option.map (fun execution_state -> {st with execution_state}) execution_state_update
-  in
-  let update_view = true in
-  (st, inject_em_events events, None, update_view)
-
-let handle_event ev st block background =
-  match ev with
-  | Execute { id; vst_for_next_todo; started; task } ->
-    execute st id vst_for_next_todo started task background block
-  | ExecutionManagerEvent ev ->
-    handle_execution_manager_event st ev
-  | Observe id ->
-    let update_view = true in
-    let st, events, blocking_error = observe st id ~should_block_on_error:block ~background in
-    Some st, events, blocking_error, update_view
-  | ParseEvent ->
-    let document, events = Document.validate_document st.document in
-    let update_view = true in
-    Some {st with document}, inject_doc_events events, None, update_view
-  | ParseMore ev ->
-    let document, events, update = Document.handle_event st.document ev in
-    match update with
-    | None ->
-      let update_view = false in
-      Some {st with document}, inject_doc_events events, None, update_view
-    | Some (unchanged_id, invalid_roots, document) ->
-      let st = validate_document st unchanged_id invalid_roots document in
-      let update_view = true in
-      if background then
-        let (st, events, blocking_error) = interpret_in_background st ~should_block_on_error:block in
-        (Some st), events, blocking_error, update_view
-      else
-        (Some st), [], None, update_view
-
+    match event, blocking_error with
+      | None, None -> execution_finished { st with execution_state } id started
+      | _ ->
+        let cancel_handle = Option.map Sel.Event.get_cancellation_handle event in
+        let event = Option.cata (fun event -> [event]) [] event in
+        let state = Some {st with execution_state; cancel_handle} in
+        let update_view = true in
+        let events = inject_em_events events @ event in
+        {state; events; blocking_error; update_view; notification=None}
 
 let get_proof st diff_mode pos =
   let previous_st id =
@@ -551,6 +521,62 @@ let get_proof st diff_mode pos =
   let ost = Option.bind oid (ExecutionManager.get_vernac_state st.execution_state) in
   let previous = Option.bind oid previous_st in
   Option.bind ost (ProofState.get_proof ~previous diff_mode)
+
+let handle_execution_manager_event st ev =
+  let id, execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
+  let st = 
+    match (id, execution_state_update) with
+    | Some id, Some exec_st ->
+      let execution_state = ExecutionManager.update_processed id exec_st st.document in
+      Some {st with execution_state}
+    | Some id, None ->
+      let execution_state = ExecutionManager.update_processed id st.execution_state st.document in
+      Some {st with execution_state}
+    | _, _ -> Option.map (fun execution_state -> {st with execution_state}) execution_state_update
+  in
+  let update_view = true in
+  {state=st; events=(inject_em_events events);blocking_error=None; update_view; notification=None}
+
+let handle_event ev st block background diff_mode =
+  match ev with
+  | Execute { id; vst_for_next_todo; started; task } ->
+    execute st id vst_for_next_todo started task background block
+  | ExecutionManagerEvent ev ->
+    handle_execution_manager_event st ev
+  | Observe id ->
+    let update_view = true in
+    let st, events, blocking_error = observe st id ~should_block_on_error:block ~background in
+    {state=Some st; events; blocking_error; update_view; notification=None}
+  | ParseEvent ->
+    let document, events = Document.validate_document st.document in
+    let update_view = true in
+    let state = Some {st with document} in
+    let events = inject_doc_events events in
+    {state; events; blocking_error=None; update_view; notification=None}
+  | ParseMore ev ->
+    let document, events, update = Document.handle_event st.document ev in
+    begin match update with
+    | None ->
+      let update_view = false in
+      let state = Some {st with document} in
+      let events = inject_doc_events events in
+      {state; events; blocking_error=None; update_view; notification=None}
+    | Some (unchanged_id, invalid_roots, document) ->
+      let st = validate_document st unchanged_id invalid_roots document in
+      let update_view = true in
+      if background then
+        let (st, events, blocking_error) = interpret_in_background st ~should_block_on_error:block in
+        {state=(Some st); events; blocking_error; update_view; notification=None}
+      else
+        {state=(Some st); events=[]; blocking_error=None; update_view; notification=None}
+    end
+  | SendProofView pos ->
+    let proof = get_proof st diff_mode pos in
+    let messages = get_messages st pos in
+    let params = Notification.Server.ProofViewParams.{ proof; messages} in
+    let notification = Some (Notification.Server.ProofView params) in
+    let update_view = true in
+    {state=(Some st); events=[]; update_view; blocking_error=None; notification}
 
 let context_of_id st = function
   | None -> Some (ExecutionManager.get_initial_context st.execution_state)

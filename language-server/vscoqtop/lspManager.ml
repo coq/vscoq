@@ -710,14 +710,15 @@ let handle_event = function
       []
     | Some { st; visible } ->
       let background = !check_mode = Settings.Mode.Continuous in
-      let (ost, events, error_range, should_update_view) = Dm.DocumentManager.handle_event e st !block_on_first_error background in
-      begin match ost with
+      let handled_event = Dm.DocumentManager.handle_event e st !block_on_first_error background !diff_mode in
+      let events = handled_event.events in
+      begin match handled_event.state with
         | None -> ()
         | Some st ->
           replace_state (DocumentUri.to_path uri) st visible;
-          if should_update_view then update_view uri st
+          if handled_event.update_view then update_view uri st
       end;
-      match error_range with
+      match handled_event.blocking_error with
       | None ->
         inject_dm_events (uri, events)
       | Some {last_range; error_range} ->
