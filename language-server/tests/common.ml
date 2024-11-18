@@ -29,7 +29,9 @@ let injections =
   Coqinit.init_ocaml ();
   let opts, _ = Coqargs.parse_args ~init:Coqargs.default [] in
   let usage = Boot.Usage.{executable_name = ""; extra_args = ""; extra_options = ""} in
-  Coqinit.init_runtime ~usage opts
+  Coqinit.init_runtime ~usage opts;
+  Coqinit.init_document opts;
+  Coqargs.injection_commands opts
 [%%endif]
 
 let init_state = Vernacstate.freeze_full_state ()

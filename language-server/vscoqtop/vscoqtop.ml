@@ -17,8 +17,8 @@
 
 let Dm.Types.Log log = Dm.Log.mk_log "top"
 
-let loop injections =
-  let events = LspManager.init injections in
+let loop () =
+  let events = LspManager.init () in
   let rec loop (todo : LspManager.event Sel.Todo.t) =
     (*log @@ "looking for next step";*)
     flush_all ();
@@ -75,10 +75,10 @@ let _ =
       log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
       fst @@ Coqargs.parse_args ~usage:vscoqtop_specific_usage ~init:Coqargs.default args in
   let opts, () = Coqinit.parse_arguments ~usage:vscoqtop_specific_usage ~initial_args ~parse_extra () in
-  let injections = Coqinit.init_runtime opts in
+  let _injections = Coqinit.init_runtime opts in
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
   Sys.(set_signal sigint Signal_ignore);
-  loop injections
+  loop ()
 [%%else]
 let parse_extra _ x = skip_xd [] x
 
@@ -97,8 +97,8 @@ let () =
       log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
       fst @@ Coqargs.parse_args ~init:Coqargs.default args in
   let opts, () = Coqinit.parse_arguments ~initial_args ~parse_extra (List.tl (Array.to_list Sys.argv)) in
-  let injections = Coqinit.init_runtime ~usage:vscoqtop_specific_usage opts in
+  let () = Coqinit.init_runtime ~usage:vscoqtop_specific_usage opts in
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
   Sys.(set_signal sigint Signal_ignore);
-  loop injections
+  loop ()
 [%%endif]

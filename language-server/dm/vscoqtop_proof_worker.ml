@@ -54,8 +54,10 @@ let _ =
 let () =
   Coqinit.init_ocaml ();
   let opts, emoptions = Coqinit.parse_arguments ~parse_extra:Dm.ExecutionManager.ProofWorkerProcess.parse_options (List.tl (Array.to_list Sys.argv)) in
-  let injections = Coqinit.init_runtime ~usage:vscoqtop_specific_usage opts in
-  start_library (Coqinit.dirpath_of_top opts.config.logic.toplevel_name) injections;
+  let () = Coqinit.init_runtime ~usage:vscoqtop_specific_usage opts in
+  (* not sure if init_document is useful in proof worker *)
+  let () = Coqinit.init_document opts in
+  start_library (Coqinit.dirpath_of_top opts.config.logic.toplevel_name) [];
   log @@ "started";
   Sys.(set_signal sigint Signal_ignore);
   main_worker emoptions

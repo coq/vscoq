@@ -23,7 +23,7 @@ open Protocol.ExtProtocol
 
 module CompactedDecl = Context.Compacted.Declaration
 
-let init_state : (Vernacstate.t * Coqargs.injection_command list) option ref = ref None
+let init_state : Vernacstate.t option ref = ref None
 let get_init_state () =
   match !init_state with
   | Some st -> st
@@ -256,10 +256,39 @@ let reset_observe_ids =
   in
   Hashtbl.fold reset_doc_observe_id states
 
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+(* in these coq versions init_runtime called globally for the process includes init_document
+   this means in these versions we do not support local _CoqProject except for the effect on injections
+   (eg -noinit) *)
+let init_document _ vst = vst
+[%%else]
+let init_document local_args vst =
+  let () = Vernacstate.unfreeze_full_state vst in
+  let () = Coqinit.init_document local_args in
+  Vernacstate.freeze_full_state ()
+[%%endif]
+
 let open_new_document uri text =
-  let vst, opts = get_init_state () in
+  let vst = get_init_state () in
+
+  let local_args =
+    let fname = DocumentUri.to_path uri in
+    let dir = Filename.dirname fname in
+    match CoqProject_file.find_project_file ~from:dir ~projfile_name:"_CoqProject" with
+    | None ->
+      log (Printf.sprintf "No project file found for %s" fname);
+      Coqargs.default
+    | Some f ->
+      let project = CoqProject_file.read_project_file ~warning_fn:(fun _ -> ()) f in
+      let args = CoqProject_file.coqtop_args_from_project project in
+      log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
+      fst @@ Coqargs.parse_args ~init:Coqargs.default args
+  in
+
+  let vst = init_document local_args vst in
+
   let observe_id = if !check_mode = Settings.Mode.Continuous then None else Some Dm.DocumentManager.Top in
-  let st, events = try Dm.DocumentManager.init vst ~opts uri ~text observe_id with
+  let st, events = try Dm.DocumentManager.init vst ~opts:(Coqargs.injection_commands local_args) uri ~text observe_id with
     e -> raise e
   in
   let (st, events') = 
@@ -330,7 +359,7 @@ let consider_purge_invisible_tabs () =
   let usage = current_memory_usage () in
   if usage > !max_memory_usage (* 4G *) then begin
     purge_invisible_tabs ();
-    let vst, _ = get_init_state () in
+    let vst = get_init_state () in
     Vernacstate.unfreeze_full_state vst;
     Vernacstate.Interp.invalidate_cache ();
     Gc.compact ();
@@ -737,6 +766,6 @@ let pr_event = function
   | SendMoveCursor _ -> Pp.str"move cursor"
   | SendBlockOnError _ -> Pp.str"block on error"
 
-let init injections =
-  init_state := Some (Vernacstate.freeze_full_state (), injections);
+let init () =
+  init_state := Some (Vernacstate.freeze_full_state ());
   [lsp]
