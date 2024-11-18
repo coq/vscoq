@@ -47,7 +47,7 @@ type handled_event = {
     notification: Notification.Server.t option;
 }
 
-val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> observe_id option -> state * events
+val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> state * events
 (** [init st opts uri text] initializes the document manager with initial vernac state
     [st] on which command line opts will be set. [background] indicates if the document should
     be executed in the background once it is parsed. *)
@@ -58,9 +58,6 @@ val apply_text_edits : state -> text_edit list -> state * events
     document is parsed, outdated executions states are invalidated, and the observe
     id is updated. Finally if [background] is set to true, an execution is launched in
     the background *)
-
-val clear_observe_id : state -> state
-(** [clear_observe_id state] updates the state to make the observe_id None *)
 
 val reset_to_top : state -> state
 (** [reset_to_top state] updates the state to make the observe_id Top *)
@@ -98,7 +95,7 @@ val interpret_in_background : state -> should_block_on_error:bool -> (state * ev
 val reset : state -> state * events 
 (** resets Coq *)
 
-val executed_ranges : state -> exec_overview
+val executed_ranges : state -> Settings.Mode.t -> exec_overview
 (** returns the ranges corresponding to the sentences
     that have been executed and remotely executes *)
 

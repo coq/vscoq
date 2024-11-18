@@ -38,7 +38,7 @@ type state = {
   opts : Coqargs.injection_command list;
   document : Document.document;
   execution_state : ExecutionManager.state;
-  observe_id : observe_id option;
+  observe_id : observe_id;
   cancel_handle : Sel.Event.cancellation_handle option;
 }
 
@@ -85,20 +85,19 @@ let inject_doc_events events = List.map inject_doc_event events
 
 type events = event Sel.Event.t list
 
-let executed_ranges st =
-  match st.observe_id with
-  | None -> ExecutionManager.overview st.execution_state
-  | Some Top -> empty_overview
-  | Some (Id id) ->
+let executed_ranges st mode =
+  match st.observe_id, mode with
+  | _, Settings.Mode.Continuous -> ExecutionManager.overview st.execution_state
+  | Top, Settings.Mode.Manual -> empty_overview
+  | Id id, Settings.Mode.Manual ->
       let range = Document.range_of_id st.document id in
       ExecutionManager.overview_until_range st.execution_state range
 
 let observe_id_range st = 
   let doc = Document.raw_document st.document in
   match st.observe_id with
-    | None -> None
-    | Some Top -> None
-    | Some (Id id) -> match Document.get_sentence st.document id with
+    | Top -> None
+    | Id id -> match Document.get_sentence st.document id with
       | None -> failwith "observe_id does not exist"
       | Some { start; stop } ->
       let start = RawDocument.position_of_loc doc start in 
@@ -225,7 +224,7 @@ let id_of_sentence_after_pos st pos =
     | Some { id } -> Some id
 
 let id_of_pos_opt st = function
-  | None -> begin match st.observe_id with None | Some Top  -> None | Some Id id -> Some id end
+  | None -> begin match st.observe_id with  Top -> None | Id id -> Some id end
   | Some pos -> id_of_pos st pos
 
 let get_messages st pos =
@@ -266,18 +265,12 @@ let create_blocking_error_range state error_id =
       let end_ = Position.{line=0; character=0} in
       let last_range = Range.{start; end_} in
       let error_range = Document.range_of_id_with_blank_space state.document error_id in
-      let observe_id = match state.observe_id with
-        | None -> None
-        | Some _ -> Some Top
-      in
+      let observe_id = Top in
       ({state with observe_id}, Some {last_range; error_range})
     | Some { id } ->
       let last_range = Document.range_of_id_with_blank_space state.document id in
       let error_range = Document.range_of_id_with_blank_space state.document error_id in
-      let observe_id = match state.observe_id with
-        | None -> None
-        | Some _ -> Some (Id id)
-      in
+      let observe_id = (Id id) in
       ({state with observe_id}, Some {last_range; error_range})
 
 let observe ~background state id ~should_block_on_error : (state * event Sel.Event.t list * blocking_error option) =
@@ -287,7 +280,7 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
     Option.iter Sel.Event.cancel state.cancel_handle;
     let vst_for_next_todo, execution_state, task, error_id = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id should_block_on_error in
     match task with
-    | Some task -> 
+    | Some task ->
         let event = create_execution_event background (Execute {id; vst_for_next_todo; task; started = Unix.gettimeofday ()}) in
         let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
         ({state with execution_state; cancel_handle}, [event], None)
@@ -299,11 +292,7 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
         let state, blocking_error_range = create_blocking_error_range state error_id in
         ({state with execution_state}, [], blocking_error_range)
 
-let clear_observe_id st = 
-  { st with observe_id = None }
-
-let reset_to_top st =
-  { st with observe_id = Some Top }
+let reset_to_top st = { st with observe_id = Top }
 
 let get_document_symbols st =
   let outline = Document.outline st.document in
@@ -319,7 +308,7 @@ let get_document_symbols st =
   List.map to_document_symbol outline
 
 let interpret_to st id =
-  let observe_id = if st.observe_id = None then None else (Some (Id id)) in
+  let observe_id = (Id id) in
   let st = { st with observe_id} in
   let priority = Some PriorityManager.execution in
   st, [Sel.now ?priority (Observe id)], None
@@ -361,27 +350,25 @@ let get_previous_range st pos =
 
 let interpret_to_previous st =
   match st.observe_id with
-  | None -> failwith "interpret to previous with no observe_id"
-  | Some Top -> (st, [], None)
-  | Some (Id id) ->
+  | Top -> (st, [], None)
+  | (Id id) ->
     match Document.get_sentence st.document id with
     | None -> (st, [], None) (* TODO error? *)
     | Some { start } ->
       match Document.find_sentence_before st.document start with
       | None -> 
         Vernacstate.unfreeze_full_state st.init_vs; 
-        { st with observe_id=(Some Top)}, [], None
+        { st with observe_id=Top }, [], None
       | Some { id } -> interpret_to st id
 
 let interpret_to_next st =
   match st.observe_id with
-  | None -> failwith "interpret to next with no observe_id"
-  | Some Top ->
+  | Top ->
     begin match Document.get_first_sentence st.document with
     | None -> (st, [], None) (*The document is empty*)
     | Some { id } -> interpret_to st id
     end
-  | Some (Id id) ->
+  | Id id ->
     match Document.get_sentence st.document id with
     | None -> (st, [], None) (* TODO error? *)
     | Some { stop } ->
@@ -408,10 +395,9 @@ let is_above st id1 id2 =
 
 let validate_document state unchanged_id invalid_roots document=
   let observe_id = match unchanged_id, state.observe_id with
-    | _, None -> None
-    | None, Some (Id _) -> None
-    | _, Some Top -> Some Top
-    | Some id, Some (Id id') -> if is_above state.document id id' then Some (Id id) else state.observe_id
+    | None, Id _ -> Top
+    | _, Top -> Top
+    | Some id, Id id' -> if is_above state.document id id' then (Id id) else state.observe_id
   in
   let execution_state =
     List.fold_left (fun st id ->
@@ -433,7 +419,7 @@ let dirpath_of_top = Coqargs.dirpath_of_top
 let dirpath_of_top = Coqinit.dirpath_of_top
 [%%endif]
 
-let init init_vs ~opts uri ~text observe_id =
+let init init_vs ~opts uri ~text =
   Vernacstate.unfreeze_full_state init_vs;
   let top = try (dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) with
     e -> raise e
@@ -442,18 +428,18 @@ let init init_vs ~opts uri ~text observe_id =
   let init_vs = Vernacstate.freeze_full_state () in
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in
-  let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handle = None } in
+  let state = { uri; opts; init_vs; document; execution_state; observe_id=Top; cancel_handle = None } in
   let priority = Some PriorityManager.launch_parsing in
   let event = Sel.now ?priority ParseEvent in
   state, [event] @ [inject_em_event feedback]
 
-let reset { uri; opts; init_vs; document; execution_state; observe_id } =
+let reset { uri; opts; init_vs; document; execution_state; } =
   let text = RawDocument.text @@ Document.raw_document document in
   Vernacstate.unfreeze_full_state init_vs;
   let document = Document.create_document init_vs.synterp text in
   ExecutionManager.destroy execution_state;
   let execution_state, feedback = ExecutionManager.init init_vs in
-  let observe_id = if observe_id = None then None else (Some Top) in
+  let observe_id = Top in
   let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handle = None } in
   let priority = Some PriorityManager.launch_parsing in
   let event = Sel.now ?priority ParseEvent in
@@ -512,11 +498,7 @@ let get_proof st diff_mode pos =
     let oid = fst @@ Scheduler.task_for_sentence (Document.schedule st.document) id in
     Option.bind oid (ExecutionManager.get_vernac_state st.execution_state)
   in
-  let observe_id = 
-    match st.observe_id with
-    | None -> None
-    | Some observe_id -> to_sentence_id observe_id 
-  in
+  let observe_id = to_sentence_id st.observe_id in
   let oid = Option.cata (id_of_pos st) observe_id pos in
   let ost = Option.bind oid (ExecutionManager.get_vernac_state st.execution_state) in
   let previous = Option.bind oid previous_st in
@@ -761,8 +743,8 @@ module Internal = struct
 
   let observe_id st =
     match st.observe_id with
-    | None | Some Top -> None
-    | Some (Id id) -> Some id
+    | Top -> None
+    | (Id id) -> Some id
 
   let validate_document st =
     validate_document st

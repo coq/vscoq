@@ -194,7 +194,7 @@ let publish_diagnostics uri doc =
 
 let send_highlights uri doc =
   let { Dm.Types.processing;  processed; prepared } =
-    Dm.DocumentManager.executed_ranges doc in
+    Dm.DocumentManager.executed_ranges doc !check_mode in
   let notification = Notification.Server.UpdateHighlights {
     uri;
     preparedRange = prepared;
@@ -237,7 +237,7 @@ let replace_state path st visible = Hashtbl.replace states path { st; visible}
 
 let run_documents () =
   let interpret_doc_in_bg path { st : Dm.DocumentManager.state ; visible } events =
-      let st = Dm.DocumentManager.clear_observe_id st in
+      let st = Dm.DocumentManager.reset_to_top st in
       let (st, events', _) = Dm.DocumentManager.interpret_in_background st ~should_block_on_error:!block_on_first_error in
       let uri = DocumentUri.of_path path in
       replace_state path st visible;
@@ -300,9 +300,7 @@ let open_new_document uri text =
   in
 
   let vst = init_document local_args vst in
-
-  let observe_id = if !check_mode = Settings.Mode.Continuous then None else Some Dm.DocumentManager.Top in
-  let st, events = try Dm.DocumentManager.init vst ~opts uri ~text observe_id with
+  let st, events = try Dm.DocumentManager.init vst ~opts uri ~text with
     e -> raise e
   in
   Hashtbl.add states (DocumentUri.to_path uri) { st ; visible = true; };
