@@ -280,7 +280,8 @@
               self.packages.${system}.vscoq-language-server-coq-8-18.buildInputs
               ++ (with ocamlPackages; [
                 ocaml-lsp
-              ]);
+              ])
+              ++ ([git]);
           };
 
         vscoq-language-server-coq-8-19 = with import nixpkgs {inherit system;}; let
@@ -291,7 +292,8 @@
               self.packages.${system}.vscoq-language-server-coq-8-19.buildInputs
               ++ (with ocamlPackages; [
                 ocaml-lsp
-              ]);
+              ])
+              ++ ([git]);
           };
 
         vscoq-language-server-coq-8-20 = with import nixpkgs {inherit system;}; let
@@ -302,7 +304,8 @@
               self.packages.${system}.vscoq-language-server-coq-8-20.buildInputs
               ++ (with ocamlPackages; [
                 ocaml-lsp
-              ]);
+              ])
+              ++ ([git]);
           };
 
         vscoq-language-server-coq-master = with import nixpkgs {inherit system;}; let
@@ -313,7 +316,8 @@
               self.packages.${system}.vscoq-language-server-coq-master.buildInputs
               ++ (with ocamlPackages; [
                 ocaml-lsp
-              ]);
+              ])
+              ++ ([git]);
           };
 
         default = with import nixpkgs {inherit system;}; let
@@ -324,7 +328,8 @@
               self.packages.${system}.vscoq-language-server-coq-8-19.buildInputs
               ++ (with ocamlPackages; [
                 ocaml-lsp
-              ]);
+              ])
+              ++ ([git]);
           };
       };
     });
