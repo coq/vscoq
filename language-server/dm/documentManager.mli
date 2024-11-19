@@ -42,7 +42,6 @@ type events = event Sel.Event.t list
 type handled_event = {
     state : state option;
     events: events;
-    blocking_error: blocking_error option;
     update_view: bool;
     notification: Notification.Server.t option;
 }
@@ -68,27 +67,27 @@ val get_next_range : state -> Position.t -> Range.t option
 val get_previous_range : state -> Position.t -> Range.t option
 (** [get_previous_pos st pos] get the range of the previous sentence relative to pos *)
 
-val interpret_to_position : state -> Position.t -> (state * events * blocking_error option)
-(** [interpret_to_position state pos should_block] navigates to the 
+val interpret_to_position : state -> Position.t -> check_mode:Settings.Mode.t -> point_interp_mode:Settings.PointInterpretationMode.t -> (state * events)
+(** [interpret_to_position state pos check_mode point_interp_mode] navigates to the 
     last sentence ending before or at [pos] and returns the resulting state, events that need to take place, and a possible blocking error. *)
 
-val interpret_to_next_position : state -> Position.t -> (state * events * blocking_error option * Position.t)
-(** [interpret_to_next_position state pos should_block] navigates 
-    to the first sentence after or at [pos] (excluding whitespace) and returns the resulting state, events that need to take place, a possible blocking error, and the position of the sentence that was interpreted until. *)
+val interpret_to_next_position : state -> Position.t -> check_mode:Settings.Mode.t -> (state * events)
+(** [interpret_to_next_position state pos check_mode] navigates
+    to the first sentence after or at [pos] (excluding whitespace) and returns the resulting state, events that need to take place, a possible blocking error. *)
 
-val interpret_to_previous : state -> (state * events * blocking_error option)
-(** [interpret_to_previous doc] navigates to the previous sentence in [doc]
+val interpret_to_previous : state -> check_mode:Settings.Mode.t -> (state * events)
+(** [interpret_to_previous doc check_mode] navigates to the previous sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_to_next : state -> (state * events * blocking_error option)
+val interpret_to_next : state -> check_mode:Settings.Mode.t -> (state * events)
 (** [interpret_to_next doc] navigates to the next sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_to_end : state -> (state * events * blocking_error option)
+val interpret_to_end : state -> check_mode:Settings.Mode.t -> (state * events)
 (** [interpret_to_end doc] navigates to the last sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_in_background : state -> should_block_on_error:bool -> (state * events * blocking_error option)
+val interpret_in_background : state -> should_block_on_error:bool -> (state * events)
 (** [interpret_in_background doc] same as [interpret_to_end] but computation 
     is done in background (with lower priority) *)
 
@@ -102,7 +101,7 @@ val executed_ranges : state -> Settings.Mode.t -> exec_overview
 val observe_id_range : state -> Range.t option
 (** returns the range of the sentence referenced by observe_id **)
 
-val get_messages : state -> Position.t option -> (DiagnosticSeverity.t * pp) list
+val get_messages : state -> sentence_id -> (DiagnosticSeverity.t * pp) list
 (** returns the messages associated to a given position *)
 
 val get_info_messages : state -> Position.t option -> (DiagnosticSeverity.t * pp) list
@@ -114,7 +113,7 @@ val all_diagnostics : state -> Diagnostic.t list
 (** all_diagnostics [doc] returns the diagnostics corresponding to the sentences
     that have been executed in [doc]. *)
 
-val get_proof : state -> Settings.Goals.Diff.Mode.t -> Position.t option -> ProofState.t option
+val get_proof : state -> Settings.Goals.Diff.Mode.t -> sentence_id option -> ProofState.t option
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 

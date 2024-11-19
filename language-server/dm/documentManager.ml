@@ -55,12 +55,13 @@ type event =
   | ParseEvent
   | Observe of Types.sentence_id
   | ParseMore of Document.event
-  | SendProofView of Position.t option
+  | SendProofView of Types.sentence_id
+  | SendBlockOnError of Types.sentence_id
+  | SendMoveCursor of Range.t
 
 type handled_event = {
     state : state option;
     events: event Sel.Event.t list;
-    blocking_error: blocking_error option;
     update_view: bool;
     notification: Notification.Server.t option;
 }
@@ -75,13 +76,32 @@ let pp_event fmt = function
   | Observe id ->
     Stdlib.Format.fprintf fmt "Observe %d" (Stateid.to_int id)
   | ParseMore _ -> Stdlib.Format.fprintf fmt "ParseMore event"
-  | SendProofView pos ->
-    let string_loc = Option.cata Position.to_string "(no position)" pos in
-    Stdlib.Format.fprintf fmt "SendProofView at position %s" @@ string_loc
+  | SendProofView id ->
+    Stdlib.Format.fprintf fmt "SendProofView %d" @@ (Stateid.to_int id)
+  | SendBlockOnError id ->
+    Stdlib.Format.fprintf fmt "SendBlockOnError %d" @@ (Stateid.to_int id)
+  | SendMoveCursor range ->
+    Stdlib.Format.fprintf fmt "SendBlockOnError %s" @@ (Range.to_string range)
+
 let inject_em_event x = Sel.Event.map (fun e -> ExecutionManagerEvent e) x
 let inject_em_events events = List.map inject_em_event events
 let inject_doc_event x = Sel.Event.map (fun e -> ParseMore e) x
-let inject_doc_events events = List.map inject_doc_event events 
+let inject_doc_events events = List.map inject_doc_event events
+let mk_proof_view_event id =
+  Sel.now ~priority:PriorityManager.proof_view (SendProofView (id))
+let mk_observe_event id =
+  Sel.now ~priority:PriorityManager.execution (Observe id)
+let mk_move_cursor_event id = 
+  let priority = PriorityManager.move_cursor in
+  Sel.now ~priority @@ SendMoveCursor id
+let mk_block_on_error_event last_range error_id =
+  let priority = PriorityManager.move_cursor in
+  let event = Sel.now ~priority @@ SendBlockOnError error_id in
+  match last_range with
+  | None ->
+    [event] @ [mk_proof_view_event error_id]
+  | Some range ->
+    [event] @ [mk_move_cursor_event range] @ [mk_proof_view_event error_id]
 
 type events = event Sel.Event.t list
 
@@ -227,16 +247,13 @@ let id_of_pos_opt st = function
   | None -> begin match st.observe_id with  Top -> None | Id id -> Some id end
   | Some pos -> id_of_pos st pos
 
-let get_messages st pos =
-  match id_of_pos_opt st pos with
-  | None -> log "get_messages: Could not find id";[]
-  | Some id -> log "get_messages: Found id";
-    let error = ExecutionManager.error st.execution_state id in
-    let feedback = ExecutionManager.feedback st.execution_state id in
-    let feedback = List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback  in
-    match error with
-    | Some (_oloc,msg) -> (DiagnosticSeverity.Error, pp_of_coqpp msg) :: feedback
-    | None -> feedback
+let get_messages st id =
+  let error = ExecutionManager.error st.execution_state id in
+  let feedback = ExecutionManager.feedback st.execution_state id in
+  let feedback = List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback  in
+  match error with
+  | Some (_oloc,msg) -> (DiagnosticSeverity.Error, pp_of_coqpp msg) :: feedback
+  | None -> feedback
 
 let get_info_messages st pos =
   match id_of_pos_opt st pos with
@@ -255,7 +272,7 @@ let create_execution_event background event =
   let priority = if background then None else Some PriorityManager.execution in
   Sel.now ?priority event
 
-let create_blocking_error_range state error_id =
+let state_before_error state error_id =
   match Document.get_sentence state.document error_id with
   | None -> state, None
   | Some { start } ->
@@ -264,33 +281,32 @@ let create_blocking_error_range state error_id =
       let start = Position.{line=0; character=0} in
       let end_ = Position.{line=0; character=0} in
       let last_range = Range.{start; end_} in
-      let error_range = Document.range_of_id_with_blank_space state.document error_id in
       let observe_id = Top in
-      ({state with observe_id}, Some {last_range; error_range})
+      {state with observe_id}, Some last_range
     | Some { id } ->
       let last_range = Document.range_of_id_with_blank_space state.document id in
-      let error_range = Document.range_of_id_with_blank_space state.document error_id in
       let observe_id = (Id id) in
-      ({state with observe_id}, Some {last_range; error_range})
+      {state with observe_id}, Some last_range
 
-let observe ~background state id ~should_block_on_error : (state * event Sel.Event.t list * blocking_error option) =
+let observe ~background state id ~should_block_on_error : (state * event Sel.Event.t list) =
   match Document.get_sentence state.document id with
-  | None -> (state, [], None) (* TODO error? *)
+  | None -> state, [] (* TODO error? *)
   | Some { id } ->
     Option.iter Sel.Event.cancel state.cancel_handle;
     let vst_for_next_todo, execution_state, task, error_id = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id should_block_on_error in
     match task with
-    | Some task ->
+    | Some task -> (* task will only be Some if there is no error *)
         let event = create_execution_event background (Execute {id; vst_for_next_todo; task; started = Unix.gettimeofday ()}) in
         let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
-        ({state with execution_state; cancel_handle}, [event], None)
+        {state with execution_state; cancel_handle}, [event]
     | None ->
       match error_id with
       | None ->
-        ({state with execution_state}, [], None)
+        {state with execution_state}, []
       | Some error_id ->
-        let state, blocking_error_range = create_blocking_error_range state error_id in
-        ({state with execution_state}, [], blocking_error_range)
+        let state, last_range = state_before_error state error_id in
+        let events = mk_block_on_error_event last_range error_id in
+        {state with execution_state}, events
 
 let reset_to_top st = { st with observe_id = Top }
 
@@ -307,24 +323,35 @@ let get_document_symbols st =
   in
   List.map to_document_symbol outline
 
-let interpret_to st id =
+let interpret_to st id ~check_mode =
   let observe_id = (Id id) in
   let st = { st with observe_id} in
-  let priority = Some PriorityManager.execution in
-  st, [Sel.now ?priority (Observe id)], None
+  match check_mode with
+  | Settings.Mode.Manual ->
+    let event = mk_observe_event id in
+    let pv_event = mk_proof_view_event id in
+    st, [event] @ [pv_event]
+  | Settings.Mode.Continuous ->
+    match ExecutionManager.is_executed st.execution_state id with
+    | true -> st, [mk_proof_view_event id]
+    | false -> st, []
 
-let interpret_to_position st pos =
-  match id_of_pos st pos with
-  | None -> (st, [], None) (* document is empty *)
-  | Some id -> interpret_to st id
-
-let interpret_to_next_position st pos =
+let interpret_to_next_position st pos ~check_mode =
   match id_of_sentence_after_pos st pos with
-  | None -> (st, [], None, pos) (* document is empty *)
+  | None -> (st, []) (* document is empty *)
   | Some id ->
-    let new_pos = (Document.range_of_id st.document id).end_ in
-    let st, events, blocking_error = interpret_to st id in
-    (st, events, blocking_error, new_pos)
+    let st, events = interpret_to st id ~check_mode in
+    (st, events)
+
+let interpret_to_position st pos ~check_mode ~point_interp_mode =
+  match point_interp_mode with
+  | Settings.PointInterpretationMode.Cursor ->
+    begin match id_of_pos st pos with
+    | None -> (st, []) (* document is empty *)
+    | Some id -> interpret_to st id ~check_mode
+    end
+  | Settings.PointInterpretationMode.NextCommand ->
+    interpret_to_next_position st pos ~check_mode
 
 let get_next_range st pos =
   match id_of_pos st pos with
@@ -348,44 +375,44 @@ let get_previous_range st pos =
       | None -> Some (Document.range_of_id st.document id)
       | Some { id } -> Some (Document.range_of_id st.document id)
 
-let interpret_to_previous st =
+let interpret_to_previous st ~check_mode =
   match st.observe_id with
-  | Top -> (st, [], None)
+  | Top -> (st, [])
   | (Id id) ->
     match Document.get_sentence st.document id with
-    | None -> (st, [], None) (* TODO error? *)
+    | None -> (st, []) (* TODO error? *)
     | Some { start } ->
       match Document.find_sentence_before st.document start with
       | None -> 
         Vernacstate.unfreeze_full_state st.init_vs; 
-        { st with observe_id=Top }, [], None
-      | Some { id } -> interpret_to st id
+        { st with observe_id=Top }, []
+      | Some { id } -> interpret_to st id ~check_mode
 
-let interpret_to_next st =
+let interpret_to_next st ~check_mode =
   match st.observe_id with
   | Top ->
     begin match Document.get_first_sentence st.document with
-    | None -> (st, [], None) (*The document is empty*)
-    | Some { id } -> interpret_to st id
+    | None -> st, [] (*The document is empty*)
+    | Some { id } -> interpret_to st id ~check_mode
     end
   | Id id ->
     match Document.get_sentence st.document id with
-    | None -> (st, [], None) (* TODO error? *)
+    | None -> st, [] (* TODO error? *)
     | Some { stop } ->
       match Document.find_sentence_after st.document (stop+1) with
-      | None -> (st, [], None)
-      | Some { id } -> interpret_to st id
+      | None -> st, []
+      | Some { id } -> interpret_to st id ~check_mode
 
-let interpret_to_end st =
+let interpret_to_end st ~check_mode =
   match Document.get_last_sentence st.document with
-  | None -> (st, [], None)
+  | None -> (st, [])
   | Some {id} -> 
     log ("interpret_to_end id = " ^ Stateid.to_string id);
-    interpret_to st id
+    interpret_to st id ~check_mode
 
 let interpret_in_background st ~should_block_on_error =
   match Document.get_last_sentence st.document with
-  | None -> (st, [], None)
+  | None -> (st, [])
   | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); observe ~background:true st id ~should_block_on_error
 
 let is_above st id1 id2 =
@@ -468,38 +495,40 @@ let execution_finished st id started =
   (* We update the state to trigger a publication of diagnostics *)
   let update_view = true in
   let state = Some st in
-  {state; events=[]; blocking_error=None; update_view; notification=None}
+  {state; events=[]; update_view; notification=None}
 
 let execute st id vst_for_next_todo started task background block =
   match Document.get_sentence st.document id with
   | None -> 
-    {state=Some st; events=[]; blocking_error=None; update_view=true; notification=None} (* Sentences have been invalidate, probably because the user edited while executing *)
+    {state=Some st; events=[]; update_view=true; notification=None} (* Sentences have been invalidate, probably because the user edited while executing *)
   | Some _ ->
     let (next, execution_state,vst_for_next_todo,events, exec_error) =
       ExecutionManager.execute st.execution_state st.document (vst_for_next_todo, [], false) task block in
-    let st, blocking_error =
+    let st, block_events =
       match exec_error with
-      | None -> st, None
-      | Some id -> create_blocking_error_range st id 
+      | None -> st, []
+      | Some error_id -> let st, last_range = state_before_error st error_id in
+        let events = if block then mk_block_on_error_event last_range error_id else [] in
+        st, events
       in
     let event = Option.map (fun task -> create_execution_event background (Execute {id; vst_for_next_todo; task; started })) next in
-    match event, blocking_error with
-      | None, None -> execution_finished { st with execution_state } id started
+    match event, block_events with
+      | None, [] -> execution_finished { st with execution_state } id started (* There is no new tasks, and no errors -> execution finished *)
       | _ ->
         let cancel_handle = Option.map Sel.Event.get_cancellation_handle event in
         let event = Option.cata (fun event -> [event]) [] event in
         let state = Some {st with execution_state; cancel_handle} in
         let update_view = true in
-        let events = inject_em_events events @ event in
-        {state; events; blocking_error; update_view; notification=None}
+        let events = inject_em_events events @ block_events @ event in
+        {state; events; update_view; notification=None}
 
-let get_proof st diff_mode pos =
+let get_proof st diff_mode id =
   let previous_st id =
     let oid = fst @@ Scheduler.task_for_sentence (Document.schedule st.document) id in
     Option.bind oid (ExecutionManager.get_vernac_state st.execution_state)
   in
   let observe_id = to_sentence_id st.observe_id in
-  let oid = Option.cata (id_of_pos st) observe_id pos in
+  let oid = Option.append id observe_id in
   let ost = Option.bind oid (ExecutionManager.get_vernac_state st.execution_state) in
   let previous = Option.bind oid previous_st in
   Option.bind ost (ProofState.get_proof ~previous diff_mode)
@@ -517,7 +546,7 @@ let handle_execution_manager_event st ev =
     | _, _ -> Option.map (fun execution_state -> {st with execution_state}) execution_state_update
   in
   let update_view = true in
-  {state=st; events=(inject_em_events events);blocking_error=None; update_view; notification=None}
+  {state=st; events=(inject_em_events events); update_view; notification=None}
 
 let handle_event ev st block background diff_mode =
   match ev with
@@ -527,14 +556,14 @@ let handle_event ev st block background diff_mode =
     handle_execution_manager_event st ev
   | Observe id ->
     let update_view = true in
-    let st, events, blocking_error = observe st id ~should_block_on_error:block ~background in
-    {state=Some st; events; blocking_error; update_view; notification=None}
+    let st, events = observe st id ~should_block_on_error:block ~background in
+    {state=Some st; events; update_view; notification=None}
   | ParseEvent ->
     let document, events = Document.validate_document st.document in
     let update_view = true in
     let state = Some {st with document} in
     let events = inject_doc_events events in
-    {state; events; blocking_error=None; update_view; notification=None}
+    {state; events; update_view; notification=None}
   | ParseMore ev ->
     let document, events, update = Document.handle_event st.document ev in
     begin match update with
@@ -542,23 +571,32 @@ let handle_event ev st block background diff_mode =
       let update_view = false in
       let state = Some {st with document} in
       let events = inject_doc_events events in
-      {state; events; blocking_error=None; update_view; notification=None}
+      {state; events; update_view; notification=None}
     | Some (unchanged_id, invalid_roots, document) ->
       let st = validate_document st unchanged_id invalid_roots document in
       let update_view = true in
       if background then
-        let (st, events, blocking_error) = interpret_in_background st ~should_block_on_error:block in
-        {state=(Some st); events; blocking_error; update_view; notification=None}
+        let (st, events) = interpret_in_background st ~should_block_on_error:block in
+        {state=(Some st); events; update_view; notification=None}
       else
-        {state=(Some st); events=[]; blocking_error=None; update_view; notification=None}
+        {state=(Some st); events=[]; update_view; notification=None}
     end
-  | SendProofView pos ->
-    let proof = get_proof st diff_mode pos in
-    let messages = get_messages st pos in
+  | SendProofView id ->
+    let proof = get_proof st diff_mode (Some id) in
+    let messages = get_messages st id in
     let params = Notification.Server.ProofViewParams.{ proof; messages} in
     let notification = Some (Notification.Server.ProofView params) in
     let update_view = true in
-    {state=(Some st); events=[]; update_view; blocking_error=None; notification}
+    {state=(Some st); events=[]; update_view; notification}
+  | SendBlockOnError id ->
+    let {uri} = st in
+    let range = Document.range_of_id st.document id in
+    let notification = Some (Notification.Server.BlockOnError {uri; range}) in
+    {state=(Some st); events=[]; update_view=false; notification}
+  | SendMoveCursor range ->
+    let {uri} = st in
+    let notification = Some (Notification.Server.MoveCursor {uri; range}) in
+    {state=(Some st); events=[]; update_view=false; notification}
 
 let context_of_id st = function
   | None -> Some (ExecutionManager.get_initial_context st.execution_state)
