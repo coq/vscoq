@@ -12,6 +12,7 @@ suite('Should get diagnostics', function () {
 
 		const ext = vscode.extensions.getExtension('maximedenes.vscoq')!;
 		await ext.activate();
+		vscode.workspace.getConfiguration().update('vscoq.proof.mode','Continuous');
         
         const doc = await common.openTextFile('basic.v');
 
@@ -34,6 +35,7 @@ suite('Should get diagnostics', function () {
 
 		const ext = vscode.extensions.getExtension('maximedenes.vscoq')!;
 		await ext.activate();
+		vscode.workspace.getConfiguration().update('vscoq.proof.mode','Continuous');
 
         const doc1 = await common.openTextFile('basic.v');
 		const doc2 = await common.openTextFile('warn.v');

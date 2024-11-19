@@ -268,6 +268,19 @@ let init_document local_args vst =
   Vernacstate.freeze_full_state ()
 [%%endif]
 
+[%%if  coq = "8.18" || coq = "8.19" || coq = "8.20"]
+  let parse_args args =
+    let usage = {
+      Boot.Usage.executable_name = "";
+      extra_args = "";
+      extra_options = "";
+    } in
+    fst @@ Coqargs.parse_args ~init:Coqargs.default ~usage args
+[%%else]
+  let parse_args args =
+    fst @@ Coqargs.parse_args ~init:Coqargs.default args
+[%%endif]
+
 let open_new_document uri text =
   let vst = get_init_state () in
 
@@ -282,7 +295,8 @@ let open_new_document uri text =
       let project = CoqProject_file.read_project_file ~warning_fn:(fun _ -> ()) f in
       let args = CoqProject_file.coqtop_args_from_project project in
       log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
-      fst @@ Coqargs.parse_args ~init:Coqargs.default args
+      parse_args args
+      
   in
 
   let vst = init_document local_args vst in
