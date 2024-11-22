@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        coq: [coq-8-18, coq-8-19, coq-master]
+        coq: [8-18, 8-19, 8-20, master]
         profile: [dev, fatalwarnings]
     runs-on: ${{ matrix.os }}
     steps:
@@ -53,11 +53,11 @@ jobs:
         diff new_yarn.nix yarn.nix
         diff goal-view-ui/new_yarn.nix goal-view-ui/yarn.nix
         diff search-ui/new_yarn.nix search-ui/yarn.nix
-    - run: nix develop .#vscoq-language-server-${{ matrix.coq }} -c bash -c "cd language-server && dune build --profile ${{ matrix.profile }}"
-    - run: nix develop .#vscoq-client -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
-    - run: xvfb-run nix develop .#vscoq-client -c bash -c "cd client && yarn test"
+    - run: nix develop .#vscoq-${{ matrix.coq }} -c bash -c "cd language-server && dune build --profile ${{ matrix.profile }}"
+    - run: nix develop .#vscoq-${{ matrix.coq }} -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
+    - run: xvfb-run nix develop .#vscoq-${{ matrix.coq }} -c bash -c "cd client && yarn test"
       if: runner.os == 'Linux'
-    - run: nix develop .#vscoq-client -c bash -c "cd client && yarn test"
+    - run: nix develop .#vscoq-${{ matrix.coq }} -c bash -c "cd client && yarn test"
       if: runner.os != 'Linux'
     - if: ${{ failure() }}
       run: cat /tmp/vscoq_init_log.*
@@ -68,7 +68,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         ocaml-compiler: [4.14.x]
-        coq: [8.18.0, 8.19.0, 8.20+rc1, dev]
+        coq: [8.18.0, 8.19.0, 8.20.0, dev]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout

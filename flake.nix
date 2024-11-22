@@ -26,7 +26,7 @@
       formatter = nixpkgs.legacyPackages.${system}.alejandra;
 
       packages = {
-        default = self.packages.${system}.vscoq-language-server-coq-8-19;
+        default = self.packages.${system}.vscoq-language-server-coq-8-20;
 
         vscoq-language-server-coq-8-18 =
           # Notice the reference to nixpkgs here.
@@ -52,9 +52,8 @@
                   gnome.adwaita-icon-theme
                   wrapGAppsHook
                   ocaml
-                  yojson
-                  zarith
                   findlib
+                  yojson
                   ppx_inline_test
                   ppx_assert
                   ppx_sexp_conv
@@ -65,6 +64,10 @@
                   ppx_yojson_conv
                   lsp
                   sel
+                ]);
+              propagatedBuildInputs= (with coq.ocamlPackages;
+                [
+                  zarith
                 ]);
             };
 
@@ -93,7 +96,6 @@
                   wrapGAppsHook
                   ocaml
                   yojson
-                  zarith
                   findlib
                   ppx_inline_test
                   ppx_assert
@@ -105,6 +107,10 @@
                   ppx_yojson_conv
                   lsp
                   sel
+                ]);
+              propagatedBuildInputs= (with coq.ocamlPackages;
+                [
+                  zarith
                 ]);
             };
 
@@ -133,7 +139,6 @@
                   wrapGAppsHook
                   ocaml
                   yojson
-                  zarith
                   findlib
                   ppx_inline_test
                   ppx_assert
@@ -145,6 +150,10 @@
                   ppx_yojson_conv
                   lsp
                   sel
+                ]);
+              propagatedBuildInputs= (with coq.ocamlPackages;
+                [
+                  zarith
                 ]);
             };
 
@@ -173,7 +182,6 @@
                   wrapGAppsHook
                   ocaml
                   yojson
-                  zarith
                   findlib
                   ppx_inline_test
                   ppx_assert
@@ -185,6 +193,10 @@
                   ppx_yojson_conv
                   lsp
                   sel
+                ]);
+              propagatedBuildInputs= (with coq.ocamlPackages;
+                [
+                  zarith
                 ]);
             };
 
@@ -267,53 +279,50 @@
       };
 
       devShells = {
-        vscoq-client = with import nixpkgs {inherit system;};
+        vscoq-8-18 = with import nixpkgs {inherit system;};
           mkShell {
-            buildInputs = self.packages.${system}.vscoq-client.extension.buildInputs;
+            buildInputs = 
+              self.packages.${system}.vscoq-client.extension.buildInputs
+              ++ self.packages.${system}.vscoq-language-server-coq-8-18.buildInputs
+              ++ (with ocamlPackages; [
+                ocaml-lsp
+              ])
+              ++ ([git]);
           };
-
-        vscoq-language-server-coq-8-18 = with import nixpkgs {inherit system;}; let
+        
+        vscoq-8-19 = with import nixpkgs {inherit system;}; let
           ocamlPackages = ocaml-ng.ocamlPackages_4_14;
         in
           mkShell {
             buildInputs =
-              self.packages.${system}.vscoq-language-server-coq-8-18.buildInputs
+              self.packages.${system}.vscoq-client.extension.buildInputs
+              ++ self.packages.${system}.vscoq-language-server-coq-8-19.buildInputs
               ++ (with ocamlPackages; [
                 ocaml-lsp
               ])
               ++ ([git]);
           };
 
-        vscoq-language-server-coq-8-19 = with import nixpkgs {inherit system;}; let
+        vscoq-8-20 = with import nixpkgs {inherit system;}; let
           ocamlPackages = ocaml-ng.ocamlPackages_4_14;
         in
           mkShell {
             buildInputs =
-              self.packages.${system}.vscoq-language-server-coq-8-19.buildInputs
+              self.packages.${system}.vscoq-client.extension.buildInputs
+              ++ self.packages.${system}.vscoq-language-server-coq-8-20.buildInputs
               ++ (with ocamlPackages; [
                 ocaml-lsp
               ])
               ++ ([git]);
           };
 
-        vscoq-language-server-coq-8-20 = with import nixpkgs {inherit system;}; let
+        vscoq-master = with import nixpkgs {inherit system;}; let
           ocamlPackages = ocaml-ng.ocamlPackages_4_14;
         in
           mkShell {
             buildInputs =
-              self.packages.${system}.vscoq-language-server-coq-8-20.buildInputs
-              ++ (with ocamlPackages; [
-                ocaml-lsp
-              ])
-              ++ ([git]);
-          };
-
-        vscoq-language-server-coq-master = with import nixpkgs {inherit system;}; let
-          ocamlPackages = ocaml-ng.ocamlPackages_4_14;
-        in
-          mkShell {
-            buildInputs =
-              self.packages.${system}.vscoq-language-server-coq-master.buildInputs
+              self.packages.${system}.vscoq-client.extension.buildInputs
+              ++ self.packages.${system}.vscoq-language-server-coq-master.buildInputs
               ++ (with ocamlPackages; [
                 ocaml-lsp
               ])
@@ -325,7 +334,8 @@
         in
           mkShell {
             buildInputs =
-              self.packages.${system}.vscoq-language-server-coq-8-19.buildInputs
+              self.packages.${system}.vscoq-client.extension.buildInputs
+              ++ self.packages.${system}.vscoq-language-server-coq-8-20.buildInputs
               ++ (with ocamlPackages; [
                 ocaml-lsp
               ])
