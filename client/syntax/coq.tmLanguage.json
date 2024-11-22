@@ -15,7 +15,7 @@
       "name": "keyword.control.import.coq"
     },
     {
-      "match": "\\b(Theorem|Lemma|Remark|Fact|Corollary|Property|Proposition|Goal)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
+      "match": "\\b(Theorem|Lemma|Remark|Fact|Corollary|Property|Proposition)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
       "comment": "Theorem declarations",
       "captures": {
         "1": {
@@ -25,6 +25,10 @@
           "name": "entity.name.function.theorem.coq"
         }
       }
+    },
+    {
+      "match": "\\bGoal\\b",
+      "name": "keyword.source.coq"
     },
     {
       "match": "\\b(Parameters?|Axioms?|Conjectures?|Variables?|Hypothesis|Hypotheses)(\\s+Inline)?\\b\\s*\\(?\\s*((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
