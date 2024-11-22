@@ -27,6 +27,10 @@ type error_recovery_strategy =
   | RSkip
   | RAdmitted
 
+type restart =  { id : sentence_id; to_ : sentence_id }
+
+type skip = { id: sentence_id; error: Pp.t }
+
 type executable_sentence = {
   id : sentence_id;
   ast : Synterp.vernac_control_entry;
@@ -36,8 +40,9 @@ type executable_sentence = {
 }
 
 type task =
-  | Skip of { id: sentence_id; error: Pp.t option }
+  | Skip of skip
   | Exec of executable_sentence
+  | Restart of restart
   | OpaqueProof of { terminator: executable_sentence;
                      opener_id: sentence_id;
                      proof_using: Vernacexpr.section_subset_expr;
