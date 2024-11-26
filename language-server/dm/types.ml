@@ -20,7 +20,7 @@ type sentence_id_set = Stateid.Set.t
 module RangeList = struct
 
   type t = Range.t list
-
+  
   let insert_or_merge_range r ranges =
     let ranges = List.sort Range.compare (r :: ranges) in
     let rec insert_or_merge_sorted_ranges r1 = function

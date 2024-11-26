@@ -384,16 +384,25 @@ let interpret_to_previous st ~check_mode =
     | Some { start } ->
       match Document.find_sentence_before st.document start with
       | None -> 
-        Vernacstate.unfreeze_full_state st.init_vs; 
-        { st with observe_id=Top }, []
-      | Some { id } -> interpret_to st id ~check_mode
+        Vernacstate.unfreeze_full_state st.init_vs;
+        let range = Range.top () in
+        { st with observe_id=Top }, [mk_move_cursor_event range]
+      | Some { id } -> 
+        let st, events = interpret_to st id ~check_mode in
+        let range = Document.range_of_id st.document id in
+        let mv_cursor = mk_move_cursor_event range in
+        st, [mv_cursor] @ events
 
 let interpret_to_next st ~check_mode =
   match st.observe_id with
   | Top ->
     begin match Document.get_first_sentence st.document with
     | None -> st, [] (*The document is empty*)
-    | Some { id } -> interpret_to st id ~check_mode
+    | Some { id } -> 
+      let st, events = interpret_to st id ~check_mode in
+      let range = Document.range_of_id st.document id in
+      let mv_cursor = mk_move_cursor_event range in
+      st, [mv_cursor] @ events
     end
   | Id id ->
     match Document.get_sentence st.document id with
@@ -401,7 +410,11 @@ let interpret_to_next st ~check_mode =
     | Some { stop } ->
       match Document.find_sentence_after st.document (stop+1) with
       | None -> st, []
-      | Some { id } -> interpret_to st id ~check_mode
+      | Some { id } -> 
+        let st, events = interpret_to st id ~check_mode in
+        let range = Document.range_of_id st.document id in
+        let mv_cursor = mk_move_cursor_event range in
+        st, [mv_cursor] @ events
 
 let interpret_to_end st ~check_mode =
   match Document.get_last_sentence st.document with
