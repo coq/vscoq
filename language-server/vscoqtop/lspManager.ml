@@ -631,10 +631,6 @@ let pr_lsp_event = function
   | Send jsonrpc ->
     Pp.str "Send"
 
-let output_notification = function
-| QueryResultNotification params ->
-  output_notification @@ SearchResult params
-
 let handle_event = function
   | LspManagerEvent e -> handle_lsp_event e
   | DocumentManagerEvent (uri, e) ->
@@ -652,12 +648,13 @@ let handle_event = function
           replace_state (DocumentUri.to_path uri) st visible;
           if handled_event.update_view then update_view uri st
       end;
+      Option.iter output_notification handled_event.notification;
       inject_dm_events (uri, events)
     end
   | Notification notification ->
     begin match notification with 
-    | QueryResultNotification _ -> 
-      output_notification notification; [inject_notification Dm.SearchQuery.query_feedback]
+    | QueryResultNotification params ->
+      output_notification @@ SearchResult params; [inject_notification Dm.SearchQuery.query_feedback]
     end
   | LogEvent e ->
     send_coq_debug e; [inject_debug_event Dm.Log.debug]
