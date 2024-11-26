@@ -63,9 +63,6 @@ type event =
  | DocumentManagerEvent of DocumentUri.t * Dm.DocumentManager.event
  | Notification of notification
  | LogEvent of Dm.Log.event
- | SendProofView of DocumentUri.t * Position.t option
- | SendMoveCursor of DocumentUri.t * Range.t
- | SendBlockOnError of DocumentUri.t * Range.t
 
 type events = event Sel.Event.t list
 
@@ -390,24 +387,6 @@ let progress_hook uri () =
   | None -> log @@ "ignoring non existent document"
   | Some { st } -> update_view uri st
 
-let mk_proof_view_event uri position = 
-  Sel.now ~priority:Dm.PriorityManager.proof_view (SendProofView (uri, position))
-
-let mk_move_cursor_event uri range = 
-  let priority = Dm.PriorityManager.move_cursor in
-  Sel.now ~priority @@ SendMoveCursor (uri, range)
-
-let mk_block_on_error_event_no_move uri error_range =
-  let priority = Dm.PriorityManager.move_cursor in
-  let event = Sel.now ~priority @@ SendBlockOnError (uri, error_range) in
-  [event] @ [mk_proof_view_event uri (Some error_range.end_)]
-
-let mk_block_on_error_event uri last_range error_range =
-  let priority = Dm.PriorityManager.move_cursor in
-  let event = Sel.now ~priority @@ SendBlockOnError (uri, error_range) in
-  [event] @ [mk_move_cursor_event uri last_range] @ [mk_proof_view_event uri (Some error_range.end_)]
-
-
 let coqtopInterpretToPoint params =
   let Notification.Client.InterpretToPointParams.{ textDocument; position } = params in
   let uri = textDocument.uri in
@@ -428,21 +407,13 @@ let coqtopStepBackward params =
   | Some { st; visible } ->
       let (st, events) = Dm.DocumentManager.interpret_to_previous st ~check_mode:!check_mode in
       replace_state (DocumentUri.to_path uri) st visible;
-      inject_dm_events (uri,events) @ [ mk_proof_view_event uri None ]
+      inject_dm_events (uri,events)
 
 let coqtopStepForward params =
   let Notification.Client.StepForwardParams.{ textDocument = { uri }; position } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log "[stepForward] ignoring event on non existent document"; []
   | Some { st; visible } ->
-    if !check_mode = Settings.Mode.Continuous then
-      match position with
-      | None -> []
-      | Some pos -> 
-        match Dm.DocumentManager.get_next_range st pos with
-        | None -> []
-        | Some range -> [mk_move_cursor_event uri range]
-    else
       let (st, events) = Dm.DocumentManager.interpret_to_next st ~check_mode:!check_mode in
       replace_state (DocumentUri.to_path uri) st visible;
       update_view uri st;
@@ -690,15 +661,6 @@ let handle_event = function
     end
   | LogEvent e ->
     send_coq_debug e; [inject_debug_event Dm.Log.debug]
-  | SendProofView (uri, position) -> 
-    begin match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-    | None -> log @@ "ignoring event on non existent document"; []
-    | Some { st } -> []
-    end
-  | SendMoveCursor (uri, range) -> 
-    send_move_cursor uri range; []
-  | SendBlockOnError (uri, range) ->
-    send_block_on_error uri range; []
 
 let pr_event = function
   | LspManagerEvent e -> pr_lsp_event e
@@ -706,9 +668,6 @@ let pr_event = function
     Pp.str @@ Format.asprintf "%a" Dm.DocumentManager.pp_event e
   | Notification _ -> Pp.str"notif"
   | LogEvent _ -> Pp.str"debug"
-  | SendProofView _ -> Pp.str"proofview"
-  | SendMoveCursor _ -> Pp.str"move cursor"
-  | SendBlockOnError _ -> Pp.str"block on error"
 
 let init () =
   init_state := Some (Vernacstate.freeze_full_state ());
