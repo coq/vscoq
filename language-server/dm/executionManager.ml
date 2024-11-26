@@ -410,6 +410,20 @@ let update_overview task state document =
   | [] -> state
   | next :: _ -> update_processing next state document
 
+
+let build_prepared_overview state document =
+  List.fold_right (fun task st -> update_prepared task document st) state.todo state
+
+let build_processed_overview state document =
+  let sentence_ids = SM.bindings state.of_sentence in
+  let sentence_ids = List.map (fun x -> fst x) sentence_ids in
+  List.fold_right (fun id st -> update_processed id st document) sentence_ids state
+
+let reset_overview st document =
+  let overview = {processed=[]; prepared=[]; processing=[]} in
+  let st = build_processed_overview {st with overview} document in
+  build_prepared_overview st document
+
 let prepare_overview st prepared =
   let overview = {st.overview with prepared} in
   {st with overview}
@@ -832,8 +846,6 @@ let invalidate1 of_sentence id =
 
 let rec invalidate document schedule id st =
   log @@ "Invalidating: " ^ Stateid.to_string id;
-  let st = invalidate_processed id st document in
-  let st = invalidate_prepared_or_processing_sentence id st document in
   let of_sentence = invalidate1 st.of_sentence id in
   let old_jobs = Queue.copy jobs in
   let removed = ref [] in
@@ -847,16 +859,9 @@ let rec invalidate document schedule id st =
     end) old_jobs;
   let of_sentence = List.fold_left invalidate1 of_sentence
     List.(concat (map (fun tasks -> map id_of_prepared_task tasks) !removed)) in
-  let rec invalidate_prepared_or_processing_tasks tasks st =
-    begin match tasks with
-    | [] -> st
-    | task :: l -> invalidate_prepared_or_processing_tasks l (invalidate_prepared_or_processing task st document)
-    end
-  in
-  let st = invalidate_prepared_or_processing_tasks (List.concat !removed) st in
   if of_sentence == st.of_sentence then st else
   let deps = Scheduler.dependents schedule id in
-  Stateid.Set.fold (invalidate document schedule) deps { st with of_sentence }
+  Stateid.Set.fold (invalidate document schedule) deps { st with of_sentence}
 
 let context_of_state st =
     Vernacstate.Interp.unfreeze_interp_state st;

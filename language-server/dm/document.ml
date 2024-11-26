@@ -104,6 +104,7 @@ type parse_state = {
   parsed: pre_sentence list;
   errors: parsing_error list;
   parsed_comments: comment list;
+  previous_document: document;
 }
 
 type event = 
@@ -588,17 +589,17 @@ let validate_document ({ parsed_loc; raw_doc; cancel_handle } as document) =
   while Stream.count stream < stop do Stream.junk () stream done;
   log @@ Format.sprintf "Parsing more from pos %i" stop;
   let started = Unix.gettimeofday () in
-  let parsed_state = {stop; top_id;synterp_state; stream; raw=raw_doc; parsed=[]; errors=[]; parsed_comments=[]; loc=None; started} in
+  let parsed_state = {stop; top_id;synterp_state; stream; raw=raw_doc; parsed=[]; errors=[]; parsed_comments=[]; loc=None; started; previous_document=document} in
   let priority = Some PriorityManager.parsing in
   let event = Sel.now ?priority (ParseEvent parsed_state) in
   let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
   {document with cancel_handle}, [Sel.now ?priority (ParseEvent parsed_state)]
 
-let handle_invalidate {parsed; errors; parsed_comments; stop; top_id; started} document =
+let handle_invalidate {parsed; errors; parsed_comments; stop; top_id; started; previous_document} document =
   let end_ = Unix.gettimeofday ()in
   let time = end_ -. started in
   (* log @@ Format.sprintf "Parsing phase ended in %5.3f" time; *)
-  Format.eprintf "Parsing phase ended in %5.3f\n%!" time;
+  log @@ Format.sprintf "Parsing phase ended in %5.3f\n%!" time;
   let new_sentences = List.rev parsed in
   let new_comments = List.rev parsed_comments in
   let new_errors = errors in
@@ -614,7 +615,7 @@ let handle_invalidate {parsed; errors; parsed_comments; stop; top_id; started} d
     List.fold_left (fun acc (comment : comment) -> LM.add comment.stop comment acc) comments new_comments
   in
   let parsed_loc = pos_at_end document in
-  Some (unchanged_id, invalid_ids, { document with parsed_loc; parsing_errors_by_end; comments_by_end})
+  Some (unchanged_id, invalid_ids, previous_document, { document with parsed_loc; parsing_errors_by_end; comments_by_end})
 
 let handle_event document = function
 | ParseEvent state -> 
@@ -625,7 +626,8 @@ let handle_event document = function
 
 let create_document init_synterp_state text =
   let raw_doc = RawDocument.create text in
-    { parsed_loc = -1;
+    { 
+      parsed_loc = -1;
       raw_doc;
       sentences_by_id = SM.empty;
       sentences_by_end = LM.empty;

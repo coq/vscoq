@@ -433,18 +433,19 @@ let is_above st id1 id2 =
   let range2 = Document.range_of_id st id2 in
   Position.compare range1.start range2.start < 0
 
-let validate_document state unchanged_id invalid_roots new_document =
+let validate_document state unchanged_id invalid_roots prev_document =
   (* BUG use state.document when parsing begun *)
   let observe_id = match unchanged_id, state.observe_id with
     | None, Id _ -> Top
     | _, Top -> Top
-    | Some id, Id id' -> if is_above state.document id id' then (Id id) else state.observe_id
+    | Some id, Id id' -> if is_above prev_document id id' then (Id id) else state.observe_id
   in
   let execution_state =
     List.fold_left (fun st id ->
-      ExecutionManager.invalidate state.document (Document.schedule state.document) id st
+      ExecutionManager.invalidate prev_document (Document.schedule prev_document) id st
       ) state.execution_state (Stateid.Set.elements invalid_roots) in
-  { state with document = new_document; execution_state; observe_id }
+  let execution_state = ExecutionManager.reset_overview execution_state prev_document in
+  { state with  execution_state; observe_id }
 
 [%%if coq = "8.18" || coq = "8.19"]
 let start_library top opts = Coqinit.start_library ~top opts
@@ -490,7 +491,6 @@ let apply_text_edits state edits =
   let apply_edit_and_shift_diagnostics_locs_and_overview state (range, new_text as edit) =
     let document = Document.apply_text_edit state.document edit in
     let exec_st = state.execution_state in
-    log @@ Format.sprintf "APPLYING TEXT EDIT %s [%s]" (Range.to_string range) new_text;
     let edit_start = RawDocument.loc_of_position (Document.raw_document state.document) range.Range.start in
     let edit_stop = RawDocument.loc_of_position (Document.raw_document state.document) range.Range.end_ in
     let edit_length = edit_stop - edit_start in
@@ -586,8 +586,9 @@ let handle_event ev st ~block ~background diff_mode =
       let state = Some {st with document} in
       let events = inject_doc_events events in
       {state; events; update_view; notification=None}
-    | Some (unchanged_id, invalid_roots, document) ->
-      let st = validate_document st unchanged_id invalid_roots document in
+    | Some (unchanged_id, invalid_roots, prev_document, document) ->
+      let st = {st with document} in
+      let st = validate_document st unchanged_id invalid_roots prev_document in
       let update_view = true in
       if background then
         let (st, events) = interpret_in_background st ~should_block_on_error:block in

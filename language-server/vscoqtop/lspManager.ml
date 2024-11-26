@@ -567,7 +567,7 @@ let dispatch_std_notification =
       let message = "Error while opening document. " ^ Pp.string_of_ppcmds @@ CErrors.iprint_no_report info in
       send_error_notification message; []
     end
-  | TextDocumentDidChange params -> Printf.eprintf "RECEIVED DID CHANGE\n"; log "Received notification: textDocument/didChange";
+  | TextDocumentDidChange params -> log "Received notification: textDocument/didChange";
     textDocumentDidChange params
   | TextDocumentDidClose params ->  log "Received notification: textDocument/didClose";
     textDocumentDidClose params
