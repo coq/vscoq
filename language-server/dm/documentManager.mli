@@ -117,7 +117,7 @@ val get_proof : state -> Settings.Goals.Diff.Mode.t -> sentence_id option -> Pro
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 
-val handle_event : event -> state -> bool -> bool -> Settings.Goals.Diff.Mode.t -> handled_event
+val handle_event : event -> state -> block:bool -> background:bool -> Settings.Goals.Diff.Mode.t -> handled_event
 (** handles events and returns a new state if it was updated. On top of the next events, it also returns info
     on whether execution has halted due to an error and returns a boolean flag stating whether the view
     should be updated *)
@@ -145,12 +145,9 @@ module Internal : sig
   val execution_state : state -> ExecutionManager.state
   val string_of_state : state -> string
   val observe_id : state -> sentence_id option
+  val inject_doc_events : Document.event Sel.Event.t list -> event Sel.Event.t list
 
-  (* val validate_document : state -> state
-  (** [validate_document doc] reparses the text of [doc] and invalidates the
-      states impacted by the diff with the previously validated content. If the
-      text of [doc] has not changed since the last call to [validate_document], it
-      has no effect. *) *)
+  val validate_document : state -> sentence_id option * sentence_id_set * Document.document -> state
 
 
 end

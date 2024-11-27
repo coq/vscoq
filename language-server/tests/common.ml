@@ -37,7 +37,7 @@ let injections =
 let init_state = Vernacstate.freeze_full_state ()
 
 let openDoc uri ~text =
-  DocumentManager.init init_state ~opts:injections uri ~text (Some DocumentManager.Top)
+  DocumentManager.init init_state ~opts:injections uri ~text
 
 let run r =
   [%test_pred: (_,string) Result.t ] (function Error _ -> false | _ -> true) r;
@@ -72,7 +72,7 @@ let rec parse : type a. int -> int -> Document.sentence list -> Document.parsing
     | O, _, (_ :: _ as l) -> Error ("more errors than expected, extra " ^ Int.to_string (List.length l))
     | P _, [], errors ->
       let errors = String.concat ~sep:"\n" @@ List.map ~f:(fun err -> snd err.Document.msg) errors in
-      Error ("fewer sentences than expected, only " ^ Int.to_string m ^ " list of errors:\n" ^ errors)
+      Error ("fewer sentences than expected, only " ^ Int.to_string m ^ "  + errors:\n" ^ errors)
     | E _, _, [] -> Error ("fewer errors than expected, only " ^ Int.to_string n)
 
 let d_sentences doc spec =
@@ -133,28 +133,48 @@ let task st id spec =
   init, run (task t spec)
 
 
-let rec handle_events n (events : DocumentManager.event Sel.Todo.t) st =
-  if n <= 0 then (Stdlib.Format.eprintf "handle_events run out of steps:\nTodo = %a\n" (Sel.Todo.pp DocumentManager.pp_event) events; Stdlib.exit 1)
-  else if Sel.Todo.is_empty events then st
+let rec handle_dm_events n (events : DocumentManager.event Sel.Todo.t) st =
+  if n <= 0 then (Stdlib.Format.eprintf "handle_dm_events run out of steps:\nTodo = %a\n" (Sel.Todo.pp DocumentManager.pp_event) events; Stdlib.exit 1)
+  else if Sel.Todo.is_empty events then st, events
     
   else begin
     (*Stdlib.Format.eprintf "waiting %a\n%!" Sel.(pp_todo DocumentManager.pp_event) events;*)
     Stdlib.flush_all ();
     let (ready, remaining) = Sel.pop_timeout ~stop_after_being_idle_for:0.1 events in
     match ready with
-    | None -> 
-      st
+    | None -> st, events
     | Some ev ->
+      (* Stdlib.Format.eprintf "handle_dm_events: handling %a\n"  DocumentManager.pp_event ev; *)
       let st, new_events =
-        match DocumentManager.handle_event ev st false with
-        | None, events', _ -> st, events'
-        | Some st, events', _ -> st, events'
+        match DocumentManager.handle_event ev st ~block:false ~background:false Protocol.Settings.Goals.Diff.Mode.Off with
+        | { DocumentManager.state = None; events = events' } -> st, events'
+        | { DocumentManager.state = Some st; events = events' } -> st, events'
       in
       let todo = Sel.Todo.add remaining new_events in
-      handle_events (n-1) todo st
+      handle_dm_events (n-1) todo st
   end
-let handle_events e st = handle_events 100 e st
-  
+ 
+
+let rec handle_d_events n (events : Document.event Sel.Todo.t) (st : Document.document) : sentence_id option * sentence_id_set * Document.document =
+  if n <= 0 then (Stdlib.Format.eprintf "handle_d_events run out of steps:\nTodo = %a\n" (Sel.Todo.pp Document.pp_event) events; Stdlib.exit 1)
+  else if Sel.Todo.is_empty events then assert false
+  else begin
+    (*Stdlib.Format.eprintf "waiting %a\n%!" Sel.(pp_todo DocumentManager.pp_event) events;*)
+    Stdlib.flush_all ();
+    let (ready, remaining) = Sel.pop_timeout ~stop_after_being_idle_for:0.1 events in
+    match ready with
+    | None -> assert false
+    | Some ev ->
+        match Document.handle_event st ev with
+        | st, new_events, None ->
+            let todo = Sel.Todo.add remaining new_events in
+            handle_d_events (n-1) todo st
+        | _, events, Some update-> assert(Sel.Todo.is_empty (Sel.Todo.add remaining events)); update
+            
+  end
+let handle_d_events e st = handle_d_events 100 e st
+
+
 type diag_spec =
   | D of sentence_id * Lsp.Types.DiagnosticSeverity.t * string
 
@@ -197,3 +217,20 @@ let check_diag st specl =
 let test_uri = Lsp.Types.DocumentUri.of_path "foo.v"
 
 let init_test_doc ~text = openDoc test_uri ~text
+let whole_init_and_parse_test_doc ~text =
+  let dm, _ = openDoc test_uri ~text in
+  let doc = DocumentManager.Internal.document dm in
+  let doc, events = Document.validate_document doc in
+  let todo = Sel.Todo.(add empty events) in
+  let update = handle_d_events todo doc in
+  DocumentManager.Internal.validate_document dm update, update
+
+let init_and_parse_test_doc ~text = snd @@ whole_init_and_parse_test_doc ~text
+let dm_init_and_parse_test_doc ~text = fst @@ whole_init_and_parse_test_doc ~text
+
+let em_init_test_doc ~text =
+  let dm, init_events = openDoc test_uri ~text in
+  handle_dm_events 100 Sel.Todo.(add empty init_events) dm
+
+let handle_dm_events e st = fst @@ handle_dm_events 100 e st
+  

@@ -433,7 +433,8 @@ let is_above st id1 id2 =
   let range2 = Document.range_of_id st id2 in
   Position.compare range1.start range2.start < 0
 
-let validate_document state unchanged_id invalid_roots document=
+let validate_document state unchanged_id invalid_roots new_document =
+  (* BUG use state.document when parsing begun *)
   let observe_id = match unchanged_id, state.observe_id with
     | None, Id _ -> Top
     | _, Top -> Top
@@ -443,7 +444,7 @@ let validate_document state unchanged_id invalid_roots document=
     List.fold_left (fun st id ->
       ExecutionManager.invalidate state.document (Document.schedule state.document) id st
       ) state.execution_state (Stateid.Set.elements invalid_roots) in
-  { state with document; execution_state; observe_id }
+  { state with document = new_document; execution_state; observe_id }
 
 [%%if coq = "8.18" || coq = "8.19"]
 let start_library top opts = Coqinit.start_library ~top opts
@@ -561,7 +562,7 @@ let handle_execution_manager_event st ev =
   let update_view = true in
   {state=st; events=(inject_em_events events); update_view; notification=None}
 
-let handle_event ev st block background diff_mode =
+let handle_event ev st ~block ~background diff_mode =
   match ev with
   | Execute { id; vst_for_next_todo; started; task } ->
     execute st id vst_for_next_todo started task background block
@@ -797,8 +798,7 @@ module Internal = struct
     | Top -> None
     | (Id id) -> Some id
 
-  let validate_document st =
-    validate_document st
+  let validate_document st (a,b,c) = validate_document st a b c
 
   let string_of_state st =
     let code_lines_by_id = Document.code_lines_sorted_by_loc st.document in
@@ -818,5 +818,6 @@ module Internal = struct
     let string_by_id = String.concat "\n" @@ List.map string_of_item code_lines_by_id in
     let string_by_end = String.concat "\n" @@ List.map string_of_item code_lines_by_end in
     String.concat "\n" ["Document using sentences_by_id map\n"; string_by_id; "\nDocument using sentences_by_end map\n"; string_by_end]
+    let inject_doc_events = inject_doc_events
 
 end

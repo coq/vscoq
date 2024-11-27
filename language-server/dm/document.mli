@@ -38,6 +38,7 @@ type outline_element = {
 type outline = outline_element list
 
 type event
+val pp_event : Format.formatter -> event -> unit
 
 type events = event Sel.Event.t list
 

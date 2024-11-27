@@ -109,6 +109,9 @@ type parse_state = {
 type event = 
 | ParseEvent of parse_state
 | Invalidate of parse_state
+let pp_event fmt = function
+ | ParseEvent _ -> Format.fprintf fmt "ParseEvent _"
+ | Invalidate _ -> Format.fprintf fmt "Invalidate _"
 
 type events = event Sel.Event.t list
 
