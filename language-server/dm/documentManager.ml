@@ -512,10 +512,13 @@ let execution_finished st id started =
   {state; events=[]; update_view; notification=None}
 
 let execute st id vst_for_next_todo started task background block =
+  let time = Unix.gettimeofday () -. started in
   match Document.get_sentence st.document id with
-  | None -> 
+  | None ->
+    log (Printf.sprintf "ExecuteToLoc %d stops after %2.3f, sentences invalidated" (Stateid.to_int id) time);
     {state=Some st; events=[]; update_view=true; notification=None} (* Sentences have been invalidate, probably because the user edited while executing *)
   | Some _ ->
+    log (Printf.sprintf "ExecuteToLoc %d continues after %2.3f" (Stateid.to_int id) time);
     let (next, execution_state,vst_for_next_todo,events, exec_error) =
       ExecutionManager.execute st.execution_state st.document (vst_for_next_todo, [], false) task block in
     let st, block_events =

@@ -844,9 +844,17 @@ let invalidate1 of_sentence id =
     | _ -> SM.remove id of_sentence
   with Not_found -> of_sentence
 
+let cancel1 todo invalid_id =
+  let task_of_id = function
+    | PSkip { id } | PExec { id } | PQuery { id } -> Stateid.equal id invalid_id
+    | PDelegate _ -> false
+  in
+  List.filter task_of_id todo
+
 let rec invalidate document schedule id st =
   log @@ "Invalidating: " ^ Stateid.to_string id;
   let of_sentence = invalidate1 st.of_sentence id in
+  let todo = cancel1 st.todo id in
   let old_jobs = Queue.copy jobs in
   let removed = ref [] in
   Queue.clear jobs;
@@ -861,7 +869,7 @@ let rec invalidate document schedule id st =
     List.(concat (map (fun tasks -> map id_of_prepared_task tasks) !removed)) in
   if of_sentence == st.of_sentence then st else
   let deps = Scheduler.dependents schedule id in
-  Stateid.Set.fold (invalidate document schedule) deps { st with of_sentence}
+  Stateid.Set.fold (invalidate document schedule) deps { st with of_sentence; todo }
 
 let context_of_state st =
     Vernacstate.Interp.unfreeze_interp_state st;
