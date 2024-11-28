@@ -433,8 +433,8 @@ let is_above st id1 id2 =
   let range2 = Document.range_of_id st id2 in
   Position.compare range1.start range2.start < 0
 
-let validate_document state unchanged_id invalid_roots prev_document =
-  (* BUG use state.document when parsing begun *)
+let validate_document state unchanged_id invalid_roots prev_document new_document =
+  let state = {state with document=new_document} in
   let observe_id = match unchanged_id, state.observe_id with
     | None, Id _ -> Top
     | _, Top -> Top
@@ -589,9 +589,8 @@ let handle_event ev st ~block ~background diff_mode =
       let state = Some {st with document} in
       let events = inject_doc_events events in
       {state; events; update_view; notification=None}
-    | Some (unchanged_id, invalid_roots, prev_document, document) ->
-      let st = {st with document} in
-      let st = validate_document st unchanged_id invalid_roots prev_document in
+    | Some (unchanged_id, invalid_roots, prev_document, new_document) ->
+      let st = validate_document st unchanged_id invalid_roots prev_document new_document in
       let update_view = true in
       if background then
         let (st, events) = interpret_in_background st ~should_block_on_error:block in
@@ -802,7 +801,7 @@ module Internal = struct
     | Top -> None
     | (Id id) -> Some id
 
-  let validate_document st (a,b,c) = validate_document st a b c
+  let validate_document st (a,b,c,d) = validate_document st a b c d
 
   let string_of_state st =
     let code_lines_by_id = Document.code_lines_sorted_by_loc st.document in

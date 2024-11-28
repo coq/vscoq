@@ -155,7 +155,7 @@ let rec handle_dm_events n (events : DocumentManager.event Sel.Todo.t) st =
   end
  
 
-let rec handle_d_events n (events : Document.event Sel.Todo.t) (st : Document.document) : sentence_id option * sentence_id_set * Document.document =
+let rec handle_d_events n (events : Document.event Sel.Todo.t) (st : Document.document) :  sentence_id option * sentence_id_set * Document.document * Document.document =
   if n <= 0 then (Stdlib.Format.eprintf "handle_d_events run out of steps:\nTodo = %a\n" (Sel.Todo.pp Document.pp_event) events; Stdlib.exit 1)
   else if Sel.Todo.is_empty events then assert false
   else begin
@@ -227,6 +227,7 @@ let whole_init_and_parse_test_doc ~text =
 
 let init_and_parse_test_doc ~text = snd @@ whole_init_and_parse_test_doc ~text
 let dm_init_and_parse_test_doc ~text = fst @@ whole_init_and_parse_test_doc ~text
+
 
 let em_init_test_doc ~text =
   let dm, init_events = openDoc test_uri ~text in
