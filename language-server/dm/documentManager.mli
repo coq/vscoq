@@ -48,15 +48,13 @@ type handled_event = {
 
 val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> state * events
 (** [init st opts uri text] initializes the document manager with initial vernac state
-    [st] on which command line opts will be set. [background] indicates if the document should
-    be executed in the background once it is parsed. *)
+    [st] on which command line opts will be set. *)
 
 val apply_text_edits : state -> text_edit list -> state * events
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. 
     A ParseEvent is triggered, once processed: the new
     document is parsed, outdated executions states are invalidated, and the observe
-    id is updated. Finally if [background] is set to true, an execution is launched in
-    the background *)
+    id is updated. *)
 
 val reset_to_top : state -> state
 (** [reset_to_top state] updates the state to make the observe_id Top *)
@@ -95,8 +93,9 @@ val reset : state -> state * events
 (** resets Coq *)
 
 val executed_ranges : state -> Settings.Mode.t -> exec_overview
-(** returns the ranges corresponding to the sentences
-    that have been executed and remotely executes *)
+(** [executes_ranges doc mode] returns the ranges corresponding to the sentences
+    that have been executed. [mode] allows to send a "cut" range that only goes
+    until the observe_id in the case of manual mode *)
 
 val observe_id_range : state -> Range.t option
 (** returns the range of the sentence referenced by observe_id **)

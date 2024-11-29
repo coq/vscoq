@@ -11,7 +11,6 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
-open Lsp.Types
 open Protocol.LspWrapper
 
 type sentence_id = Stateid.t

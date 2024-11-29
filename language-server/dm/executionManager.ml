@@ -304,54 +304,12 @@ let update_processed id state document =
     log @@ "Trying to get overview with non-existing state id " ^ Stateid.to_string id;
     state
 
-let invalidate_processed id state document =
-  match SM.find id state.of_sentence with
-  | (s, _) ->
-    begin match s with
-    | Done _ ->
-      let range = Document.range_of_id_with_blank_space document id in
-      let {processed} = state.overview in
-      let processed = RangeList.remove_or_truncate_range range processed in
-      let overview = {state.overview with processed} in
-      {state with overview}
-    | _ -> assert false (* delegated sentences born as such, cannot become it later *)
-    end
-  | exception Not_found ->
-    log @@ "Trying to get overview with non-existing state id " ^ Stateid.to_string id;
-    state
-
 let id_of_first_task ~default = function
   | [] -> default
   | { id } :: _ -> id
 
 let id_of_last_task ~default l =
   id_of_first_task ~default (List.rev l)
-
-let invalidate_prepared_or_processing_sentence id state document =
-  let {prepared; processing} = state.overview in
-  let range = Document.range_of_id_with_blank_space document id in
-  let prepared = RangeList.remove_or_truncate_range range prepared in
-  let processing = RangeList.remove_or_truncate_range range processing in
-  let overview = {state.overview with prepared; processing} in
-  {state with overview}
-
-let invalidate_prepared_or_processing_delegate { opener_id; terminator_id; tasks } state document =
-  let {prepared; processing} = state.overview in
-  let proof_opener_id = id_of_first_task ~default:opener_id tasks in
-  let proof_closer_id = id_of_last_task ~default:terminator_id tasks in
-  let proof_begin_range = Document.range_of_id_with_blank_space document proof_opener_id in
-  let proof_end_range = Document.range_of_id_with_blank_space document proof_closer_id in
-  let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
-  (* When a job is delegated we shouldn't merge ranges (to get the proper progress report) *)
-  let prepared = RangeList.remove_or_truncate_range range prepared in
-  let processing = RangeList.remove_or_truncate_range range processing in
-  let overview = {state.overview with prepared; processing} in
-  {state with overview}
-
-let invalidate_prepared_or_processing task state document =
-  match task with
-  | PDelegate task -> invalidate_prepared_or_processing_delegate task state document
-  | PSkip { id } | PExec { id } | PQuery { id } -> invalidate_prepared_or_processing_sentence id state document
 
 let update_processing task state document =
   let {processing; prepared} = state.overview in
