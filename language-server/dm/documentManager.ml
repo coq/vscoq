@@ -268,8 +268,8 @@ let get_info_messages st pos =
     let feedback = feedback |> List.filter info in
     List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback
 
-let create_execution_event background event =
-  let priority = if background then None else Some PriorityManager.execution in
+let create_execution_event event =
+  let priority = Some PriorityManager.execution in
   Sel.now ?priority event
 
 let state_before_error state error_id =
@@ -288,7 +288,7 @@ let state_before_error state error_id =
       let observe_id = (Id id) in
       {state with observe_id}, Some last_range
 
-let observe ~background state id ~should_block_on_error : (state * event Sel.Event.t list) =
+let observe state id ~should_block_on_error : (state * event Sel.Event.t list) =
   match Document.get_sentence state.document id with
   | None -> state, [] (* TODO error? *)
   | Some { id } ->
@@ -296,7 +296,7 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
     let vst_for_next_todo, execution_state, task, error_id = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id should_block_on_error in
     match task with
     | Some task -> (* task will only be Some if there is no error *)
-        let event = create_execution_event background (Execute {id; vst_for_next_todo; task; started = Unix.gettimeofday ()}) in
+        let event = create_execution_event (Execute {id; vst_for_next_todo; task; started = Unix.gettimeofday ()}) in
         let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
         {state with execution_state; cancel_handle}, [event]
     | None ->
@@ -323,7 +323,7 @@ let get_document_symbols st =
   in
   List.map to_document_symbol outline
 
-let interpret_to st id ~check_mode =
+let interpret_to st id check_mode =
   let observe_id = (Id id) in
   let st = { st with observe_id} in
   match check_mode with
@@ -336,22 +336,22 @@ let interpret_to st id ~check_mode =
     | true -> st, [mk_proof_view_event id]
     | false -> st, []
 
-let interpret_to_next_position st pos ~check_mode =
+let interpret_to_next_position st pos check_mode =
   match id_of_sentence_after_pos st pos with
   | None -> (st, []) (* document is empty *)
   | Some id ->
-    let st, events = interpret_to st id ~check_mode in
+    let st, events = interpret_to st id check_mode in
     (st, events)
 
-let interpret_to_position st pos ~check_mode ~point_interp_mode =
+let interpret_to_position st pos check_mode point_interp_mode =
   match point_interp_mode with
   | Settings.PointInterpretationMode.Cursor ->
     begin match id_of_pos st pos with
     | None -> (st, []) (* document is empty *)
-    | Some id -> interpret_to st id ~check_mode
+    | Some id -> interpret_to st id check_mode
     end
   | Settings.PointInterpretationMode.NextCommand ->
-    interpret_to_next_position st pos ~check_mode
+    interpret_to_next_position st pos check_mode
 
 let get_next_range st pos =
   match id_of_pos st pos with
@@ -375,7 +375,7 @@ let get_previous_range st pos =
       | None -> Some (Document.range_of_id st.document id)
       | Some { id } -> Some (Document.range_of_id st.document id)
 
-let interpret_to_previous st ~check_mode =
+let interpret_to_previous st check_mode =
   match st.observe_id with
   | Top -> (st, [])
   | (Id id) ->
@@ -388,18 +388,18 @@ let interpret_to_previous st ~check_mode =
         let range = Range.top () in
         { st with observe_id=Top }, [mk_move_cursor_event range]
       | Some { id } -> 
-        let st, events = interpret_to st id ~check_mode in
+        let st, events = interpret_to st id check_mode in
         let range = Document.range_of_id st.document id in
         let mv_cursor = mk_move_cursor_event range in
         st, [mv_cursor] @ events
 
-let interpret_to_next st ~check_mode =
+let interpret_to_next st check_mode =
   match st.observe_id with
   | Top ->
     begin match Document.get_first_sentence st.document with
     | None -> st, [] (*The document is empty*)
     | Some { id } -> 
-      let st, events = interpret_to st id ~check_mode in
+      let st, events = interpret_to st id check_mode in
       let range = Document.range_of_id st.document id in
       let mv_cursor = mk_move_cursor_event range in
       st, [mv_cursor] @ events
@@ -411,22 +411,17 @@ let interpret_to_next st ~check_mode =
       match Document.find_sentence_after st.document (stop+1) with
       | None -> st, []
       | Some { id } -> 
-        let st, events = interpret_to st id ~check_mode in
+        let st, events = interpret_to st id check_mode in
         let range = Document.range_of_id st.document id in
         let mv_cursor = mk_move_cursor_event range in
         st, [mv_cursor] @ events
 
-let interpret_to_end st ~check_mode =
+let interpret_to_end st check_mode =
   match Document.get_last_sentence st.document with
   | None -> (st, [])
   | Some {id} -> 
     log ("interpret_to_end id = " ^ Stateid.to_string id);
-    interpret_to st id ~check_mode
-
-let interpret_in_background st ~should_block_on_error =
-  match Document.get_last_sentence st.document with
-  | None -> (st, [])
-  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); observe ~background:true st id ~should_block_on_error
+    interpret_to st id check_mode
 
 let is_above st id1 id2 =
   let range1 = Document.range_of_id st id1 in
@@ -511,7 +506,7 @@ let execution_finished st id started =
   let state = Some st in
   {state; events=[]; update_view; notification=None}
 
-let execute st id vst_for_next_todo started task background block =
+let execute st id vst_for_next_todo started task block =
   let time = Unix.gettimeofday () -. started in
   match Document.get_sentence st.document id with
   | None ->
@@ -528,7 +523,7 @@ let execute st id vst_for_next_todo started task background block =
         let events = if block then mk_block_on_error_event last_range error_id else [] in
         st, events
       in
-    let event = Option.map (fun task -> create_execution_event background (Execute {id; vst_for_next_todo; task; started })) next in
+    let event = Option.map (fun task -> create_execution_event (Execute {id; vst_for_next_todo; task; started })) next in
     match event, block_events with
       | None, [] -> execution_finished { st with execution_state } id started (* There is no new tasks, and no errors -> execution finished *)
       | _ ->
@@ -565,15 +560,15 @@ let handle_execution_manager_event st ev =
   let update_view = true in
   {state=st; events=(inject_em_events events); update_view; notification=None}
 
-let handle_event ev st ~block ~background diff_mode =
+let handle_event ev st ~block check_mode diff_mode =
   match ev with
   | Execute { id; vst_for_next_todo; started; task } ->
-    execute st id vst_for_next_todo started task background block
+    execute st id vst_for_next_todo started task block
   | ExecutionManagerEvent ev ->
     handle_execution_manager_event st ev
   | Observe id ->
     let update_view = true in
-    let st, events = observe st id ~should_block_on_error:block ~background in
+    let st, events = observe st id ~should_block_on_error:block in
     {state=Some st; events; update_view; notification=None}
   | ParseEvent ->
     let document, events = Document.validate_document st.document in
@@ -592,8 +587,8 @@ let handle_event ev st ~block ~background diff_mode =
     | Some parsing_end_info ->
       let st = validate_document st parsing_end_info in
       let update_view = true in
-      if background then
-        let (st, events) = interpret_in_background st ~should_block_on_error:block in
+      if check_mode = Settings.Mode.Continuous then
+        let (st, events) = interpret_to_end st check_mode in
         {state=(Some st); events; update_view; notification=None}
       else
         {state=(Some st); events=[]; update_view; notification=None}
