@@ -401,7 +401,7 @@ let coqtopInterpretToPoint params =
     sel_events
  
 let coqtopStepBackward params =
-  let Notification.Client.StepBackwardParams.{ textDocument = { uri }; position } = params in
+  let Notification.Client.StepBackwardParams.{ textDocument = { uri } } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log "[stepBackward] ignoring event on non existent document"; []
   | Some { st; visible } ->
@@ -410,7 +410,7 @@ let coqtopStepBackward params =
       inject_dm_events (uri,events)
 
 let coqtopStepForward params =
-  let Notification.Client.StepForwardParams.{ textDocument = { uri }; position } = params in
+  let Notification.Client.StepForwardParams.{ textDocument = { uri } } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log "[stepForward] ignoring event on non existent document"; []
   | Some { st; visible } ->

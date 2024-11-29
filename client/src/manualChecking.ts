@@ -27,11 +27,11 @@ export const sendInterpretToEnd = (editor: TextEditor,  client: Client) => {
 
 export const sendStepForward = (editor: TextEditor,  client: Client) => {
     const textDocument = makeVersionedDocumentId(editor);
-    client.sendNotification("vscoq/stepForward", {textDocument: textDocument, position: null});
+    client.sendNotification("vscoq/stepForward", {textDocument: textDocument});
 };
 
 export const sendStepBackward = (editor: TextEditor,  client: Client) => {
     const textDocument = makeVersionedDocumentId(editor);
-    client.sendNotification("vscoq/stepBackward", {textDocument: textDocument, position: null});
+    client.sendNotification("vscoq/stepBackward", {textDocument: textDocument});
 };
 
