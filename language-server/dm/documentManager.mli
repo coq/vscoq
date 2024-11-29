@@ -146,7 +146,7 @@ module Internal : sig
   val observe_id : state -> sentence_id option
   val inject_doc_events : Document.event Sel.Event.t list -> event Sel.Event.t list
 
-  val validate_document : state -> sentence_id option * sentence_id_set * Document.document * Document.document -> state
+  val validate_document : state -> Document.parsing_end_info -> state
 
 
 end

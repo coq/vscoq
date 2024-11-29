@@ -433,18 +433,18 @@ let is_above st id1 id2 =
   let range2 = Document.range_of_id st id2 in
   Position.compare range1.start range2.start < 0
 
-let validate_document state unchanged_id invalid_roots prev_document new_document =
-  let state = {state with document=new_document} in
+let validate_document state (Document.{unchanged_id; invalid_ids; previous_document; parsed_document}) =
+  let state = {state with document=parsed_document} in
   let observe_id = match unchanged_id, state.observe_id with
     | None, Id _ -> Top
     | _, Top -> Top
-    | Some id, Id id' -> if is_above prev_document id id' then (Id id) else state.observe_id
+    | Some id, Id id' -> if is_above previous_document id id' then (Id id) else state.observe_id
   in
   let execution_state =
     List.fold_left (fun st id ->
-      ExecutionManager.invalidate prev_document (Document.schedule prev_document) id st
-      ) state.execution_state (Stateid.Set.elements invalid_roots) in
-  let execution_state = ExecutionManager.reset_overview execution_state prev_document in
+      ExecutionManager.invalidate previous_document (Document.schedule previous_document) id st
+      ) state.execution_state (Stateid.Set.elements invalid_ids) in
+  let execution_state = ExecutionManager.reset_overview execution_state previous_document in
   { state with  execution_state; observe_id }
 
 [%%if coq = "8.18" || coq = "8.19"]
@@ -582,15 +582,15 @@ let handle_event ev st ~block ~background diff_mode =
     let events = inject_doc_events events in
     {state; events; update_view; notification=None}
   | ParseMore ev ->
-    let document, events, update = Document.handle_event st.document ev in
-    begin match update with
+    let document, events, parsing_end_info = Document.handle_event st.document ev in
+    begin match parsing_end_info with
     | None ->
       let update_view = false in
       let state = Some {st with document} in
       let events = inject_doc_events events in
       {state; events; update_view; notification=None}
-    | Some (unchanged_id, invalid_roots, prev_document, new_document) ->
-      let st = validate_document st unchanged_id invalid_roots prev_document new_document in
+    | Some parsing_end_info ->
+      let st = validate_document st parsing_end_info in
       let update_view = true in
       if background then
         let (st, events) = interpret_in_background st ~should_block_on_error:block in
@@ -801,7 +801,7 @@ module Internal = struct
     | Top -> None
     | (Id id) -> Some id
 
-  let validate_document st (a,b,c,d) = validate_document st a b c d
+  let validate_document st parsing_end_info = validate_document st parsing_end_info
 
   let string_of_state st =
     let code_lines_by_id = Document.code_lines_sorted_by_loc st.document in

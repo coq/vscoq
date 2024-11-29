@@ -146,7 +146,7 @@ let rec handle_dm_events n (events : DocumentManager.event Sel.Todo.t) st =
     | Some ev ->
       (* Stdlib.Format.eprintf "handle_dm_events: handling %a\n"  DocumentManager.pp_event ev; *)
       let st, new_events =
-        match DocumentManager.handle_event ev st ~block:false ~background:false Protocol.Settings.Goals.Diff.Mode.Off with
+        match DocumentManager.handle_event ev st ~block:false Protocol.Settings.Mode.Manual Protocol.Settings.Goals.Diff.Mode.Off with
         | { DocumentManager.state = None; events = events' } -> st, events'
         | { DocumentManager.state = Some st; events = events' } -> st, events'
       in
@@ -155,7 +155,7 @@ let rec handle_dm_events n (events : DocumentManager.event Sel.Todo.t) st =
   end
  
 
-let rec handle_d_events n (events : Document.event Sel.Todo.t) (st : Document.document) :  sentence_id option * sentence_id_set * Document.document * Document.document =
+let rec handle_d_events n (events : Document.event Sel.Todo.t) (st : Document.document) : Document.parsing_end_info =
   if n <= 0 then (Stdlib.Format.eprintf "handle_d_events run out of steps:\nTodo = %a\n" (Sel.Todo.pp Document.pp_event) events; Stdlib.exit 1)
   else if Sel.Todo.is_empty events then assert false
   else begin

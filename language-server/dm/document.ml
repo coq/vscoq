@@ -107,6 +107,13 @@ type parse_state = {
   previous_document: document;
 }
 
+type parsing_end_info = {
+    unchanged_id: sentence_id option;
+    invalid_ids: sentence_id_set;
+    previous_document: document;
+    parsed_document: document;
+}
+
 type event = 
 | ParseEvent of parse_state
 | Invalidate of parse_state
@@ -615,7 +622,8 @@ let handle_invalidate {parsed; errors; parsed_comments; stop; top_id; started; p
     List.fold_left (fun acc (comment : comment) -> LM.add comment.stop comment acc) comments new_comments
   in
   let parsed_loc = pos_at_end document in
-  Some (unchanged_id, invalid_ids, previous_document, { document with parsed_loc; parsing_errors_by_end; comments_by_end})
+  let parsed_document = {document with parsed_loc; parsing_errors_by_end; comments_by_end} in
+  Some {parsed_document; unchanged_id; invalid_ids; previous_document}
 
 let handle_event document = function
 | ParseEvent state -> 
