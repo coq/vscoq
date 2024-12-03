@@ -65,23 +65,23 @@ val get_next_range : state -> Position.t -> Range.t option
 val get_previous_range : state -> Position.t -> Range.t option
 (** [get_previous_pos st pos] get the range of the previous sentence relative to pos *)
 
-val interpret_to_position : state -> Position.t -> check_mode:Settings.Mode.t -> point_interp_mode:Settings.PointInterpretationMode.t -> (state * events)
+val interpret_to_position : state -> Position.t -> Settings.Mode.t -> point_interp_mode:Settings.PointInterpretationMode.t -> (state * events)
 (** [interpret_to_position state pos check_mode point_interp_mode] navigates to the 
     last sentence ending before or at [pos] and returns the resulting state, events that need to take place, and a possible blocking error. *)
 
-val interpret_to_next_position : state -> Position.t -> check_mode:Settings.Mode.t -> (state * events)
+val interpret_to_next_position : state -> Position.t -> Settings.Mode.t -> (state * events)
 (** [interpret_to_next_position state pos check_mode] navigates
     to the first sentence after or at [pos] (excluding whitespace) and returns the resulting state, events that need to take place, a possible blocking error. *)
 
-val interpret_to_previous : state -> check_mode:Settings.Mode.t -> (state * events)
+val interpret_to_previous : state -> Settings.Mode.t -> (state * events)
 (** [interpret_to_previous doc check_mode] navigates to the previous sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_to_next : state -> check_mode:Settings.Mode.t -> (state * events)
+val interpret_to_next : state -> Settings.Mode.t -> (state * events)
 (** [interpret_to_next doc] navigates to the next sentence in [doc]
     and returns the resulting state. *)
 
-val interpret_to_end : state -> check_mode:Settings.Mode.t -> (state * events)
+val interpret_to_end : state -> Settings.Mode.t -> (state * events)
 (** [interpret_to_end doc] navigates to the last sentence in [doc]
     and returns the resulting state. *)
 
@@ -116,7 +116,7 @@ val get_proof : state -> Settings.Goals.Diff.Mode.t -> sentence_id option -> Pro
 
 val get_completions : state -> Position.t -> (completion_item list, string) Result.t
 
-val handle_event : event -> state -> block:bool -> background:bool -> Settings.Goals.Diff.Mode.t -> handled_event
+val handle_event : event -> state -> block:bool -> Settings.Mode.t -> Settings.Goals.Diff.Mode.t -> handled_event
 (** handles events and returns a new state if it was updated. On top of the next events, it also returns info
     on whether execution has halted due to an error and returns a boolean flag stating whether the view
     should be updated *)

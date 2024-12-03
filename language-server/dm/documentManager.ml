@@ -323,7 +323,7 @@ let get_document_symbols st =
   in
   List.map to_document_symbol outline
 
-let interpret_to st id ~check_mode =
+let interpret_to st id check_mode =
   let observe_id = (Id id) in
   let st = { st with observe_id} in
   match check_mode with
@@ -336,22 +336,22 @@ let interpret_to st id ~check_mode =
     | true -> st, [mk_proof_view_event id]
     | false -> st, []
 
-let interpret_to_next_position st pos ~check_mode =
+let interpret_to_next_position st pos check_mode =
   match id_of_sentence_after_pos st pos with
   | None -> (st, []) (* document is empty *)
   | Some id ->
-    let st, events = interpret_to st id ~check_mode in
+    let st, events = interpret_to st id check_mode in
     (st, events)
 
-let interpret_to_position st pos ~check_mode ~point_interp_mode =
+let interpret_to_position st pos check_mode ~point_interp_mode =
   match point_interp_mode with
   | Settings.PointInterpretationMode.Cursor ->
     begin match id_of_pos st pos with
     | None -> (st, []) (* document is empty *)
-    | Some id -> interpret_to st id ~check_mode
+    | Some id -> interpret_to st id check_mode
     end
   | Settings.PointInterpretationMode.NextCommand ->
-    interpret_to_next_position st pos ~check_mode
+    interpret_to_next_position st pos check_mode
 
 let get_next_range st pos =
   match id_of_pos st pos with
@@ -375,7 +375,7 @@ let get_previous_range st pos =
       | None -> Some (Document.range_of_id st.document id)
       | Some { id } -> Some (Document.range_of_id st.document id)
 
-let interpret_to_previous st ~check_mode =
+let interpret_to_previous st check_mode =
   match st.observe_id with
   | Top -> (st, [])
   | (Id id) ->
@@ -388,18 +388,18 @@ let interpret_to_previous st ~check_mode =
         let range = Range.top () in
         { st with observe_id=Top }, [mk_move_cursor_event range]
       | Some { id } -> 
-        let st, events = interpret_to st id ~check_mode in
+        let st, events = interpret_to st id check_mode in
         let range = Document.range_of_id st.document id in
         let mv_cursor = mk_move_cursor_event range in
         st, [mv_cursor] @ events
 
-let interpret_to_next st ~check_mode =
+let interpret_to_next st check_mode =
   match st.observe_id with
   | Top ->
     begin match Document.get_first_sentence st.document with
     | None -> st, [] (*The document is empty*)
     | Some { id } -> 
-      let st, events = interpret_to st id ~check_mode in
+      let st, events = interpret_to st id check_mode in
       let range = Document.range_of_id st.document id in
       let mv_cursor = mk_move_cursor_event range in
       st, [mv_cursor] @ events
@@ -411,17 +411,17 @@ let interpret_to_next st ~check_mode =
       match Document.find_sentence_after st.document (stop+1) with
       | None -> st, []
       | Some { id } -> 
-        let st, events = interpret_to st id ~check_mode in
+        let st, events = interpret_to st id check_mode in
         let range = Document.range_of_id st.document id in
         let mv_cursor = mk_move_cursor_event range in
         st, [mv_cursor] @ events
 
-let interpret_to_end st ~check_mode =
+let interpret_to_end st check_mode =
   match Document.get_last_sentence st.document with
   | None -> (st, [])
   | Some {id} -> 
     log ("interpret_to_end id = " ^ Stateid.to_string id);
-    interpret_to st id ~check_mode
+    interpret_to st id check_mode
 
 let interpret_in_background st ~should_block_on_error =
   match Document.get_last_sentence st.document with
@@ -565,7 +565,8 @@ let handle_execution_manager_event st ev =
   let update_view = true in
   {state=st; events=(inject_em_events events); update_view; notification=None}
 
-let handle_event ev st ~block ~background diff_mode =
+let handle_event ev st ~block check_mode diff_mode =
+  let background = check_mode = Settings.Mode.Continuous in
   match ev with
   | Execute { id; vst_for_next_todo; started; task } ->
     execute st id vst_for_next_todo started task background block
