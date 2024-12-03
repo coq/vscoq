@@ -28,10 +28,6 @@ type blocking_error = {
   error_range: Range.t
 }
 
-let to_sentence_id = function
-| Top -> None
-| Id id -> Some id
-
 type state = {
   uri : DocumentUri.t;
   init_vs : Vernacstate.t;
@@ -41,6 +37,15 @@ type state = {
   observe_id : observe_id;
   cancel_handle : Sel.Event.cancellation_handle option;
 }
+
+let to_sentence_id = function
+| Top -> None
+| Id id -> Some id
+
+let is_observe_id st id =
+  match st.observe_id with
+  | Top -> false
+  | Id id' ->  id = id'
 
 type event =
   | Execute of { (* we split the computation to help interruptibility *)
@@ -511,15 +516,17 @@ let execute st id vst_for_next_todo started task block =
   match Document.get_sentence st.document id with
   | None ->
     log (Printf.sprintf "ExecuteToLoc %d stops after %2.3f, sentences invalidated" (Stateid.to_int id) time);
-    {state=Some st; events=[]; update_view=true; notification=None} (* Sentences have been invalidate, probably because the user edited while executing *)
+    {state=Some st; events=[]; update_view=true; notification=None} (* Sentences have been invalidated, probably because the user edited while executing *)
   | Some _ ->
     log (Printf.sprintf "ExecuteToLoc %d continues after %2.3f" (Stateid.to_int id) time);
-    let (next, execution_state,vst_for_next_todo,events, exec_error) =
+    let (next, execution_state,vst_for_next_todo, em_events, exec_error) =
       ExecutionManager.execute st.execution_state st.document (vst_for_next_todo, [], false) task block in
     let st, block_events =
       match exec_error with
-      | None -> st, []
-      | Some error_id -> let st, last_range = state_before_error st error_id in
+      | None ->
+        st, []
+      | Some error_id -> 
+        let st, last_range = state_before_error st error_id in
         let events = if block then mk_block_on_error_event last_range error_id else [] in
         st, events
       in
@@ -531,7 +538,7 @@ let execute st id vst_for_next_todo started task block =
         let event = Option.cata (fun event -> [event]) [] event in
         let state = Some {st with execution_state; cancel_handle} in
         let update_view = true in
-        let events = inject_em_events events @ block_events @ event in
+        let events = inject_em_events em_events @ block_events @ event in
         {state; events; update_view; notification=None}
 
 let get_proof st diff_mode id =
