@@ -68,9 +68,25 @@ type document_id = int
 
 type coq_feedback_listener = int
 
+type delegated_task = { 
+  terminator_id: sentence_id;
+  opener_id: sentence_id;
+  proof_using: Vernacexpr.section_subset_expr;
+  last_step_id: sentence_id option; (* only for setting a proof remotely *)
+  tasks: executable_sentence list;
+}
+
+type prepared_task =
+  | PSkip of { id: sentence_id; error: Pp.t option }
+  | PExec of executable_sentence
+  | PQuery of executable_sentence
+  | PDelegate of delegated_task
+
+
 type state = {
   initial : Vernacstate.t;
   of_sentence : (sentence_state * feedback_message list) SM.t;
+  todo: prepared_task list; (* execution queue *)
 
   (* ugly stuff to correctly dispatch Coq feedback *)
   doc_id : document_id; (* unique number used to interface with Coq's Feedback *)
@@ -103,17 +119,6 @@ let is_diagnostics_enabled () = !options.enableDiagnostics
 
 let get_options () = !options
 
-type prepared_task =
-  | PSkip of { id: sentence_id; error: Pp.t option }
-  | PExec of executable_sentence
-  | PQuery of executable_sentence
-  | PDelegate of { terminator_id: sentence_id;
-                   opener_id: sentence_id;
-                   proof_using: Vernacexpr.section_subset_expr;
-                   last_step_id: sentence_id option; (* only for setting a proof remotely *)
-                   tasks: executable_sentence list;
-                 }
-
 module ProofJob = struct
   type update_request =
     | UpdateExecStatus of sentence_id * execution_status
@@ -137,6 +142,7 @@ module ProofWorker = DelegationManager.MakeWorker(ProofJob)
 type event =
   | LocalFeedback of (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)) Queue.t * Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)
   | ProofWorkerEvent of ProofWorker.delegation
+
 type events = event Sel.Event.t list
 let pr_event = function
   | LocalFeedback _ -> Pp.str "LocalFeedback"
@@ -259,50 +265,6 @@ let interp_qed_delayed ~proof_using ~state_id ~st =
   let st = { st with interp } in
   st, success st, assign
 
-let insert_or_merge_range r ranges =
-  let ranges = List.sort Range.compare (r :: ranges) in
-  let rec insert_or_merge_sorted_ranges r1 = function
-    | [] -> [r1]
-    | r2 :: l ->
-      if Range.included ~in_:r1 r2 then (*since the ranges are sorted, only r2 can be included in r1*)
-        insert_or_merge_sorted_ranges r1 l
-      else if Range.prefixes ~in_:r2 r1 then
-        begin
-          let range = Range.{start = r1.Range.start; end_ = r2.Range.end_} in
-          insert_or_merge_sorted_ranges range l
-        end
-      else
-        r1 :: (insert_or_merge_sorted_ranges r2 l)
-  in
-  insert_or_merge_sorted_ranges (List.hd ranges) (List.tl ranges)
-
-let rec remove_or_truncate_range r = function
-| [] -> []
-| r1 :: l ->
-  if Range.equals r r1
-  then
-    l
-  else if Range.strictly_included ~in_: r1 r then
-    Range.{ start = r1.Range.start; end_ = r.Range.start} :: Range.{ start = r.Range.end_; end_ = r1.Range.end_} :: l
-  else if Range.prefixes ~in_:r1 r then
-    Range.{ start = r.Range.end_; end_ = r1.Range.end_} :: l
-  else if Range.postfixes ~in_:r1 r then
-    Range.{ start = r1.Range.start; end_ = r.Range.start} :: l
-  else
-    r1 :: (remove_or_truncate_range r l)
-
-
-let rec cut_from_range r = function
-| [] -> []
-| r1 :: l ->
-  let (<=) x y = Position.compare x y <= 0 in
-  if r.Range.start <= r1.Range.start then
-    l
-  else if r.Range.start <= r1.Range.end_ then
-    Range.{start = r1.Range.start; end_ = r.Range.start} :: l
-  else
-    r1 :: (cut_from_range r l)
-
 let cut_overview task state document =
   let range = match task with
   | PDelegate { terminator_id } -> Document.range_of_id_with_blank_space document terminator_id
@@ -310,8 +272,8 @@ let cut_overview task state document =
     Document.range_of_id_with_blank_space document id
   in
   let {prepared; processing; processed} = state.overview in
-  let prepared = cut_from_range range prepared in
-  let processing = cut_from_range range processing in
+  let prepared = RangeList.cut_from_range range prepared in
+  let processing = RangeList.cut_from_range range processing in
   let overview = {prepared; processing; processed} in
   {state with overview}
 
@@ -319,13 +281,13 @@ let update_processed_as_Done s range overview =
   let {prepared; processing; processed} = overview in
   match s with
   | Success _ ->
-    let processed = insert_or_merge_range range processed in
-    let processing = remove_or_truncate_range range processing in
-    let prepared = remove_or_truncate_range range prepared in
+    let processed = RangeList.insert_or_merge_range range processed in
+    let processing = RangeList.remove_or_truncate_range range processing in
+    let prepared = RangeList.remove_or_truncate_range range prepared in
     {prepared; processing; processed}
   | Error _ ->
-    let processing = remove_or_truncate_range range processing in
-    let prepared = remove_or_truncate_range range prepared in
+    let processing = RangeList.remove_or_truncate_range range processing in
+    let prepared = RangeList.remove_or_truncate_range range prepared in
     {prepared; processing; processed}
 
 let update_processed id state document =
@@ -342,49 +304,12 @@ let update_processed id state document =
     log @@ "Trying to get overview with non-existing state id " ^ Stateid.to_string id;
     state
 
-let invalidate_processed id state document =
-  match SM.find id state.of_sentence with
-  | (s, _) ->
-    begin match s with
-    | Done _ ->
-      let range = Document.range_of_id_with_blank_space document id in
-      let {processed} = state.overview in
-      let processed = remove_or_truncate_range range processed in
-      let overview = {state.overview with processed} in
-      {state with overview}
-    | _ -> assert false (* delegated sentences born as such, cannot become it later *)
-    end
-  | exception Not_found ->
-    log @@ "Trying to get overview with non-existing state id " ^ Stateid.to_string id;
-    state
-
 let id_of_first_task ~default = function
   | [] -> default
   | { id } :: _ -> id
 
 let id_of_last_task ~default l =
   id_of_first_task ~default (List.rev l)
-
-let invalidate_prepared_or_processing task state document =
-  let {prepared; processing} = state.overview in
-  match task with
-  | PDelegate { opener_id; terminator_id; tasks } ->
-    let proof_opener_id = id_of_first_task ~default:opener_id tasks in
-    let proof_closer_id = id_of_last_task ~default:terminator_id tasks in
-    let proof_begin_range = Document.range_of_id_with_blank_space document proof_opener_id in
-    let proof_end_range = Document.range_of_id_with_blank_space document proof_closer_id in
-    let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
-    (* When a job is delegated we shouldn't merge ranges (to get the proper progress report) *)
-    let prepared = remove_or_truncate_range range prepared in
-    let processing = remove_or_truncate_range range processing in
-    let overview = {state.overview with prepared; processing} in
-    {state with overview}
-  | PSkip { id } | PExec { id } | PQuery { id } ->
-    let range = Document.range_of_id_with_blank_space document id in
-    let prepared = remove_or_truncate_range range prepared in
-    let processing = remove_or_truncate_range range processing in
-    let overview = {state.overview with prepared; processing} in
-    {state with overview}
 
 let update_processing task state document =
   let {processing; prepared} = state.overview in
@@ -397,13 +322,13 @@ let update_processing task state document =
     let range = Range.create ~end_:proof_end_range.end_ ~start:proof_begin_range.start in
     (* When a job is delegated we shouldn't merge ranges (to get the proper progress report) *)
     let processing = List.append processing [ range ] in 
-    let prepared = remove_or_truncate_range range prepared in
+    let prepared = RangeList.remove_or_truncate_range range prepared in
     let overview = {state.overview with prepared; processing} in
     {state with overview}
   | PSkip { id } | PExec { id } | PQuery { id } ->
     let range = Document.range_of_id_with_blank_space document id in
-    let processing = insert_or_merge_range range processing in 
-    let prepared = remove_or_truncate_range range prepared in
+    let processing = RangeList.insert_or_merge_range range processing in
+    let prepared = RangeList.remove_or_truncate_range range prepared in
     let overview = {state.overview with processing; prepared} in
     {state with overview}
 
@@ -422,26 +347,40 @@ let update_prepared task document state =
     {state with overview}
   | PSkip { id } | PExec { id } | PQuery { id } ->
     let range = Document.range_of_id_with_blank_space document id in
-    let prepared = insert_or_merge_range range prepared in
+    let prepared = RangeList.insert_or_merge_range range prepared in
     let overview = {state.overview with prepared} in
     {state with overview}
 
-let update_overview task todo state document =
+let update_overview task state document =
   let state = 
   match task with
   | PDelegate { terminator_id } ->
     let range = Document.range_of_id_with_blank_space document terminator_id in
     let {prepared} = state.overview in
-    let prepared = remove_or_truncate_range range prepared in
+    let prepared = RangeList.remove_or_truncate_range range prepared in
     let overview = update_processed_as_Done (Success None) range state.overview in
     let overview = {overview with prepared} in
     {state with overview}
   | PSkip { id } | PExec { id } | PQuery { id } ->
     update_processed id state document
   in
-  match todo with
+  match state.todo with
   | [] -> state
   | next :: _ -> update_processing next state document
+
+
+let build_prepared_overview state document =
+  List.fold_right (fun task st -> update_prepared task document st) state.todo state
+
+let build_processed_overview state document =
+  let sentence_ids = SM.bindings state.of_sentence in
+  let sentence_ids = List.map (fun x -> fst x) sentence_ids in
+  List.fold_right (fun id st -> update_processed id st document) sentence_ids state
+
+let reset_overview st document =
+  let overview = {processed=[]; prepared=[]; processing=[]} in
+  let st = build_processed_overview {st with overview} document in
+  build_prepared_overview st document
 
 let prepare_overview st prepared =
   let overview = {st.overview with prepared} in
@@ -494,6 +433,7 @@ let init vernac_state =
   {
     initial = vernac_state;
     of_sentence = SM.empty;
+    todo = [];
     doc_id;
     coq_feeder;
     sel_feedback_queue;
@@ -634,10 +574,11 @@ let worker_main { ProofJob.tasks; initial_vernac_state = vs; doc_id; terminator_
     Feedback.msg_debug @@ Pp.str "==========================================================";
     exit 1
 
-let execute st (vs, events, interrupted) task =
+let execute_task st (vs, events, interrupted) task =
   if interrupted then begin
     let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
-    (st, vs, events, true, None)
+    let todo = [] in
+    ({st with todo}, vs, events, true, None)
   end else
     try
       match task with
@@ -709,6 +650,22 @@ let execute st (vs, events, interrupted) task =
       let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
       (st, vs, events, true, None)
 
+let execute st document (vs, events, interrupted) task block_on_first_error =
+  let st, vst_for_next_todo, events, _, exec_error =
+    execute_task st (vs, events, interrupted) task in
+  match block_on_first_error, exec_error with
+  | false, _ | _, None ->
+    let st = update_overview task st document in
+    let next, st = match st.todo with
+      | [] -> None, st
+      | task :: todo -> Some task, { st with todo }
+    in next, st, vst_for_next_todo, events, None
+  | true, Some _ ->
+    let st = cut_overview task st document in
+    let st = { st with todo=[]} in
+    None, st, vst_for_next_todo, events, exec_error
+
+
 let build_tasks_for document sch st id block =
   let rec build_tasks id tasks st =
     begin match find_fulfilled_opt id st.of_sentence with
@@ -740,11 +697,18 @@ let build_tasks_for document sch st id block =
   let vs, tasks, st, error_id = build_tasks id [] st in
   match error_id, block with
   | _, false | None, _ ->
-    let prepared_tasks = List.concat_map prepare_task tasks in
-    let st = build_prepared_overview prepared_tasks st in
-    vs, prepared_tasks, st, None
+    let todo = List.concat_map prepare_task tasks in
+    let task, st = match todo with
+      | task :: todo ->
+        let st = {st with todo} in
+        let st = build_prepared_overview todo st in
+        Some task, st
+      | [] ->
+        None, {st with todo}
+      in
+      vs, st, task, None
   | Some id, true ->
-    vs, [], st, Some id
+    vs, {st with todo=[]}, None, Some id
 
 let all_errors st =
   List.fold_left (fun acc (id, (p,_)) ->
@@ -838,10 +802,17 @@ let invalidate1 of_sentence id =
     | _ -> SM.remove id of_sentence
   with Not_found -> of_sentence
 
+let cancel1 todo invalid_id =
+  let task_of_id = function
+    | PSkip { id } | PExec { id } | PQuery { id } -> Stateid.equal id invalid_id
+    | PDelegate _ -> false
+  in
+  List.filter task_of_id todo
+
 let rec invalidate document schedule id st =
   log @@ "Invalidating: " ^ Stateid.to_string id;
-  let st = invalidate_processed id st document in
   let of_sentence = invalidate1 st.of_sentence id in
+  let todo = cancel1 st.todo id in
   let old_jobs = Queue.copy jobs in
   let removed = ref [] in
   Queue.clear jobs;
@@ -854,16 +825,9 @@ let rec invalidate document schedule id st =
     end) old_jobs;
   let of_sentence = List.fold_left invalidate1 of_sentence
     List.(concat (map (fun tasks -> map id_of_prepared_task tasks) !removed)) in
-  let rec invalidate_prepared_or_processing_tasks tasks st =
-    begin match tasks with
-    | [] -> st
-    | task :: l -> invalidate_prepared_or_processing_tasks l (invalidate_prepared_or_processing task st document)
-    end
-  in
-  let st = invalidate_prepared_or_processing_tasks (List.concat !removed) st in
   if of_sentence == st.of_sentence then st else
   let deps = Scheduler.dependents schedule id in
-  Stateid.Set.fold (invalidate document schedule) deps { st with of_sentence }
+  Stateid.Set.fold (invalidate document schedule) deps { st with of_sentence; todo }
 
 let context_of_state st =
     Vernacstate.Interp.unfreeze_interp_state st;

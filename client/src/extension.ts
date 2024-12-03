@@ -211,28 +211,8 @@ export function activate(context: ExtensionContext) {
         registerVscoqTextCommand('expandAllQueries', () => searchProvider.expandAll());
         registerVscoqTextCommand('interpretToPoint', (editor) => sendInterpretToPoint(editor, client));
         registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
-        registerVscoqTextCommand('stepForward', (editor) => {
-            
-            if(workspace.getConfiguration('vscoq.proof').mode === 1) {
-                const textDocument = makeVersionedDocumentId(editor);
-                const position = editor.selection.active;
-                client.sendNotification("vscoq/stepForward", {textDocument: textDocument, position: position});
-            }
-            else {
-                sendStepForward(editor, client);
-            }
-                
-        });
-        registerVscoqTextCommand('stepBackward', (editor) => {
-            if(workspace.getConfiguration('vscoq.proof').mode === 1) {
-                const textDocument = makeVersionedDocumentId(editor);
-                const position = editor.selection.active;
-                client.sendNotification("vscoq/stepBackward", {textDocument: textDocument, position: position});
-            }
-            else {
-                sendStepBackward(editor, client);
-            }
-        });
+        registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));
+        registerVscoqTextCommand('stepBackward', (editor) => sendStepBackward(editor, client));
         registerVscoqTextCommand('documentState', async (editor) => {
                 
             documentStateProvider.setDocumentUri(editor.document.uri);

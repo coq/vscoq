@@ -90,7 +90,42 @@ type document = {
   parsed_loc : int;
   raw_doc : RawDocument.t;
   init_synterp_state : Vernacstate.Synterp.t;
+  cancel_handle: Sel.Event.cancellation_handle option;
 }
+
+type parse_state = {
+  started: float;
+  stop: int;
+  top_id: sentence_id option;
+  loc: Loc.t option;
+  synterp_state : Vernacstate.Synterp.t;
+  stream: (unit, char) Gramlib.Stream.t;
+  raw: RawDocument.t;
+  parsed: pre_sentence list;
+  errors: parsing_error list;
+  parsed_comments: comment list;
+  previous_document: document;
+}
+
+type parsing_end_info = {
+    unchanged_id: sentence_id option;
+    invalid_ids: sentence_id_set;
+    previous_document: document;
+    parsed_document: document;
+}
+
+type event = 
+| ParseEvent of parse_state
+| Invalidate of parse_state
+let pp_event fmt = function
+ | ParseEvent _ -> Format.fprintf fmt "ParseEvent _"
+ | Invalidate _ -> Format.fprintf fmt "Invalidate _"
+
+type events = event Sel.Event.t list
+
+let create_parsing_event event =
+  let priority = Some PriorityManager.parsing in
+  Sel.now ?priority event
 
 let range_of_sentence raw (sentence : sentence) =
   let start = RawDocument.position_of_loc raw sentence.start in
@@ -440,21 +475,22 @@ let get_entry ast =
 [%%endif]
 
 
-let rec parse_more ?loc synterp_state stream raw parsed parsed_comments errors =
-  let handle_parse_error start msg qf =
-    log @@ "handling parse error at " ^ string_of_int start;
-    let stop = Stream.count stream in
-    let parsing_error = { msg; start; stop; qf} in
-    let errors = parsing_error :: errors in
-    (* TODO: we could count the \n between start and stop and increase Loc.line_nb *)
-    parse_more ?loc synterp_state stream raw parsed parsed_comments errors
-  in
+let handle_parse_error start msg qf ({stream; errors;} as parse_state) =
+  log @@ "handling parse error at " ^ string_of_int start;
+  let stop = Stream.count stream in
+  let parsing_error = { msg; start; stop; qf} in
+  let errors = parsing_error :: errors in
+  let parse_state = {parse_state with errors} in
+  (* TODO: we could count the \n between start and stop and increase Loc.line_nb *)
+  create_parsing_event (ParseEvent parse_state)
+
+let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments} as parse_state) =
   let start = Stream.count stream in
   log @@ "Start of parse is: " ^ (string_of_int start);
   begin
     (* FIXME should we save lexer state? *)
     match parse_one_sentence ?loc stream ~st:synterp_state with
-    | None, _ (* EOI *) -> List.rev parsed, errors, List.rev parsed_comments
+    | None, _ (* EOI *) -> create_parsing_event (Invalidate parse_state)
     | Some ast, comments ->
       let stop = Stream.count stream in
       log @@ "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
@@ -476,33 +512,32 @@ let rec parse_more ?loc synterp_state stream raw parsed parsed_comments errors =
           let parsed = sentence :: parsed in
           let comments = List.map (fun ((start, stop), content) -> {start; stop; content}) comments in
           let parsed_comments = List.append comments parsed_comments in
-          parse_more ?loc:ast.loc synterp_state stream raw parsed parsed_comments errors
+          let loc = ast.loc in
+          let parse_state = {parse_state with parsed_comments; parsed; loc; synterp_state} in
+          create_parsing_event (ParseEvent parse_state)
         with exn ->
           let e, info = Exninfo.capture exn in
           let loc = get_loc_from_info_or_exn e info in
           let qf = Result.value ~default:[] @@ Quickfix.from_exception e in
-          handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info)) (Some qf)
+          handle_parse_error start (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info)) (Some qf) parse_state
         end
     | exception (E msg as exn) ->
       let loc = Loc.get_loc @@ Exninfo.info exn in
       let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
       junk_sentence_end stream;
-      handle_parse_error start (loc,msg) (Some qf)
+      handle_parse_error start (loc,msg) (Some qf) {parse_state with stream}
     | exception (CLexer.Error.E e as exn) -> (* May be more problematic to handle for the diff *)
       let loc = Loc.get_loc @@ Exninfo.info exn in
       let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
       junk_sentence_end stream;
-      handle_parse_error start (loc,CLexer.Error.to_string e) (Some qf)
+      handle_parse_error start (loc,CLexer.Error.to_string e) (Some qf) {parse_state with stream}
     | exception exn ->
       let e, info = Exninfo.capture exn in
       let loc = Loc.get_loc @@ info in
       let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
       junk_sentence_end stream;
-      handle_parse_error start (loc, "Unexpected parse error: " ^ Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info)) (Some qf)
+      handle_parse_error start (loc, "Unexpected parse error: " ^ Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info)) (Some qf) {parse_state with stream}
   end
-
-let parse_more synterp_state stream raw =
-  parse_more synterp_state stream raw [] [] []
 
 let rec unchanged_id id = function
   | [] -> id
@@ -548,7 +583,9 @@ let invalidate top_edit top_id parsed_doc new_sentences =
   unchanged_id, invalid_ids, doc
 
 (** Validate document when raw text has changed *)
-let validate_document ({ parsed_loc; raw_doc; } as document) =
+let validate_document ({ parsed_loc; raw_doc; cancel_handle } as document) =
+  (* Cancel any previous parsing event *)
+  Option.iter Sel.Event.cancel cancel_handle;
   (* We take the state strictly before parsed_loc to cover the case when the
   end of the sentence is editted *)
   let (stop, synterp_state, _scheduler_state) = state_strictly_before document parsed_loc in
@@ -558,11 +595,25 @@ let validate_document ({ parsed_loc; raw_doc; } as document) =
   let stream = Stream.of_string text in
   while Stream.count stream < stop do Stream.junk () stream done;
   log @@ Format.sprintf "Parsing more from pos %i" stop;
-  let errors = parsing_errors_before document stop in
-  let comments = comments_before document stop in
-  let new_sentences, new_errors, new_comments = parse_more synterp_state stream raw_doc (* TODO invalidate first *) in
+  let started = Unix.gettimeofday () in
+  let parsed_state = {stop; top_id;synterp_state; stream; raw=raw_doc; parsed=[]; errors=[]; parsed_comments=[]; loc=None; started; previous_document=document} in
+  let priority = Some PriorityManager.parsing in
+  let event = Sel.now ?priority (ParseEvent parsed_state) in
+  let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
+  {document with cancel_handle}, [Sel.now ?priority (ParseEvent parsed_state)]
+
+let handle_invalidate {parsed; errors; parsed_comments; stop; top_id; started; previous_document} document =
+  let end_ = Unix.gettimeofday ()in
+  let time = end_ -. started in
+  (* log @@ Format.sprintf "Parsing phase ended in %5.3f" time; *)
+  log @@ Format.sprintf "Parsing phase ended in %5.3f\n%!" time;
+  let new_sentences = List.rev parsed in
+  let new_comments = List.rev parsed_comments in
+  let new_errors = errors in
   log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
   log @@ Format.sprintf "%i new comments" (List.length new_comments);
+  let errors = parsing_errors_before document stop in
+  let comments = comments_before document stop in
   let unchanged_id, invalid_ids, document = invalidate (stop+1) top_id document new_sentences in
   let parsing_errors_by_end =
     List.fold_left (fun acc (error : parsing_error) -> LM.add error.stop error acc) errors new_errors
@@ -571,11 +622,20 @@ let validate_document ({ parsed_loc; raw_doc; } as document) =
     List.fold_left (fun acc (comment : comment) -> LM.add comment.stop comment acc) comments new_comments
   in
   let parsed_loc = pos_at_end document in
-  unchanged_id, invalid_ids, { document with parsed_loc; parsing_errors_by_end; comments_by_end}
+  let parsed_document = {document with parsed_loc; parsing_errors_by_end; comments_by_end} in
+  Some {parsed_document; unchanged_id; invalid_ids; previous_document}
+
+let handle_event document = function
+| ParseEvent state -> 
+  let event = handle_parse_more state in
+  let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
+  {document with cancel_handle}, [event], None
+| Invalidate state -> {document with cancel_handle=None}, [], handle_invalidate state document
 
 let create_document init_synterp_state text =
   let raw_doc = RawDocument.create text in
-    { parsed_loc = -1;
+    { 
+      parsed_loc = -1;
       raw_doc;
       sentences_by_id = SM.empty;
       sentences_by_end = LM.empty;
@@ -584,6 +644,7 @@ let create_document init_synterp_state text =
       schedule = initial_schedule;
       outline = [];
       init_synterp_state;
+      cancel_handle = None;
     }
 
 let apply_text_edit document edit =

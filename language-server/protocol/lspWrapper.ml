@@ -38,6 +38,11 @@ module Range = struct
 
   type t = [%import: Lsp.Types.Range.t] [@@deriving sexp]
   
+  let top () =
+    let start = Position.{ line=0; character=0} in
+    let end_ = Position.{ line=0; character=0} in
+    Range.{start; end_}
+
   let compare r1 r2 =
     match Position.compare r1.start r2.start with
     | 0 -> Position.compare r1.end_ r2.end_
