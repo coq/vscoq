@@ -49,8 +49,8 @@ let mk_log name =
   let flag = is_enabled name (Array.to_list Sys.argv) in
   let flag_init = is_enabled "init" (Array.to_list Sys.argv) in
   write_to_init_log ("log " ^ name ^ " is " ^ if flag then "on" else "off");
-  Log (fun msg ->
-    let should_print_log = flag || (flag_init && not !lsp_initialization_done) in
+  Log (fun ?(force=false) msg ->
+    let should_print_log = force || flag || (flag_init && not !lsp_initialization_done) in
     if should_print_log then begin
       let txt = Format.asprintf "[%-20s, %d, %f] %s" name (Unix.getpid ()) (Unix.gettimeofday ()) msg in
       if not !lsp_initialization_done then begin

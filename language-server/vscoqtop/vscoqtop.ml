@@ -33,9 +33,9 @@ let loop () =
   try loop todo
   with exn ->
     let info = Exninfo.capture exn in
-    log "==========================================================";
-    log @@ Pp.string_of_ppcmds @@ CErrors.iprint_no_report info;
-    log "=========================================================="
+    log ~force:true "==========================================================";
+    log ~force:true @@ Pp.string_of_ppcmds @@ CErrors.iprint_no_report info;
+    log ~force:true "=========================================================="
 
 let vscoqtop_specific_usage = {
   Boot.Usage.executable_name = "vscoqtop";
