@@ -55,7 +55,7 @@ let position_of_loc raw loc =
   while (!i < Array.length raw.lines && raw.lines.(!i) <= loc) do incr(i) done;
   let line = !i - 1 in
   let char = get_character_pos (line_text raw line) (loc - raw.lines.(line)) in
-  Position.{ line = line; character = char }
+  Position.{ line = line; character = max 0 (char-1) }
 
 let get_character_loc linestr pos =
   let rec loop d =
