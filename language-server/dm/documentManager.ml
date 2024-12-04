@@ -761,42 +761,33 @@ let jump_to_definition st pos =
   | None -> log "jumpToDef: no word found at cursor"; None
   | Some pattern ->
     log ("jumpToDef: found word at cursor: \"" ^ pattern ^ "\"");
-    match st.observe_id with
-    | Top -> log "jumpToDef with no context"; None
-    | (Id id) ->
-      match Document.get_sentence st.document id with
-      | None -> log "jumpToDef: observe_id does not exist"; None
-      | Some { stop } ->
-        let o_pos = RawDocument.position_of_loc raw_doc stop in
-        match get_context st o_pos with
-        | None -> log "No context found"; None
-        | Some _ ->
-          match parse_entry st loc (Procq.Prim.smart_global) pattern with
-          | { v = AN qid } ->
-            let ref = Nametab.locate qid in
-             begin match Nametab.cci_src_loc (TrueGlobal ref) with
-                | None -> None
-                | Some loc ->
-                  begin match loc.Loc.fname with
-                    | Loc.ToplevelInput | InFile  { dirpath = None } -> None
-                    | InFile { dirpath = Some dp } ->
-                        let f = Loadpath.locate_absolute_library @@ Libnames.dirpath_of_string dp in
-                        begin match f with
-                          | Ok f ->
-                            let f =  Filename.remove_extension f ^ ".v" in
-                            (if Sys.file_exists f then
-                              let b_pos = Position.create ~character:(loc.bp - loc.bol_pos) ~line:(loc.line_nb - 1) in
-                              let e_pos = Position.create ~character:(loc.ep - loc.bol_pos) ~line:(loc.line_nb - 1) in
-                              let range = Range.create ~end_:b_pos ~start:e_pos in
-                              Some (range, f)
-                            else
-                              None
-                            )
-                          | Error _ -> None
-                        end
+    try
+    let qid = parse_entry st loc (Procq.Prim.qualid) pattern in
+      let ref = Nametab.locate_extended qid in
+        match Nametab.cci_src_loc ref with
+          | None -> None
+          | Some loc ->
+            begin match loc.Loc.fname with
+              | Loc.ToplevelInput | InFile  { dirpath = None } -> None
+              | InFile { dirpath = Some dp } ->
+                  let f = Loadpath.locate_absolute_library @@ Libnames.dirpath_of_string dp in
+                  begin match f with
+                    | Ok f ->
+                      let f =  Filename.remove_extension f ^ ".v" in
+                      (if Sys.file_exists f then
+                        let b_pos = Position.create ~character:(loc.bp - loc.bol_pos) ~line:(loc.line_nb - 1) in
+                        let e_pos = Position.create ~character:(loc.ep - loc.bol_pos) ~line:(loc.line_nb - 1) in
+                        let range = Range.create ~end_:b_pos ~start:e_pos in
+                        Some (range, f)
+                      else
+                        None
+                      )
+                    | Error _ -> None
                   end
             end
-          | _ -> None
+        with e ->
+          let e, info = Exninfo.capture e in
+          log (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)); None
 
 [%%endif]
 
