@@ -90,4 +90,9 @@ type link = {
   read_from:  Unix.file_descr;
 }
 
+type error = {
+  code: Jsonrpc.Response.Error.Code.t option;
+  message: string;
+}
+
 type 'a log = Log : 'a -> 'a log
