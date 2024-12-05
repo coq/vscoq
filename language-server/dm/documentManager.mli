@@ -46,6 +46,8 @@ type handled_event = {
     notification: Notification.Server.t option;
 }
 
+val is_parsing : state -> bool
+
 val init : Vernacstate.t -> opts:Coqargs.injection_command list -> DocumentUri.t -> text:string -> state * events
 (** [init st opts uri text] initializes the document manager with initial vernac state
     [st] on which command line opts will be set. *)
@@ -123,18 +125,18 @@ val handle_event : event -> state -> block:bool -> Settings.Mode.t -> Settings.G
 
 val search : state -> id:string -> Position.t -> string -> notification Sel.Event.t list
 
-val about : state -> Position.t -> pattern:string -> (pp,string) Result.t
+val about : state -> Position.t -> pattern:string -> (pp,error) Result.t
 
 val hover : state -> Position.t -> MarkupContent.t option
 (** Returns an optional Result:
     if None, the position did not have a word,
     if Some, an Ok/Error result is returned. *)
 
-val check : state -> Position.t -> pattern:string -> (pp,string) Result.t
+val check : state -> Position.t -> pattern:string -> (pp,error) Result.t
 
-val locate : state -> Position.t -> pattern:string -> (pp, string) Result.t
+val locate : state -> Position.t -> pattern:string -> (pp, error) Result.t
 
-val print : state -> Position.t -> pattern:string -> (pp, string) Result.t
+val print : state -> Position.t -> pattern:string -> (pp, error) Result.t
 
 
 module Internal : sig

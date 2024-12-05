@@ -32,6 +32,12 @@ let to_sentence_id = function
 | Top -> None
 | Id id -> Some id
 
+type document_state =
+| Parsing
+| Parsed
+(* | Executing of sentence_id TODO: ADD EXEDCUTING STATE
+| Executed of sentence_id *)
+
 type state = {
   uri : DocumentUri.t;
   init_vs : Vernacstate.t;
@@ -40,6 +46,7 @@ type state = {
   execution_state : ExecutionManager.state;
   observe_id : observe_id;
   cancel_handle : Sel.Event.cancellation_handle option;
+  document_state: document_state;
 }
 
 type event =
@@ -124,6 +131,8 @@ let observe_id_range st =
       let end_ = RawDocument.position_of_loc doc stop in 
       let range = Range.{ start; end_ } in 
       Some range
+
+let is_parsing st =  st.document_state = Parsing
 
 let make_diagnostic doc range oloc message severity code =
   let range =
@@ -445,7 +454,7 @@ let validate_document state (Document.{unchanged_id; invalid_ids; previous_docum
       ExecutionManager.invalidate previous_document (Document.schedule previous_document) id st
       ) state.execution_state (Stateid.Set.elements invalid_ids) in
   let execution_state = ExecutionManager.reset_overview execution_state previous_document in
-  { state with  execution_state; observe_id }
+  { state with  execution_state; observe_id; document_state = Parsed }
 
 [%%if coq = "8.18" || coq = "8.19"]
 let start_library top opts = Coqinit.start_library ~top opts
@@ -470,7 +479,7 @@ let init init_vs ~opts uri ~text =
   let init_vs = Vernacstate.freeze_full_state () in
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in
-  let state = { uri; opts; init_vs; document; execution_state; observe_id=Top; cancel_handle = None } in
+  let state = { uri; opts; init_vs; document; execution_state; observe_id=Top; cancel_handle = None; document_state = Parsing } in
   let priority = Some PriorityManager.launch_parsing in
   let event = Sel.now ?priority ParseEvent in
   state, [event] @ [inject_em_event feedback]
@@ -482,7 +491,7 @@ let reset { uri; opts; init_vs; document; execution_state; } =
   ExecutionManager.destroy execution_state;
   let execution_state, feedback = ExecutionManager.init init_vs in
   let observe_id = Top in
-  let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handle = None } in
+  let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handle = None ; document_state = Parsing } in
   let priority = Some PriorityManager.launch_parsing in
   let event = Sel.now ?priority ParseEvent in
   state, [event] @ [inject_em_event feedback]
@@ -672,7 +681,7 @@ let parse_entry st pos entry pattern =
 let about st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with
-  | None -> Error ("No context found") (*TODO execute *)
+  | None -> Error ({message="No context found"; code=None}) (*TODO execute *)
   | Some (sigma, env) ->
     try
       let ref_or_by_not = parse_entry st loc (smart_global) pattern in
@@ -680,7 +689,8 @@ let about st pos ~pattern =
       Ok (pp_of_coqpp @@ Prettyp.print_about env sigma ref_or_by_not udecl)
     with e ->
       let e, info = Exninfo.capture e in
-      Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
+      let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
+      Error ({message; code=None})
 
 let search st ~id pos pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
@@ -742,7 +752,7 @@ let hover st pos =
 let check st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with
-  | None -> Error ("No context found") (*TODO execute *)
+  | None -> Error ({message="No context found"; code=None}) (*TODO execute *)
   | Some (sigma,env) ->
     let rc = parse_entry st loc lconstr pattern in
     try
@@ -750,7 +760,8 @@ let check st pos ~pattern =
       Ok (pp_of_coqpp @@ Vernacentries.check_may_eval env sigma redexpr rc)
     with e ->
       let e, info = Exninfo.capture e in
-      Error (Pp.string_of_ppcmds @@ CErrors.iprint (e, info))
+      let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
+      Error ({message; code=None})
 
 [%%if coq = "8.18" || coq = "8.19"]
 let print_located_qualid _ qid = Prettyp.print_located_qualid qid
@@ -761,7 +772,7 @@ let print_located_qualid = Prettyp.print_located_qualid
 let locate st pos ~pattern = 
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with
-  | None -> Error ("No context found") (*TODO execute *)
+  | None -> Error ({message="No context found"; code=None}) (*TODO execute *)
   | Some (sigma, env) ->
     match parse_entry st loc (smart_global) pattern with
     | { v = AN qid } -> Ok (pp_of_coqpp @@ print_located_qualid env qid)
@@ -780,7 +791,7 @@ let locate st pos ~pattern =
 let print st pos ~pattern = 
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with
-  | None -> Error("No context found")
+  | None -> Error({message="No context found"; code=None})
   | Some (sigma, env) ->
     let qid = parse_entry st loc (smart_global) pattern in
     let udecl = None in (*TODO*)

@@ -20,6 +20,7 @@ open Lsp.Types
 open Protocol
 open Protocol.LspWrapper
 open Protocol.ExtProtocol
+open Dm.Types
 
 module CompactedDecl = Context.Compacted.Declaration
 
@@ -150,7 +151,7 @@ let do_initialize id params =
   end;
   let textDocumentSync = `TextDocumentSyncKind TextDocumentSyncKind.Incremental in
   let completionProvider = CompletionOptions.create ~resolveProvider:false () in
-  let documentSymbolProvider = `Bool true in
+  let documentSymbolProvider = `DocumentSymbolOptions (DocumentSymbolOptions.create ~workDoneProgress:true ()) in
   let hoverProvider = `Bool true in
   let capabilities = ServerCapabilities.create
     ~textDocumentSync
@@ -440,7 +441,7 @@ let textDocumentCompletion id params =
   else
   let Lsp.Types.CompletionParams.{ textDocument = { uri }; position } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[textDocumentCompletion]ignoring event on non existent document"; Error("Document does not exist"), []
+  | None -> log @@ "[textDocumentCompletion]ignoring event on non existent document"; Error( {message="Document does not exist"; code=None} ), []
   | Some { st } -> 
     match Dm.DocumentManager.get_completions st position with
     | Ok completionItems -> 
@@ -448,20 +449,26 @@ let textDocumentCompletion id params =
       return_completion ~isIncomplete:false ~items, []
     | Error e -> 
       let message = e in
-      Error(message), []
+      Error {message; code=None}, []
 
 let documentSymbol id params =
-  let Lsp.Types.DocumentSymbolParams.{ textDocument = {uri}} = params in
+  let Lsp.Types.DocumentSymbolParams.{ textDocument = {uri}; partialResultToken; workDoneToken } = params in (*TODO: At some point we might get ssupport for partialResult and workDone*)
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[documentSymbol] ignoring event on non existent document"; Error("Document does not exist"), []
+  | None -> log @@ "[documentSymbol] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
   | Some tab -> log @@ "[documentSymbol] getting symbols";
-    let symbols = Dm.DocumentManager.get_document_symbols tab.st in
-    Ok(Some (`DocumentSymbol symbols)), []
+    if Dm.DocumentManager.is_parsing tab.st then
+       (* Making use of the error codes: the ServerCancelled error code indicates 
+       that the server is busy and the client should resend the request later.
+       It doesn't seem to be working for documentSymbol at the moment. *)
+      Error {code=(Some Jsonrpc.Response.Error.Code.ServerCancelled); message="Parsing not finished"} , []
+    else
+      let symbols = Dm.DocumentManager.get_document_symbols tab.st in
+      Ok(Some (`DocumentSymbol symbols)), []
 
 let coqtopResetCoq id params =
   let Request.Client.ResetParams.{ textDocument = { uri } } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[resetCoq] ignoring event on non existent document"; Error("Document does not exist"), []
+  | None -> log @@ "[resetCoq] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
   | Some { st; visible } -> 
     let st, events = Dm.DocumentManager.reset st in
     replace_state (DocumentUri.to_path uri) st visible;
@@ -481,32 +488,32 @@ let coqtopInterpretToEnd params =
 let coqtopLocate id params = 
   let Request.Client.LocateParams.{ textDocument = { uri }; position; pattern } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[locate] ignoring event on non existent document"; Error("Document does not exist"), []
+  | None -> log @@ "[locate] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
   | Some { st } ->
     Dm.DocumentManager.locate st position ~pattern, []
 
 let coqtopPrint id params = 
   let Request.Client.PrintParams.{ textDocument = { uri }; position; pattern } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[print] ignoring event on non existent document"; Error("Document does not exist"), []
+  | None -> log @@ "[print] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
   | Some { st } -> Dm.DocumentManager.print st position ~pattern, []
 
 let coqtopAbout id params =
   let Request.Client.AboutParams.{ textDocument = { uri }; position; pattern } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[about] ignoring event on non existent document"; Error("Document does not exist"), []
+  | None -> log @@ "[about] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
   | Some { st } -> Dm.DocumentManager.about st position ~pattern, []
 
 let coqtopCheck id params =
   let Request.Client.CheckParams.{ textDocument = { uri }; position; pattern } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[check] ignoring event on non existent document"; Error("Document does not exist"), []
+  | None -> log @@ "[check] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
   | Some { st } -> Dm.DocumentManager.check st position ~pattern, []
 
 let coqtopSearch id params =
   let Request.Client.SearchParams.{ textDocument = { uri }; id; position; pattern } = params in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[search] ignoring event on non existent document"; Error("Document does not exist"), []
+  | None -> log @@ "[search] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
   | Some { st } ->
     try
       let notifications = Dm.DocumentManager.search st ~id position pattern in
@@ -514,13 +521,13 @@ let coqtopSearch id params =
     with e ->
       let e, info = Exninfo.capture e in
       let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
-      Error(message), []
+      Error({message; code=None}), []
 
 let sendDocumentState id params = 
   let Request.Client.DocumentStateParams.{ textDocument } = params in
   let uri = textDocument.uri in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
-  | None -> log @@ "[documentState] ignoring event on non existent document"; Error("Document does not exist"), []
+  | None -> log @@ "[documentState] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
   | Some { st } -> let document = Dm.DocumentManager.Internal.string_of_state st in
     Ok Request.Client.DocumentStateResult.{ document }, []
 
@@ -532,7 +539,7 @@ let workspaceDidChangeConfiguration params =
   | Continuous -> run_documents ()
   | Manual -> reset_observe_ids (); ([] : events)
 
-let dispatch_std_request : type a. Jsonrpc.Id.t -> a Lsp.Client_request.t -> (a,string) result * events =
+let dispatch_std_request : type a. Jsonrpc.Id.t -> a Lsp.Client_request.t -> (a, error) result * events =
   fun id req ->
   match req with
   | Initialize params ->
@@ -545,9 +552,9 @@ let dispatch_std_request : type a. Jsonrpc.Id.t -> a Lsp.Client_request.t -> (a,
     textDocumentHover id params, []
   | DocumentSymbol params ->
     documentSymbol id params
-  | UnknownRequest _ | _  -> Error "Received unknown request", []
+  | UnknownRequest _ | _  -> Error ({message="Received unknown request"; code=None}), []
 
-let dispatch_request : type a. Jsonrpc.Id.t -> a Request.Client.t -> (a,string) result * events =
+let dispatch_request : type a. Jsonrpc.Id.t -> a Request.Client.t -> (a,error) result * events =
   fun id req ->
   match req with
   | Std req -> dispatch_std_request id req
@@ -591,6 +598,9 @@ let handle_lsp_event = function
   | Receive (Some rpc) ->
     lsp :: (* the event is recurrent *)
     begin try
+      let json = Jsonrpc.Packet.yojson_of_t rpc in
+      let msg = Yojson.Safe.pretty_to_string ~std:true json in
+      log @@ "recieved: " ^ msg;
       begin match rpc with
       | Request req ->
           log @@ "ui request: " ^ req.method_;
@@ -599,8 +609,9 @@ let handle_lsp_event = function
           | Ok(Pack r) ->
             let resp, events = dispatch_request req.id r in
             begin match resp with
-            | Error message ->
-              output_json @@ Jsonrpc.Response.(yojson_of_t @@ error req.id (Error.make ~code:RequestFailed ~message ()))
+            | Error {code; message} ->
+              let code = Option.default Jsonrpc.Response.Error.Code.RequestFailed code in
+              output_json @@ Jsonrpc.Response.(yojson_of_t @@ error req.id (Error.make ~code ~message ()))
             | Ok resp ->
               let resp = Request.Client.yojson_of_result r resp in
               output_json @@ Jsonrpc.Response.(yojson_of_t @@ ok req.id resp)
