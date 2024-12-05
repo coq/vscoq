@@ -452,15 +452,14 @@ let textDocumentCompletion id params =
       Error {message; code=None}, []
 
 let documentSymbol id params =
-  let Lsp.Types.DocumentSymbolParams.{ textDocument = {uri}; partialResultToken; workDoneToken } = params in
-  begin match workDoneToken with
-  | Some token -> log "WE HAVE A TOKEN"
-  | None -> log "No TOKEN :'("
-  end;
+  let Lsp.Types.DocumentSymbolParams.{ textDocument = {uri}; partialResultToken; workDoneToken } = params in (*TODO: At some point we might get ssupport for partialResult and workDone*)
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[documentSymbol] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
   | Some tab -> log @@ "[documentSymbol] getting symbols";
     if Dm.DocumentManager.is_parsing tab.st then
+       (* Making use of the error codes: the ServerCancelled error code indicates 
+       that the server is busy and the client should resend the request later.
+       It doesn't seem to be working for documentSymbol at the moment. *)
       Error {code=(Some Jsonrpc.Response.Error.Code.ServerCancelled); message="Parsing not finished"} , []
     else
       let symbols = Dm.DocumentManager.get_document_symbols tab.st in
@@ -599,6 +598,9 @@ let handle_lsp_event = function
   | Receive (Some rpc) ->
     lsp :: (* the event is recurrent *)
     begin try
+      let json = Jsonrpc.Packet.yojson_of_t rpc in
+      let msg = Yojson.Safe.pretty_to_string ~std:true json in
+      log @@ "recieved: " ^ msg;
       begin match rpc with
       | Request req ->
           log @@ "ui request: " ^ req.method_;
