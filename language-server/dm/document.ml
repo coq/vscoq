@@ -147,6 +147,17 @@ let range_of_id_with_blank_space document id =
   | None -> CErrors.anomaly Pp.(str"Trying to get range of non-existing sentence " ++ Stateid.print id)
   | Some sentence -> range_of_sentence_with_blank_space document.raw_doc sentence
 
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+let kind_of_vernac_syn_pure = function
+  | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theorem"
+  | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
+  | _ -> None, ""
+[%%else]
+let kind_of_vernac_syn_pure = function
+  | Vernacexpr.VernacDefinition ((_, IsTheoremKind kind), _) -> Some (TheoremKind kind), "theorem"
+  | Vernacexpr.VernacDefinition ((_, IsDefinitionKind def), _) -> Some (DefinitionType def), "definition"
+  | _ -> None, ""
+[%%endif]
 
 let record_outline document id (ast : Synterp.vernac_control_entry) classif (outline : outline) =
   let open Vernacextend in
@@ -155,11 +166,7 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     let vernac_gen_expr = ast.v.expr in
     let type_, statement = match vernac_gen_expr with
       | VernacSynterp _ -> None, ""
-      | VernacSynPure pure -> 
-        match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theorem"
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
-        | _ -> None, ""
+      | VernacSynPure pure -> kind_of_vernac_syn_pure pure
     in
     let name = match names with
     |[] -> "default"
@@ -177,11 +184,7 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     let type_, statement = match vernac_gen_expr with
       | VernacSynterp (Synterp.EVernacExtend _) when names <> [] -> Some Other, "external"
       | VernacSynterp _ -> None, ""
-      | VernacSynPure pure -> 
-        match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theroem"
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
-        | _ -> None, ""
+      | VernacSynPure pure -> kind_of_vernac_syn_pure pure
     in
     let name = match names with
     |[] -> "default"
