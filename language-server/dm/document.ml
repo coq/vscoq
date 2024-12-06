@@ -27,11 +27,18 @@ type proof_block_type =
   | DefinitionType of Decls.definition_object_kind
   | Other
 
+type proof_step = {
+  id: sentence_id;
+  tactic: string;
+  range: Range.t;
+}
+
 type outline_element = {
   id: sentence_id;
   name: string;
   type_: proof_block_type;
   statement: string;
+  proof: proof_step list;
   range: Range.t
 }
 
@@ -132,10 +139,19 @@ let range_of_sentence raw (sentence : sentence) =
   let end_ = RawDocument.position_of_loc raw sentence.stop in
   Range.{ start; end_ }
 
+let string_of_sentence raw (sentence: sentence) =
+    let string = RawDocument.string_in_range raw sentence.start sentence.stop in
+    string
+
 let range_of_sentence_with_blank_space raw (sentence : sentence) =
   let start = RawDocument.position_of_loc raw sentence.parsing_start in
   let end_ = RawDocument.position_of_loc raw sentence.stop in
   Range.{ start; end_ }
+
+let string_of_id document id =
+  match SM.find_opt id document.sentences_by_id with
+  | None -> CErrors.anomaly Pp.(str"Trying to get range of non-existing sentence " ++ Stateid.print id)
+  | Some sentence -> string_of_sentence document.raw_doc sentence
 
 let range_of_id document id =
   match SM.find_opt id document.sentences_by_id with
@@ -147,10 +163,20 @@ let range_of_id_with_blank_space document id =
   | None -> CErrors.anomaly Pp.(str"Trying to get range of non-existing sentence " ++ Stateid.print id)
   | Some sentence -> range_of_sentence_with_blank_space document.raw_doc sentence
 
+let push_proof_step_in_outline document id (outline : outline) =
+  let range = range_of_id document id in
+  let tactic = string_of_id document id in
+  let proof_step = {id; tactic; range} in
+  match outline with
+  | [] -> outline
+  | e :: l -> 
+    let proof = proof_step :: e.proof in
+    {e with proof} :: l
 
 let record_outline document id (ast : Synterp.vernac_control_entry) classif (outline : outline) =
   let open Vernacextend in
   match classif with
+  | VtProofStep _ -> push_proof_step_in_outline document id outline
   | VtStartProof (_, names) ->
     let vernac_gen_expr = ast.v.expr in
     let type_, statement = match vernac_gen_expr with
@@ -169,7 +195,7 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     | None -> outline
     | Some type_ ->
       let range = range_of_id document id in
-      let element = {id; type_; name; statement; range} in
+      let element = {id; type_; name; statement; range; proof=[]} in
       element :: outline
     end
   | VtSideff (names, _) ->
@@ -191,7 +217,7 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     | None -> outline
     | Some type_ ->
       let range = range_of_id document id in
-      let element = {id; type_; name; statement; range} in
+      let element = {id; type_; name; statement; range; proof=[]} in
       element :: outline
     end
   | _ -> outline
