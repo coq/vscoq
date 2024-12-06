@@ -50,6 +50,19 @@ If you have nix installed, you can do a full developer build of the language ser
 nix develop .#vscoq-language-server -c bash -c "cd language-server && dune build"
 ```
 
+### Composing the build with Coq
+
+We assume you are in a directory `coq/` where you have a coq checkout (built or not).
+You can git clone the vscoq repository in `coq/vscoq/` (next to, say, `kernel/`).
+Then `dune build vscoq/language-server` will build the server, typically in
+`_build/install/default/bin/vscoqtop` (next to the coq binaries).
+
+In order to use this binary, point the `vscoq.path` option to that path (better in its absolute form).
+
+Whenever you change the Coq sources `dune build` will also rebuild vscoqtop.
+If you specify a more specific dune target, remember that vscoqtop is *linked* to Coq,
+so if you don't rebuild it it will not work.
+
 ### Debugging
 
 ## Client 
@@ -67,6 +80,9 @@ Both of the two coq exclusive panels are react apps. We use the [atomic design p
 * Still from the client folder, run `yarn run build:all`  this will ensure that both web apps are built. 
 * You can then run `yarn run compile` which will compile the extension.
 * To package the extension run `yarn run package`
+* To make an installable `.vsx` package, use `npm install -g @vscode/vsce` (once) and `vsce package`.
+  This package can be installed locally in any code workspace or all (not recommended, as it can overwrite an existing 
+  globally installed vsx `code --install-extension vscoq-*.vsix`)
 * For publishing to VSCode market place use the [vsce tool](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
 
 ### Debugging 
