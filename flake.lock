@@ -10,13 +10,13 @@
       "locked": {
         "lastModified": 1732642450,
         "narHash": "sha256-XiE7gL8/myxrvHnhyueyyQq6H5v/XGHKZX8cupf8L0A=",
-        "owner": "rtetley",
+        "owner": "coq",
         "repo": "coq",
         "rev": "d6dd8a618cbf628a6580c9a42db0cf5f44606bea",
         "type": "github"
       },
       "original": {
-        "owner": "rtetley",
+        "owner": "coq",
         "repo": "coq",
         "rev": "d6dd8a618cbf628a6580c9a42db0cf5f44606bea",
         "type": "github"

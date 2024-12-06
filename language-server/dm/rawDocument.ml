@@ -102,6 +102,12 @@ let word_at_position raw pos : string option =
   with _ ->
     None
 
+let string_in_range raw start end_ =
+  try
+    String.sub raw.text start (end_ - start)
+  with _ -> (* TODO: ERROR *)
+    ""
+
 let apply_text_edit raw (Range.{start; end_}, editText) =
   let start = loc_of_position raw start in
   let stop = loc_of_position raw end_ in

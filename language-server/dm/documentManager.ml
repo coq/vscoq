@@ -73,6 +73,17 @@ type handled_event = {
     notification: Notification.Server.t option;
 }
 
+(* type proof_step = {
+  tactic: string;
+  range: Range.t;
+}
+
+type proof_block = {
+  statement: string;
+  range: Range.t;
+  steps: proof_step list;
+} *)
+
 let pp_event fmt = function
   | Execute { id; started; _ } ->
       let time = Unix.gettimeofday () -. started in 
@@ -318,6 +329,17 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
         {state with execution_state}, events
 
 let reset_to_top st = { st with observe_id = Top }
+
+(* 
+let get_document_proofs st =
+  let outline = Document.outline st.document in
+  let is_theorem Document.{ type_ } =
+    match type_ with
+    | TheoremKind _ -> true
+    | _ -> false
+    in
+  let mk_proof_block = 
+  let proofs, _  = List.partition is_theorem outline in *)
 
 let get_document_symbols st =
   let outline = Document.outline st.document in
