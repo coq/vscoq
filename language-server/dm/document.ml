@@ -179,13 +179,13 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
   | VtProofStep _ -> push_proof_step_in_outline document id outline
   | VtStartProof (_, names) ->
     let vernac_gen_expr = ast.v.expr in
-    let type_, statement = match vernac_gen_expr with
-      | VernacSynterp _ -> None, ""
+    let type_ = match vernac_gen_expr with
+      | VernacSynterp _ -> None
       | VernacSynPure pure -> 
         match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theorem"
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
-        | _ -> None, ""
+        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind)
+        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def)
+        | _ -> None
     in
     let name = match names with
     |[] -> "default"
@@ -195,6 +195,7 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     | None -> outline
     | Some type_ ->
       let range = range_of_id document id in
+      let statement = string_of_id document id in
       let element = {id; type_; name; statement; range; proof=[]} in
       element :: outline
     end
@@ -205,8 +206,8 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
       | VernacSynterp _ -> None, ""
       | VernacSynPure pure -> 
         match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theroem"
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
+        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), string_of_id document id
+        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), string_of_id document id
         | _ -> None, ""
     in
     let name = match names with
