@@ -749,6 +749,48 @@ let hover st pos =
   let lconstr = Procq.Constr.lconstr
 [%%endif]
 
+
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
+let jump_to_definition _  _ = None
+[%%else]
+let jump_to_definition st pos =
+  let raw_doc = Document.raw_document st.document in
+  let loc = RawDocument.loc_of_position raw_doc pos in
+  let opattern = RawDocument.word_at_position raw_doc pos in
+  match opattern with
+  | None -> log "jumpToDef: no word found at cursor"; None
+  | Some pattern ->
+    log ("jumpToDef: found word at cursor: \"" ^ pattern ^ "\"");
+    try
+    let qid = parse_entry st loc (Procq.Prim.qualid) pattern in
+      let ref = Nametab.locate_extended qid in
+        match Nametab.cci_src_loc ref with
+          | None -> None
+          | Some loc ->
+            begin match loc.Loc.fname with
+              | Loc.ToplevelInput | InFile  { dirpath = None } -> None
+              | InFile { dirpath = Some dp } ->
+                  let f = Loadpath.locate_absolute_library @@ Libnames.dirpath_of_string dp in
+                  begin match f with
+                    | Ok f ->
+                      let f =  Filename.remove_extension f ^ ".v" in
+                      (if Sys.file_exists f then
+                        let b_pos = Position.create ~character:(loc.bp - loc.bol_pos) ~line:(loc.line_nb - 1) in
+                        let e_pos = Position.create ~character:(loc.ep - loc.bol_pos) ~line:(loc.line_nb - 1) in
+                        let range = Range.create ~end_:b_pos ~start:e_pos in
+                        Some (range, f)
+                      else
+                        None
+                      )
+                    | Error _ -> None
+                  end
+            end
+        with e ->
+          let e, info = Exninfo.capture e in
+          log (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)); None
+
+[%%endif]
+
 let check st pos ~pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with

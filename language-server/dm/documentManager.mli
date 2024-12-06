@@ -132,6 +132,8 @@ val hover : state -> Position.t -> MarkupContent.t option
     if None, the position did not have a word,
     if Some, an Ok/Error result is returned. *)
 
+val jump_to_definition : state -> Position.t -> (Range.t * string) option
+
 val check : state -> Position.t -> pattern:string -> (pp,error) Result.t
 
 val locate : state -> Position.t -> pattern:string -> (pp, error) Result.t
