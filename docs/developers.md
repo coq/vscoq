@@ -50,15 +50,18 @@ If you have nix installed, you can do a full developer build of the language ser
 nix develop .#vscoq-language-server -c bash -c "cd language-server && dune build"
 ```
 
-### Composing with Coq
+### Composing the build with Coq
 
-Assuming you are in a directory `coq/`, you can git clone this repository in `coq/vscoq/`.
-Then `dune build vscoq/language-server` will build the lang server, typically in
+We assume you are in a directory `coq/` where you have a coq checkout (built or not).
+You can git clone the vscoq repository in `coq/vscoq/` (next to, say, `kernel/`).
+Then `dune build vscoq/language-server` will build the server, typically in
 `_build/install/default/bin/vscoqtop` (next to the coq binaries).
 
-In order to use this binary, point the `vscoq.path` option to that path.
+In order to use this binary, point the `vscoq.path` option to that path (better in its absolute form).
 
-Whenever you change Coq, `dune build` will also rebuild vscoqtop.
+Whenever you change the Coq sources `dune build` will also rebuild vscoqtop.
+If you specify a more specific dune target, remember that vscoqtop is *linked* to Coq,
+so if you don't rebuild it it will not work.
 
 ### Debugging
 
