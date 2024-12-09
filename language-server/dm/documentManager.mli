@@ -110,6 +110,8 @@ val get_info_messages : state -> Position.t option -> (DiagnosticSeverity.t * pp
 
 val get_document_symbols : state -> DocumentSymbol.t list
 
+val get_document_proofs : state -> ProofState.proof_block list
+
 val all_diagnostics : state -> Diagnostic.t list
 (** all_diagnostics [doc] returns the diagnostics corresponding to the sentences
     that have been executed in [doc]. *)

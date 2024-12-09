@@ -27,12 +27,19 @@ type proof_block_type =
   | DefinitionType of Decls.definition_object_kind
   | Other
 
+type proof_step = {
+  id: sentence_id;
+  tactic: string;
+  range: Range.t;
+}
+
 type outline_element = {
     id: sentence_id;
     name: string;
     type_: proof_block_type;
     statement: string;
-    range: Range.t
+    proof: proof_step list;
+    range: Range.t;
   }
 
 type outline = outline_element list

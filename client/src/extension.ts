@@ -17,6 +17,7 @@ import {
   RequestType,
   ServerOptions,
   TextDocumentIdentifier,
+  VersionedTextDocumentIdentifier,
 } from 'vscode-languageclient/node';
 
 import Client from './client';
@@ -27,6 +28,8 @@ import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
 import {
     CoqLogMessage,
+    DocumentProofsRequest,
+    DocumentProofsResponse,
     ErrorAlertNotification,
     MoveCursorNotification, 
     ProofViewNotification, 
@@ -58,6 +61,21 @@ export function activate(context: ExtensionContext) {
             commands.executeCommand('setContext', 'inCoqProject', files.length > 0);
         });
     }
+
+    const getDocumentProofs = (uri: VersionedTextDocumentIdentifier) => {
+        const textDocument = TextDocumentIdentifier.create(uri.toString());
+        const params: DocumentProofsRequest = {textDocument};
+        const req = new RequestType<DocumentProofsRequest, DocumentProofsResponse, void>("vscoq/documentProofs");
+        Client.writeToVscoq2Channel("Getting proofs for: " + uri.toString());
+        client.sendRequest(req, params).then(
+            (res) => {
+                return res;
+            }, 
+            (err) => {
+                window.showErrorMessage(err);
+            }
+        );
+    };
 
     // Watch for files being added or removed
     workspace.onDidCreateFiles(checkInCoqProject);
@@ -368,7 +386,13 @@ Path: \`${coqTM.getVsCoqTopPath()}\`
         });
 
         context.subscriptions.push(client);
-    }	
+    }
+
+    const externalApi = {
+        getDocumentProofs
+    };
+
+    return externalApi;
 
 }
 
