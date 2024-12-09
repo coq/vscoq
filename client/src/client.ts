@@ -4,7 +4,6 @@ import {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
-  integer
 } from 'vscode-languageclient/node';
 
 import {decorationsManual, decorationsContinuous, decorationsErrorAnimation} from './Decorations';

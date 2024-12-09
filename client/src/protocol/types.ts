@@ -144,3 +144,22 @@ export interface ResetCoqRequest {
 }
 
 export interface ResetCoqResponse {};
+
+export interface DocumentProofsRequest {
+    textDocument: TextDocumentIdentifier;
+}
+
+type proof_step = {
+    range: Range;
+    tactic: string;
+};
+
+type proof_block = {
+    statement: string;
+    range: Range;
+    proofs: proof_step[];
+};
+
+export interface DocumentProofsResponse {
+    proofs: proof_block[];
+}
