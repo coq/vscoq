@@ -17,6 +17,7 @@ import {
   RequestType,
   ServerOptions,
   TextDocumentIdentifier,
+  VersionedTextDocumentIdentifier,
 } from 'vscode-languageclient/node';
 
 import Client from './client';
@@ -188,8 +189,7 @@ export function activate(context: ExtensionContext) {
             });
         };
 
-        const getDocumentProofs = (editor: TextEditor) => {
-            const uri = editor.document.uri;
+        const getDocumentProofs = (uri: VersionedTextDocumentIdentifier) => {
             const textDocument = TextDocumentIdentifier.create(uri.toString());
             const params: DocumentProofsRequest = {textDocument};
             const req = new RequestType<DocumentProofsRequest, DocumentProofsResponse, void>("vscoq/documentProofs");
