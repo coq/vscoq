@@ -62,6 +62,21 @@ export function activate(context: ExtensionContext) {
         });
     }
 
+    const getDocumentProofs = (uri: VersionedTextDocumentIdentifier) => {
+        const textDocument = TextDocumentIdentifier.create(uri.toString());
+        const params: DocumentProofsRequest = {textDocument};
+        const req = new RequestType<DocumentProofsRequest, DocumentProofsResponse, void>("vscoq/documentProofs");
+        Client.writeToVscoq2Channel("Getting proofs for: " + uri.toString());
+        client.sendRequest(req, params).then(
+            (res) => {
+                return res;
+            }, 
+            (err) => {
+                window.showErrorMessage(err);
+            }
+        );
+    };
+
     // Watch for files being added or removed
     workspace.onDidCreateFiles(checkInCoqProject);
     workspace.onDidDeleteFiles(checkInCoqProject);
@@ -187,21 +202,6 @@ export function activate(context: ExtensionContext) {
                     searchProvider.launchQuery(queryText, type);
                 }
             });
-        };
-
-        const getDocumentProofs = (uri: VersionedTextDocumentIdentifier) => {
-            const textDocument = TextDocumentIdentifier.create(uri.toString());
-            const params: DocumentProofsRequest = {textDocument};
-            const req = new RequestType<DocumentProofsRequest, DocumentProofsResponse, void>("vscoq/documentProofs");
-            Client.writeToVscoq2Channel("Getting proofs for: " + uri.toString());
-            client.sendRequest(req, params).then(
-                (res) => {
-                    return res;
-                }, 
-                (err) => {
-                    window.showErrorMessage(err);
-                }
-            );
         };
 
         registerVscoqTextCommand('reset', (editor) => {
@@ -386,13 +386,13 @@ Path: \`${coqTM.getVsCoqTopPath()}\`
         });
 
         context.subscriptions.push(client);
-
-        const externalApi = {
-            getDocumentProofs
-        };
-
-        return externalApi;
     }
+
+    const externalApi = {
+        getDocumentProofs
+    };
+
+    return externalApi;
 
 }
 
