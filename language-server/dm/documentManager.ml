@@ -328,10 +328,12 @@ let get_document_proofs st =
     | _ -> false
     in
   let mk_proof_block Document.{statement; proof; range } =
+    let statement = ProofState.mk_proof_statement statement range in
+    let last_step = List.hd proof in
+    let proof = List.rev proof in
+    let fst_step = List.hd proof in
+    let range = Range.create ~start:fst_step.range.start ~end_:last_step.range.end_ in
     let steps = List.map (fun Document.{tactic; range} -> ProofState.mk_proof_step tactic range) proof in
-    let step_ranges = List.map (fun (x: Document.proof_step) -> x.range) proof in
-    let range = List.fold_right RangeList.insert_or_merge_range step_ranges [range] in
-    let range = List.hd range in
     ProofState.mk_proof_block statement steps range
   in
   let proofs, _  = List.partition is_theorem outline in

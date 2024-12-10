@@ -176,7 +176,7 @@ let push_proof_step_in_outline document id (outline : outline) =
 let record_outline document id (ast : Synterp.vernac_control_entry) classif (outline : outline) =
   let open Vernacextend in
   match classif with
-  | VtProofStep _ -> push_proof_step_in_outline document id outline
+  | VtProofStep _ | VtQed _ -> push_proof_step_in_outline document id outline
   | VtStartProof (_, names) ->
     let vernac_gen_expr = ast.v.expr in
     let type_ = match vernac_gen_expr with

@@ -149,17 +149,22 @@ export interface DocumentProofsRequest {
     textDocument: TextDocumentIdentifier;
 }
 
-type proof_step = {
+type ProofStatement = {
+    range: Range;
+    statement: string;
+}
+
+type ProofStep = {
     range: Range;
     tactic: string;
 };
 
-type proof_block = {
-    statement: string;
+type ProofBlock = {
+    statement: ProofStatement;
     range: Range;
-    proofs: proof_step[];
+    steps: ProofStep[];
 };
 
 export interface DocumentProofsResponse {
-    proofs: proof_block[];
+    proofs: ProofBlock[];
 }
