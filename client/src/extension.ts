@@ -27,6 +27,8 @@ import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
 import {
     CoqLogMessage,
+    DocumentProofsRequest,
+    DocumentProofsResponse,
     ErrorAlertNotification,
     MoveCursorNotification, 
     ProofViewNotification, 
@@ -58,6 +60,14 @@ export function activate(context: ExtensionContext) {
             commands.executeCommand('setContext', 'inCoqProject', files.length > 0);
         });
     }
+
+    const getDocumentProofs = (uri: Uri) => {
+        const textDocument = TextDocumentIdentifier.create(uri.toString());
+        const params: DocumentProofsRequest = {textDocument};
+        const req = new RequestType<DocumentProofsRequest, DocumentProofsResponse, void>("vscoq/documentProofs");
+        Client.writeToVscoq2Channel("Getting proofs for: " + uri.toString());
+        return client.sendRequest(req, params);
+    };
 
     // Watch for files being added or removed
     workspace.onDidCreateFiles(checkInCoqProject);
@@ -368,7 +378,13 @@ Path: \`${coqTM.getVsCoqTopPath()}\`
         });
 
         context.subscriptions.push(client);
-    }	
+    }
+
+    const externalApi = {
+        getDocumentProofs
+    };
+
+    return externalApi;
 
 }
 

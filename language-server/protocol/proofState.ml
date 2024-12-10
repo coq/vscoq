@@ -13,8 +13,25 @@
 (**************************************************************************)
 
 open Printing
+open Lsp.Types
 
 open Ppx_yojson_conv_lib.Yojson_conv.Primitives
+
+type proof_statement = {
+  statement: string;
+  range: Range.t;
+} [@@deriving yojson]
+
+type proof_step = {
+  tactic: string;
+  range: Range.t;
+} [@@deriving yojson]
+
+type proof_block = {
+  statement: proof_statement;
+  range: Range.t;
+  steps: proof_step list;
+} [@@deriving yojson]
 
 type goal = {
   id: int;
@@ -119,3 +136,9 @@ let get_proof ~previous diff_mode st =
       givenUpGoals;
       unfocusedGoals;
     }
+
+let mk_proof_statement statement range = {statement; range}
+
+let mk_proof_step tactic range = {tactic; range}
+
+let mk_proof_block statement steps range = {steps; statement; range}

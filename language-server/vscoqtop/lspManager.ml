@@ -546,6 +546,18 @@ let sendDocumentState id params =
   | Some { st } -> let document = Dm.DocumentManager.Internal.string_of_state st in
     Ok Request.Client.DocumentStateResult.{ document }, []
 
+let sendDocumentProofs id params = 
+  let Request.Client.DocumentProofsParams.{ textDocument } = params in
+  let uri = textDocument.uri in
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log @@ "[documentProofs] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
+  | Some { st } ->
+    if Dm.DocumentManager.is_parsing st then
+      Error {code=(Some Jsonrpc.Response.Error.Code.ServerCancelled); message="Parsing not finished"} , []
+    else
+      let proofs = Dm.DocumentManager.get_document_proofs st in
+      Ok Request.Client.DocumentProofsResult.{ proofs }, []
+
 let workspaceDidChangeConfiguration params = 
   let Lsp.Types.DidChangeConfigurationParams.{ settings } = params in
   let settings = Settings.t_of_yojson settings in
@@ -582,6 +594,7 @@ let dispatch_request : type a. Jsonrpc.Id.t -> a Request.Client.t -> (a,error) r
   | Print params -> coqtopPrint id params
   | Search params -> coqtopSearch id params
   | DocumentState params -> sendDocumentState id params
+  | DocumentProofs params -> sendDocumentProofs id params
 
 let dispatch_std_notification = 
   let open Lsp.Client_notification in function
