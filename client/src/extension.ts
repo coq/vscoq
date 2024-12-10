@@ -17,7 +17,6 @@ import {
   RequestType,
   ServerOptions,
   TextDocumentIdentifier,
-  VersionedTextDocumentIdentifier,
 } from 'vscode-languageclient/node';
 
 import Client from './client';
@@ -62,19 +61,12 @@ export function activate(context: ExtensionContext) {
         });
     }
 
-    const getDocumentProofs = (uri: VersionedTextDocumentIdentifier) => {
+    const getDocumentProofs = (uri: Uri) => {
         const textDocument = TextDocumentIdentifier.create(uri.toString());
         const params: DocumentProofsRequest = {textDocument};
         const req = new RequestType<DocumentProofsRequest, DocumentProofsResponse, void>("vscoq/documentProofs");
         Client.writeToVscoq2Channel("Getting proofs for: " + uri.toString());
-        client.sendRequest(req, params).then(
-            (res) => {
-                return res;
-            }, 
-            (err) => {
-                window.showErrorMessage(err);
-            }
-        );
+        return client.sendRequest(req, params);
     };
 
     // Watch for files being added or removed

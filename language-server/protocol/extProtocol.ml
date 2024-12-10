@@ -251,7 +251,7 @@ module Request = struct
   module DocumentProofsParams = struct
     
     type t = {
-      textDocument: VersionedTextDocumentIdentifier.t
+      textDocument: TextDocumentIdentifier.t
     } [@@deriving yojson]
 
   end
