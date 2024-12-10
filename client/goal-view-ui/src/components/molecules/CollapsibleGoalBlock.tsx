@@ -19,7 +19,7 @@ const collapsibleGoalBlock: FunctionComponent<CollapsibleGoalBlockProps> = (prop
 
     return (
         <Accordion title={"Goal " + goalIndex} collapsed={!goal.isOpen} collapseHandler={() => collapseHandler(goal.id)}>
-            <GoalBlock goal={goal} goalIndicator={goalIndicator} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler}/>
+            <GoalBlock goal={goal} goalIndicator={goalIndicator} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler} displayHyps={goalIndex === 1}/>
         </Accordion>
     );
 
