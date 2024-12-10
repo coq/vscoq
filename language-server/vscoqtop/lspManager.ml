@@ -551,8 +551,12 @@ let sendDocumentProofs id params =
   let uri = textDocument.uri in
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[documentProofs] ignoring event on non existent document"; Error({message="Document does not exist"; code=None}), []
-  | Some { st } -> let proofs = Dm.DocumentManager.get_document_proofs st in
-    Ok Request.Client.DocumentProofsResult.{ proofs }, []
+  | Some { st } ->
+    if Dm.DocumentManager.is_parsing st then
+      Error {code=(Some Jsonrpc.Response.Error.Code.ServerCancelled); message="Parsing not finished"} , []
+    else
+      let proofs = Dm.DocumentManager.get_document_proofs st in
+      Ok Request.Client.DocumentProofsResult.{ proofs }, []
 
 let workspaceDidChangeConfiguration params = 
   let Lsp.Types.DidChangeConfigurationParams.{ settings } = params in
