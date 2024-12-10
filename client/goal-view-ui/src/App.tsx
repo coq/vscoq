@@ -29,7 +29,7 @@ const app = () => {
             setGoals(allGoals === null
                 ? allGoals
                 : {
-                    main: allGoals.goals.map((goal: Goal) => {
+                    main: allGoals.goals.map((goal: Goal, index: number) => {
                         return {...goal, isOpen: true};
                     }),
                     shelved: allGoals.shelvedGoals.map((goal: Goal) => {

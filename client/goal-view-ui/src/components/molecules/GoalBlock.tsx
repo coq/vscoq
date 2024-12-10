@@ -1,6 +1,4 @@
 import React, {FunctionComponent} from 'react';
-import {VSCodeButton} from '@vscode/webview-ui-toolkit/react';
-import {VscChevronDown} from 'react-icons/vsc';
 
 import HypothesesBlock from './HypothesesBlock';
 import GoalComponent from '../atoms/Goal';
@@ -13,18 +11,21 @@ type GoalBlockProps = {
     goal: Goal
     goalIndicator?: string,
     maxDepth: number,
-    helpMessageHandler: (message: string) => void
+    helpMessageHandler: (message: string) => void,
+    displayHyps: boolean
 };
 
 const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {
     
-    const {goal, goalIndicator, maxDepth, helpMessageHandler} = props;
+    const {goal, goalIndicator, maxDepth, displayHyps, helpMessageHandler} = props;
     const indicator = goalIndicator ? <span className={classes.GoalIndex} >({goalIndicator})</span> : null;
+    const hyps = displayHyps ? <HypothesesBlock hypotheses={goal.hypotheses} maxDepth={maxDepth}/> : null;
+    const sep = displayHyps ? <div className={classes.SeparatorZone}> {indicator} <Separator /> </div> : null;
 
     return (
         <div className={classes.Block}>
-            <HypothesesBlock hypotheses={goal.hypotheses} maxDepth={maxDepth}/>
-            <div className={classes.SeparatorZone}> {indicator} <Separator /> </div>
+            {hyps}
+            {sep}
             <GoalComponent goal={goal.goal} maxDepth={maxDepth} setHelpMessage={helpMessageHandler}/>
         </div>
     );
