@@ -223,6 +223,10 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     end
   | _ -> outline
 
+let compute_outline ({ sentences_by_end } as document) =
+    LM.fold (fun _ {id; ast} -> record_outline document id ast.ast ast.classification) sentences_by_end []
+
+
 let schedule doc = doc.schedule
 
 let raw_document doc = doc.raw_doc
@@ -244,8 +248,7 @@ let add_sentence parsed parsing_start start stop (ast: parsed_ast) synterp_state
     sentences_by_id = SM.add id sentence parsed.sentences_by_id;
     schedule;
   } in
-  let outline = record_outline document id ast.ast ast.classification parsed.outline in
-  {document with outline}, scheduler_state_after
+  document, scheduler_state_after
 
 let remove_sentence parsed id =
   match SM.find_opt id parsed.sentences_by_id with
@@ -649,7 +652,8 @@ let handle_invalidate {parsed; errors; parsed_comments; stop; top_id; started; p
     List.fold_left (fun acc (comment : comment) -> LM.add comment.stop comment acc) comments new_comments
   in
   let parsed_loc = pos_at_end document in
-  let parsed_document = {document with parsed_loc; parsing_errors_by_end; comments_by_end} in
+  let outline = compute_outline document in
+  let parsed_document = {document with parsed_loc; parsing_errors_by_end; comments_by_end; outline} in
   Some {parsed_document; unchanged_id; invalid_ids; previous_document}
 
 let handle_event document = function
