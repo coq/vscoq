@@ -30,7 +30,7 @@ let error loc qf msg vernac_st = Error ((loc,msg), qf, (Some vernac_st))
 
 type sentence_id = Stateid.t
 
-type errored_sentence = sentence_id option
+type errored_sentence = (sentence_id * Loc.t option) option
 
 module SM = Map.Make (Stateid)
 
@@ -594,7 +594,7 @@ let execute_task st (vs, events, interrupted) task =
           let vs, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
           let exec_error = match v with
             | Success _ -> None
-            | Error _ -> Some id
+            | Error ((loc, _), _, _) -> Some (id, loc)
           in
           let st = update st id v in
           (st, vs, events @ ev, false, exec_error)
@@ -673,10 +673,10 @@ let build_tasks_for document sch st id block =
       (* We reached an already computed state *)
       log @@ "Reached computed state " ^ Stateid.to_string id;
       vs, tasks, st, None
-    | Some (Error(_,_,Some vs)) ->
+    | Some (Error((loc, _),_,Some vs)) ->
       (* We try to be resilient to an error *)
       log @@ "Error resiliency on state " ^ Stateid.to_string id;
-      vs, tasks, st, Some id
+      vs, tasks, st, Some (id, loc)
     | _ ->
       log @@ "Non (locally) computed state " ^ Stateid.to_string id;
       let (base_id, task) = task_for_sentence sch id in
