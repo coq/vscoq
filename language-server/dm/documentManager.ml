@@ -281,11 +281,13 @@ let create_execution_event background event =
   let priority = if background then None else Some PriorityManager.execution in
   Sel.now ?priority event
 
-let state_before_error state error_id =
+let state_before_error state error_id loc =
   match Document.get_sentence state.document error_id with
   | None -> state, None
   | Some { start } ->
-    let error_range = Document.range_of_id_with_blank_space state.document error_id in
+    let errored_sentence_range = Document.range_of_id_with_blank_space state.document error_id in
+    let error_range = 
+      Option.cata (fun loc -> RawDocument.range_of_loc (Document.raw_document state.document) loc) errored_sentence_range loc in
     match Document.find_sentence_before state.document start with
     | None ->
       let observe_id = Top in
@@ -309,8 +311,8 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
       match error_id with
       | None ->
         {state with execution_state}, []
-      | Some error_id ->
-        let state, error_range = state_before_error state error_id in
+      | Some (error_id, loc) ->
+        let state, error_range = state_before_error state error_id loc in
         let events = mk_block_on_error_event error_range error_id in
         {state with execution_state}, events
 
@@ -530,8 +532,8 @@ let execute st id vst_for_next_todo started task background block =
     let st, block_events =
       match exec_error with
       | None -> st, []
-      | Some error_id -> 
-        let st, error_range = state_before_error st error_id in
+      | Some (error_id, loc) -> 
+        let st, error_range = state_before_error st error_id loc in
         let events = if block then mk_block_on_error_event error_range error_id else [] in
         st, events
       in
