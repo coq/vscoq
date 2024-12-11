@@ -20,12 +20,14 @@ const goalBlock: FunctionComponent<GoalBlockProps> = (props) => {
     const {goal, goalIndicator, maxDepth, displayHyps, helpMessageHandler} = props;
     const indicator = goalIndicator ? <span className={classes.GoalIndex} >({goalIndicator})</span> : null;
     const hyps = displayHyps ? <HypothesesBlock hypotheses={goal.hypotheses} maxDepth={maxDepth}/> : null;
-    const sep = displayHyps ? <div className={classes.SeparatorZone}> {indicator} <Separator /> </div> : null;
 
     return (
         <div className={classes.Block}>
             {hyps}
-            {sep}
+            <div className={classes.SeparatorZone}> 
+                {indicator} 
+                <Separator />
+            </div>
             <GoalComponent goal={goal.goal} maxDepth={maxDepth} setHelpMessage={helpMessageHandler}/>
         </div>
     );

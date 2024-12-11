@@ -9,7 +9,8 @@ import classes from './GoalSection.module.css';
 
 type GoalSectionProps = {
     goals: CollapsibleGoal[],
-    collapseGoalHandler: (id: string) => void, 
+    collapseGoalHandler: (id: string) => void,
+    toggleContextHandler: (id: string) => void,
     displaySetting: string;
     emptyMessage: string;
     emptyIcon?: JSX.Element;
@@ -20,7 +21,7 @@ type GoalSectionProps = {
 
 const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
     
-    const {goals, collapseGoalHandler, displaySetting, unfocusedGoals, emptyMessage, emptyIcon, maxDepth, helpMessageHandler} = props;
+    const {goals, collapseGoalHandler, toggleContextHandler, displaySetting, unfocusedGoals, emptyMessage, emptyIcon, maxDepth, helpMessageHandler} = props;
     const emptyMessageRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -46,7 +47,10 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
                 Next unfocused goals (focus with bullet):
             </div>
             <div ref={emptyMessageRef}/>
-            <GoalCollapsibleSection goals={unfocusedGoals} collapseGoalHandler={collapseGoalHandler} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler} />
+            <GoalCollapsibleSection goals={unfocusedGoals} 
+                collapseGoalHandler={collapseGoalHandler}
+                toggleContextHandler={toggleContextHandler}
+                maxDepth={maxDepth} helpMessageHandler={helpMessageHandler} />
         </div>
         : <>
             <EmptyState message={emptyMessage} icon={emptyIcon} />
@@ -54,7 +58,11 @@ const goalSection: FunctionComponent<GoalSectionProps> = (props) => {
           </>
     : displaySetting === 'Tabs' ?
         <GoalTabSection goals={goals} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler}/>
-        : <GoalCollapsibleSection goals={goals} collapseGoalHandler={collapseGoalHandler} maxDepth={maxDepth} helpMessageHandler={helpMessageHandler}/>;
+        : <GoalCollapsibleSection goals={goals} 
+            collapseGoalHandler={collapseGoalHandler} 
+            maxDepth={maxDepth} helpMessageHandler={helpMessageHandler}
+            toggleContextHandler={toggleContextHandler}
+        />;
 
     return section;
 };

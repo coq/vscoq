@@ -1,7 +1,7 @@
 import React, {useState, useCallback, useEffect} from 'react';
 import "./App.css";
 
-import ProofViewPage from './components/templates/ProovViewPage';
+import ProofViewPage from './components/templates/ProofViewPage';
 import {Goal, ProofViewGoals, ProofViewGoalsKey, ProofViewMessage} from './types';
 
 import { vscode } from "./utilities/vscode";
@@ -30,16 +30,16 @@ const app = () => {
                 ? allGoals
                 : {
                     main: allGoals.goals.map((goal: Goal, index: number) => {
-                        return {...goal, isOpen: true};
+                        return {...goal, isOpen: true, isContextHidden: index !== 0};
                     }),
-                    shelved: allGoals.shelvedGoals.map((goal: Goal) => {
-                        return {...goal, isOpen: true};
+                    shelved: allGoals.shelvedGoals.map((goal: Goal, index: number) => {
+                        return {...goal, isOpen: true, isContextHidden: index !== 0};
                     }),
-                    givenUp: allGoals.givenUpGoals.map((goal: Goal) => {
-                        return {...goal, isOpen: true}; 
+                    givenUp: allGoals.givenUpGoals.map((goal: Goal, index: number) => {
+                        return {...goal, isOpen: true, isContextHidden: index !== 0}; 
                     }),
-                    unfocused: allGoals.unfocusedGoals.map((goal: Goal) => {
-                        return {...goal, isOpen: false};
+                    unfocused: allGoals.unfocusedGoals.map((goal: Goal, index: number) => {
+                        return {...goal, isOpen: false, isContextHidden: index !== 0};
                     })
                 }
             );
@@ -72,6 +72,19 @@ const app = () => {
         });
     };
 
+    const toggleContext = (id: string, key: ProofViewGoalsKey) => {
+        const newGoals = goals![key].map(goal => {
+            if(goal.id === id){
+                return {...goal, isContextHidden: !goal.isContextHidden};
+            }
+            return goal;
+        });
+        setGoals({
+            ...goals!, 
+            [key]: newGoals
+        });
+    };
+
     const settingsClickHandler = () => {
         vscode.postMessage({
             command: "openGoalSettings",
@@ -89,6 +102,7 @@ const app = () => {
             settingsClickHandler={settingsClickHandler}
             helpMessage={helpMessage}
             helpMessageHandler={(message: string) => setHelpMessage(message)}
+            toggleContextHandler={toggleContext}
         />
     </main>
   );

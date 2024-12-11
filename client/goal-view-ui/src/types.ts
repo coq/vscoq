@@ -10,6 +10,7 @@ export interface Goal {
 
 export interface CollapsibleGoal extends Goal  {
     isOpen: boolean;
+    isContextHidden: boolean;
 };
 
 export type ProofViewGoalsType = {
