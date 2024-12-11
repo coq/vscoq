@@ -27,11 +27,18 @@ type proof_block_type =
   | DefinitionType of Decls.definition_object_kind
   | Other
 
+type proof_step = {
+  id: sentence_id;
+  tactic: string;
+  range: Range.t;
+}
+
 type outline_element = {
   id: sentence_id;
   name: string;
   type_: proof_block_type;
   statement: string;
+  proof: proof_step list;
   range: Range.t
 }
 
@@ -132,10 +139,19 @@ let range_of_sentence raw (sentence : sentence) =
   let end_ = RawDocument.position_of_loc raw sentence.stop in
   Range.{ start; end_ }
 
+let string_of_sentence raw (sentence: sentence) =
+    let string = RawDocument.string_in_range raw sentence.start sentence.stop in
+    string
+
 let range_of_sentence_with_blank_space raw (sentence : sentence) =
   let start = RawDocument.position_of_loc raw sentence.parsing_start in
   let end_ = RawDocument.position_of_loc raw sentence.stop in
   Range.{ start; end_ }
+
+let string_of_id document id =
+  match SM.find_opt id document.sentences_by_id with
+  | None -> CErrors.anomaly Pp.(str"Trying to get range of non-existing sentence " ++ Stateid.print id)
+  | Some sentence -> string_of_sentence document.raw_doc sentence
 
 let range_of_id document id =
   match SM.find_opt id document.sentences_by_id with
@@ -147,19 +163,29 @@ let range_of_id_with_blank_space document id =
   | None -> CErrors.anomaly Pp.(str"Trying to get range of non-existing sentence " ++ Stateid.print id)
   | Some sentence -> range_of_sentence_with_blank_space document.raw_doc sentence
 
+let push_proof_step_in_outline document id (outline : outline) =
+  let range = range_of_id document id in
+  let tactic = string_of_id document id in
+  let proof_step = {id; tactic; range} in
+  match outline with
+  | [] -> outline
+  | e :: l -> 
+    let proof = proof_step :: e.proof in
+    {e with proof} :: l
 
 let record_outline document id (ast : Synterp.vernac_control_entry) classif (outline : outline) =
   let open Vernacextend in
   match classif with
+  | VtProofStep _ | VtQed _ -> push_proof_step_in_outline document id outline
   | VtStartProof (_, names) ->
     let vernac_gen_expr = ast.v.expr in
-    let type_, statement = match vernac_gen_expr with
-      | VernacSynterp _ -> None, ""
+    let type_ = match vernac_gen_expr with
+      | VernacSynterp _ -> None
       | VernacSynPure pure -> 
         match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theorem"
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
-        | _ -> None, ""
+        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind)
+        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def)
+        | _ -> None
     in
     let name = match names with
     |[] -> "default"
@@ -169,7 +195,8 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     | None -> outline
     | Some type_ ->
       let range = range_of_id document id in
-      let element = {id; type_; name; statement; range} in
+      let statement = string_of_id document id in
+      let element = {id; type_; name; statement; range; proof=[]} in
       element :: outline
     end
   | VtSideff (names, _) ->
@@ -179,8 +206,8 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
       | VernacSynterp _ -> None, ""
       | VernacSynPure pure -> 
         match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), "theroem"
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), "definition"
+        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), string_of_id document id
+        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), string_of_id document id
         | _ -> None, ""
     in
     let name = match names with
@@ -191,10 +218,14 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     | None -> outline
     | Some type_ ->
       let range = range_of_id document id in
-      let element = {id; type_; name; statement; range} in
+      let element = {id; type_; name; statement; range; proof=[]} in
       element :: outline
     end
   | _ -> outline
+
+let compute_outline ({ sentences_by_end } as document) =
+    LM.fold (fun _ {id; ast} -> record_outline document id ast.ast ast.classification) sentences_by_end []
+
 
 let schedule doc = doc.schedule
 
@@ -217,8 +248,7 @@ let add_sentence parsed parsing_start start stop (ast: parsed_ast) synterp_state
     sentences_by_id = SM.add id sentence parsed.sentences_by_id;
     schedule;
   } in
-  let outline = record_outline document id ast.ast ast.classification parsed.outline in
-  {document with outline}, scheduler_state_after
+  document, scheduler_state_after
 
 let remove_sentence parsed id =
   match SM.find_opt id parsed.sentences_by_id with
@@ -622,7 +652,8 @@ let handle_invalidate {parsed; errors; parsed_comments; stop; top_id; started; p
     List.fold_left (fun acc (comment : comment) -> LM.add comment.stop comment acc) comments new_comments
   in
   let parsed_loc = pos_at_end document in
-  let parsed_document = {document with parsed_loc; parsing_errors_by_end; comments_by_end} in
+  let outline = compute_outline document in
+  let parsed_document = {document with parsed_loc; parsing_errors_by_end; comments_by_end; outline} in
   Some {parsed_document; unchanged_id; invalid_ids; previous_document}
 
 let handle_event document = function

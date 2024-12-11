@@ -319,6 +319,26 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
 
 let reset_to_top st = { st with observe_id = Top }
 
+
+let get_document_proofs st =
+  let outline = Document.outline st.document in
+  let is_theorem Document.{ type_ } =
+    match type_ with
+    | TheoremKind _ -> true
+    | _ -> false
+    in
+  let mk_proof_block Document.{statement; proof; range } =
+    let statement = ProofState.mk_proof_statement statement range in
+    let last_step = List.hd proof in
+    let proof = List.rev proof in
+    let fst_step = List.hd proof in
+    let range = Range.create ~start:fst_step.range.start ~end_:last_step.range.end_ in
+    let steps = List.map (fun Document.{tactic; range} -> ProofState.mk_proof_step tactic range) proof in
+    ProofState.mk_proof_block statement steps range
+  in
+  let proofs, _  = List.partition is_theorem outline in
+  List.map mk_proof_block proofs
+
 let get_document_symbols st =
   let outline = Document.outline st.document in
   let to_document_symbol elem =
