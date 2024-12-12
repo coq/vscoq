@@ -593,7 +593,7 @@ let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments
           let str = String.sub (RawDocument.text raw) begin_char (end_char - begin_char) in
           let sstr = Stream.of_string str in
           let lex = CLexer.Lexer.tok_func sstr in
-          stream_tok 0 [] lex begin_line begin_char 
+          stream_tok 0 [] lex begin_line begin_char
         in
       begin
         try
