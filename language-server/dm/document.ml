@@ -112,7 +112,7 @@ type parse_state = {
   loc: Loc.t option;
   synterp_state : Vernacstate.Synterp.t;
   stream: (unit, char) Gramlib.Stream.t;
-  raw: RawDocument.t;
+  raw: RawDocument.t option;
   parsed: pre_sentence list;
   errors: parsing_error list;
   parsed_comments: comment list;
@@ -571,7 +571,7 @@ let handle_parse_error start parsing_start msg qf ({stream; errors; parsed;} as 
   let errors = parsing_error :: errors in
   let parse_state = {parse_state with errors; parsed} in
   (* TODO: we could count the \n between start and stop and increase Loc.line_nb *)
-  create_parsing_event (ParseEvent parse_state)
+  ParseEvent parse_state
 
 let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments} as parse_state) =
   let start = Stream.count stream in
@@ -579,7 +579,7 @@ let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments
   begin
     (* FIXME should we save lexer state? *)
     match parse_one_sentence ?loc stream ~st:synterp_state with
-    | None, _ (* EOI *) -> create_parsing_event (Invalidate parse_state)
+    | None, _ (* EOI *) -> Invalidate parse_state
     | Some ast, comments ->
       let stop = Stream.count stream in
       let begin_line, begin_char, end_char =
@@ -587,13 +587,14 @@ let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments
               | Some lc -> lc.line_nb, lc.bp, lc.ep
               | None -> assert false
       in
-      let tokens = match raw with
-      | None -> []
-      | Some raw ->
-        let str = String.sub (RawDocument.text raw) begin_char (end_char - begin_char) in
-        let sstr = Stream.of_string str in
-        let lex = CLexer.Lexer.tok_func sstr in
-        stream_tok 0 [] lex begin_line begin_char in
+        let tokens = match raw with
+        | None -> []
+        | Some raw ->
+          let str = String.sub (RawDocument.text raw) begin_char (end_char - begin_char) in
+          let sstr = Stream.of_string str in
+          let lex = CLexer.Lexer.tok_func sstr in
+          stream_tok 0 [] lex begin_line begin_char 
+        in
       begin
         try
           log (fun () -> "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast));
@@ -607,7 +608,7 @@ let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments
           let parsed_comments = List.append comments parsed_comments in
           let loc = ast.loc in
           let parse_state = {parse_state with parsed_comments; parsed; loc; synterp_state} in
-          create_parsing_event (ParseEvent parse_state)
+          ParseEvent parse_state
         with exn ->
           let e, info = Exninfo.capture exn in
           let loc = get_loc_from_info_or_exn e info in
@@ -691,7 +692,7 @@ let validate_document ({ parsed_loc; raw_doc; cancel_handle } as document) =
   while Stream.count stream < stop do Stream.junk () stream done;
   log (fun () -> Format.sprintf "Parsing more from pos %i" stop);
   let started = Unix.gettimeofday () in
-  let parsed_state = {stop; top_id;synterp_state; stream; raw=raw_doc; parsed=[]; errors=[]; parsed_comments=[]; loc=None; started; previous_document=document} in
+  let parsed_state = {stop; top_id;synterp_state; stream; raw=(Some raw_doc); parsed=[]; errors=[]; parsed_comments=[]; loc=None; started; previous_document=document} in
   let priority = Some PriorityManager.parsing in
   let event = Sel.now ?priority (ParseEvent parsed_state) in
   let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
@@ -724,19 +725,29 @@ let handle_invalidate {parsed; errors; parsed_comments; stop; top_id; started; p
 let handle_event document = function
 | ParseEvent state -> 
   let event = handle_parse_more state in
+  let event = create_parsing_event event in
   let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
   {document with cancel_handle}, [event], None
 | Invalidate state -> {document with cancel_handle=None}, [], handle_invalidate state document
 
+let rec parse_full = function
+| ParseEvent state ->
+  let event = handle_parse_more state in
+  parse_full event
+| Invalidate state ->
+  state
+
 let parse_text_at_loc loc text document =
-  let (_, synterp_state, scheduler_state) = state_strictly_before document loc in
+  let top_id = Option.map (fun sentence -> sentence.id) (find_sentence_strictly_before document loc) in
+  let (stop, synterp_state, scheduler_state) = state_strictly_before document loc in
   let stream = Stream.of_string text in
-  let new_sentences, _ = parse_more synterp_state stream None in
+  let parsed_state = {synterp_state; started = Unix.gettimeofday (); top_id; stream; raw=None; loc=None; errors=[]; parsed=[]; parsed_comments=[]; previous_document=document; stop} in
+  let {parsed} = parse_full (ParseEvent parsed_state) in
   let add_sentence (sentences, schedule, scheduler_state) ({ parsing_start; start; stop; ast; synterp_state } : pre_sentence) =
     let added_sentence, schedule, schedule_state = pre_sentence_to_sentence parsing_start start stop ast synterp_state scheduler_state schedule in
     sentences @ [added_sentence], schedule, schedule_state
   in
-  let sentences, schedule, _ = List.fold_left add_sentence ([],document.schedule, scheduler_state) new_sentences in
+  let sentences, schedule, _ = List.fold_left add_sentence ([],document.schedule, scheduler_state) parsed in
   sentences, schedule
 
 let create_document init_synterp_state text =
