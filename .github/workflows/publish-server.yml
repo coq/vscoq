@@ -56,9 +56,7 @@ jobs:
         files: vscoq-language-server-*.tar.gz
         fail_on_unmatched_files: true
         prerelease: ${{ github.event.inputs.prerelease }}
-        draft: true
-        generate_release_notes: true
-        name: VSCoq ${{ github.event.inputs.tag }}
+        append_body: true
 
     - name: Publish release
       if: ${{ !github.event.inputs.prerelease }}
