@@ -37,6 +37,20 @@ jobs:
         mkdir -p ~/.opam/plugins/opam-publish
         printf "$OPAM_PUBLISH_TOKEN" > ~/.opam/plugins/opam-publish/vscoqbot.token
 
+    - name: Create archive
+      run: |
+        VERSION_SLUG="${GITHUB_REF_NAME_SLUG#v}"
+        VERSION="${GITHUB_REF_NAME#v}"
+        cd language-server
+        git archive -o vscoq-language-server-$VERSION.tar.gz --prefix=vscoq-language-server-$VERSION/ $VERSION_SLUG .
+
+    - name: Release archive
+      uses: softprops/action-gh-release@v1
+      with:
+        files: vscoq-language-server-*.tar.gz
+        fail_on_unmatched_files: true
+        append_body: true
+
     - name: Publish release
       if: ${{ !github.event.release.prerelease }}
       run: |
