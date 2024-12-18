@@ -12,6 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[%%import "vscoq_config.mlh"]
+
 open Lsp.Types
 open Protocol
 open Protocol.LspWrapper
@@ -134,7 +136,7 @@ let observe_id_range st =
 
 let is_parsing st =  st.document_state = Parsing
 
-[%%if (show lsp) = "1.5" ||  lsp = "1.6" || lsp = "1.7" || lsp = "1.8" || lsp = "1.9" || lsp = "1.10" ||  lsp = "1.11" || lsp = "1.12" || lsp = "1.13" || lsp = "1.14" ||  lsp = "1.15" || lsp = "1.16" || lsp = "1.17" || lsp = "1.18" ]
+[%%if lsp < (1,19,0) ]
 let message_of_string x = x
 [%%else]
 let message_of_string x = `String x
