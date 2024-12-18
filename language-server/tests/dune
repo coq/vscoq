@@ -3,4 +3,15 @@
   (libraries base dm protocol)
   (preprocess
     (pps ppx_sexp_conv ppx_inline_test ppx_assert ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
+    (preprocessor_deps vscoq_config.mlh)
   (inline_tests))
+
+
+ (rule
+  (target vscoq_config.mlh)
+  (action (with-stdout-to %{target}
+    (progn
+      (echo "(* Automatically generated, don't edit *)\n")
+      (echo "[%%define lsp ")
+      (run vscoq_version_parser %{version:lsp})
+      (echo "]\n")))))

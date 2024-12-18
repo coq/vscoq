@@ -12,11 +12,19 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[%%import "vscoq_config.mlh"]
+
 open Dm
 open Base
 open Types
 open Protocol.LspWrapper
 
+[%%if lsp < (1,19,0) ]
+let string_of_message x = x
+[%%else]
+let string_of_message = function `String x -> x | _ -> assert false
+[%%endif]
+  
 [%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
 let injections =
   Coqinit.init_ocaml ();
@@ -180,7 +188,7 @@ type diag_spec =
 
 let check_no_diag st =
   let diagnostics = DocumentManager.all_diagnostics st in
-  let diagnostics = List.map ~f:Lsp.Types.Diagnostic.(fun d -> d.range, d.message, d.severity) diagnostics in
+  let diagnostics = List.map ~f:Lsp.Types.Diagnostic.(fun d -> d.range, string_of_message d.message, d.severity) diagnostics in
   [%test_pred: (Range.t * string * DiagnosticSeverity.t option) list] List.is_empty diagnostics
 
 type diagnostic_summary = Range.t * string * DiagnosticSeverity.t option [@@deriving sexp]
@@ -189,7 +197,7 @@ let check_diag st specl =
   let open Result in
   let open Lsp.Types.Diagnostic in
   let diagnostic_summary { range; message; severity } =
-    let message = Str.global_replace (Str.regexp_string "\n") " " message in
+    let message = Str.global_replace (Str.regexp_string "\n") " " (string_of_message message) in
     let message = Str.global_replace (Str.regexp " Raised at .*$") "" message in
     (range, message, severity) in
   let match_diagnostic r s rex (range, message, severity) =
