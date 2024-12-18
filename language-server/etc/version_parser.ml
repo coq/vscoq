@@ -9,7 +9,7 @@ let main () =
   (* sanitization *)
   let l =
     match l with
-    | l when List.for_all is_number l -> l
+    | [_;_;_] as l when List.for_all is_number l -> l
     | [_] -> ["99";"99";"99"]
     | _ -> Printf.eprintf "version_parser: cannot parse: %s\n" v; exit 1 in
   let open Format in
