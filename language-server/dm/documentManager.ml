@@ -134,6 +134,12 @@ let observe_id_range st =
 
 let is_parsing st =  st.document_state = Parsing
 
+[%%if lsp = "1.5" ||  lsp = "1.6" || lsp = "1.7" || lsp = "1.8" || lsp = "1.9" || lsp = "1.10" ||  lsp = "1.11" || lsp = "1.12" || lsp = "1.13" || lsp = "1.14" ||  lsp = "1.15" || lsp = "1.16" || lsp = "1.17" || lsp = "1.18" ]
+let message_of_string x = x
+[%%else]
+let message_of_string x = `String x
+[%%endif]
+
 let make_diagnostic doc range oloc message severity code =
   let range =
     match oloc with
@@ -145,7 +151,7 @@ let make_diagnostic doc range oloc message severity code =
     match code with
     | None -> None, None
     | Some (x,z) -> Some x, Some z in
-  Diagnostic.create ?code ?data ~range ~message ~severity ()
+  Diagnostic.create ?code ?data ~range ~message:(message_of_string message) ~severity ()
 
 let mk_diag st (id,(lvl,oloc,qf,msg)) =
   let code = 
