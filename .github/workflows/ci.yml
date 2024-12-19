@@ -153,7 +153,8 @@ jobs:
         OPAMYES: true
       run: |
         opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
-        opam install ./language-server/vscoq-language-server.opam --deps-only --with-doc --with-test
+        opam install dune
+        opam install ./language-server/vscoq-language-server.opam --deps-only --with-doc --with-test --ignore-constraints-on dune
       
     - name: Build vscoq-language-server
       run: |
