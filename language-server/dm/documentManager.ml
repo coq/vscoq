@@ -12,6 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[%%import "vscoq_config.mlh"]
+
 open Lsp.Types
 open Protocol
 open Protocol.LspWrapper
@@ -101,15 +103,20 @@ let mk_observe_event id =
 let mk_move_cursor_event id = 
   let priority = PriorityManager.move_cursor in
   Sel.now ~priority @@ SendMoveCursor id
-let mk_block_on_error_event last_range error_id =
-  let priority = PriorityManager.move_cursor in
-  let event = Sel.now ~priority @@ SendBlockOnError error_id in
-  match last_range with
-  | None ->
-    [event] @ [mk_proof_view_event error_id]
-  | Some range ->
-    [event] @ [mk_move_cursor_event range] @ [mk_proof_view_event error_id]
 
+let mk_block_on_error_event last_range error_id background =
+  let update_goal_view = [mk_proof_view_event error_id] in
+  if background then
+    update_goal_view
+  else
+    let red_flash =
+      [Sel.now ~priority:PriorityManager.move_cursor @@ SendBlockOnError error_id] in
+    let move_cursor =
+      match last_range with
+      | Some last_range -> [mk_move_cursor_event last_range]
+      | None -> [] in
+    red_flash @ move_cursor @ update_goal_view
+  
 type events = event Sel.Event.t list
 
 let executed_ranges st mode =
@@ -134,6 +141,12 @@ let observe_id_range st =
 
 let is_parsing st =  st.document_state = Parsing
 
+[%%if lsp < (1,19,0) ]
+let message_of_string x = x
+[%%else]
+let message_of_string x = `String x
+[%%endif]
+
 let make_diagnostic doc range oloc message severity code =
   let range =
     match oloc with
@@ -145,7 +158,7 @@ let make_diagnostic doc range oloc message severity code =
     match code with
     | None -> None, None
     | Some (x,z) -> Some x, Some z in
-  Diagnostic.create ?code ?data ~range ~message ~severity ()
+  Diagnostic.create ?code ?data ~range ~message:(message_of_string message) ~severity ()
 
 let mk_diag st (id,(lvl,oloc,qf,msg)) =
   let code = 
@@ -313,7 +326,7 @@ let observe ~background state id ~should_block_on_error : (state * event Sel.Eve
         {state with execution_state}, []
       | Some (error_id, loc) ->
         let state, error_range = state_before_error state error_id loc in
-        let events = mk_block_on_error_event error_range error_id in
+        let events = mk_block_on_error_event error_range error_id background in
         {state with execution_state}, events
 
 let reset_to_top st = { st with observe_id = Top }
@@ -554,7 +567,7 @@ let execute st id vst_for_next_todo started task background block =
       | None -> st, []
       | Some (error_id, loc) -> 
         let st, error_range = state_before_error st error_id loc in
-        let events = if block then mk_block_on_error_event error_range error_id else [] in
+        let events = if block then mk_block_on_error_event error_range error_id background else [] in
         st, events
       in
     let event = Option.map (fun task -> create_execution_event background (Execute {id; vst_for_next_todo; task; started })) next in
