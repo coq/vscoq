@@ -104,15 +104,16 @@
         "title": "Coq configuration",
         "type": "object",
         "properties": {
-          "vscoq.trace.server": {
+          "vscoq-language-server.trace.server": {
             "scope": "window",
             "type": "string",
             "enum": [
               "off",
               "messages",
+              "compact",
               "verbose"
             ],
-            "default": "messages",
+            "default": "off",
             "description": "Traces the communication between VS Code and the language server."
           },
           "vscoq.path": {

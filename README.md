@@ -153,7 +153,7 @@ After installation and activation of the extension:
 #### Coq configuration
 * `"vscoq.path": ""` -- specify the path to `vscoqtop` (e.g. `path/to/vscoq/bin/vscoqtop`)
 * `"vscoq.args": []` -- an array of strings specifying additional command line arguments for `vscoqtop` (typically accepts the same flags as `coqtop`)
-* `"vscoq.trace.server": off | messages | verbose` -- Toggles the tracing of communications between the server and client
+* `"vscoq-language-server.trace.server": off | messages | verbose` -- Toggles the tracing of communications between the server and client
 
 #### Memory management (since >= 2.1.7)
 * `"vscoq.memory.limit: int` -- specifies the memory limit (in Gb) over which when a user closes a tab, the corresponding document state is discarded in the server to free up memory. Defaults to 4Gb.
