@@ -75,7 +75,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Use OCaml ${{ matrix.ocaml-compiler }}
-      uses: avsm/setup-ocaml@v2
+      uses: avsm/setup-ocaml@v3
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
@@ -144,7 +144,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Use OCaml ${{ matrix.ocaml-compiler }}
-      uses: avsm/setup-ocaml@v2
+      uses: avsm/setup-ocaml@v3
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
