@@ -212,10 +212,6 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 16.x
-    - name: Copy licences
-      run: |
-        cd client
-        cp ../LICENSE . && cp ../README.md .
     - name: Pre publish phase
       run: |
         cd client
