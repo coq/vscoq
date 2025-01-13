@@ -8,6 +8,7 @@ import { ServerOptions } from 'vscode-languageclient/node';
 import Client from '../client';
 import { version } from 'os';
 import { match } from 'assert';
+import * as which from 'which';
 
 export enum ToolChainErrorCode {
     notFound = 1, 
@@ -88,18 +89,6 @@ export default class VsCoqToolchainManager implements Disposable {
         return this._versionFullOutput;
     }
 
-    private getEnvPath() : string {
-        if(process.platform === 'win32') {
-            return process.env.Path ?? '';
-        } else {
-            return process.env.PATH ?? '';
-        }
-    }
-
-    private splitEnvPath(value: string) : string[] {
-        return value.split(path.delimiter);
-    }
-
     private async vscoqtopPath () : Promise<string> {
         const vscoqtopPath = workspace.getConfiguration('vscoq').get('path') as string;
         if(vscoqtopPath) {
@@ -110,15 +99,8 @@ export default class VsCoqToolchainManager implements Disposable {
         }
     }
 
-    private async searchForVscoqtopInPath () : Promise<string> {
-        const pathVars = this.splitEnvPath(this.getEnvPath());
-        for(let i in pathVars) {
-            Client.writeToVscoq2Channel("[Toolchain] " + pathVars[i]);
-            if(await isFileInFolder('vscoqtop', pathVars[i])) {
-                return pathVars[i] + '/vscoqtop';
-            }
-        }
-        return "";
+    private async searchForVscoqtopInPath () : Promise<string> {        
+        return await which("vscoqtop", { nothrow: true }) ?? "";
     }
 
     // Launch the vscoqtop -where command with the found exec and provided args
