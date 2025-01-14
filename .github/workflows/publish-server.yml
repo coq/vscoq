@@ -1,9 +1,10 @@
-on: 
+on:
   workflow_dispatch:
     inputs:
       tag:
         description: 'Tag to use for release'
         required: true
+        default: ${GITHUB_REF_NAME#v}
       prerelease:
         description: 'Is this a pre-release'
         required: true
@@ -26,8 +27,8 @@ jobs:
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-    - name: Install opam-publish # 2.0.3 because more recent versions do not respect OPAMYES
-      run: opam install -y -j 2 opam-publish=2.0.3
+    - name: Install opam-publish
+      run: opam install -y -j 2 opam-publish=2.5.0
 
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v4
@@ -67,7 +68,7 @@ jobs:
         cd language-server
         git config --global user.name vscoqbot
         git config --global user.email vscoqbot@inria.fr
-        opam publish --no-browser -v $VERSION https://github.com/coq-community/vscoq/releases/download/$VERSION_SLUG/vscoq-language-server-$VERSION.tar.gz vscoq-language-server.opam
+        opam publish --no-confirmation --no-browser -v $VERSION https://github.com/coq/vscoq/releases/download/$VERSION_SLUG/vscoq-language-server-$VERSION.tar.gz vscoq-language-server.opam
 
     - name: Publish prerelease
       if: ${{ github.event.inputs.prerelease }}
@@ -78,4 +79,4 @@ jobs:
         cd language-server
         git config --global user.name vscoqbot
         git config --global user.email vscoqbot@inria.fr
-        opam publish --no-browser --packages-directory=extra-dev/packages --repo=coq/opam -v $VERSION https://github.com/coq-community/vscoq/releases/download/$VERSION_SLUG/vscoq-language-server-$VERSION.tar.gz vscoq-language-server.opam
+        opam publish --no-confirmation --no-browser --packages-directory=extra-dev/packages --repo=coq/opam -v $VERSION https://github.com/coq/vscoq/releases/download/$VERSION_SLUG/vscoq-language-server-$VERSION.tar.gz vscoq-language-server.opam
