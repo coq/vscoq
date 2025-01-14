@@ -20,8 +20,8 @@ jobs:
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-    - name: Install opam-publish # 2.0.3 because more recent versions do not respect OPAMYES
-      run: opam install -y -j 2 opam-publish=2.0.3
+    - name: Install opam-publish
+      run: opam install -y -j 2 opam-publish=2.5.0
 
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v4
@@ -37,7 +37,23 @@ jobs:
         mkdir -p ~/.opam/plugins/opam-publish
         printf "$OPAM_PUBLISH_TOKEN" > ~/.opam/plugins/opam-publish/vscoqbot.token
 
-    - name: Publish
+    - name: Create archive
+      run: |
+        VERSION_SLUG="${GITHUB_REF_NAME_SLUG#v}"
+        VERSION="${GITHUB_REF_NAME#v}"
+        cd language-server
+        git archive -o vscoq-language-server-$VERSION.tar.gz --prefix=vscoq-language-server-$VERSION/ $VERSION_SLUG .
+
+    - name: Release archive
+      uses: softprops/action-gh-release@v1
+      with:
+        files: vscoq-language-server-*.tar.gz
+        fail_on_unmatched_files: true
+        append_body: true
+        prerelease: ${{ github.event.release.prerelease }}
+
+    - name: Publish release
+      if: ${{ !github.event.release.prerelease }}
       run: |
         eval $(opam env)
         VERSION_SLUG="${GITHUB_REF_NAME_SLUG#v}"
@@ -45,4 +61,15 @@ jobs:
         cd language-server
         git config --global user.name vscoqbot
         git config --global user.email vscoqbot@inria.fr
-        opam publish --no-browser -v $VERSION https://github.com/coq-community/vscoq/releases/download/$GITHUB_REF_NAME/vscoq-language-server-$VERSION_SLUG.tar.gz vscoq-language-server.opam
+        opam publish --no-confirmation --no-browser -v $VERSION https://github.com/coq/vscoq/releases/download/$GITHUB_REF_NAME/vscoq-language-server-$VERSION_SLUG.tar.gz vscoq-language-server.opam
+
+    - name: Publish prerelease
+      if: ${{ github.event.release.prerelease }}
+      run: |
+        eval $(opam env)
+        VERSION_SLUG="${GITHUB_REF_NAME_SLUG#v}"
+        VERSION="${GITHUB_REF_NAME#v}"
+        cd language-server
+        git config --global user.name vscoqbot
+        git config --global user.email vscoqbot@inria.fr
+        opam publish --no-confirmation --no-browser --packages-directory=extra-dev/packages --repo=coq/opam -v $VERSION https://github.com/coq/vscoq/releases/download/$GITHUB_REF_NAME/vscoq-language-server-$VERSION_SLUG.tar.gz vscoq-language-server.opam
