@@ -322,6 +322,14 @@
       };
     }
     {
+      name = "_types_which___which_3.0.4.tgz";
+      path = fetchurl {
+        name = "_types_which___which_3.0.4.tgz";
+        url  = "https://registry.yarnpkg.com/@types/which/-/which-3.0.4.tgz";
+        sha512 = "liyfuo/106JdlgSchJzXEQCVArk0CvevqPote8F8HgWgJ3dRCcTHgJIsLDuee0kxk/mhbInzIZk3QWSZJ8R+2w==";
+      };
+    }
+    {
       name = "_types_yargs_parser___yargs_parser_21.0.3.tgz";
       path = fetchurl {
         name = "_types_yargs_parser___yargs_parser_21.0.3.tgz";
@@ -1890,6 +1898,14 @@
       };
     }
     {
+      name = "isexe___isexe_3.1.1.tgz";
+      path = fetchurl {
+        name = "isexe___isexe_3.1.1.tgz";
+        url  = "https://registry.yarnpkg.com/isexe/-/isexe-3.1.1.tgz";
+        sha512 = "LpB/54B+/2J5hqQ7imZHfdU31OlgQqx7ZicVlkm9kzg9/w8GKLEcFfJl/t7DCEDueOyBAD6zCCwTO6Fzs0NoEQ==";
+      };
+    }
+    {
       name = "isobject___isobject_3.0.1.tgz";
       path = fetchurl {
         name = "isobject___isobject_3.0.1.tgz";
@@ -3255,6 +3271,14 @@
         name = "which___which_2.0.2.tgz";
         url  = "https://registry.yarnpkg.com/which/-/which-2.0.2.tgz";
         sha512 = "BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==";
+      };
+    }
+    {
+      name = "which___which_5.0.0.tgz";
+      path = fetchurl {
+        name = "which___which_5.0.0.tgz";
+        url  = "https://registry.yarnpkg.com/which/-/which-5.0.0.tgz";
+        sha512 = "JEdGzHwwkrbWoGOlIHqQ5gtprKGOenpDHpxE9zVR1bWbOtYRyPPHMe9FaP6x61CmNaTThSkb0DAJte5jD+DmzQ==";
       };
     }
     {
