@@ -6,6 +6,7 @@ on:
         required: true
       prerelease:
         description: 'Is this a pre-release'
+        type: boolean
         required: true
         default: false
 
