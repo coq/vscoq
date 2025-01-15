@@ -9,7 +9,9 @@ let main () =
   (* sanitization *)
   let l =
     match l with
-    | [_;_;_] as l when List.for_all is_number l -> l
+    | n1 :: n2 :: n3 :: _ when is_number n1 && is_number n2 && is_number n3 -> [n1;n2;n3]
+    | [_;_] as l when List.for_all is_number l -> l @ ["0"]
+    | [_] as l when List.for_all is_number l -> l @ ["0";"0"]
     | _ -> ["99";"99";"99"] in
   let open Format in
   printf "(%a)%!" (pp_print_list ~pp_sep:(fun fmt () -> pp_print_string fmt ", ") pp_print_string) l
