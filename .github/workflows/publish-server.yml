@@ -4,7 +4,6 @@ on:
       tag:
         description: 'Tag to use for release'
         required: true
-        default: ${GITHUB_REF_NAME#v}
       prerelease:
         description: 'Is this a pre-release'
         required: true
@@ -44,22 +43,7 @@ jobs:
         mkdir -p ~/.opam/plugins/opam-publish
         printf "$OPAM_PUBLISH_TOKEN" > ~/.opam/plugins/opam-publish/vscoqbot.token
 
-    - name: Create archive
-      run: |
-        VERSION_SLUG="${{ github.event.inputs.tag }}"
-        VERSION="${VERSION_SLUG#v}"
-        cd language-server
-        git archive -o vscoq-language-server-$VERSION.tar.gz --prefix=vscoq-language-server-$VERSION/ $VERSION_SLUG .
-
-    - name: Release archive
-      uses: softprops/action-gh-release@v1
-      with:
-        files: vscoq-language-server-*.tar.gz
-        fail_on_unmatched_files: true
-        prerelease: ${{ github.event.inputs.prerelease }}
-        append_body: true
-
-    - name: Publish release
+    - name: Publish release on opam
       if: ${{ !github.event.inputs.prerelease }}
       run: |
         eval $(opam env)
@@ -70,7 +54,7 @@ jobs:
         git config --global user.email vscoqbot@inria.fr
         opam publish --no-confirmation --no-browser -v $VERSION https://github.com/coq/vscoq/releases/download/$VERSION_SLUG/vscoq-language-server-$VERSION.tar.gz vscoq-language-server.opam
 
-    - name: Publish prerelease
+    - name: Publish prerelease on coq/opam
       if: ${{ github.event.inputs.prerelease }}
       run: |
         eval $(opam env)
