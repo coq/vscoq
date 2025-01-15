@@ -10,8 +10,7 @@ let main () =
   let l =
     match l with
     | [_;_;_] as l when List.for_all is_number l -> l
-    | [_] -> ["99";"99";"99"]
-    | _ -> Printf.eprintf "version_parser: cannot parse: %s\n" v; exit 1 in
+    | _ -> ["99";"99";"99"] in
   let open Format in
   printf "(%a)%!" (pp_print_list ~pp_sep:(fun fmt () -> pp_print_string fmt ", ") pp_print_string) l
 ;;
