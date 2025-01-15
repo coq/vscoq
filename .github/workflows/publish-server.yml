@@ -5,7 +5,7 @@ on:
         description: 'Tag to use for release'
         required: true
       prerelease:
-        description: 'Is this a pre-release'
+        description: 'Publish as pre-release'
         type: boolean
         required: true
         default: false
@@ -45,10 +45,10 @@ jobs:
         printf "$OPAM_PUBLISH_TOKEN" > ~/.opam/plugins/opam-publish/vscoqbot.token
 
     - name: Publish release on opam
-      if: ${{ !github.event.inputs.prerelease }}
+      if: ${{ !inputs.prerelease }}
       run: |
         eval $(opam env)
-        VERSION_SLUG="${{ github.event.inputs.tag }}"
+        VERSION_SLUG="${{ inputs.tag }}"
         VERSION="${VERSION_SLUG#v}"
         cd language-server
         git config --global user.name vscoqbot
@@ -56,10 +56,10 @@ jobs:
         opam publish --no-confirmation --no-browser -v $VERSION https://github.com/coq/vscoq/releases/download/$VERSION_SLUG/vscoq-language-server-$VERSION.tar.gz vscoq-language-server.opam
 
     - name: Publish prerelease on coq/opam
-      if: ${{ github.event.inputs.prerelease }}
+      if: ${{ inputs.prerelease }}
       run: |
         eval $(opam env)
-        VERSION_SLUG="${{ github.event.inputs.tag }}"
+        VERSION_SLUG="${{ inputs.tag }}"
         VERSION="${VERSION_SLUG#v}"
         cd language-server
         git config --global user.name vscoqbot
