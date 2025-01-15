@@ -131,7 +131,21 @@ To release a new version of VsCoq:
     git push origin #VERSION_NUMBER
 ```
 
-Version semantics are currently as follows: v#NUMBER+coq#COQ_VERSION (ex: v1.9.2+coq.8.18)
+~~Version semantics are currently as follows: v#NUMBER+coq#COQ_VERSION (ex: v1.9.2+coq.8.18)~~
+Since we now use opt comp and support all coq versions, version semantics are v2.#.# (ex: v2.2.2)
 
 Once the CI has run, a draft release will be automatically created. Open the draft release and edit the change log to your liking.
 Finally, light a candle, do a little prayer and click release !
+
+After the opam package has been published (PR merged by opam maintainers), the user should then use ```publish-extension.yml``` to publish the extensions on the vscode marketplace as well as vscodium.
+
+# CI/CD pipeline for release process
+
+The CI pipeline (```ci.yml```) handles creating the draft release (with a tarball archive) when a tag is pushed. This is done in the ```create-release``` job.
+
+The CD pipeline (```cd.yml```) automatically publishes the release to opam once the draft is released. Don't forget to fill out the change log
+appropriately before hitting release. If it is a pre-release, the pipeline will publish to ```coq/opam``` instead of ```opam/opam-repository```.
+
+There are two manual pipelines:
+- ```publish-server.yml``` allows to publish a release on opam manually (if the automatic pipeline goes wrong). The user only need to give the tag (with the correct version semantics) and specify if it is a release or pre-release.
+- ```publish-extension.yml``` handles publishing the extension on the vscode market place as well as vscodium. **This is always done manually because the opam release process might take some time. The extensions should only be published once the package is on opam.**
