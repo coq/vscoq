@@ -91,7 +91,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
             const context = getContext();
             context!.font = getComputedStyle(content.current).font || 'monospace' ;
             const display = boxifyPpString(pp);
-            const tokenStream = buildTokenStream(display, context!);
+            const tokenStream = initTokenStream(display, context!);
             alreadyComputed.current = false;
             setDisplayState({
                 breakIds: [],
@@ -341,6 +341,15 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                 breakIds: breaks
             };
         });
+    };
+
+    const initTokenStream = (box: Box, context: CanvasRenderingContext2D) : Token[] => {
+        const blockWidth = estimateBoxWidth(box, context);
+        const offset = context.measureText(" ".repeat(box.indent)).width;
+        const blockTokenStream = buildTokenStream(box, context);
+        const tokenStream = [{type: TokenType.open, length: blockWidth, mode: box.mode, offset: offset}] as Token[];
+        return tokenStream.concat(blockTokenStream)
+                        .concat([{type: TokenType.close}]);
     };
 
     const buildTokenStream = (box: Box, context: CanvasRenderingContext2D) : Token[] => {
