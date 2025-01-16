@@ -325,7 +325,7 @@ const ppDisplay : FunctionComponent<PpProps> = (props) => {
                     currentOffset.pop();
                     break;
                 case TokenType.break:
-                    if(currentLineWidth + token.length > containerWidth || breakAll[breakAll.length - 1]) {
+                    if(currentLineWidth + token.length > containerWidth || breakAll[breakAll.length - 1] || token.id === "fnl") {
                         const offset = currentOffset[currentOffset.length - 1];
                         breaks.push({id: token.id, offset: offset + token.indent});
                         currentLineWidth = offset + token.indent;
