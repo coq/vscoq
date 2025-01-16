@@ -253,6 +253,15 @@ module Request = struct
     type t = {
       textDocument: TextDocumentIdentifier.t
     } [@@deriving yojson]
+    
+  end
+  module CoqPilotParams = struct
+
+    type t = {
+      textDocument : TextDocumentIdentifier.t;
+      position: Position.t;
+      text: string;
+    } [@@deriving yojson]
 
   end
 
@@ -260,6 +269,13 @@ module Request = struct
     
     type t = {
       proofs: ProofState.proof_block list;
+    } [@@ deriving yojson]
+  
+  end
+  module CoqPilotResult = struct
+
+    type t = {
+      errors: string list;
     } [@@deriving yojson]
 
   end
@@ -274,6 +290,7 @@ module Request = struct
   | Search : SearchParams.t -> unit t
   | DocumentState : DocumentStateParams.t -> DocumentStateResult.t t
   | DocumentProofs : DocumentProofsParams.t -> DocumentProofsResult.t t
+  | CoqPilot : CoqPilotParams.t -> CoqPilotResult.t t
 
   type packed = Pack : 'a t -> packed
 
@@ -304,6 +321,9 @@ module Request = struct
     | "vscoq/documentProofs" ->
       let+ params = Lsp.Import.Json.message_params params DocumentProofsParams.t_of_yojson in
       Pack (DocumentProofs params)
+    | "vscoq/coqPilot" ->
+      let+ params = Lsp.Import.Json.message_params params CoqPilotParams.t_of_yojson in
+      Pack (CoqPilot params)
     | _ ->
       let+ E req = Lsp.Client_request.of_jsonrpc req in
       Pack (Std req)
@@ -319,6 +339,7 @@ module Request = struct
       | Search _ -> yojson_of_unit resp
       | DocumentState _ -> DocumentStateResult.(yojson_of_t resp)
       | DocumentProofs _ -> DocumentProofsResult.(yojson_of_t resp)
+      | CoqPilot _ -> CoqPilotResult.(yojson_of_t resp)
       | Std req -> Lsp.Client_request.yojson_of_result req resp
 
   end
