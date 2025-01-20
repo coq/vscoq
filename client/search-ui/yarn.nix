@@ -922,11 +922,11 @@
       };
     }
     {
-      name = "nanoid___nanoid_3.3.6.tgz";
+      name = "nanoid___nanoid_3.3.8.tgz";
       path = fetchurl {
-        name = "nanoid___nanoid_3.3.6.tgz";
-        url  = "https://registry.yarnpkg.com/nanoid/-/nanoid-3.3.6.tgz";
-        sha512 = "BGcqMMJuToF7i1rt+2PWSNVnWIkGCU78jBG3RxO/bZlnZPK2Cmi2QaffxGO/2RvWi9sL+FAiRiXMgsyxQ1DIDA==";
+        name = "nanoid___nanoid_3.3.8.tgz";
+        url  = "https://registry.yarnpkg.com/nanoid/-/nanoid-3.3.8.tgz";
+        sha512 = "WNLf5Sd8oZxOm+TzppcYk8gVOgP+l58xNy58D0nbUnOxOWRWvlcCV4kUF7ltmI6PsrLl/BgKEyS4mqsGChFN0w==";
       };
     }
     {
