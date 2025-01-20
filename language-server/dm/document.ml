@@ -92,6 +92,7 @@ type document = {
   sentences_by_end : sentence LM.t;
   parsing_errors_by_end : parsing_error LM.t;
   comments_by_end : comment LM.t;
+  hover_info : HoverInfo.t;
   schedule : Scheduler.schedule;
   outline : outline;
   parsed_loc : int;
@@ -676,6 +677,7 @@ let create_document init_synterp_state text =
       outline = [];
       init_synterp_state;
       cancel_handle = None;
+      hover_info = HoverInfo.empty ();
     }
 
 let apply_text_edit document edit =
