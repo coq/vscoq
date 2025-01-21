@@ -770,11 +770,14 @@ let hover st pos =
     match hover_of_sentence st loc pattern opt with
     | Some _ as x -> x
     | None -> 
-    match sentence.ast.classification with
+    match sentence.ast with
+    | Error _ -> None
+    | Parsed ast -> 
+      match ast.classification with
     (* next sentence in proof mode, hover at qed *)
-    | VtProofStep _ | VtStartProof _ -> 
+      | VtProofStep _ | VtStartProof _ -> 
         hover_of_sentence st loc pattern (Document.find_next_qed st.document loc)
-    | _ -> None
+      | _ -> None
 
 [%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
   let lconstr = Pcoq.Constr.lconstr
