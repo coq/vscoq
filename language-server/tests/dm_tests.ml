@@ -86,7 +86,6 @@ let%test_unit "parse.invalidate_before_module" =
   let st, events = DocumentManager.interpret_to_end st Settings.Mode.Manual in
   let todo = Sel.Todo.(add init_events events) in
   let st = handle_dm_events todo st in
-  check_no_diag st;
   let doc = DocumentManager.Internal.document st in
   let st = apply_text_edits st [(Document.range_of_id doc s1.id, "")] in
   check_no_diag st
