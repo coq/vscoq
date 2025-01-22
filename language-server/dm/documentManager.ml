@@ -226,7 +226,7 @@ let mk_parsing_error_diag st Document.{ msg = (oloc,msg); start; stop; qf } =
         in
       Some code
   in
-  make_diagnostic st.document range oloc msg severity code
+  make_diagnostic st.document range oloc (Pp.string_of_ppcmds msg) severity code
 
 let all_diagnostics st =
   let parse_errors = Document.parse_errors st.document in

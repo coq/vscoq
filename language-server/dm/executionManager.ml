@@ -78,6 +78,7 @@ type delegated_task = {
 
 type prepared_task =
   | PSkip of { id: sentence_id; error: Pp.t option }
+  | PBlock of { id: sentence_id; error: Pp.t Loc.located }
   | PExec of executable_sentence
   | PQuery of executable_sentence
   | PDelegate of delegated_task
@@ -268,7 +269,7 @@ let interp_qed_delayed ~proof_using ~state_id ~st =
 let cut_overview task state document =
   let range = match task with
   | PDelegate { terminator_id } -> Document.range_of_id_with_blank_space document terminator_id
-  | PSkip { id } | PExec { id } | PQuery { id } ->
+  | PSkip { id } | PExec { id } | PQuery { id } | PBlock { id } ->
     Document.range_of_id_with_blank_space document id
   in
   let {prepared; processing; processed} = state.overview in
@@ -325,7 +326,7 @@ let update_processing task state document =
     let prepared = RangeList.remove_or_truncate_range range prepared in
     let overview = {state.overview with prepared; processing} in
     {state with overview}
-  | PSkip { id } | PExec { id } | PQuery { id } ->
+  | PSkip { id } | PExec { id } | PQuery { id } | PBlock { id } ->
     let range = Document.range_of_id_with_blank_space document id in
     let processing = RangeList.insert_or_merge_range range processing in
     let prepared = RangeList.remove_or_truncate_range range prepared in
@@ -345,7 +346,7 @@ let update_prepared task document state =
     let prepared = List.append prepared [ range ] in
     let overview = {state.overview with prepared} in
     {state with overview}
-  | PSkip { id } | PExec { id } | PQuery { id } ->
+  | PSkip { id } | PExec { id } | PQuery { id } | PBlock { id } ->
     let range = Document.range_of_id_with_blank_space document id in
     let prepared = RangeList.insert_or_merge_range range prepared in
     let overview = {state.overview with prepared} in
@@ -361,7 +362,7 @@ let update_overview task state document =
     let overview = update_processed_as_Done (Success None) range state.overview in
     let overview = {overview with prepared} in
     {state with overview}
-  | PSkip { id } | PExec { id } | PQuery { id } ->
+  | PSkip { id } | PExec { id } | PQuery { id } | PBlock { id } ->
     update_processed id state document
   in
   match state.todo with
@@ -507,6 +508,7 @@ let last_opt l = try Some (CList.last l).id with Failure _ -> None
 let prepare_task task : prepared_task list =
   match task with
   | Skip { id; error } -> [PSkip { id; error }]
+  | Block { id; error } -> [PBlock {id; error}]
   | Exec e -> [PExec e]
   | Query e -> [PQuery e]
   | OpaqueProof { terminator; opener_id; tasks; proof_using} ->
@@ -524,6 +526,7 @@ let prepare_task task : prepared_task list =
 
 let id_of_prepared_task = function
   | PSkip { id } -> id
+  | PBlock { id } -> id
   | PExec ex -> ex.id
   | PQuery ex -> ex.id
   | PDelegate { terminator_id } -> terminator_id
@@ -582,6 +585,12 @@ let execute_task st (vs, events, interrupted) task =
   end else
     try
       match task with
+      | PBlock { id; error = err} ->
+        let (loc, pp) = err in
+        let v = error None None pp vs in
+        let parse_error = Some (id, loc) in
+        let st = update st id v in
+        (st, vs, events, false, parse_error)
       | PSkip { id; error = err } ->
           let v = match err with
             | None -> success vs
@@ -804,7 +813,7 @@ let invalidate1 of_sentence id =
 
 let cancel1 todo invalid_id =
   let task_of_id = function
-    | PSkip { id } | PExec { id } | PQuery { id } -> Stateid.equal id invalid_id
+    | PSkip { id } | PExec { id } | PQuery { id } | PBlock { id } -> Stateid.equal id invalid_id
     | PDelegate _ -> false
   in
   List.filter task_of_id todo

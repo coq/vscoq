@@ -84,7 +84,7 @@ type parsed_ast = {
 type parsing_error = {
   start: int; 
   stop: int; 
-  msg: string Loc.located;
+  msg: Pp.t Loc.located;
   qf: Quickfix.t list option;
 }
 

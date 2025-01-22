@@ -59,7 +59,7 @@ type comment = {
 type parsing_error = {
   start: int;
   stop: int;
-  msg: string Loc.located;
+  msg: Pp.t Loc.located;
   qf: Quickfix.t list option;
 }
 
@@ -248,7 +248,8 @@ let add_sentence parsed parsing_start start stop (ast: sentence_state) synterp_s
   let id = Stateid.fresh () in
   let scheduler_state_after, schedule = 
     match ast with
-    | Error _ -> scheduler_state_before, parsed.schedule (* If the sentence has a parsing error we do not schedule it *)
+    | Error {msg} ->
+      scheduler_state_before, Scheduler.schedule_errored_sentence id msg parsed.schedule
     | Parsed ast ->
       let ast' = (ast.ast, ast.classification, synterp_state) in
       Scheduler.schedule_sentence (id, ast') scheduler_state_before parsed.schedule
@@ -397,7 +398,8 @@ let patch_sentence parsed scheduler_state_before id ({ parsing_start; ast; start
   log @@ Format.sprintf "Patching sentence %s , %s" (Stateid.to_string id) (string_of_parsed_ast old_sentence.ast);
   let scheduler_state_after, schedule =
     match ast with
-    | Error _ -> scheduler_state_before, parsed.schedule
+    | Error {msg} ->
+      scheduler_state_before, Scheduler.schedule_errored_sentence id msg parsed.schedule
     | Parsed ast ->
       let ast = (ast.ast, ast.classification, synterp_state) in
       Scheduler.schedule_sentence (id,ast) scheduler_state_before parsed.schedule
@@ -531,11 +533,10 @@ let get_entry ast =
 [%%endif]
 
 
-let handle_parse_error start parsing_start msg qf ({stream; errors; parsed} as parse_state) =
+let handle_parse_error start parsing_start msg qf ({stream; errors; parsed;} as parse_state) synterp_state =
   log @@ "handling parse error at " ^ string_of_int start;
   let stop = Stream.count stream in
   let parsing_error = { msg; start; stop; qf} in
-  let synterp_state = Vernacstate.Synterp.freeze () in
   let sentence = { parsing_start; ast = Error parsing_error; start; stop; synterp_state } in
   let parsed = sentence :: parsed in
   let errors = parsing_error :: errors in
@@ -579,24 +580,26 @@ let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments
           let e, info = Exninfo.capture exn in
           let loc = get_loc_from_info_or_exn e info in
           let qf = Result.value ~default:[] @@ Quickfix.from_exception e in
-          handle_parse_error start begin_char (loc, Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info)) (Some qf) parse_state
+          handle_parse_error start begin_char (loc, CErrors.iprint_no_report (e,info)) (Some qf) parse_state synterp_state
         end
-    | exception (E msg as exn) ->
-      let loc = Loc.get_loc @@ Exninfo.info exn in
+    | exception (E _ as exn) ->
+      let e, info = Exninfo.capture exn in
+      let loc = get_loc_from_info_or_exn e info in
+      let qf = Result.value ~default:[] @@ Quickfix.from_exception e in
+      junk_sentence_end stream;
+      handle_parse_error start start (loc, CErrors.iprint_no_report (e, info)) (Some qf) {parse_state with stream} synterp_state
+    | exception (CLexer.Error.E _ as exn) -> (* May be more problematic to handle for the diff *)
+      let e, info = Exninfo.capture exn in
+      let loc = get_loc_from_info_or_exn e info in
       let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
       junk_sentence_end stream;
-      handle_parse_error start start (loc,msg) (Some qf) {parse_state with stream}
-    | exception (CLexer.Error.E e as exn) -> (* May be more problematic to handle for the diff *)
-      let loc = Loc.get_loc @@ Exninfo.info exn in
-      let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
-      junk_sentence_end stream;
-      handle_parse_error start start (loc,CLexer.Error.to_string e) (Some qf) {parse_state with stream}
+      handle_parse_error start start (loc,CErrors.iprint_no_report (e, info)) (Some qf) {parse_state with stream} synterp_state
     | exception exn ->
       let e, info = Exninfo.capture exn in
       let loc = Loc.get_loc @@ info in
       let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
       junk_sentence_end stream;
-      handle_parse_error start start (loc, "Unexpected parse error: " ^ Pp.string_of_ppcmds @@ CErrors.iprint_no_report (e,info)) (Some qf) {parse_state with stream}
+      handle_parse_error start start (loc, CErrors.iprint_no_report (e,info)) (Some qf) {parse_state with stream} synterp_state
   end
 
 let rec unchanged_id id = function
@@ -726,9 +729,9 @@ module Internal = struct
     sentence.stop
 
   let string_of_error error =
-    let (_, str) = error.msg in
+    let (_, pp) = error.msg in
     Format.sprintf "[parsing error] [%s] (%i -> %i)"
-    str
+    (Pp.string_of_ppcmds pp)
     error.start
     error.stop
 
