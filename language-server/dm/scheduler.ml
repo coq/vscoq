@@ -200,7 +200,7 @@ let push_state id ast synterp classif st =
         base_id st, push_ex_sentence ex_sentence st, Exec ex_sentence
     end
   | VtQuery -> (* queries have no impact, we don't push them *)
-    base_id st, st, Query ex_sentence
+    base_id st, push_ex_sentence ex_sentence st, Query ex_sentence
   | VtProofStep _ ->
     base_id st, push_ex_sentence ex_sentence st, Exec ex_sentence
   | VtSideff _ ->
