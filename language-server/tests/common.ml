@@ -79,7 +79,7 @@ let rec parse : type a. int -> int -> Document.sentence list -> Document.parsing
     | O, (_ :: _ as l), _ -> Error ("more sentences than expected, extra " ^ Int.to_string (List.length l))
     | O, _, (_ :: _ as l) -> Error ("more errors than expected, extra " ^ Int.to_string (List.length l))
     | P _, [], errors ->
-      let errors = String.concat ~sep:"\n" @@ List.map ~f:(fun err -> snd err.Document.msg) errors in
+      let errors = String.concat ~sep:"\n" @@ List.map ~f:(fun err -> Pp.string_of_ppcmds @@ snd err.Document.msg) errors in
       Error ("fewer sentences than expected, only " ^ Int.to_string m ^ "  + errors:\n" ^ errors)
     | E _, _, [] -> Error ("fewer errors than expected, only " ^ Int.to_string n)
 
@@ -114,6 +114,7 @@ let rec count : type a b. int -> b list -> (a,b) count -> (a,string) Result.t =
 let count l spec = count 0 l spec
 
 type _ task_approx =
+  | Block : sentence_id task_approx
   | Exec : sentence_id task_approx
   | Skip : sentence_id task_approx
   | Query : sentence_id task_approx
@@ -123,6 +124,7 @@ let task : type a. Scheduler.task -> a task_approx -> (a,string) Result.t =
   let open Result in
   fun t spec ->
     match spec, t with
+    | Block, Block { id } -> Ok id
     | Exec, Exec { id } -> Ok id
     | Skip, Skip { id } -> Ok id
     | Query, Query { id } -> Ok id
@@ -133,6 +135,7 @@ let task : type a. Scheduler.task -> a task_approx -> (a,string) Result.t =
     | _, Query _ -> Error "unexpected Query"
     | _, Exec _ -> Error "unexpected Exec"
     | _, OpaqueProof _ -> Error "unexpected OpaqueProof"
+    | _, Block _ -> Error "unexpected Block"
 
 
 let task st id spec =
