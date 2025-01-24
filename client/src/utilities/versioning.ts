@@ -2,6 +2,12 @@ import { window, ExtensionContext } from "vscode";
 import { compareVersions } from "compare-versions";
 import Client from "../client";
 
+export const getCoqdocUrl = (coqVersion: string) => {
+    if(compareVersions(coqVersion, "8.18.0") >= 0 && compareVersions(coqVersion, "9.0.0") < 0) {
+        return (`https://coq.inria.fr/doc/V${coqVersion}/refman/index.html`);
+    }
+    return "https://coq.inria.fr/doc/master/refman/index.html"
+};
 
 export const checkVersion = (client: Client, context: ExtensionContext) => {
     const extensionVersion = context.extension.packageJSON.version;

@@ -21,7 +21,7 @@ import {
 
 import Client from './client';
 import { updateServerOnConfigurationChange } from './configuration';
-import { checkVersion } from './utilities/versioning';
+import { checkVersion, getCoqdocUrl } from './utilities/versioning';
 import {initializeDecorations} from './Decorations';
 import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
@@ -254,7 +254,8 @@ export function activate(context: ExtensionContext) {
             commands.executeCommand('workbench.action.openWalkthrough', 'maximedenes.vscoq#coq.welcome', false); 
         });
         registerVscoqTextCommand('showManual', () => {
-            commands.executeCommand('simpleBrowser.show', 'https://coq.inria.fr/doc/master/refman/index.html'); 
+            const url = getCoqdocUrl(coqTM.getCoqVersion());
+            commands.executeCommand('simpleBrowser.show', url); 
         });
         registerVscoqTextCommand('displayProofView', () => {
             const editor = window.activeTextEditor ? window.activeTextEditor : window.visibleTextEditors[0];
