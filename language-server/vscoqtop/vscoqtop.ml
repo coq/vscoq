@@ -37,67 +37,24 @@ let loop () =
     log ~force:true @@ Pp.string_of_ppcmds @@ CErrors.iprint_no_report info;
     log ~force:true "=========================================================="
 
-let vscoqtop_specific_usage = {
-  Boot.Usage.executable_name = "vscoqtop";
-  extra_args = "";
-  extra_options = {|
-VSCoq options are:
-  -vscoq-d c1,..,cn      enable debugging for vscoq components c1 ... cn.
-                         Known components:
-                           all (shorthand for all components)
-                           init (all components but only during initialization)
-|} ^ "\t\t\t   " ^ String.concat "\n\t\t\t   " (Dm.Log.logs ()) ^ {|
-  
-|}
-}
-
-let rec skip_xd acc = function
-  | [] -> (), List.rev acc
-  | "-vscoq-d" :: _ :: rest -> skip_xd acc rest
-  | x :: rest -> skip_xd (x::acc) rest
-
 [%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
-let parse_extra x =
-  skip_xd [] x
-
 let _ =
   Coqinit.init_ocaml ();
   log "------------------ begin ---------------";
-  let initial_args =
-    let cwd = Unix.getcwd () in
-    match CoqProject_file.find_project_file ~from:cwd ~projfile_name:"_CoqProject" with
-    | None ->
-      log (Printf.sprintf "No project file found in %s" cwd);
-      Coqargs.default
-    | Some f ->
-      let project = CoqProject_file.read_project_file ~warning_fn:(fun _ -> ()) f in
-      let args = CoqProject_file.coqtop_args_from_project project in
-      log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
-      fst @@ Coqargs.parse_args ~usage:vscoqtop_specific_usage ~init:Coqargs.default args in
-  let opts, () = Coqinit.parse_arguments ~usage:vscoqtop_specific_usage ~initial_args ~parse_extra () in
+  let cwd = Unix.getcwd () in
+  let opts = Args.get_local_args  cwd in
   let _injections = Coqinit.init_runtime opts in
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
   Sys.(set_signal sigint Signal_ignore);
   loop ()
 [%%else]
-let parse_extra _ x = skip_xd [] x
 
 let () =
   Coqinit.init_ocaml ();
   log "------------------ begin ---------------";
-  let initial_args =
-    let cwd = Unix.getcwd () in
-    match CoqProject_file.find_project_file ~from:cwd ~projfile_name:"_CoqProject" with
-    | None ->
-      log (Printf.sprintf "No project file found in %s" cwd);
-      Coqargs.default
-    | Some f ->
-      let project = CoqProject_file.read_project_file ~warning_fn:(fun _ -> ()) f in
-      let args = CoqProject_file.coqtop_args_from_project project in
-      log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
-      fst @@ Coqargs.parse_args ~init:Coqargs.default args in
-  let opts, () = Coqinit.parse_arguments ~initial_args ~parse_extra (List.tl (Array.to_list Sys.argv)) in
-  let () = Coqinit.init_runtime ~usage:vscoqtop_specific_usage opts in
+  let cwd = Unix.getcwd () in
+  let opts = Args.get_local_args cwd in
+  let () = Coqinit.init_runtime ~usage:(Args.usage ()) opts in
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
   Sys.(set_signal sigint Signal_ignore);
   loop ()
