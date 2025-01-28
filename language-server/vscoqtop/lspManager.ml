@@ -458,13 +458,8 @@ let textDocumentCompletion id params =
   match Hashtbl.find_opt states (DocumentUri.to_path uri) with
   | None -> log @@ "[textDocumentCompletion]ignoring event on non existent document"; Error( {message="Document does not exist"; code=None} ), []
   | Some { st } -> 
-    match Dm.DocumentManager.get_completions st position with
-    | Ok completionItems -> 
-      let items = List.mapi make_CompletionItem completionItems in
-      return_completion ~isIncomplete:false ~items, []
-    | Error e -> 
-      let message = e in
-      Error {message; code=None}, []
+    let items = List.mapi make_CompletionItem (Dm.DocumentManager.get_completions st position) in
+    return_completion ~isIncomplete:false ~items, []
 
 let documentSymbol id params =
   let Lsp.Types.DocumentSymbolParams.{ textDocument = {uri}; partialResultToken; workDoneToken } = params in (*TODO: At some point we might get ssupport for partialResult and workDone*)

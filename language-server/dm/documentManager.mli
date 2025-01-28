@@ -118,7 +118,7 @@ val all_diagnostics : state -> Diagnostic.t list
 
 val get_proof : state -> Settings.Goals.Diff.Mode.t -> sentence_id option -> ProofState.t option
 
-val get_completions : state -> Position.t -> (completion_item list, string) Result.t
+val get_completions : state -> Position.t -> completion_item list 
 
 val handle_event : event -> state -> block:bool -> Settings.Mode.t -> Settings.Goals.Diff.Mode.t -> handled_event
 (** handles events and returns a new state if it was updated. On top of the next events, it also returns info
