@@ -554,6 +554,17 @@ let execution_finished st id started =
 
 let execute st id vst_for_next_todo started task background block =
   let time = Unix.gettimeofday () -. started in
+  let proof_view_event = (*When in continuous mode we always check if we should update the goal view *)
+    if background then
+      match st.observe_id with
+      | Top -> []
+      | Id o_id ->
+        if o_id = id then
+          [mk_proof_view_event id] 
+        else []
+    else
+      []
+  in
   match Document.get_sentence st.document id with
   | None ->
     log (Printf.sprintf "ExecuteToLoc %d stops after %2.3f, sentences invalidated" (Stateid.to_int id) time);
@@ -578,7 +589,7 @@ let execute st id vst_for_next_todo started task background block =
         let event = Option.cata (fun event -> [event]) [] event in
         let state = Some {st with execution_state; cancel_handle} in
         let update_view = true in
-        let events = inject_em_events events @ block_events @ event in
+        let events = proof_view_event @ inject_em_events events @ block_events @ event in
         {state; events; update_view; notification=None}
 
 let get_proof st diff_mode id =
