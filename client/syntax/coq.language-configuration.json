@@ -1,0 +1,53 @@
+{
+    "comments": {
+        "blockComment": ["(*", "*)"]
+    },
+    "brackets": [
+        ["{", "}"],
+        ["[", "]"],
+        ["{|", "|}"],
+        ["(", ")"]
+    ],
+    "colorizedBracketPairs": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+        ["{|", "|}"]
+    ],
+    "autoClosingPairs": [
+        {
+            "open": "{",
+            "close": "}"
+        },
+        {
+            "open": "[",
+            "close": "]"
+        },
+        {
+            "open": "(",
+            "close": ")"
+        },
+        {
+            "open": "(*",
+            "close": "*"
+        },
+        {
+            "open": "{|",
+            "close": "|"
+        }
+    ],
+    // This allows for VSCode to suggest better intellisense hints (especially for definition names that include a "'" in them)
+    "wordPattern": "(_|[a-zA-Z\\p{L}])([a-zA-Z\\p{L}\\d'_])*",
+    "indentationRules": {
+        /* Increase next lines indentation if:
+         * We are a Section, Module Type, or Module opening
+         * We are a Proof. command without Show before it
+         */
+        "increaseIndentPattern": "((Section|Module\\s+Type|Module)\\s+(_|[a-zA-Z\\p{L}])([a-zA-Z\\p{L}\\d'_])*)|((((?<!Show\\s)Proof))\\.)",
+        /* Decrease the current lines indentation if:
+         * We are a Section, Module Type, or Module ending
+         * <Whitespace>*<Keywords>.<Whitespace>*
+         */
+        "decreaseIndentPattern": "^\\s*(End\\s+(_|[a-zA-Z\\p{L}])([a-zA-Z\\p{L}\\d'_])*)|(Qed|Admitted|Abort)\\.\\s*$"
+    }
+}
