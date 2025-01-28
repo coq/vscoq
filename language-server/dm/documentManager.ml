@@ -667,13 +667,17 @@ let get_context st pos = context_of_id st (id_of_pos st pos)
 
 let get_completions st pos =
   match id_of_pos st pos with
-  | None -> Error ("Can't get completions, no sentence found before the cursor")
+  | None -> 
+      log ("Can't get completions, no sentence found before the cursor");
+      []
   | Some id ->
     let ost = ExecutionManager.get_vernac_state st.execution_state id in
     let settings = ExecutionManager.get_options () in
     match Option.bind ost @@ CompletionSuggester.get_completions settings.completion_options with
-    | None -> Error ("Can't get completions")
-    | Some lemmas -> Ok (lemmas)
+    | None -> 
+        log "No completions available";
+        []
+    | Some lemmas -> lemmas
 
 [%%if coq = "8.18" || coq = "8.19"]
 [%%elif coq = "8.20"]
