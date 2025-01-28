@@ -1,7 +1,6 @@
 (executable
  (name vscoqtop)
  (public_name vscoqtop)
- (modules vscoqtop lspManager)
  (flags -linkall)
  (package vscoq-language-server)
  (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))

@@ -268,37 +268,11 @@ let init_document local_args vst =
   Vernacstate.freeze_full_state ()
 [%%endif]
 
-[%%if  coq = "8.18" || coq = "8.19" || coq = "8.20"]
-  let parse_args args =
-    let usage = {
-      Boot.Usage.executable_name = "";
-      extra_args = "";
-      extra_options = "";
-    } in
-    fst @@ Coqargs.parse_args ~init:Coqargs.default ~usage args
-[%%else]
-  let parse_args args =
-    fst @@ Coqargs.parse_args ~init:Coqargs.default args
-[%%endif]
-
 let open_new_document uri text =
   let vst = get_init_state () in
-
-  let local_args =
-    let fname = DocumentUri.to_path uri in
-    let dir = Filename.dirname fname in
-    match CoqProject_file.find_project_file ~from:dir ~projfile_name:"_CoqProject" with
-    | None ->
-      log (Printf.sprintf "No project file found for %s" fname);
-      Coqargs.default
-    | Some f ->
-      let project = CoqProject_file.read_project_file ~warning_fn:(fun _ -> ()) f in
-      let args = CoqProject_file.coqtop_args_from_project project in
-      log (Printf.sprintf "Arguments from project file %s: %s" f (String.concat " " args));
-      parse_args args
-      
-  in
-
+  let fname = DocumentUri.to_path uri in
+  let dir = Filename.dirname fname in
+  let local_args = Args.get_local_args dir in
   let vst = init_document local_args vst in
   let st, events = try Dm.DocumentManager.init vst ~opts:(Coqargs.injection_commands local_args) uri ~text with
     e -> raise e
