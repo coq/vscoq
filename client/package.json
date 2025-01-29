@@ -47,7 +47,7 @@
         "extensions": [
           ".v"
         ],
-        "configuration": "./coq.configuration.json",
+        "configuration": "./syntax/coq.language-configuration.json",
         "icon": {
           "light": "./assets/logo.png",
           "dark": "./assets/logo.png"
@@ -62,7 +62,7 @@
         "extensions": [
           "_CoqProject"
         ],
-        "configuration": "./coq-project.configuration.json",
+        "configuration": "./syntax/coq-project.language-configuration.json",
         "icon": {
           "light": "./assets/logo.png",
           "dark": "./assets/logo.png"
