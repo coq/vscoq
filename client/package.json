@@ -861,8 +861,8 @@
         "description": "Color of warning messages.",
         "defaults": {
           "dark": "#ffff00",
-          "light": "#ffff00",
-          "highContrast": "#ffff00"
+          "light": "#ff6f00",
+          "highContrast": "#ff6f00"
         }
       },
       {
