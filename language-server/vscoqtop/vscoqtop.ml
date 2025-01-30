@@ -45,6 +45,7 @@ let _ =
   let opts = Args.get_local_args  cwd in
   let _injections = Coqinit.init_runtime opts in
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
+  Flags.load_vos_libraries := true;
   Sys.(set_signal sigint Signal_ignore);
   loop ()
 [%%else]
@@ -56,6 +57,7 @@ let () =
   let opts = Args.get_local_args cwd in
   let () = Coqinit.init_runtime ~usage:(Args.usage ()) opts in
   Safe_typing.allow_delayed_constants := true; (* Needed to delegate or skip proofs *)
+  Flags.load_vos_libraries := true;
   Sys.(set_signal sigint Signal_ignore);
   loop ()
 [%%endif]
