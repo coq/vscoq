@@ -523,7 +523,6 @@ let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments
     | None, _ (* EOI *) -> create_parsing_event (Invalidate parse_state)
     | Some ast, comments ->
       let stop = Stream.count stream in
-      log @@ "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
       let begin_line, begin_char, end_char =
               match ast.loc with
               | Some lc -> lc.line_nb, lc.bp, lc.ep
@@ -535,6 +534,7 @@ let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments
       let tokens = stream_tok 0 [] lex begin_line begin_char in
       begin
         try
+          log @@ "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
           let entry = get_entry ast in
           let classification = Vernac_classifier.classify_vernac ast in
           let synterp_state = Vernacstate.Synterp.freeze () in
