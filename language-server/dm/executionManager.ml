@@ -587,7 +587,7 @@ let execute_task st (vs, events, interrupted) task =
       match task with
       | PBlock { id; error = err} ->
         let (loc, pp) = err in
-        let v = error None None pp vs in
+        let v = error loc None pp vs in
         let parse_error = Some (id, loc) in
         let st = update st id v in
         (st, vs, events, false, parse_error)
