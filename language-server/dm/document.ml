@@ -419,7 +419,19 @@ type diff =
   | Added of pre_sentence list
   | Equal of (sentence_id * pre_sentence) list
 
-
+let tok_equal t1 t2 =
+  let open Tok in
+  match t1, t2 with
+  | KEYWORD s1, KEYWORD s2 -> CString.equal s1 s2
+  | IDENT s1, IDENT s2 -> CString.equal s1 s2
+  | FIELD s1, FIELD s2 -> CString.equal s1 s2
+  | NUMBER n1, NUMBER n2 -> NumTok.Unsigned.equal n1 n2
+  | STRING s1, STRING s2 -> CString.equal s1 s2
+  | LEFTQMARK, LEFTQMARK -> true
+  | BULLET s1, BULLET s2 -> CString.equal s1 s2
+  | EOI, EOI -> true
+  | QUOTATION(s1,t1), QUOTATION(s2,t2) -> CString.equal s1 s2 && CString.equal t1 t2
+  | _ -> false
 
 let same_tokens (s1 : sentence) (s2 : pre_sentence) =
   match s1.ast, s2.ast with
@@ -460,9 +472,10 @@ let string_of_diff doc l =
 
 let rec stream_tok n_tok acc str begin_line begin_char =
   let e = LStream.next (get_keyword_state ()) str in
-  if Tok.(equal e EOI) then
+  match e with
+  | Tok.EOI ->
     List.rev acc
-  else
+  | _ ->
     stream_tok (n_tok+1) (e::acc) str begin_line begin_char
     (*
 let parse_one_sentence stream ~st =
