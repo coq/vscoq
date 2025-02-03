@@ -74,9 +74,11 @@ let rec parse : type a. int -> int -> Document.sentence list -> Document.parsing
     | O, [], [] -> Ok ()
     | P spec, s :: l, errors ->
         parse (m+1) n l errors spec >>= (fun a -> Ok(ss_of_s s,a))
-    | E spec, sentences, error :: l ->
+    | E _, [], error :: _ ->
+        Error ("erroneous sentence not part of the document. Corresponding error is " ^ Pp.string_of_ppcmds @@ snd error.Document.msg)
+    | E spec, _ :: sentences, error :: l ->
         parse m (n+1) sentences l spec >>= (fun a -> Ok(error,a))
-    | O, (_ :: _ as l), _ -> Error ("more sentences than expected, extra " ^ Int.to_string (List.length l))
+    | O, (s :: _ as l), _ -> Error ("more sentences than expected, extra " ^ Int.to_string (List.length l) ^ ". Extra sentence is " ^ Document.Internal.string_of_sentence s)
     | O, _, (_ :: _ as l) -> Error ("more errors than expected, extra " ^ Int.to_string (List.length l))
     | P _, [], errors ->
       let errors = String.concat ~sep:"\n" @@ List.map ~f:(fun err -> Pp.string_of_ppcmds @@ snd err.Document.msg) errors in
