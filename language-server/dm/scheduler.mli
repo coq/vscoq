@@ -37,6 +37,7 @@ type executable_sentence = {
 
 type task =
   | Skip of { id: sentence_id; error: Pp.t option }
+  | Block of { id: sentence_id; error: Pp.t Loc.located }
   | Exec of executable_sentence
   | OpaqueProof of { terminator: executable_sentence;
                      opener_id: sentence_id;
@@ -50,6 +51,8 @@ type schedule
     sentences *)
 
 val initial_schedule : schedule
+
+val schedule_errored_sentence : sentence_id -> Pp.t Loc.located -> schedule -> schedule
 
 val schedule_sentence : sentence_id * (Synterp.vernac_control_entry * Vernacextend.vernac_classification * Vernacstate.Synterp.t) -> state -> schedule -> state * schedule
 (** Identifies the structure of the document and dependencies between sentences

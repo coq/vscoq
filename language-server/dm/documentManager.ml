@@ -226,7 +226,7 @@ let mk_parsing_error_diag st Document.{ msg = (oloc,msg); start; stop; qf } =
         in
       Some code
   in
-  make_diagnostic st.document range oloc msg severity code
+  make_diagnostic st.document range oloc (Pp.string_of_ppcmds msg) severity code
 
 let all_diagnostics st =
   let parse_errors = Document.parse_errors st.document in
@@ -774,11 +774,14 @@ let hover st pos =
     match hover_of_sentence st loc pattern opt with
     | Some _ as x -> x
     | None -> 
-    match sentence.ast.classification with
+    match sentence.ast with
+    | Error _ -> None
+    | Parsed ast -> 
+      match ast.classification with
     (* next sentence in proof mode, hover at qed *)
-    | VtProofStep _ | VtStartProof _ -> 
+      | VtProofStep _ | VtStartProof _ -> 
         hover_of_sentence st loc pattern (Document.find_next_qed st.document loc)
-    | _ -> None
+      | _ -> None
 
 [%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
   let lconstr = Pcoq.Constr.lconstr

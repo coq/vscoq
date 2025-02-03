@@ -55,25 +55,31 @@ let%test_unit "parse.insert" =
   check_no_diag st
 
 let%test_unit "parse.squash" =
+                                              (*          1         2         3         4         5         6         7*)
+                                              (*01234567890123456789012345678901234567890123456789012345678901234567890*)
   let st, init_events = em_init_test_doc ~text:"Definition x := true. Definition y := false. Definition z := 0." in
   let st = edit_text st ~start:20 ~stop:21 ~text:"" in
   let doc = DocumentManager.Internal.document st in
   let sentences = Document.sentences doc in
   let start_positions = Stdlib.List.map (fun (s : Document.sentence) -> s.Document.start) sentences in
   let stop_positions = Stdlib.List.map (fun (s : Document.sentence) -> s.Document.stop) sentences in
-  [%test_eq: int list] start_positions [ 44 ];
-  [%test_eq: int list] stop_positions [ 62 ];
+  [%test_eq: int list] start_positions [ 0; 44 ];
+  [%test_eq: int list] stop_positions [ 43; 62 ];
   [%test_eq: int] (List.length (Document.parse_errors doc)) 1
 
 let%test_unit "parse.error_recovery" =
+                                              (*          1         2         3         4         5         6         7*)
+                                              (*01234567890123456789012345678901234567890123456789012345678901234567890*)
   let st, init_events = em_init_test_doc ~text:"## . Definition x := true. !! . Definition y := false." in
   let doc = DocumentManager.Internal.document st in
   let sentences = Document.sentences doc in
   let start_positions = Stdlib.List.map (fun (s : Document.sentence) -> s.Document.start) sentences in
-  [%test_eq: int list] start_positions [ 5; 32 ];
+  [%test_eq: int list] start_positions [ 0; 5; 26; 32 ];
   [%test_eq: int] (List.length (Document.parse_errors doc)) 2
 
 let%test_unit "parse.extensions" =
+                                              (*          1         2         3         4         5         6         7*)
+                                              (*01234567890123456789012345678901234567890123456789012345678901234567890*)
   let st, init_events = em_init_test_doc ~text:"Notation \"## x\" := x (at level 0). Definition f (x : nat) := ##xx." in
   let sentences = Document.sentences @@ DocumentManager.Internal.document st in
   let start_positions = Stdlib.List.map (fun (s : Document.sentence) -> s.Document.start) sentences in

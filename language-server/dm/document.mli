@@ -84,7 +84,7 @@ type parsed_ast = {
 type parsing_error = {
   start: int; 
   stop: int; 
-  msg: string Loc.located;
+  msg: Pp.t Loc.located;
   qf: Quickfix.t list option;
 }
 
@@ -100,6 +100,10 @@ val apply_text_edits : document -> text_edit list -> document
 (** [apply_text_edits doc edits] updates the text of [doc] with [edits]. The new
     text is not parsed or executed. *)
 
+type sentence_state =
+  | Error of parsing_error
+  | Parsed of parsed_ast
+
 (* Example:                        *)
 (* "  Check 3. "                    *)
 (* ^  ^       ^---- end            *)
@@ -112,7 +116,7 @@ type sentence = {
   synterp_state : Vernacstate.Synterp.t; (* synterp state after this sentence's synterp phase *)
   scheduler_state_before : Scheduler.state;
   scheduler_state_after : Scheduler.state;
-  ast : parsed_ast;
+  ast : sentence_state;
   id : sentence_id;
 }
 

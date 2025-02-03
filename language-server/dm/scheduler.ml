@@ -32,6 +32,7 @@ type executable_sentence = {
 
 type task =
   | Skip of { id: sentence_id; error: Pp.t option }
+  | Block of { id: sentence_id; error: Pp.t Loc.located }
   | Exec of executable_sentence
   | OpaqueProof of { terminator: executable_sentence;
                      opener_id: sentence_id;
@@ -214,12 +215,18 @@ let string_of_task (task_id,(base_id,task)) =
   | Exec { id } -> Format.sprintf "Exec %s" (Stateid.to_string id)
   | OpaqueProof { terminator; tasks } -> Format.sprintf "OpaqueProof [%s | %s]" (Stateid.to_string terminator.id) (String.concat "," (List.map (fun task -> Stateid.to_string task.id) tasks))
   | Query { id } -> Format.sprintf "Query %s" (Stateid.to_string id)
+  | Block { id } -> Format.sprintf "Block %s" (Stateid.to_string id)
   in
   Format.sprintf "[%s] : [%s] -> %s" (Stateid.to_string task_id) (Option.cata Stateid.to_string "init" base_id) s
 
 let _string_of_state st =
   let scopes = (List.map (fun b -> List.map (fun x -> x.id) b.proof_sentences) st.proof_blocks) @ [st.document_scope] in
   String.concat "|" (List.map (fun l -> String.concat " " (List.map Stateid.to_string l)) scopes)
+
+let schedule_errored_sentence id error schedule =
+  let task = Block {id; error} in
+  let tasks = SM.add id (None, task) schedule.tasks in
+  {schedule with tasks}
 
 let schedule_sentence (id, (ast, classif, synterp_st)) st schedule =
   let base, st, task = 
