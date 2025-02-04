@@ -437,7 +437,7 @@ let same_tokens (s1 : sentence) (s2 : pre_sentence) =
   match s1.ast, s2.ast with
   | Error _, Error _ -> false
   | Parsed ast1, Parsed ast2 ->
-    CList.equal Tok.equal ast1.tokens ast2.tokens
+    CList.equal tok_equal ast1.tokens ast2.tokens
   | _, _ -> false
   
 (* TODO improve diff strategy (insertions,etc) *)
