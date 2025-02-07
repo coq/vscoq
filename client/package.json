@@ -29,10 +29,7 @@
   "readme": "https://github.com/coq-community/vscoq/blob/master/README.md",
   "bugs": "https://github.com/coq-community/vscoq/issues",
   "homepage": "https://github.com/coq-community/vscoq/blob/master/README.md",
-  "activationEvents": [
-    "workspaceContains:**/_CoqProject",
-    "workspaceContains:**/*.v"
-  ],
+  "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "languages": [
