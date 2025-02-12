@@ -142,6 +142,7 @@ val locate : state -> Position.t -> pattern:string -> (pp, error) Result.t
 
 val print : state -> Position.t -> pattern:string -> (pp, error) Result.t
 
+val coq_pilot_observe : state -> Position.t -> string -> string list
 
 module Internal : sig
 

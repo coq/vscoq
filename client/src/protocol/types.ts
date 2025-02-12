@@ -168,3 +168,13 @@ type ProofBlock = {
 export interface DocumentProofsResponse {
     proofs: ProofBlock[];
 }
+
+export interface CoqPilotRequest {
+    textDocument: TextDocumentIdentifier;
+    position: Position;
+    text: string;
+}
+
+export interface CoqPilotResponse {
+    errors: string[];
+}
