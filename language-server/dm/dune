@@ -3,6 +3,7 @@
  (public_name vscoq-language-server.dm)
  (modules :standard \ vscoqtop_proof_worker vscoqtop_tactic_worker)
  (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
+ (preprocessor_deps vscoq_config.mlh)
  (libraries base coq-core.sysinit coq-core.vernac coq-core.parsing lsp sel protocol language))
 
 (executable
@@ -12,6 +13,7 @@
  (flags -linkall)
  (package vscoq-language-server)
  (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
+ (preprocessor_deps vscoq_config.mlh)
  (libraries coq-core.sysinit coq-core.tactics lsp dm protocol))
 
 (executable
