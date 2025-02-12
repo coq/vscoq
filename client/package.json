@@ -93,7 +93,7 @@
           "type": "webview",
           "id": "vscoq.search",
           "name": "Query",
-          "when": "inCoqProject"
+          "when": "resourceLangId == coq || editorLangId == coq"
         }
       ]
     },
