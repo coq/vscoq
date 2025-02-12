@@ -3,9 +3,10 @@
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=4221c236f296269b5b2e2a6b733ebcd4a2e05f90";
 
-    coq-master = { url = "github:coq/coq/3e7c26f8bb991e7335162647017edf21b2afd974"; }; # Should be kept in sync with PIN_COQ in CI workflow
-    coq-master.inputs.nixpkgs.follows = "nixpkgs";
+    rocq-master = { url = "github:coq/coq/9d13cf5137c82610893241ac3c5c756f01c2aaa1"; }; # Should be kept in sync with PIN_COQ in CI workflow
+    rocq-master.inputs.nixpkgs.follows = "nixpkgs";
 
   };
 
@@ -13,7 +14,7 @@
     self,
     nixpkgs,
     flake-utils,
-    coq-master,
+    rocq-master,
   }:
     flake-utils.lib.eachDefaultSystem (system: let
       name = "vscoq-client";
@@ -21,7 +22,7 @@
       vscodeExtName = "vscoq";
       vscodeExtUniqueId = "maximedenes.vscoq";
       vscoq_version = "2.2.3";
-      coq = coq-master.packages.${system};
+      rocq = rocq-master.packages.${system};
     in rec {
       formatter = nixpkgs.legacyPackages.${system}.alejandra;
 
@@ -49,7 +50,7 @@
                 ++ (with coq.ocamlPackages; [
                   lablgtk3-sourceview3
                   glib
-                  gnome.adwaita-icon-theme
+                  pkgs.adwaita-icon-theme
                   wrapGAppsHook
                   ocaml
                   findlib
@@ -92,7 +93,7 @@
                 ++ (with coq.ocamlPackages; [
                   lablgtk3-sourceview3
                   glib
-                  gnome.adwaita-icon-theme
+                  pkgs.adwaita-icon-theme
                   wrapGAppsHook
                   ocaml
                   yojson
@@ -135,7 +136,7 @@
                 ++ (with coq.ocamlPackages; [
                   lablgtk3-sourceview3
                   glib
-                  gnome.adwaita-icon-theme
+                  pkgs.adwaita-icon-theme
                   wrapGAppsHook
                   ocaml
                   yojson
@@ -168,17 +169,17 @@
               version = vscoq_version;
               src = ./language-server;
               nativeBuildInputs = [
-                coq
+                rocq
               ];
               buildInputs =
                 [
-                  coq
+                  rocq
                   dune_3
                 ]
                 ++ (with coq.ocamlPackages; [
                   lablgtk3-sourceview3
                   glib
-                  gnome.adwaita-icon-theme
+                  pkgs.adwaita-icon-theme
                   wrapGAppsHook
                   ocaml
                   yojson
