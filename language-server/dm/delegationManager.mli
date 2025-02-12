@@ -88,7 +88,7 @@ module type Worker = sig
    val setup_plumbing : options -> ((job_update_request -> unit) * job_t)
    
    (* CDebug aware print *)
-   val log : ?force:bool -> string -> unit
+   val log : ?force:bool -> (unit -> string) -> unit
    
 end
 
