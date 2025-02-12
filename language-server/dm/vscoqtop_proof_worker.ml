@@ -22,8 +22,8 @@ let main_worker options =
   try Dm.ExecutionManager.ProofWorkerProcess.main ~st:initial_vernac_state options
   with exn ->
     let bt = Printexc.get_backtrace () in
-    log Printexc.(to_string exn);
-    log bt;
+    log (fun () -> Printexc.(to_string exn));
+    log (fun () -> bt);
     flush_all ()
 
 let vscoqtop_specific_usage = Boot.Usage.{
@@ -47,7 +47,7 @@ let _ =
   let opts, emoptions = Coqinit.parse_arguments ~parse_extra:Dm.ExecutionManager.ProofWorkerProcess.parse_options ~usage:vscoqtop_specific_usage () in
   let injections = Coqinit.init_runtime opts in
   start_library Coqargs.(dirpath_of_top opts.config.logic.toplevel_name) injections;
-  log @@ "started";
+  log (fun () -> "started");
   Sys.(set_signal sigint Signal_ignore);
   main_worker emoptions
 [%%else]
@@ -58,7 +58,7 @@ let () =
   (* not sure if init_document is useful in proof worker *)
   let () = Coqinit.init_document opts in
   start_library (Coqinit.dirpath_of_top opts.config.logic.toplevel_name) [];
-  log @@ "started";
+  log (fun () -> "started");
   Sys.(set_signal sigint Signal_ignore);
   main_worker emoptions
 [%%endif]

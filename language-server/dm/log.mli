@@ -14,7 +14,7 @@
 
 open Types
 
-val mk_log : string -> (?force:bool -> string -> unit) log
+val mk_log : string -> (?force:bool -> (unit -> string) -> unit) log
 val logs : unit -> string list
 
 type event = string
