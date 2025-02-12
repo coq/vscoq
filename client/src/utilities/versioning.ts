@@ -49,7 +49,8 @@ const versionRequirements : VersionReq = {
     '2.2.0': '2.1.7',
     '2.2.1': '2.2.1',
     '2.2.2': '2.2.2',
-    '2.2.3': '2.2.2'
+    '2.2.3': '2.2.2',
+    '2.2.4': '2.2.4'
 };
 
 //We will add version ranges as we start releasing
