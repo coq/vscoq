@@ -2,7 +2,7 @@ REM Download platform script
 
 SET PATH=%PATH%;C:\Program Files\7-Zip;C:\Program Files\Git\mingw64\bin
 
-SET PLATFORM=https://github.com/coq/platform/archive/coq-ci.zip
+SET PLATFORM=https://github.com/coq/platform/archive/main.zip
 
 SET ARCH=64
 
@@ -33,6 +33,7 @@ call coq_platform_make_windows.bat ^
   -set-switch=y ^
   -override-dev-pkg="coq-core=https://github.com/coq/coq/archive/%COQ_VERSION%.tar.gz" ^
   -override-dev-pkg="coq-stdlib=https://github.com/coq/coq/archive/%COQ_VERSION%.tar.gz" ^
+  -override-dev-pkg="coqide-server=https://github.com/coq/coq/archive/%COQ_VERSION%.tar.gz" ^
   -override-dev-pkg="coq=https://github.com/coq/coq/archive/%COQ_VERSION%.tar.gz" ^
   || GOTO ErrorExit
 
