@@ -279,8 +279,8 @@ let get_messages st id =
 
 let get_info_messages st pos =
   match id_of_pos_opt st pos with
-  | None -> log "get_messages: Could not find id";[]
-  | Some id -> log "get_messages: Found id";
+  | None -> log (fun () -> "get_messages: Could not find id");[]
+  | Some id -> log (fun () -> "get_messages: Found id");
     let info (lvl, _, _, _) = 
       match lvl with
       | Feedback.Info -> true
@@ -461,13 +461,13 @@ let interpret_to_end st check_mode =
   match Document.get_last_sentence st.document with
   | None -> (st, [])
   | Some {id} -> 
-    log ("interpret_to_end id = " ^ Stateid.to_string id);
+    log (fun () -> "interpret_to_end id = " ^ Stateid.to_string id);
     interpret_to st id check_mode
 
 let interpret_in_background st ~should_block_on_error =
   match Document.get_last_sentence st.document with
   | None -> (st, [])
-  | Some {id} -> log ("interpret_to_end id = " ^ Stateid.to_string id); observe ~background:true st id ~should_block_on_error
+  | Some {id} -> log (fun () -> "interpret_to_end id = " ^ Stateid.to_string id); observe ~background:true st id ~should_block_on_error
 
 let is_above st id1 id2 =
   let range1 = Document.range_of_id st id1 in
@@ -546,7 +546,7 @@ let apply_text_edits state edits =
 
 let execution_finished st id started =
   let time = Unix.gettimeofday () -. started in
-  log (Printf.sprintf "ExecuteToLoc %d ends after %2.3f" (Stateid.to_int id) time);
+  log (fun () -> Printf.sprintf "ExecuteToLoc %d ends after %2.3f" (Stateid.to_int id) time);
   (* We update the state to trigger a publication of diagnostics *)
   let update_view = true in
   let state = Some st in
@@ -569,10 +569,10 @@ let execute st id vst_for_next_todo started task background block =
   in
   match Document.get_sentence st.document id with
   | None ->
-    log (Printf.sprintf "ExecuteToLoc %d stops after %2.3f, sentences invalidated" (Stateid.to_int id) time);
+    log (fun () -> Printf.sprintf "ExecuteToLoc %d stops after %2.3f, sentences invalidated" (Stateid.to_int id) time);
     {state=Some st; events=[]; update_view=true; notification=None} (* Sentences have been invalidate, probably because the user edited while executing *)
   | Some _ ->
-    log (Printf.sprintf "ExecuteToLoc %d continues after %2.3f" (Stateid.to_int id) time);
+    log (fun () -> Printf.sprintf "ExecuteToLoc %d continues after %2.3f" (Stateid.to_int id) time);
     let (next, execution_state,vst_for_next_todo,events, exec_error) =
       ExecutionManager.execute st.execution_state st.document (vst_for_next_todo, [], false) task block in
     let st, block_events =
@@ -681,14 +681,14 @@ let get_context st pos = context_of_id st (id_of_pos st pos)
 let get_completions st pos =
   match id_of_pos st pos with
   | None -> 
-      log ("Can't get completions, no sentence found before the cursor");
+      log (fun () -> "Can't get completions, no sentence found before the cursor");
       []
   | Some id ->
     let ost = ExecutionManager.get_vernac_state st.execution_state id in
     let settings = ExecutionManager.get_options () in
     match Option.bind ost @@ CompletionSuggester.get_completions settings.completion_options with
     | None -> 
-        log "No completions available";
+        log (fun () -> "No completions available");
         []
     | Some lemmas -> lemmas
 
@@ -753,14 +753,14 @@ let search st ~id pos pattern =
 (** Try to generate hover text from [pattern] the context of the given [sentence] *)
 let hover_of_sentence st loc pattern sentence = 
   match context_of_id st (Option.map (fun ({ id; _ }: Document.sentence) -> id) sentence) with
-  | None -> log "hover: no context found"; None
+  | None -> log (fun () -> "hover: no context found"); None
   | Some (sigma, env) ->
     try
       let ref_or_by_not = parse_entry st loc (smart_global) pattern in
       Language.Hover.get_hover_contents env sigma ref_or_by_not
     with e ->
       let e, info = Exninfo.capture e in
-      log ("Exception while handling hover: " ^ (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)));
+      log (fun () -> "Exception while handling hover: " ^ (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)));
       None
 
 let hover st pos =
@@ -772,9 +772,9 @@ let hover st pos =
        is in proof mode e.g. Lemmas, Definition with tactics *)
   let opattern = RawDocument.word_at_position (Document.raw_document st.document) pos in
   match opattern with
-  | None -> log "hover: no word found at cursor"; None
+  | None -> log (fun () -> "hover: no word found at cursor"); None
   | Some pattern ->
-    log ("hover: found word at cursor: \"" ^ pattern ^ "\"");
+    log (fun () -> "hover: found word at cursor: \"" ^ pattern ^ "\"");
     let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
     (* hover at previous sentence *)
     match hover_of_sentence st loc pattern (Document.find_sentence_before st.document loc) with
@@ -811,9 +811,9 @@ let jump_to_definition st pos =
   let loc = RawDocument.loc_of_position raw_doc pos in
   let opattern = RawDocument.word_at_position raw_doc pos in
   match opattern with
-  | None -> log "jumpToDef: no word found at cursor"; None
+  | None -> log (fun () -> "jumpToDef: no word found at cursor"); None
   | Some pattern ->
-    log ("jumpToDef: found word at cursor: \"" ^ pattern ^ "\"");
+    log (fun () -> "jumpToDef: found word at cursor: \"" ^ pattern ^ "\"");
     try
     let qid = parse_entry st loc (Procq.Prim.qualid) pattern in
       let ref = Nametab.locate_extended qid in
@@ -840,7 +840,7 @@ let jump_to_definition st pos =
             end
         with e ->
           let e, info = Exninfo.capture e in
-          log (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)); None
+          log (fun () -> Pp.string_of_ppcmds @@ CErrors.iprint (e, info)); None
 
 [%%endif]
 
