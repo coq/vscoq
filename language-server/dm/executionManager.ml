@@ -97,6 +97,14 @@ type state = {
   overview: exec_overview;
 }
 
+let get_id_of_executed_task task =
+  match task with
+  | PSkip {id} -> id
+  | PBlock {id} -> id
+  | PExec {id} -> id
+  | PQuery {id} -> id
+  | PDelegate {terminator_id} -> terminator_id
+
 let print_exec_overview overview =
   let {processing; processed; prepared } = overview in
   log @@ "--------- Prepared ranges ---------";

@@ -41,7 +41,6 @@ type errored_sentence = (sentence_id * Loc.t option) option
 type feedback_message = Feedback.level * Loc.t option * Quickfix.t list * Pp.t
 
 val pr_event : event -> Pp.t
-
 val init : Vernacstate.t -> state * event Sel.Event.t
 val destroy : state -> unit
 
@@ -74,6 +73,7 @@ val handle_event : event -> state -> (sentence_id option * state option * events
 (** Execution happens in two steps. In particular the event one takes only
     one task at a time to ease checking for interruption *)
 type prepared_task
+val get_id_of_executed_task : prepared_task -> sentence_id
 val build_tasks_for : Document.document -> Scheduler.schedule -> state -> sentence_id -> bool -> Vernacstate.t * state * prepared_task option * errored_sentence
 val execute : state -> Document.document -> Vernacstate.t * events * bool -> prepared_task -> bool -> (prepared_task option * state * Vernacstate.t * events * errored_sentence)
 
