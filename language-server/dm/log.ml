@@ -53,8 +53,14 @@ let mk_log name =
     let msg =
       try msg ()
       with
-      | Sys.Break as e -> raise e
-      | e -> Format.asprintf "Error while printing: %s" (Printexc.to_string e) in
+      | Sys.Break as e ->
+        (* we let this escape since one may want to interrupt the printer *)
+        let e = Exninfo.capture e in
+        Exninfo.iraise e
+      | e ->
+        let e = Exninfo.capture e in
+        let message = Pp.string_of_ppcmds @@ CErrors.iprint e in
+        Format.asprintf "Error while printing: %s" message in
     let should_print_log = force || flag || (flag_init && not !lsp_initialization_done) in
     if should_print_log then begin
       let txt = Format.asprintf "[%-20s, %d, %f] %s" name (Unix.getpid ()) (Unix.gettimeofday ()) msg in
