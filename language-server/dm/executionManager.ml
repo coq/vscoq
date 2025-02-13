@@ -149,7 +149,7 @@ end
 module ProofWorker = DelegationManager.MakeWorker(ProofJob)
 
 type event =
-  | LocalFeedback of (Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)) Queue.t * Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)
+  | LocalFeedback of (Feedback.route_id * sentence_id * feedback_message) Queue.t * (Feedback.route_id * sentence_id * feedback_message) list
   | ProofWorkerEvent of ProofWorker.delegation
 
 type events = event Sel.Event.t list
@@ -427,7 +427,7 @@ let update state id v =
 ;;
 
 let local_feedback feedback_queue : event Sel.Event.t =
-  Sel.On.queue ~name:"feedback" ~priority:PriorityManager.feedback feedback_queue (fun (rid,sid,msg) -> LocalFeedback(feedback_queue,rid,sid,msg))
+  Sel.On.queue_all ~name:"feedback" ~priority:PriorityManager.feedback feedback_queue (fun x xs -> LocalFeedback(feedback_queue, x :: xs))
 
 let install_feedback_listener doc_id send =
   Log.feedback_add_feeder_on_Message (fun route span doc lvl loc qf msg ->
@@ -458,7 +458,7 @@ let feedback_cleanup { coq_feeder; sel_feedback_queue; sel_cancellation_handle }
   Queue.clear sel_feedback_queue;
   Sel.Event.cancel sel_cancellation_handle
 
-let handle_feedback id fb state =
+let handle_feedback state (_,id, fb) =
   match fb with
   | (_, _, _, msg) ->
     begin match SM.find id state.of_sentence with
@@ -466,19 +466,19 @@ let handle_feedback id fb state =
     | exception Not_found -> 
         log @@ "Received feedback on non-existing state id " ^ Stateid.to_string id ^ ": " ^ Pp.string_of_ppcmds msg;
         state
-    end
+    end 
 
 let handle_event event state =
   match event with
-  | LocalFeedback (q,_,id,fb) ->
-      None, Some (handle_feedback id fb state), [local_feedback q]
+  | LocalFeedback (q,l) ->
+      None, Some (List.fold_left handle_feedback state l), [local_feedback q]
   | ProofWorkerEvent event ->
       let update, events = ProofWorker.handle_event event in
       let state, id =
         match update with
         | None -> None, None
-        | Some (ProofJob.AppendFeedback(_,id,fb)) ->
-            Some (handle_feedback id fb state), None
+        | Some (ProofJob.AppendFeedback(x,id,fb)) ->
+            Some (handle_feedback state (x,id,fb)), None
         | Some (ProofJob.UpdateExecStatus(id,v)) ->
             match SM.find id state.of_sentence, v with
             | (Delegated (_,completion), fl), _ ->
