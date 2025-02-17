@@ -53,14 +53,6 @@ import { QUICKFIX_COMMAND, CoqWarningQuickFix } from './QuickFixProvider';
 let client: Client;
 
 export function activate(context: ExtensionContext) {
-    commands.executeCommand('setContext', 'inCoqProject', true);
-
-    function checkInCoqProject() {
-        workspace.findFiles('**/{*.v,_CoqProject}').then(files => {
-            commands.executeCommand('setContext', 'inCoqProject', files.length > 0);
-        });
-    }
-
     const getDocumentProofs = (uri: Uri) => {
         const textDocument = TextDocumentIdentifier.create(uri.toString());
         const params: DocumentProofsRequest = {textDocument};
@@ -69,10 +61,6 @@ export function activate(context: ExtensionContext) {
         return client.sendRequest(req, params);
     };
 
-    // Watch for files being added or removed
-    workspace.onDidCreateFiles(checkInCoqProject);
-    workspace.onDidDeleteFiles(checkInCoqProject);
-    
     const coqTM = new VsCoqToolchainManager();
     coqTM.intialize().then(
         () => {
@@ -391,5 +379,4 @@ Path: \`${coqTM.getVsCoqTopPath()}\`
 
 // This method is called when your extension is deactivated
 export function deactivate() {
-    commands.executeCommand('setContext', 'inCoqProject', undefined);
 }
