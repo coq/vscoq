@@ -107,15 +107,15 @@ let get_id_of_executed_task task =
 
 let print_exec_overview overview =
   let {processing; processed; prepared } = overview in
-  log @@ "--------- Prepared ranges ---------";
-  List.iter (fun r -> log @@ Range.to_string r) prepared;
-  log @@ "-------------------------------------";
-  log @@ "--------- Processing ranges ---------";
-  List.iter (fun r -> log @@ Range.to_string r) processing;
-  log @@ "-------------------------------------";
-  log @@ "--------- Processed ranges ---------";
-  List.iter (fun r -> log @@ Range.to_string r) processed;
-  log @@ "-------------------------------------"
+  log (fun () -> "--------- Prepared ranges ---------");
+  List.iter (fun r -> log (fun () -> Range.to_string r)) prepared;
+  log (fun () -> "-------------------------------------");
+  log (fun () -> "--------- Processing ranges ---------");
+  List.iter (fun r -> log (fun () -> Range.to_string r)) processing;
+  log (fun () -> "-------------------------------------");
+  log (fun () -> "--------- Processed ranges ---------");
+  List.iter (fun r -> log (fun () -> Range.to_string r)) processed;
+  log (fun () -> "-------------------------------------")
 
 
 let print_exec_overview_of_state st = print_exec_overview st.overview
@@ -206,19 +206,19 @@ let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
     match result with
     | Ok (interp, events) ->
       (*
-        log @@ "Executed: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^
+        log fun () -> "Executed: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^
           " (" ^ (if Option.is_empty vernac_st.Vernacstate.lemmas then "no proof" else "proof")  ^ ")";
           *)
         let st = { st with interp } in
         st, success st, (*List.map inject_pm_event*) events
     | Error (Sys.Break, _ as exn) ->
       (*
-        log @@ "Interrupted executing: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
+        log (fun () -> "Interrupted executing: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast));
         *)
         Exninfo.iraise exn
     | Error (e, info) ->
       (*
-        log @@ "Failed to execute: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
+        log (fun () -> "Failed to execute: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast));
         *)
         let loc = Loc.get_loc info in
         let qf = Result.value ~default:[] @@ Quickfix.from_exception e in
@@ -268,9 +268,9 @@ let interp_qed_delayed ~proof_using ~state_id ~st =
   let control = [] (* FIXME *) in
   let opaque = Vernacexpr.Opaque in
   let pending = CAst.make @@ Vernacexpr.Proved (opaque, None) in
-  (*log "calling interp_qed_delayed done";*)
+  (*log fun () -> "calling interp_qed_delayed done";*)
   let interp = Vernacinterp.interp_qed_delayed_proof ~proof ~st ~control pending in
-  (*log "interp_qed_delayed done";*)
+  (*log fun () -> "interp_qed_delayed done";*)
   let st = { st with interp } in
   st, success st, assign
 
@@ -310,7 +310,7 @@ let update_processed id state document =
     | _ -> assert false (* delegated sentences born as such, cannot become it later *)
     end
   | exception Not_found ->
-    log @@ "Trying to get overview with non-existing state id " ^ Stateid.to_string id;
+    log (fun () -> "Trying to get overview with non-existing state id " ^ Stateid.to_string id);
     state
 
 let id_of_first_task ~default = function
@@ -464,7 +464,7 @@ let handle_feedback state (_,id, fb) =
     begin match SM.find id state.of_sentence with
     | (s,fl) -> update_all id s (fl @ [fb]) state
     | exception Not_found -> 
-        log @@ "Received feedback on non-existing state id " ^ Stateid.to_string id ^ ": " ^ Pp.string_of_ppcmds msg;
+        log (fun () -> "Received feedback on non-existing state id " ^ Stateid.to_string id ^ ": " ^ Pp.string_of_ppcmds msg);
         state
     end 
 
@@ -522,14 +522,14 @@ let prepare_task task : prepared_task list =
   | OpaqueProof { terminator; opener_id; tasks; proof_using} ->
       match !options.delegation_mode with
       | DelegateProofsToWorkers _ ->
-          log "delegating proofs to workers";
+          log (fun () -> "delegating proofs to workers");
           let last_step_id = last_opt tasks in
           [PDelegate {terminator_id = terminator.id; opener_id; last_step_id; tasks; proof_using}]
       | CheckProofsInMaster ->
-          log "running the proof in master as per config";
+          log (fun () -> "running the proof in master as per config");
           List.map (fun x -> PExec x) tasks @ [PExec terminator]
       | SkipProofs ->
-          log (Printf.sprintf "skipping proof made of %d tasks" (List.length tasks));
+          log (fun () -> Printf.sprintf "skipping proof made of %d tasks" (List.length tasks));
           [PExec terminator]
 
 let id_of_prepared_task = function
@@ -546,7 +546,7 @@ let purge_state = function
 (* TODO move to proper place *)
 let worker_execute ~doc_id ~send_back (vs,events) { id; ast; synterp; error_recovery } =
   let vs = { vs with Vernacstate.synterp } in
-  log ("worker interp " ^ Stateid.to_string id);
+  log (fun () -> "worker interp " ^ Stateid.to_string id);
   let vs, v, ev = interp_ast ~doc_id ~state_id:id ~st:vs ~error_recovery ast in
   send_back (ProofJob.UpdateExecStatus (id,purge_state v));
   (vs, events @ ev)
@@ -630,16 +630,16 @@ let execute_task st (vs, events, interrupted) task =
             let complete_job status =
               try match status with
               | Success None ->
-                log "Resolved future (without sending back the witness)";
+                log (fun () -> "Resolved future (without sending back the witness)");
                 assign (`Exn (Failure "no proof",Exninfo.null))
               | Success (Some vernac_st) ->
                 let f proof =
-                  log "Resolved future";
+                  log (fun () -> "Resolved future");
                   assign (`Val (Declare.Proof.return_proof proof))
                 in
                 Vernacstate.LemmaStack.with_top (Option.get @@ vernac_st.Vernacstate.interp.lemmas) ~f
               | Error ((loc,err),_,_) ->
-                  log "Aborted future";
+                  log (fun () -> "Aborted future");
                   assign (`Exn (CErrors.UserError err, Option.fold_left Loc.add_loc Exninfo.null loc))
               with exn when CErrors.noncritical exn ->
                 assign (`Exn (CErrors.UserError(Pp.str "error closing proof"), Exninfo.null))
@@ -688,14 +688,14 @@ let build_tasks_for document sch st id block =
     begin match find_fulfilled_opt id st.of_sentence with
     | Some (Success (Some vs)) ->
       (* We reached an already computed state *)
-      log @@ "Reached computed state " ^ Stateid.to_string id;
+      log (fun () -> "Reached computed state " ^ Stateid.to_string id);
       vs, tasks, st, None
     | Some (Error((loc, _),_,Some vs)) ->
       (* We try to be resilient to an error *)
-      log @@ "Error resiliency on state " ^ Stateid.to_string id;
+      log (fun () -> "Error resiliency on state " ^ Stateid.to_string id);
       vs, tasks, st, Some (id, loc)
     | _ ->
-      log @@ "Non (locally) computed state " ^ Stateid.to_string id;
+      log (fun () -> "Non (locally) computed state " ^ Stateid.to_string id);
       let (base_id, task) = task_for_sentence sch id in
       begin match base_id with
       | None -> (* task should be executed in initial state *)
@@ -827,7 +827,7 @@ let cancel1 todo invalid_id =
   List.filter task_of_id todo
 
 let rec invalidate document schedule id st =
-  log @@ "Invalidating: " ^ Stateid.to_string id;
+  log (fun () -> "Invalidating: " ^ Stateid.to_string id);
   let of_sentence = invalidate1 st.of_sentence id in
   let todo = cancel1 st.todo id in
   let old_jobs = Queue.copy jobs in
@@ -861,9 +861,9 @@ let context_of_state st =
 
 let get_context st id =
   match find_fulfilled_opt id st.of_sentence with
-  | None -> log "Cannot find state for get_context"; None
-  | Some (Error _) -> log "Context requested in error state"; None
-  | Some (Success None) -> log "Context requested in a remotely checked state"; None
+  | None -> log (fun () -> "Cannot find state for get_context"); None
+  | Some (Error _) -> log (fun () -> "Context requested in error state"); None
+  | Some (Success None) -> log (fun () -> "Context requested in a remotely checked state"); None
   | Some (Success (Some { interp = st })) ->
     Some (context_of_state st)
 
@@ -872,9 +872,9 @@ let get_initial_context st =
 
 let get_vernac_state st id =
   match find_fulfilled_opt id st.of_sentence with
-  | None -> log "Cannot find state for get_context"; None
-  | Some (Error (_,_,None)) -> log "State requested after error with no state"; None
-  | Some (Success None) -> log "State requested in a remotely checked state"; None
+  | None -> log (fun () -> "Cannot find state for get_context"); None
+  | Some (Error (_,_,None)) -> log (fun () -> "State requested after error with no state"); None
+  | Some (Success None) -> log (fun () -> "State requested in a remotely checked state"); None
   | Some (Success (Some st))
   | Some (Error (_,_, Some st)) ->
     Some st

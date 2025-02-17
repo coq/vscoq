@@ -395,7 +395,7 @@ let string_of_parsed_ast = function
 
 let patch_sentence parsed scheduler_state_before id ({ parsing_start; ast; start; stop; synterp_state } : pre_sentence) =
   let old_sentence = SM.find id parsed.sentences_by_id in
-  log @@ Format.sprintf "Patching sentence %s , %s" (Stateid.to_string id) (string_of_parsed_ast old_sentence.ast);
+  log (fun () -> Format.sprintf "Patching sentence %s , %s" (Stateid.to_string id) (string_of_parsed_ast old_sentence.ast));
   let scheduler_state_after, schedule =
     match ast with
     | Error {msg} ->
@@ -547,7 +547,7 @@ let get_entry ast =
 
 
 let handle_parse_error start parsing_start msg qf ({stream; errors; parsed;} as parse_state) synterp_state =
-  log @@ "handling parse error at " ^ string_of_int start;
+  log (fun () -> "handling parse error at " ^ string_of_int start);
   let stop = Stream.count stream in
   let parsing_error = { msg; start; stop; qf} in
   let sentence = { parsing_start; ast = Error parsing_error; start; stop; synterp_state } in
@@ -559,7 +559,7 @@ let handle_parse_error start parsing_start msg qf ({stream; errors; parsed;} as 
 
 let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments} as parse_state) =
   let start = Stream.count stream in
-  log @@ "Start of parse is: " ^ (string_of_int start);
+  log (fun () -> "Start of parse is: " ^ (string_of_int start));
   begin
     (* FIXME should we save lexer state? *)
     match parse_one_sentence ?loc stream ~st:synterp_state with
@@ -577,7 +577,7 @@ let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments
       let tokens = stream_tok 0 [] lex begin_line begin_char in
       begin
         try
-          log @@ "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast);
+          log (fun () -> "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast));
           let entry = get_entry ast in
           let classification = Vernac_classifier.classify_vernac ast in
           let synterp_state = Vernacstate.Synterp.freeze () in
@@ -650,11 +650,11 @@ let invalidate top_edit top_id parsed_doc new_sentences =
   let sentence_strings_id = SM.bindings @@ SM.map (fun s -> string_of_parsed_ast s.ast) parsed_doc.sentences_by_id in
   let sentence_strings_id = List.map (fun s -> snd s) sentence_strings_id in
   let sentence_string_id = String.concat " " sentence_strings_id in
-  log @@ Format.sprintf "Top edit: %i, Doc: %s, Doc by id: %s" top_edit sentence_string sentence_string_id;
+  log (fun () -> Format.sprintf "Top edit: %i, Doc: %s, Doc by id: %s" top_edit sentence_string sentence_string_id);
   let old_sentences = sentences_after parsed_doc top_edit in
   let diff = diff old_sentences new_sentences in
   let unchanged_id = unchanged_id top_id diff in
-  log @@ "diff:\n" ^ string_of_diff parsed_doc diff;
+  log (fun () -> "diff:\n" ^ string_of_diff parsed_doc diff);
   let invalid_ids, doc = invalidate_diff parsed_doc scheduler_state Stateid.Set.empty diff in
   unchanged_id, invalid_ids, doc
 
@@ -670,7 +670,7 @@ let validate_document ({ parsed_loc; raw_doc; cancel_handle } as document) =
   let text = RawDocument.text raw_doc in
   let stream = Stream.of_string text in
   while Stream.count stream < stop do Stream.junk () stream done;
-  log @@ Format.sprintf "Parsing more from pos %i" stop;
+  log (fun () -> Format.sprintf "Parsing more from pos %i" stop);
   let started = Unix.gettimeofday () in
   let parsed_state = {stop; top_id;synterp_state; stream; raw=raw_doc; parsed=[]; errors=[]; parsed_comments=[]; loc=None; started; previous_document=document} in
   let priority = Some PriorityManager.parsing in
@@ -681,13 +681,13 @@ let validate_document ({ parsed_loc; raw_doc; cancel_handle } as document) =
 let handle_invalidate {parsed; errors; parsed_comments; stop; top_id; started; previous_document} document =
   let end_ = Unix.gettimeofday ()in
   let time = end_ -. started in
-  (* log @@ Format.sprintf "Parsing phase ended in %5.3f" time; *)
-  log @@ Format.sprintf "Parsing phase ended in %5.3f\n%!" time;
+  (* log (fun () -> Format.sprintf "Parsing phase ended in %5.3f" time); *)
+  log (fun () -> Format.sprintf "Parsing phase ended in %5.3f\n%!" time);
   let new_sentences = List.rev parsed in
   let new_comments = List.rev parsed_comments in
   let new_errors = errors in
-  log @@ Format.sprintf "%i new sentences" (List.length new_sentences);
-  log @@ Format.sprintf "%i new comments" (List.length new_comments);
+  log (fun () -> Format.sprintf "%i new sentences" (List.length new_sentences));
+  log (fun () -> Format.sprintf "%i new comments" (List.length new_comments));
   let errors = parsing_errors_before document stop in
   let comments = comments_before document stop in
   let unchanged_id, invalid_ids, document = invalidate (stop+1) top_id document new_sentences in
