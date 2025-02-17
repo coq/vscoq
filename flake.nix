@@ -3,7 +3,7 @@
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=4221c236f296269b5b2e2a6b733ebcd4a2e05f90";
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=4316480afd67ac44699314c127fdce2dea1d9937";
 
     rocq-master = { url = "github:coq/coq/9d13cf5137c82610893241ac3c5c756f01c2aaa1"; }; # Should be kept in sync with PIN_COQ in CI workflow
     rocq-master.inputs.nixpkgs.follows = "nixpkgs";
