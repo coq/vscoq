@@ -25,6 +25,7 @@ type document
 type proof_block_type =
   | TheoremKind of Decls.theorem_kind
   | DefinitionType of Decls.definition_object_kind
+  | InductiveType of Vernacexpr.inductive_kind
   | Other
 
 type proof_step = {

@@ -358,6 +358,7 @@ let get_document_symbols st =
     let kind = begin match type_ with
     | TheoremKind _ -> SymbolKind.Function
     | DefinitionType _ -> SymbolKind.Variable
+    | InductiveType _ -> SymbolKind.Struct
     | Other -> SymbolKind.Null
     end in
     DocumentSymbol.{name; detail=(Some statement); kind; range; selectionRange=range; children=None; deprecated=None; tags=None;}

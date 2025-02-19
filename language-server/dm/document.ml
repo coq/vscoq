@@ -25,6 +25,7 @@ module SM = Map.Make (Stateid)
 type proof_block_type =
   | TheoremKind of Decls.theorem_kind
   | DefinitionType of Decls.definition_object_kind
+  | InductiveType of Vernacexpr.inductive_kind
   | Other
 
 type proof_step = {
@@ -189,6 +190,9 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
         match pure with
         | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind)
         | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def)
+        | Vernacexpr.VernacInductive (kind, _) -> Some (InductiveType kind)
+        | Vernacexpr.VernacFixpoint (_, _) -> Some (DefinitionType Decls.Fixpoint)
+        | Vernacexpr.VernacCoFixpoint (_, _) -> Some (DefinitionType Decls.CoFixpoint)
         | _ -> None
     in
     let name = match names with
@@ -212,6 +216,9 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
         match pure with
         | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), string_of_id document id
         | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), string_of_id document id
+        | Vernacexpr.VernacInductive (kind, _) -> Some (InductiveType kind), string_of_id document id
+        | Vernacexpr.VernacFixpoint (_, _) -> Some (DefinitionType Decls.Fixpoint), string_of_id document id
+        | Vernacexpr.VernacCoFixpoint (_, _) -> Some (DefinitionType Decls.CoFixpoint), string_of_id document id
         | _ -> None, ""
     in
     let name = match names with
