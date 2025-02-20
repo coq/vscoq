@@ -190,6 +190,9 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
         match pure with
         | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind)
         | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def)
+        | Vernacexpr.VernacInductive (kind, _) -> Some (InductiveType kind)
+        | Vernacexpr.VernacFixpoint (_, _) -> Some (DefinitionType Decls.Fixpoint)
+        | Vernacexpr.VernacCoFixpoint (_, _) -> Some (DefinitionType Decls.CoFixpoint)
         | _ -> None
     in
     let name = match names with
