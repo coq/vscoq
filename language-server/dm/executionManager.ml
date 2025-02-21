@@ -667,7 +667,7 @@ let execute_task st (vs, events, interrupted) task =
       let st = update st (id_of_prepared_task task) (Error ((None,Pp.str "interrupted"),None,None)) in
       (st, vs, events, true, None)
 
-let execute st document (vs, events, interrupted) task block_on_first_error =
+let execute_coq st document (vs, events, interrupted) task block_on_first_error =
   let st, vst_for_next_todo, events, _, exec_error =
     execute_task st (vs, events, interrupted) task in
   match block_on_first_error, exec_error with
@@ -681,6 +681,61 @@ let execute st document (vs, events, interrupted) task block_on_first_error =
     let st = cut_overview task st document in
     let st = { st with todo=[]} in
     None, st, vst_for_next_todo, events, exec_error
+
+type cancellation_handle = Thread.t option
+let cancel t = Control.interrupt := true; (*Option.iter Thread.join t;*) Control.interrupt := false
+  
+type 'a interruptible = {
+  promise : 'a Sel.Promise.t;
+  kill_handle : cancellation_handle;
+}
+type exec_result = (prepared_task option * state * Vernacstate.t * events * errored_sentence) (* TODO: turn into record *)
+
+let job = ref None
+
+let job_mutex = Mutex.create ()
+let job_condition = Condition.create ()
+
+let runner = Thread.create (fun () ->
+  while true do
+    let (st, document, acc, task, block_on_first_error, resolver) =
+      Mutex.lock job_mutex;
+      while !job = None do Condition.wait job_condition job_mutex done;
+      let rc = match !job with Some x -> x | None -> assert false in
+      job := None;
+      Condition.signal job_condition;
+      Mutex.unlock job_mutex;
+      rc
+    in
+      begin try
+        log (fun () -> Format.asprintf "begin exec: %f\n" (Unix.gettimeofday ()));
+        Sel.Promise.fulfill resolver (execute_coq st document acc task block_on_first_error);
+        log (fun () -> Format.asprintf "end exec: %f\n" (Unix.gettimeofday ()));
+      with e ->
+        Sel.Promise.reject resolver e
+      end;
+      (* Event.send chan_out () |> Event.sync *)
+  done
+) ()
+
+(* TODO: Sel.Promise.run *)
+let execute_thread st document acc task block_on_first_error resolver =
+  Mutex.lock job_mutex;
+  (* while !job <> None do Condition.wait job_condition job_mutex done; *)
+  job := Some (st, document, acc, task, block_on_first_error, resolver);
+  Condition.signal job_condition;
+  Mutex.unlock job_mutex;
+  None
+
+let execute_nothread st document acc task block_on_first_error resolver =
+  Sel.Promise.fulfill resolver (execute_coq st document acc task block_on_first_error);
+  None
+
+let execute st document acc task block_on_first_error =
+  let promise, r = Sel.Promise.make () in
+  (* log (fun () -> Format.asprintf "promise: %a" Sel.Promise.(pp (fun _ _ -> ())) promise); *)
+  let kill_handle = execute_thread st document acc task block_on_first_error r in
+  { promise; kill_handle }
 
 
 let build_tasks_for document sch st id block =
