@@ -55,9 +55,21 @@ jobs:
         diff search-ui/new_yarn.nix search-ui/yarn.nix
     - run: nix develop .#vscoq-${{ matrix.coq }} -c bash -c "cd language-server && dune build --profile ${{ matrix.profile }}"
     - run: nix develop .#vscoq-${{ matrix.coq }} -c bash -c "cd client && yarn run install:all && yarn run build:all && yarn run compile"
-    - run: xvfb-run nix develop .#vscoq-${{ matrix.coq }} -c bash -c "cd client && yarn test"
+    - name: Test xvfb
+      uses: Wandalen/wretry.action@v3
+      with:
+        attempt_limit: 5
+        attempt_delay: 5000
+        command: |
+            xvfb-run nix develop .#vscoq-${{ matrix.coq }} -c bash -c "cd client && yarn test"
       if: runner.os == 'Linux'
-    - run: nix develop .#vscoq-${{ matrix.coq }} -c bash -c "cd client && yarn test"
+    - name: Test
+      uses: Wandalen/wretry.action@v3
+      with:
+        attempt_limit: 5
+        attempt_delay: 5000
+        command: |
+            nix develop .#vscoq-${{ matrix.coq }} -c bash -c "cd client && yarn test"
       if: runner.os != 'Linux'
     - if: ${{ failure() }}
       run: cat /tmp/vscoq_init_log.*
