@@ -106,7 +106,7 @@
       }
     },
     {
-      "match": "\\b(Hint|Constructors|Resolve|Rewrite|Ltac|Implicit(\\s+Types)?|Set|Unset|Remove\\s+Printing|Arguments|Tactic\\s+Notation|Notation|Infix|Reserved\\s+Notation|Section|Module\\s+Type|Module|End|Check|Print|Eval|Compute|Search|Universe|Coercions?|Generalizable\\s+All|Generalizable\\s+Variable?|Existing\\s+Instance|Existing\\s+Class|Canonical|About|Locate|Collection|Typeclasses\\s+(Opaque|Transparent))\\b",
+      "match": "\\b(Hint(\\s+Mode)?|Create\\s+HintDb|Constructors|Resolve|Rewrite|Ltac|Implicit(\\s+Types)?|Set|Unset|Remove\\s+Printing|Arguments|((Tactic|Reserved)\\s+)?Notation|Infix|Section|Module(\\s+Type)?|End|Check|Print(\\s+All)?|Eval|Compute|Search|Universe|Coercions|Generalizable(\\s+(All|Variable))?|Existing(\\s+(Class|Instance))?|Canonical|About|Locate|Collection|Typeclasses\\s+(Opaque|Transparent))\\b",
       "comment": "Vernacular keywords",
       "name": "keyword.source.coq"
     },
