@@ -535,6 +535,8 @@ let workspaceDidChangeConfiguration params =
   | Continuous -> run_documents ()
   | Manual -> reset_observe_ids (); ([] : events)
 
+let handle_interrupt () = []
+
 let dispatch_std_request : type a. Jsonrpc.Id.t -> a Lsp.Client_request.t -> (a, error) result * events =
   fun id req ->
   match req with
@@ -590,6 +592,7 @@ let dispatch_notification =
   | InterpretToEnd params -> log (fun () -> "Received notification: vscoq/interpretToEnd"); coqtopInterpretToEnd params
   | StepBackward params -> log (fun () -> "Received notification: vscoq/stepBackward"); coqtopStepBackward params
   | StepForward params -> log (fun () -> "Received notification: vscoq/stepForward"); coqtopStepForward params
+  | Interrupt -> log (fun () -> "Received notification: vscoq/interrupt"); handle_interrupt ()
   | Std notif -> dispatch_std_notification notif
 
 let handle_lsp_event = function
