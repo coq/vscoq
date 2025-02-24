@@ -1,18 +1,13 @@
 import {
     TextEditor,
-    commands,
-    workspace
 } from 'vscode';
-
-import {
-    RequestType,
-    VersionedTextDocumentIdentifier,
-} from 'vscode-languageclient/node';
-
-import GoalPanel from './panels/GoalPanel';
 
 import Client from './client';
 import { makeVersionedDocumentId } from './utilities/utils';
+
+export const sendInterrupt = (client: Client) => {
+    client.sendNotification("vscoq/interrupt");
+};
 
 export const sendInterpretToPoint = (editor: TextEditor, client: Client) => {
     const textDocument = makeVersionedDocumentId(editor);
