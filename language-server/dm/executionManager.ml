@@ -683,7 +683,6 @@ let execute_coq st document (vs, events, interrupted) task block_on_first_error 
     None, st, vst_for_next_todo, events, exec_error
 
 type cancellation_handle = Thread.t option
-let cancel t = Control.interrupt := true; (*Option.iter Thread.join t;*) Control.interrupt := false
   
 type 'a interruptible = {
   promise : 'a Sel.Promise.t;
@@ -702,7 +701,6 @@ let runner = Thread.create (fun () ->
       Mutex.lock job_mutex;
       while !job = None do Condition.wait job_condition job_mutex done;
       let rc = match !job with Some x -> x | None -> assert false in
-      job := None;
       Condition.signal job_condition;
       Mutex.unlock job_mutex;
       rc
@@ -712,11 +710,26 @@ let runner = Thread.create (fun () ->
         Sel.Promise.fulfill resolver (execute_coq st document acc task block_on_first_error);
         log (fun () -> Format.asprintf "end exec: %f\n" (Unix.gettimeofday ()));
       with e ->
+        log (fun () -> "rejected!");
         Sel.Promise.reject resolver e
       end;
+      Mutex.lock job_mutex;
+      job := None;
+      Condition.signal job_condition;
+      Mutex.unlock job_mutex;
+
       (* Event.send chan_out () |> Event.sync *)
   done
 ) ()
+
+let cancel t =
+  Control.interrupt := true;  
+  log (fun () -> "interrupting...");
+  Mutex.lock job_mutex;
+  while !job <> None do Condition.wait job_condition job_mutex done;
+  Mutex.unlock job_mutex;
+  log (fun () -> "interrupted!");
+  Control.interrupt := false
 
 (* TODO: Sel.Promise.run *)
 let execute_thread st document acc task block_on_first_error resolver =
@@ -727,6 +740,7 @@ let execute_thread st document acc task block_on_first_error resolver =
   Mutex.unlock job_mutex;
   None
 
+  
 let execute_nothread st document acc task block_on_first_error resolver =
   Sel.Promise.fulfill resolver (execute_coq st document acc task block_on_first_error);
   None
