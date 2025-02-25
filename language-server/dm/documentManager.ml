@@ -334,7 +334,7 @@ let reset_to_top st = { st with observe_id = Top }
 let coq_pilot_observe st position text =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) position in
   match Document.find_sentence_before st.document loc with
-  | None -> log @@ "COQ PILOT ON NON VALID POSITION"; [] (* HANDLE ERROR *)
+  | None -> log @@ (fun () -> "COQ PILOT ON NON VALID POSITION"); [] (* HANDLE ERROR *)
   | Some {id} ->
     let sentences, sch = Document.parse_text_at_loc loc text st.document in
     let vst_for_next_todo, execution_state, task, _ = ExecutionManager.build_tasks_for st.document (Document.schedule st.document) st.execution_state id false in

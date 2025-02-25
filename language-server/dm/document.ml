@@ -269,11 +269,15 @@ let add_sentence parsed parsing_start start stop (ast: sentence_state) synterp_s
   } in
   document, scheduler_state_after
 
-let pre_sentence_to_sentence parsing_start start stop (ast: parsed_ast) synterp_state scheduler_state_before schedule =
+let pre_sentence_to_sentence parsing_start start stop (ast: sentence_state) synterp_state scheduler_state_before schedule =
   let id = Stateid.fresh () in
-  let ast' = (ast.ast, ast.classification, synterp_state) in
-  let scheduler_state_after, schedule =
-    Scheduler.schedule_sentence (id, ast') scheduler_state_before schedule
+  let scheduler_state_after, schedule = 
+    match ast with
+    | Error {msg} ->
+      scheduler_state_before, Scheduler.schedule_errored_sentence id msg schedule
+    | Parsed ast ->
+      let ast' = (ast.ast, ast.classification, synterp_state) in
+      Scheduler.schedule_sentence (id, ast') scheduler_state_before schedule
   in
   (* FIXME may invalidate scheduler_state_XXX for following sentences -> propagate? *)
   let sentence = { parsing_start; start; stop; ast; id; synterp_state; scheduler_state_before; scheduler_state_after } in
