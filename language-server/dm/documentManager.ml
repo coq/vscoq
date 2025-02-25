@@ -374,7 +374,7 @@ let interpret_to st id check_mode =
     let pv_event = mk_proof_view_event id in
     st, [event] @ [pv_event]
   | Settings.Mode.Continuous ->
-    match ExecutionManager.is_executed st.execution_state id with
+    match ExecutionManager.is_locally_executed st.execution_state id with
     | true -> st, [mk_proof_view_event id]
     | false -> st, []
 
@@ -915,7 +915,7 @@ module Internal = struct
     let code_lines_by_id = Document.code_lines_sorted_by_loc st.document in
     let code_lines_by_end = Document.code_lines_by_end_sorted_by_loc st.document in
     let string_of_state id =
-      if ExecutionManager.is_executed st.execution_state id then "(executed)"
+      if ExecutionManager.is_locally_executed st.execution_state id then "(executed)"
       else if ExecutionManager.is_remotely_executed st.execution_state id then "(executed in worker)"
       else "(not executed)"
     in
