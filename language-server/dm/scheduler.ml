@@ -226,7 +226,8 @@ let _string_of_state st =
 let schedule_errored_sentence id error schedule =
   let task = Block {id; error} in
   let tasks = SM.add id (None, task) schedule.tasks in
-  {schedule with tasks}
+  let dependencies = SM.add id Stateid.Set.empty schedule.dependencies in
+  {tasks; dependencies}
 
 let schedule_sentence (id, (ast, classif, synterp_st)) st schedule =
   let base, st, task = 
