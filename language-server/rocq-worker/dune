@@ -3,7 +3,7 @@
  (public_name vscoq-language-server.rocq-worker)
  (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
  (preprocessor_deps vscoq_config.mlh)
- (private_modules hover)
+ (private_modules hover printing proofState)
  (wrapped true)
  (libraries base coq-core.sysinit coq-core.vernac coq-core.kernel coq-core.engine coq-core.pretyping coq-core.printing coq-core.parsing coq-core.interp coq-core.lib coq-core.clib coq-core.library coq-core.proofs protocol sel lsp))
 

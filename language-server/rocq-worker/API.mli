@@ -17,7 +17,6 @@ val feedback_delete_feeder : int -> unit
     
 module Pure : sig
 
-(* val pp_of_coqpp : Pp.t -> Protocol.Printing.pp *)
 val severity_of_feedback_level : Feedback.level -> Protocol.LspWrapper.DiagnosticSeverity.t
 val channel_of_feedback_level : Feedback.level -> Protocol.LspWrapper.FeedbackChannel.t option
 val string_of_ppcmds : Pp.t -> string
