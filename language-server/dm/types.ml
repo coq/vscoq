@@ -12,6 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 open Protocol.LspWrapper
+open Rocq_worker.Types
 
 type sentence_id = Stateid.t
 type sentence_id_set = Stateid.Set.t
@@ -73,15 +74,6 @@ type exec_overview = {
 }
 
 let empty_overview = {processing = []; processed = []; prepared = []}
-
-[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
-  module Quickfix = struct
-    type t = unit
-    let from_exception _ = Ok([])
-    let pp = Pp.mt
-    let loc _ = Loc.make_loc (0,0)
-  end
-[%%endif]
 
 type text_edit = Range.t * string
 

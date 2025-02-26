@@ -11,17 +11,38 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
-open Settings
 
-type proof_statement [@@deriving yojson]
+open Lsp.Types
+open Printing
 
-type proof_step [@@deriving yojson]
+type proof_statement = {
+  statement: string;
+  range: Range.t;
+} [@@deriving yojson]
 
-type proof_block [@@deriving yojson]
+type proof_step = {
+  tactic: string;
+  range: Range.t;
+} [@@deriving yojson]
 
-type t [@@deriving yojson]
+type proof_block = {
+  statement: proof_statement;
+  range: Range.t;
+  steps: proof_step list;
+} [@@deriving yojson]
 
-val get_proof : previous:Vernacstate.t option -> Goals.Diff.Mode.t -> Vernacstate.t -> t option
+type goal = {
+  id: int;
+  hypotheses: pp list;
+  goal: pp;
+} [@@deriving yojson]
+
+type t = {
+  goals: goal list;
+  shelvedGoals: goal list;
+  givenUpGoals: goal list;
+  unfocusedGoals: goal list;
+} [@@deriving yojson]
 
 val mk_proof_statement : string -> Lsp.Types.Range.t -> proof_statement
 val mk_proof_step : string -> Lsp.Types.Range.t -> proof_step

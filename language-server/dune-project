@@ -2,4 +2,5 @@
 (name vscoq-language-server)
 (license LGPL-2.1-only)
 (authors "The VsCoq development team")
-(source (github coq-community/vscoq))
+(source (github coq/vscoq))
+(implicit_transitive_deps false)

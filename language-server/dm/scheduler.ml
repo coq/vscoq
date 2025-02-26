@@ -13,6 +13,7 @@
 (**************************************************************************)
 
 open Types
+open Rocq_worker.Types
 
 let Log log = Log.mk_log "scheduler"
 

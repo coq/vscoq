@@ -170,7 +170,7 @@ let mk_diag st (id,(lvl,oloc,qf,msg)) =
         (`String "quickfix-replace",
         qf |> yojson_of_list
         (fun qf ->
-            let s = Pp.string_of_ppcmds @@ Quickfix.pp qf in
+            let s = Rocq_worker.API.Pure.string_of_ppcmds @@ Quickfix.pp qf in
             let loc = Quickfix.loc qf in
             let range = RawDocument.range_of_loc (Document.raw_document st.document) loc in
             QuickFixData.yojson_of_t (QuickFixData.{range; text = s})
@@ -178,8 +178,8 @@ let mk_diag st (id,(lvl,oloc,qf,msg)) =
         in
       Some code
     in
-    let lvl = DiagnosticSeverity.of_feedback_level lvl in
-    make_diagnostic st.document (Document.range_of_id st.document id) oloc (Pp.string_of_ppcmds msg) lvl code
+    let lvl = Rocq_worker.API.Pure.severity_of_feedback_level lvl in
+    make_diagnostic st.document (Document.range_of_id st.document id) oloc (Rocq_worker.API.Pure.string_of_ppcmds msg) lvl code
 
 let mk_error_diag st (id,(oloc,msg,qf)) = (* mk_diag st (id,(Feedback.Error,oloc, msg)) *)
   let code = 
@@ -191,7 +191,7 @@ let mk_error_diag st (id,(oloc,msg,qf)) = (* mk_diag st (id,(Feedback.Error,oloc
         (`String "quickfix-replace",
         qf |> yojson_of_list
         (fun qf ->
-            let s = Pp.string_of_ppcmds @@ Quickfix.pp qf in
+            let s = Rocq_worker.API.Pure.string_of_ppcmds @@ Quickfix.pp qf in
             let loc = Quickfix.loc qf in
             let range = RawDocument.range_of_loc (Document.raw_document st.document) loc in
             QuickFixData.yojson_of_t (QuickFixData.{range; text = s})
@@ -199,8 +199,8 @@ let mk_error_diag st (id,(oloc,msg,qf)) = (* mk_diag st (id,(Feedback.Error,oloc
         in
       Some code
   in
-  let lvl = DiagnosticSeverity.of_feedback_level Feedback.Error in
-  make_diagnostic st.document (Document.range_of_id st.document id) oloc (Pp.string_of_ppcmds msg) lvl code
+  let lvl = Rocq_worker.API.Pure.severity_of_feedback_level Feedback.Error in
+  make_diagnostic st.document (Document.range_of_id st.document id) oloc (Rocq_worker.API.Pure.string_of_ppcmds msg) lvl code
 
 
 let mk_parsing_error_diag st Document.{ msg = (oloc,msg); start; stop; qf } =
@@ -218,7 +218,7 @@ let mk_parsing_error_diag st Document.{ msg = (oloc,msg); start; stop; qf } =
         (`String "quickfix-replace",
          qf |> yojson_of_list
          (fun qf ->
-            let s = Pp.string_of_ppcmds @@ Quickfix.pp qf in
+            let s = Rocq_worker.API.Pure.string_of_ppcmds @@ Quickfix.pp qf in
             let loc = Quickfix.loc qf in
             let range = RawDocument.range_of_loc (Document.raw_document st.document) loc in
             QuickFixData.yojson_of_t (QuickFixData.{range; text = s})
@@ -226,7 +226,7 @@ let mk_parsing_error_diag st Document.{ msg = (oloc,msg); start; stop; qf } =
         in
       Some code
   in
-  make_diagnostic st.document range oloc (Pp.string_of_ppcmds msg) severity code
+  make_diagnostic st.document range oloc (Rocq_worker.API.Pure.string_of_ppcmds msg) severity code
 
 let all_diagnostics st =
   let parse_errors = Document.parse_errors st.document in
@@ -272,7 +272,7 @@ let id_of_pos_opt st = function
 let get_messages st id =
   let error = ExecutionManager.error st.execution_state id in
   let feedback = ExecutionManager.feedback st.execution_state id in
-  let feedback = List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback  in
+  let feedback = List.map (fun (lvl,_oloc,_,msg) -> Rocq_worker.API.Pure.severity_of_feedback_level lvl, pp_of_coqpp msg) feedback  in
   match error with
   | Some (_oloc,msg) -> (DiagnosticSeverity.Error, pp_of_coqpp msg) :: feedback
   | None -> feedback
@@ -288,7 +288,7 @@ let get_info_messages st pos =
     in
     let feedback = ExecutionManager.feedback st.execution_state id in
     let feedback = feedback |> List.filter info in
-    List.map (fun (lvl,_oloc,_,msg) -> DiagnosticSeverity.of_feedback_level lvl, pp_of_coqpp msg) feedback
+    List.map (fun (lvl,_oloc,_,msg) -> Rocq_worker.API.Pure.severity_of_feedback_level lvl, pp_of_coqpp msg) feedback
 
 let create_execution_event background event =
   let priority = if background then None else Some PriorityManager.execution in
@@ -740,7 +740,7 @@ let about st pos ~pattern =
       Ok (pp_of_coqpp @@ Prettyp.print_about env sigma ref_or_by_not udecl)
     with e ->
       let e, info = Exninfo.capture e in
-      let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
+      let message = Rocq_worker.API.Pure.string_of_ppcmds @@ CErrors.iprint (e, info) in
       Error ({message; code=None})
 
 let search st ~id pos pattern =
@@ -761,7 +761,7 @@ let hover_of_sentence st loc pattern sentence =
       Language.Hover.get_hover_contents env sigma ref_or_by_not
     with e ->
       let e, info = Exninfo.capture e in
-      log (fun () -> "Exception while handling hover: " ^ (Pp.string_of_ppcmds @@ CErrors.iprint (e, info)));
+      log (fun () -> "Exception while handling hover: " ^ (Rocq_worker.API.Pure.string_of_ppcmds @@ CErrors.iprint (e, info)));
       None
 
 let hover st pos =
@@ -841,7 +841,7 @@ let jump_to_definition st pos =
             end
         with e ->
           let e, info = Exninfo.capture e in
-          log (fun () -> Pp.string_of_ppcmds @@ CErrors.iprint (e, info)); None
+          log (fun () -> Rocq_worker.API.Pure.string_of_ppcmds @@ CErrors.iprint (e, info)); None
 
 [%%endif]
 
@@ -856,7 +856,7 @@ let check st pos ~pattern =
       Ok (pp_of_coqpp @@ Vernacentries.check_may_eval env sigma redexpr rc)
     with e ->
       let e, info = Exninfo.capture e in
-      let message = Pp.string_of_ppcmds @@ CErrors.iprint (e, info) in
+      let message = Rocq_worker.API.Pure.string_of_ppcmds @@ CErrors.iprint (e, info) in
       Error ({message; code=None})
 
 [%%if coq = "8.18" || coq = "8.19"]

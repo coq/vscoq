@@ -22,7 +22,7 @@ type t = {
 
 let compute_lines text =
   let lines = String.split_on_char '\n' text in
-  let _,lines_locs = CList.fold_left_map (fun acc s -> let n = String.length s in n + acc + 1, acc) 0 lines in
+  let _,lines_locs = Rocq_worker.API.Pure.fold_left_map (fun acc s -> let n = String.length s in n + acc + 1, acc) 0 lines in
   Array.of_list lines_locs
 
 let create text = { text; lines = compute_lines text }
@@ -82,6 +82,7 @@ let end_loc raw =
 
 let range_of_loc raw loc =
   let open Range in
+  let open Rocq_worker.Types in
   { start = position_of_loc raw loc.Loc.bp;
     end_ = position_of_loc raw loc.Loc.ep;
   }

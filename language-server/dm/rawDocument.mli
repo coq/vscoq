@@ -12,6 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 open Lsp.Types
+open Rocq_worker.Types
 
 type text_edit = Range.t * string
 
