@@ -58,7 +58,11 @@ val reset_overview : state -> Document.document -> state
 val shift_overview : state -> before:RawDocument.t -> after:RawDocument.t -> start:int -> offset:int -> state
 val shift_diagnostics_locs : state -> start:int -> offset:int -> state
 val executed_ids : state -> sentence_id list
-val is_executed : state -> sentence_id -> bool
+
+(** we know if it worked and we have the state in this process *)
+val is_locally_executed : state -> sentence_id -> bool
+
+(** we know if it worked but we do not have the state in this process *)
 val is_remotely_executed : state -> sentence_id -> bool
 
 val get_context : state -> sentence_id -> (Evd.evar_map * Environ.env) option

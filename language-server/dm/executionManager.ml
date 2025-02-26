@@ -503,6 +503,29 @@ let find_fulfilled_opt x m =
     | Delegated _ -> None
   with Not_found -> None
 
+
+let exec_error_of_execution_status id v = match v with
+  | Success _ -> None
+  | Error ((loc, _), _, _) -> Some (id, loc)
+
+let get_vs_and_exec_error st id =
+  match fst @@ SM.find id st.of_sentence with
+  | Done (Success (Some vs) as es) -> vs, exec_error_of_execution_status id es
+  | Done (Error (_,_,Some vs) as es) -> vs, exec_error_of_execution_status id es
+  | _ -> CErrors.anomaly Pp.(str "get_vs_and_exec_error call should be protected with is_locally_executed")
+  | exception Not_found -> assert false
+
+let is_locally_executed st id =
+  match find_fulfilled_opt id st.of_sentence with
+  | Some (Success (Some _) | Error (_,_,Some _)) -> true
+  | _ -> false
+
+let is_remotely_executed st id =
+  match find_fulfilled_opt id st.of_sentence with
+  | Some (Success None | Error (_,_,None)) -> true
+  | _ -> false
+  
+  
 let jobs : (DelegationManager.job_handle * Sel.Event.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
 
 (* TODO: kill all Delegated... *)
@@ -608,12 +631,17 @@ let execute_task st (vs, events, interrupted) task =
           (st, vs, events, false, None)
       | PExec { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
-          let vs, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
-          let exec_error = match v with
-            | Success _ -> None
-            | Error ((loc, _), _, _) -> Some (id, loc)
+          let vs, st, ev, exec_error =
+            if is_locally_executed st id then
+              let vs, exec_error = get_vs_and_exec_error st id in
+              log (fun () -> Format.asprintf "skipping execution of already executed %s" (Stateid.to_string id));
+              vs, st, [], exec_error
+            else
+              let vs, v, ev = interp_ast ~doc_id:st.doc_id ~state_id:id ~st:vs ~error_recovery ast in
+              let st = update st id v in
+              let exec_error = exec_error_of_execution_status id v in
+              vs, st, ev, exec_error
           in
-          let st = update st id v in
           (st, vs, events @ ev, false, exec_error)
       | PQuery { id; ast; synterp; error_recovery } ->
           let vs = { vs with Vernacstate.synterp } in
@@ -798,16 +826,6 @@ let executed_ids st =
     match p with
     | Done _ -> id :: acc
     | _ -> acc) st.of_sentence []
-
-let is_executed st id =
-  match find_fulfilled_opt id st.of_sentence with
-  | Some (Success (Some _) | Error (_,_,Some _)) -> true
-  | _ -> false
-
-let is_remotely_executed st id =
-  match find_fulfilled_opt id st.of_sentence with
-  | Some (Success None | Error (_,_,None)) -> true
-  | _ -> false
 
 let invalidate1 of_sentence id =
   try
