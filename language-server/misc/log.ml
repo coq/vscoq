@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Types
+type 'a log = Log : 'a -> 'a log
 
 let lsp_initialization_done = ref false
 let initialization_feedback_queue = Queue.create ()
@@ -77,10 +77,25 @@ let logs () = List.sort String.compare !logs
 type event = string
 type events = event Sel.Event.t list
 
+[%% if coq = "8.18" || coq = "8.19"  || coq = "8.20"]
+let feedback_add_feeder_on_Message f =
+  Feedback.add_feeder (fun fb ->
+    match fb.Feedback.contents with
+    | Feedback.Message(a,b,c) -> f fb.Feedback.route fb.Feedback.span_id fb.Feedback.doc_id a b [] c
+    | _ -> ())
+[%%else]
+let feedback_add_feeder_on_Message f =
+  Feedback.add_feeder (fun fb ->
+    match fb.Feedback.contents with
+    | Feedback.Message(a,b,c,d) -> f fb.Feedback.route fb.Feedback.span_id fb.Feedback.doc_id a b c d
+    | _ -> ())
+[%%endif]
+let feedback_delete_feeder = Feedback.del_feeder
+  
 let install_debug_feedback f =
-  Rocq_worker.API.feedback_add_feeder_on_Message (fun _route _span _doc lvl loc _qf m ->
-    match Rocq_worker.API.Pure.channel_of_feedback_level lvl, loc with
-    | Some Protocol.LspWrapper.FeedbackChannel.Debug,None -> f Rocq_worker.API.Pure.(string_of_ppcmds m)
+  feedback_add_feeder_on_Message (fun _route _span _doc lvl loc _qf m ->
+    match lvl, loc with
+    | Feedback.Debug,None -> f Pp.(string_of_ppcmds m)
     | _ -> ())
 
 (* We go through a queue in case we receive a debug feedback from Coq before we
@@ -101,7 +116,7 @@ let lsp_initialization_done () =
 
 let worker_initialization_begins () =
   Sel.Event.cancel cancel_debug_event;
-  Rocq_worker.API.feedback_delete_feeder main_debug_feeder;
+  feedback_delete_feeder main_debug_feeder;
     (* We do not want to inherit master's Feedback reader (feeder), otherwise we
     would output on the worker's stderr.
     Debug feedback from worker is forwarded to master via a specific handler

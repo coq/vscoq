@@ -14,11 +14,12 @@
 
 open Types
 open Lsp.Types
+open Rocq_worker.Types
 open Protocol
 open Protocol.LspWrapper
 open Protocol.ExtProtocol
 open Protocol.Printing
-open CompletionItems
+open Rocq_worker.CompletionItems
 
 (** The document manager holds the view that Coq has of the currently open
     states. It makes it easy for IDEs to handle text edits, navigate

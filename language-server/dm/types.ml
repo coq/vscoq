@@ -87,4 +87,3 @@ type error = {
   message: string;
 }
 
-type 'a log = Log : 'a -> 'a log

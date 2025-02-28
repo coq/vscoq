@@ -1,30 +1,9 @@
 (library
  (name dm)
  (public_name vscoq-language-server.dm)
- (modules :standard \ vscoqtop_proof_worker vscoqtop_tactic_worker)
  (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
  (preprocessor_deps vscoq_config.mlh)
- (libraries base rocq_worker lsp sel protocol uutf jsonrpc))
-
-(executable
- (name vscoqtop_proof_worker)
- (public_name vscoqtop_proof_worker.opt)
- (modules vscoqtop_proof_worker)
- (flags -linkall)
- (package vscoq-language-server)
- (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
- (preprocessor_deps vscoq_config.mlh)
- (libraries rocq_worker lsp dm protocol))
-
-(executable
- (name vscoqtop_tactic_worker)
- (public_name vscoqtop_tactic_worker.opt)
- (modules vscoqtop_tactic_worker)
- (flags -linkall)
- (package vscoq-language-server)
- (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
- (preprocessor_deps vscoq_config.mlh)
- (libraries rocq_worker lsp dm protocol))
+ (libraries misc rocq_worker lsp sel protocol uutf yojson jsonrpc))
 
 (rule
   (target vscoq_config.mlh)

@@ -12,9 +12,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Types
+open Misc
 
-let Log log = Log.mk_log "parTactic"
+let Log.Log log = Misc.Log.mk_log "parTactic"
 
 type sentence_id = Stateid.t
 
@@ -25,7 +25,7 @@ module TacticJob = struct
     | Error of Pp.t
   type update_request =
     | UpdateSolution of Evar.t * solution
-    | AppendFeedback of Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)
+    | AppendFeedback of Feedback.route_id * sentence_id * (Feedback.level * Loc.t option * Types.Quickfix.t list * Pp.t)
   let appendFeedback (rid,id) fb = AppendFeedback(rid,id,fb)
 
   type t =  {

@@ -11,22 +11,17 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
-open Gramlib
+open Rocq_worker.Types
 open Types
 open Lsp.Types
 open Scheduler
 
-let Log log = Log.mk_log "document"
+let Misc.Log.Log log = Misc.Log.mk_log "document"
 
 module LM = Map.Make (Int)
 
 module SM = Map.Make (Stateid)
 
-type proof_block_type =
-  | TheoremKind of Decls.theorem_kind
-  | DefinitionType of Decls.definition_object_kind
-  | InductiveType of Vernacexpr.inductive_kind
-  | Other
 
 type proof_step = {
   id: sentence_id;
@@ -37,7 +32,7 @@ type proof_step = {
 type outline_element = {
   id: sentence_id;
   name: string;
-  type_: proof_block_type;
+  type_: Synterp.outline_type;
   statement: string;
   proof: proof_step list;
   range: Range.t
@@ -111,7 +106,7 @@ type parse_state = {
   top_id: sentence_id option;
   loc: Loc.t option;
   synterp_state : Vernacstate.Synterp.t;
-  stream: (unit, char) Gramlib.Stream.t;
+  stream: (unit, char) Stream.t;
   raw: RawDocument.t;
   parsed: pre_sentence list;
   errors: parsing_error list;
@@ -136,7 +131,7 @@ let pp_event fmt = function
 type events = event Sel.Event.t list
 
 let create_parsing_event event =
-  let priority = Some PriorityManager.parsing in
+  let priority = Some Misc.PriorityManager.parsing in
   Sel.now ?priority event
 
 let range_of_sentence raw (sentence : sentence) =
@@ -183,17 +178,7 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
   match classif with
   | VtProofStep _ | VtQed _ -> push_proof_step_in_outline document id outline
   | VtStartProof (_, names) ->
-    let vernac_gen_expr = ast.v.expr in
-    let type_ = match vernac_gen_expr with
-      | VernacSynterp _ -> None
-      | VernacSynPure pure -> 
-        match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind)
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def)
-        | Vernacexpr.VernacFixpoint (_, _) -> Some (DefinitionType Decls.Fixpoint)
-        | Vernacexpr.VernacCoFixpoint (_, _) -> Some (DefinitionType Decls.CoFixpoint)
-        | _ -> None
-    in
+    let type_ = Synterp.outline_entry_of ast in
     let name = match names with
     |[] -> "default"
     | n :: _ -> Names.Id.to_string n 
@@ -207,19 +192,12 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
       element :: outline
     end
   | VtSideff (names, _) ->
-    let vernac_gen_expr = ast.v.expr in
-    let type_, statement = match vernac_gen_expr with
-      | VernacSynterp (Synterp.EVernacExtend _) when names <> [] -> Some Other, "external"
-      | VernacSynterp _ -> None, ""
-      | VernacSynPure pure -> 
-        match pure with
-        | Vernacexpr.VernacStartTheoremProof (kind, _) -> Some (TheoremKind kind), string_of_id document id
-        | Vernacexpr.VernacDefinition ((_, def), _, _) -> Some (DefinitionType def), string_of_id document id
-        | Vernacexpr.VernacInductive (kind, _) -> Some (InductiveType kind), string_of_id document id
-        | Vernacexpr.VernacFixpoint (_, _) -> Some (DefinitionType Decls.Fixpoint), string_of_id document id
-        | Vernacexpr.VernacCoFixpoint (_, _) -> Some (DefinitionType Decls.CoFixpoint), string_of_id document id
-        | _ -> None, ""
-    in
+    let type_ = Synterp.outline_entry_of ast in
+    let statement =
+      match type_ with
+      | None -> ""
+      | Some Other when names <> [] -> "external"
+      | Some _ -> string_of_id document id in
     let name = match names with
     |[] -> "default"
     | n :: _ -> Names.Id.to_string n 
@@ -316,12 +294,12 @@ let sentences_sorted_by_loc parsed =
 
 let sentences_before parsed loc =
   let (before,ov,_after) = LM.split loc parsed.sentences_by_end in
-  let before = Option.cata (fun v -> LM.add loc v before) before ov in
+  let before = Option.fold ~some:(fun v -> LM.add loc v before) ~none:before ov in
   List.map (fun (_id,s) -> s) @@ LM.bindings before
 
 let sentences_after parsed loc =
   let (_before,ov,after) = LM.split loc parsed.sentences_by_end in
-  let after = Option.cata (fun v -> LM.add loc v after) after ov in
+  let after = Option.fold ~some:(fun v -> LM.add loc v after) ~none:after ov in
   List.map (fun (_id,s) -> s) @@ LM.bindings after
 
 let parsing_errors_before parsed loc =
@@ -425,25 +403,11 @@ type diff =
   | Added of pre_sentence list
   | Equal of (sentence_id * pre_sentence) list
 
-let tok_equal t1 t2 =
-  let open Tok in
-  match t1, t2 with
-  | KEYWORD s1, KEYWORD s2 -> CString.equal s1 s2
-  | IDENT s1, IDENT s2 -> CString.equal s1 s2
-  | FIELD s1, FIELD s2 -> CString.equal s1 s2
-  | NUMBER n1, NUMBER n2 -> NumTok.Unsigned.equal n1 n2
-  | STRING s1, STRING s2 -> CString.equal s1 s2
-  | LEFTQMARK, LEFTQMARK -> true
-  | BULLET s1, BULLET s2 -> CString.equal s1 s2
-  | EOI, EOI -> true
-  | QUOTATION(s1,t1), QUOTATION(s2,t2) -> CString.equal s1 s2 && CString.equal t1 t2
-  | _ -> false
 
 let same_tokens (s1 : sentence) (s2 : pre_sentence) =
   match s1.ast, s2.ast with
   | Error _, Error _ -> false
-  | Parsed ast1, Parsed ast2 ->
-    CList.equal tok_equal ast1.tokens ast2.tokens
+  | Parsed ast1, Parsed ast2 -> Tok.same_tokens ast1.tokens ast2.tokens
   | _, _ -> false
   
 (* TODO improve diff strategy (insertions,etc) *)
@@ -461,95 +425,14 @@ let rec diff old_sentences new_sentences =
 
 let string_of_diff_item doc = function
   | Deleted ids ->
-       ids |> List.map (fun id -> Printf.sprintf "- (id: %d) %s" (Stateid.to_int id) (string_of_parsed_ast (Option.get (get_sentence doc id)).ast))
+       ids |> List.map (fun id -> Printf.sprintf "- (id: %s) %s" (Stateid.to_string id) (string_of_parsed_ast (Option.get (get_sentence doc id)).ast))
   | Added sentences ->
        sentences |> List.map (fun (s : pre_sentence) -> Printf.sprintf "+ %s" (string_of_parsed_ast s.ast))
   | Equal l ->
-       l |> List.map (fun (id, (s : pre_sentence)) -> Printf.sprintf "= (id: %d) %s" (Stateid.to_int id) (string_of_parsed_ast s.ast))
+       l |> List.map (fun (id, (s : pre_sentence)) -> Printf.sprintf "= (id: %s) %s" (Stateid.to_string id) (string_of_parsed_ast s.ast))
 
 let string_of_diff doc l =
   String.concat "\n" (List.flatten (List.map (string_of_diff_item doc) l))
-
-[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
-  let get_keyword_state = Pcoq.get_keyword_state
-[%%else]
-  let get_keyword_state = Procq.get_keyword_state
-[%%endif]
-
-let rec stream_tok n_tok acc str begin_line begin_char =
-  let e = LStream.next (get_keyword_state ()) str in
-  match e with
-  | Tok.EOI ->
-    List.rev acc
-  | _ ->
-    stream_tok (n_tok+1) (e::acc) str begin_line begin_char
-    (*
-let parse_one_sentence stream ~st =
-  let pa = Pcoq.Parsable.make stream in
-  Vernacstate.Parser.parse st (Pvernac.main_entry (Some (Vernacinterp.get_default_proof_mode ()))) pa
-  (* FIXME: handle proof mode correctly *)
-  *)
-
-
-[%%if coq = "8.18" || coq = "8.19"]
-let parse_one_sentence ?loc stream ~st =
-  Vernacstate.Synterp.unfreeze st;
-  let entry = Pvernac.main_entry (Some (Synterp.get_default_proof_mode ())) in
-  let pa = Pcoq.Parsable.make ?loc stream in
-  let sentence = Pcoq.Entry.parse entry pa in
-  (sentence, [])
-[%%elif coq = "8.20"]
-let parse_one_sentence ?loc stream ~st =
-  Vernacstate.Synterp.unfreeze st;
-  Flags.record_comments := true;
-  let entry = Pvernac.main_entry (Some (Synterp.get_default_proof_mode ())) in
-  let pa = Pcoq.Parsable.make ?loc stream in
-  let sentence = Pcoq.Entry.parse entry pa in
-  let comments = Pcoq.Parsable.comments pa in
-  (sentence, comments)
-[%%else]
-let parse_one_sentence ?loc stream ~st =
-  Vernacstate.Synterp.unfreeze st;
-  Flags.record_comments := true;
-  let entry = Pvernac.main_entry (Some (Synterp.get_default_proof_mode ())) in
-  let pa = Procq.Parsable.make ?loc stream in
-  let sentence = Procq.Entry.parse entry pa in
-  let comments = Procq.Parsable.comments pa in
-  (sentence, comments)
-[%%endif]
-
-let rec junk_sentence_end stream =
-  match Stream.npeek () 2 stream with
-  | ['.'; (' ' | '\t' | '\n' |'\r')] -> Stream.junk () stream
-  | [] -> ()
-  | _ ->  Stream.junk () stream; junk_sentence_end stream
-
-[%%if coq = "8.18"]
-exception E = Stream.Error
-[%%else]
-exception E = Grammar.Error
-[%%endif]
-
-[%%if coq = "8.18" || coq = "8.19"]
-let get_loc_from_info_or_exn e info =
-  match e with
-  | Synterp.UnmappedLibrary (_, qid) -> qid.loc
-  | Synterp.NotFoundLibrary (_, qid) -> qid.loc
-  | _ -> Loc.get_loc @@ info
-[%%else]
-let get_loc_from_info_or_exn _ info =
-  Loc.get_loc info
-
-(* let get_qf_from_info info = Quickfix.get_qf info *)
-[%%endif]
-
-[%%if coq = "8.18" || coq = "8.19"]
-let get_entry ast = Synterp.synterp_control ast
-[%%else]
-let get_entry ast =
-  let intern = Vernacinterp.fs_intern in
-  Synterp.synterp_control ~intern ast
-[%%endif]
 
 
 let handle_parse_error start parsing_start msg qf ({stream; errors; parsed;} as parse_state) synterp_state =
@@ -566,60 +449,24 @@ let handle_parse_error start parsing_start msg qf ({stream; errors; parsed;} as 
 let handle_parse_more ({loc; synterp_state; stream; raw; parsed; parsed_comments} as parse_state) =
   let start = Stream.count stream in
   log (fun () -> "Start of parse is: " ^ (string_of_int start));
-  begin
-    (* FIXME should we save lexer state? *)
-    match parse_one_sentence ?loc stream ~st:synterp_state with
-    | None, _ (* EOI *) -> create_parsing_event (Invalidate parse_state)
-    | Some ast, comments ->
-      let stop = Stream.count stream in
-      let begin_line, begin_char, end_char =
-              match ast.loc with
-              | Some lc -> lc.line_nb, lc.bp, lc.ep
-              | None -> assert false
-      in
-      let str = String.sub (RawDocument.text raw) begin_char (end_char - begin_char) in
-      let sstr = Stream.of_string str in
-      let lex = CLexer.Lexer.tok_func sstr in
-      let tokens = stream_tok 0 [] lex begin_line begin_char in
-      begin
-        try
-          log (fun () -> "Parsed: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast));
-          let entry = get_entry ast in
-          let classification = Vernac_classifier.classify_vernac ast in
-          let synterp_state = Vernacstate.Synterp.freeze () in
-          let parsed_ast = Parsed { ast = entry; classification; tokens } in
-          let sentence = { parsing_start = start; ast = parsed_ast; start = begin_char; stop; synterp_state } in
-          let parsed = sentence :: parsed in
-          let comments = List.map (fun ((start, stop), content) -> {start; stop; content}) comments in
-          let parsed_comments = List.append comments parsed_comments in
-          let loc = ast.loc in
-          let parse_state = {parse_state with parsed_comments; parsed; loc; synterp_state} in
-          create_parsing_event (ParseEvent parse_state)
-        with exn ->
-          let e, info = Exninfo.capture exn in
-          let loc = get_loc_from_info_or_exn e info in
-          let qf = Result.value ~default:[] @@ Quickfix.from_exception e in
-          handle_parse_error start begin_char (loc, CErrors.iprint_no_report (e,info)) (Some qf) parse_state synterp_state
-        end
-    | exception (E _ as exn) ->
-      let e, info = Exninfo.capture exn in
-      let loc = get_loc_from_info_or_exn e info in
-      let qf = Result.value ~default:[] @@ Quickfix.from_exception e in
-      junk_sentence_end stream;
-      handle_parse_error start start (loc, CErrors.iprint_no_report (e, info)) (Some qf) {parse_state with stream} synterp_state
-    | exception (CLexer.Error.E _ as exn) -> (* May be more problematic to handle for the diff *)
-      let e, info = Exninfo.capture exn in
-      let loc = get_loc_from_info_or_exn e info in
-      let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
-      junk_sentence_end stream;
-      handle_parse_error start start (loc,CErrors.iprint_no_report (e, info)) (Some qf) {parse_state with stream} synterp_state
-    | exception exn ->
-      let e, info = Exninfo.capture exn in
-      let loc = Loc.get_loc @@ info in
-      let qf = Result.value ~default:[] @@ Quickfix.from_exception exn in
-      junk_sentence_end stream;
-      handle_parse_error start start (loc, CErrors.iprint_no_report (e,info)) (Some qf) {parse_state with stream} synterp_state
-  end
+  match Rocq_worker.API.parse_and_synterp_one_sentence_err ?loc (RawDocument.text raw) stream ~st:synterp_state with
+  | None (* EOI *) -> create_parsing_event (Invalidate parse_state)
+  | Some { ast; classification; synterp_state; parsed = { loc; stop; begin_char; tokens; comments }} ->
+      log (fun () -> "Parsed: " ^ "TODO"
+        (* (Rocq_worker.API.Pure.string_of_ppcmds @@ Ppvernac.pr_vernac ast) *)
+        );
+      let parsed_ast = Parsed { ast; classification; tokens } in
+      let sentence = { parsing_start = start; ast = parsed_ast; start = begin_char; stop; synterp_state } in
+      let parsed = sentence :: parsed in
+      let comments = List.map (fun ((start, stop), content) -> {start; stop; content}) comments in
+      let parsed_comments = List.append comments parsed_comments in
+      let parse_state = {parse_state with parsed_comments; parsed; loc = Some loc; synterp_state} in
+      create_parsing_event (ParseEvent parse_state)
+  | exception Rocq_worker.API.ParseError (loc,msg,qf) ->
+      Rocq_worker.API.junk_sentence_end stream;
+      handle_parse_error start start (loc, msg) qf {parse_state with stream} synterp_state
+  | exception Rocq_worker.API.SynterpError ({ begin_char}, loc,msg,qf) ->
+      handle_parse_error start begin_char (loc, msg) qf parse_state synterp_state
 
 let rec unchanged_id id = function
   | [] -> id
@@ -679,7 +526,7 @@ let validate_document ({ parsed_loc; raw_doc; cancel_handle } as document) =
   log (fun () -> Format.sprintf "Parsing more from pos %i" stop);
   let started = Unix.gettimeofday () in
   let parsed_state = {stop; top_id;synterp_state; stream; raw=raw_doc; parsed=[]; errors=[]; parsed_comments=[]; loc=None; started; previous_document=document} in
-  let priority = Some PriorityManager.parsing in
+  let priority = Some Misc.PriorityManager.parsing in
   let event = Sel.now ?priority (ParseEvent parsed_state) in
   let cancel_handle = Some (Sel.Event.get_cancellation_handle event) in
   {document with cancel_handle}, [Sel.now ?priority (ParseEvent parsed_state)]
@@ -750,7 +597,7 @@ module Internal = struct
   let string_of_error error =
     let (_, pp) = error.msg in
     Format.sprintf "[parsing error] [%s] (%i -> %i)"
-    (Pp.string_of_ppcmds pp)
+    (Rocq_worker.API.Pure.string_of_ppcmds pp)
     error.start
     error.stop
 

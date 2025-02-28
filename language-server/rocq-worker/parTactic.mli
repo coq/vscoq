@@ -11,6 +11,9 @@
 (*   See LICENSE file.                                                    *)
 (*                                                                        *)
 (**************************************************************************)
+
+open Types
+
 module TacticWorkerProcess : sig
   type options
 [%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
@@ -23,4 +26,4 @@ module TacticWorkerProcess : sig
 end
 
 (* HACK: the sentence id of the current phrase is used to report errors *)
-val set_id_for_feedback : Feedback.route_id -> Types.sentence_id -> unit
+val set_id_for_feedback : Feedback.route_id -> sentence_id -> unit

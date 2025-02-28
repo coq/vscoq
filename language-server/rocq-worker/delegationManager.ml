@@ -12,9 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Types
-
-let Log log = Log.mk_log "delegationManager"
+let Misc.Log.Log log = Misc.Log.mk_log "delegationManager"
 
 type sentence_id = Stateid.t
 
@@ -49,7 +47,7 @@ module type Job = sig
   val binary_name : string
   val initial_pool_size : int
   type update_request
-  val appendFeedback : Feedback.route_id * sentence_id -> (Feedback.level * Loc.t option * Quickfix.t list * Pp.t) -> update_request
+  val appendFeedback : Feedback.route_id * sentence_id -> (Feedback.level * Loc.t option * Types.Quickfix.t list * Pp.t) -> update_request
 end
 
 (* One typically created a job id way before the worker is spawned, so we
@@ -66,7 +64,7 @@ let cancel_job (_,id) =
    keep here the conversion (STM) feedback -> (LSP) feedback *)
 
 let install_feedback send =
-  Log.feedback_add_feeder_on_Message (fun route span _ lvl loc qf msg ->
+  Misc.Log.feedback_add_feeder_on_Message (fun route span _ lvl loc qf msg ->
     send (route,span,(lvl,loc, qf, msg)))
     
 module type Worker = sig
@@ -115,9 +113,9 @@ type job_update_request = Job.update_request
 
 type worker_message =
   | Job_update of Job.update_request
-  | DebugMessage of Log.event
+  | DebugMessage of Misc.Log.event
 
-let Log log_worker = Log.mk_log ("worker." ^ Job.name)
+let Misc.Log.Log log_worker = Misc.Log.mk_log ("worker." ^ Job.name)
 
 let install_feedback_worker ~feedback_cleanup link =
   feedback_cleanup ();
@@ -138,7 +136,7 @@ let pr_event = function
   | WorkerStart _ -> Pp.str "WorkerStart"
 
 let install_debug_worker link =
-  Log.worker_initialization_done
+  Misc.Log.worker_initialization_done
     ~fwd_event:(fun e -> write_value link (DebugMessage e))
 
 type events = delegation Sel.Event.t list
@@ -200,7 +198,7 @@ let fork_worker : feedback_cleanup:feedback_cleanup -> int option ref -> (role *
         dup2 null stdin;
         dup2 null stdout;
         close chan;
-        Log.worker_initialization_begins ();
+        Misc.Log.worker_initialization_begins ();
         let chan = socket PF_INET SOCK_STREAM 0 in
         connect chan address;
         let read_from = chan in
@@ -284,7 +282,7 @@ let handle_event = function
         Queue.push () pool;
       (None,[])
   | WorkerProgress { link; update_request = DebugMessage d } ->
-      Log.handle_event d;
+      Misc.Log.handle_event d;
       (None, [worker_progress link])
   | WorkerProgress { link; update_request = Job_update u } ->
       log (fun () -> "worker progress");

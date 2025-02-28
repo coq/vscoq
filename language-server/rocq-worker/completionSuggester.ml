@@ -17,9 +17,8 @@ module CompactedDecl = Context.Compacted.Declaration
 open Printer
 open EConstr
 open Names
-open Types
 
-let Log log = Log.mk_log "completionSuggester"
+let Misc.Log.Log log = Misc.Log.mk_log "completionSuggester"
 
 module TypeCompare = struct
   type t = types

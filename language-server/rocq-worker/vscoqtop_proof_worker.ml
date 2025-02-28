@@ -15,11 +15,11 @@
 (** This toplevel implements an LSP-based server language for VsCode,
     used by the VsCoq extension. *)
 
-let log = Dm.ExecutionManager.ProofWorkerProcess.log
+let log = Rocq_worker.Worker.ProofWorkerProcess.log
 
 let main_worker options =
   let initial_vernac_state = Vernacstate.freeze_full_state () in
-  try Dm.ExecutionManager.ProofWorkerProcess.main ~st:initial_vernac_state options
+  try Rocq_worker.Worker.ProofWorkerProcess.main ~st:initial_vernac_state options
   with exn ->
     let bt = Printexc.get_backtrace () in
     log (fun () -> Printexc.(to_string exn));
@@ -44,7 +44,7 @@ let start_library top opts =
 [%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
 let _ =
   Coqinit.init_ocaml ();
-  let opts, emoptions = Coqinit.parse_arguments ~parse_extra:Dm.ExecutionManager.ProofWorkerProcess.parse_options ~usage:vscoqtop_specific_usage () in
+  let opts, emoptions = Coqinit.parse_arguments ~parse_extra:Rocq_worker.Worker.ProofWorkerProcess.parse_options ~usage:vscoqtop_specific_usage () in
   let injections = Coqinit.init_runtime opts in
   start_library Coqargs.(dirpath_of_top opts.config.logic.toplevel_name) injections;
   log (fun () -> "started");
@@ -53,7 +53,7 @@ let _ =
 [%%else]
 let () =
   Coqinit.init_ocaml ();
-  let opts, emoptions = Coqinit.parse_arguments ~parse_extra:Dm.ExecutionManager.ProofWorkerProcess.parse_options (List.tl (Array.to_list Sys.argv)) in
+  let opts, emoptions = Coqinit.parse_arguments ~parse_extra:Rocq_worker.Worker.ProofWorkerProcess.parse_options (List.tl (Array.to_list Sys.argv)) in
   let () = Coqinit.init_runtime ~usage:vscoqtop_specific_usage opts in
   (* not sure if init_document is useful in proof worker *)
   let () = Coqinit.init_document opts in

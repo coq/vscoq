@@ -15,8 +15,9 @@
 (** This toplevel implements an LSP-based server language for VsCode,
     used by the VsCoq extension. *)
 
-open Printer
+(* open Printer *)
 open Lsp.Types
+open Rocq_worker.Types
 open Protocol
 open Protocol.LspWrapper
 open Protocol.ExtProtocol
@@ -46,7 +47,7 @@ let point_interp_mode = ref Settings.PointInterpretationMode.Cursor
 
 let block_on_first_error = ref true
 
-let Dm.Types.Log log = Dm.Log.mk_log "lspManager"
+let Misc.Log.Log log = Misc.Log.mk_log "lspManager"
 
 let conf_request_id = max_int
 
@@ -63,12 +64,12 @@ type event =
  | LspManagerEvent of lsp_event
  | DocumentManagerEvent of DocumentUri.t * Dm.DocumentManager.event
  | Notification of notification
- | LogEvent of Dm.Log.event
+ | LogEvent of Misc.Log.event
 
 type events = event Sel.Event.t list
 
 let lsp : event Sel.Event.t =
-  Sel.On.httpcle ~priority:Dm.PriorityManager.lsp_message ~name:"lsp" Unix.stdin (function
+  Sel.On.httpcle ~priority:Misc.PriorityManager.lsp_message ~name:"lsp" Unix.stdin (function
     | Ok buff ->
       begin
         log (fun () -> "UI req ready");
@@ -167,7 +168,7 @@ let do_initialize id params =
     serverInfo = Some server_info;
   } in
   log (fun () -> "---------------- initialized --------------");
-  let debug_events = Dm.Log.lsp_initialization_done () |> inject_debug_events in
+  let debug_events = Misc.Log.lsp_initialization_done () |> inject_debug_events in
   Ok initialize_result, debug_events@[Sel.now @@ LspManagerEvent (send_configuration_request ())]
 
 let do_shutdown id params =
@@ -256,24 +257,12 @@ let reset_observe_ids =
   in
   Hashtbl.fold reset_doc_observe_id states
 
-[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
-(* in these coq versions init_runtime called globally for the process includes init_document
-   this means in these versions we do not support local _CoqProject except for the effect on injections
-   (eg -noinit) *)
-let init_document _ vst = vst
-[%%else]
-let init_document local_args vst =
-  let () = Vernacstate.unfreeze_full_state vst in
-  let () = Coqinit.init_document local_args in
-  Vernacstate.freeze_full_state ()
-[%%endif]
-
 let open_new_document uri text =
   let vst = get_init_state () in
   let fname = DocumentUri.to_path uri in
   let dir = Filename.dirname fname in
   let local_args = Args.get_local_args dir in
-  let vst = init_document local_args vst in
+  let vst = Rocq_worker.API.init_document local_args vst in
   let st, events = try Dm.DocumentManager.init vst ~opts:(Coqargs.injection_commands local_args) uri ~text with
     e -> raise e
   in
@@ -411,7 +400,7 @@ let coqtopStepForward params =
         
   
   let make_CompletionItem i item : CompletionItem.t = 
-    let (label, insertText, typ, path) = Dm.CompletionItems.pp_completion_item item in
+    let (label, insertText, typ, path) = Rocq_worker.CompletionItems.pp_completion_item item in
     CompletionItem.create
       ~label
       ~insertText
@@ -666,14 +655,14 @@ let handle_event = function
       output_notification @@ SearchResult params; [inject_notification Dm.SearchQuery.query_feedback]
     end
   | LogEvent e ->
-    send_coq_debug e; [inject_debug_event Dm.Log.debug]
+    send_coq_debug e; [inject_debug_event Misc.Log.debug]
 
 let pr_event = function
   | LspManagerEvent e -> pr_lsp_event e
   | DocumentManagerEvent (uri, e) ->
-    Pp.str @@ Format.asprintf "%a" Dm.DocumentManager.pp_event e
-  | Notification _ -> Pp.str"notif"
-  | LogEvent _ -> Pp.str"debug"
+    Format.asprintf "%a" Dm.DocumentManager.pp_event e
+  | Notification _ -> "notif"
+  | LogEvent _ -> "debug"
 
 let init () =
   init_state := Some (Vernacstate.freeze_full_state ());

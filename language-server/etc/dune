@@ -1,7 +1,0 @@
-(executable
- (name version_parser)
- (public_name vscoq_version_parser)
- (modules version_parser)
- (libraries str)
- (package vscoq-language-server)
- )

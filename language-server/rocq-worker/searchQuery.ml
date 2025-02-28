@@ -13,7 +13,6 @@
 (**************************************************************************)
 open Util
 open Printer
-open Protocol.Printing
 open Protocol.LspWrapper
 
 (* Note: this queue is not very useful today, as we process results in the main
@@ -50,8 +49,8 @@ let interp_search ~id env sigma s r =
     let impargs = select_stronger_impargs impls in
     let impargs = List.map binding_kind_of_status impargs in
     let pc = pr_ltype_env env sigma ~impargs c in
-    let name = pp_of_coqpp pr in
-    let statement = pp_of_coqpp pc in
+    let name = Printing.pp_of_coqpp pr in
+    let statement = Printing.pp_of_coqpp pc in
     Queue.push { id; name; statement } query_results_queue
   in
   let r = interp_search_restriction r in

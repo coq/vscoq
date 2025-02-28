@@ -16,10 +16,11 @@ open Protocol
 open Protocol.LspWrapper
 open Scheduler
 open Types
+open Rocq_worker.Types
 
-let Log log = Log.mk_log "executionManager"
+let Misc.Log.Log log = Misc.Log.mk_log "executionManager"
 
-type feedback_message = Feedback.level * Loc.t option * Quickfix.t list * Pp.t
+type feedback_message = DiagnosticSeverity.t * Loc.t option * Quickfix.t list * Pp.t
 
 type execution_status =
   | Success of Vernacstate.t option
@@ -36,7 +37,7 @@ module SM = Map.Make (Stateid)
 
 type sentence_state =
   | Done of execution_status
-  | Delegated of DelegationManager.job_handle * (execution_status -> unit) option
+  | Delegated of Rocq_worker.API.DelegationManager.job_handle * (execution_status -> unit) option
 
 type delegation_mode =
   | CheckProofsInMaster
@@ -84,6 +85,8 @@ type prepared_task =
   | PDelegate of delegated_task
 
 
+type route_id = int
+
 type state = {
   initial : Vernacstate.t;
   of_sentence : (sentence_state * feedback_message list) SM.t;
@@ -92,10 +95,19 @@ type state = {
   (* ugly stuff to correctly dispatch Coq feedback *)
   doc_id : document_id; (* unique number used to interface with Coq's Feedback *)
   coq_feeder : coq_feedback_listener;
-  sel_feedback_queue : (Feedback.route_id * sentence_id * feedback_message) Queue.t;
+  sel_feedback_queue : (route_id * sentence_id * feedback_message) Queue.t;
   sel_cancellation_handle : Sel.Event.cancellation_handle;
   overview: exec_overview;
 }
+
+type event =
+  | LocalFeedback of (Types.route_id * Types.sentence_id * feedback_message) Queue.t * (Feedback.route_id * sentence_id * feedback_message) list
+  | ProofWorkerEvent of Rocq_worker.Worker.ProofWorker.delegation
+
+type events = event Sel.Event.t list
+let pr_event = function
+  | LocalFeedback _ -> Pp.str "LocalFeedback"
+  | ProofWorkerEvent event -> Rocq_worker.Worker.ProofWorker.pr_event event
 
 let get_id_of_executed_task task =
   match task with
@@ -127,152 +139,6 @@ let set_default_options () = options := default_options
 let is_diagnostics_enabled () = !options.enableDiagnostics
 
 let get_options () = !options
-
-module ProofJob = struct
-  type update_request =
-    | UpdateExecStatus of sentence_id * execution_status
-    | AppendFeedback of Feedback.route_id * Types.sentence_id * (Feedback.level * Loc.t option * Quickfix.t list * Pp.t)
-  let appendFeedback (rid,sid) fb = AppendFeedback(rid,sid,fb)
-
-  type t = {
-    tasks : executable_sentence list;
-    initial_vernac_state : Vernacstate.t;
-    doc_id : int;
-    terminator_id : sentence_id;
-  }
-  let name = "proof"
-  let binary_name = "vscoqtop_proof_worker.opt"
-  let initial_pool_size = 1
-
-end
-
-module ProofWorker = DelegationManager.MakeWorker(ProofJob)
-
-type event =
-  | LocalFeedback of (Feedback.route_id * sentence_id * feedback_message) Queue.t * (Feedback.route_id * sentence_id * feedback_message) list
-  | ProofWorkerEvent of ProofWorker.delegation
-
-type events = event Sel.Event.t list
-let pr_event = function
-  | LocalFeedback _ -> Pp.str "LocalFeedback"
-  | ProofWorkerEvent event -> ProofWorker.pr_event event
-
-let inject_proof_event = Sel.Event.map (fun x -> ProofWorkerEvent x)
-let inject_proof_events st l =
-  (st, List.map inject_proof_event l)
-
-let interp_error_recovery strategy st : Vernacstate.t =
-  match strategy with
-  | RSkip -> st
-  | RAdmitted ->
-    let f = Declare.Proof.save_admitted in
-    let open Vernacstate in (* shadows Declare *)
-    let { Interp.lemmas; program; _ } = st.interp in
-    match lemmas with
-    | None -> (* if Lemma failed *)
-        st
-    | Some lemmas ->
-        let proof = Vernacstate.LemmaStack.get_top lemmas in
-        let pm = NeList.head program in
-        let result = 
-          try Ok(f ~pm ~proof)
-          with e -> (* we also catch anomalies *)
-          let e, info = Exninfo.capture e in
-          Error (e, info)
-        in
-        match result with
-        | Ok (pm) ->
-          let lemmas = snd (Vernacstate.LemmaStack.pop lemmas) in
-          let program = NeList.map_head (fun _ -> pm) program in
-          Vernacstate.Declare.set (lemmas,program) [@ocaml.warning "-3"];
-          let interp = Vernacstate.Interp.freeze_interp_state () in
-          { st with interp }
-        | Error (Sys.Break, _ as exn) ->
-          Exninfo.iraise exn
-        | Error(_,_) ->
-          st
-
-(* just a wrapper around vernac interp *)
-let interp_ast ~doc_id ~state_id ~st ~error_recovery ast =
-    Feedback.set_id_for_feedback doc_id state_id;
-    ParTactic.set_id_for_feedback doc_id state_id;
-    Sys.(set_signal sigint (Signal_handle(fun _ -> raise Break)));
-    let result =
-      try Ok(Vernacinterp.interp_entry ~st ast,[])
-      with e -> (* we also catch anomalies *)
-        let e, info = Exninfo.capture e in
-        Error (e, info) in
-    Sys.(set_signal sigint Signal_ignore);
-    match result with
-    | Ok (interp, events) ->
-      (*
-        log fun () -> "Executed: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast) ^
-          " (" ^ (if Option.is_empty vernac_st.Vernacstate.lemmas then "no proof" else "proof")  ^ ")";
-          *)
-        let st = { st with interp } in
-        st, success st, (*List.map inject_pm_event*) events
-    | Error (Sys.Break, _ as exn) ->
-      (*
-        log (fun () -> "Interrupted executing: " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast));
-        *)
-        Exninfo.iraise exn
-    | Error (e, info) ->
-      (*
-        log (fun () -> "Failed to execute: " ^ Stateid.to_string state_id ^ "  " ^ (Pp.string_of_ppcmds @@ Ppvernac.pr_vernac ast));
-        *)
-        let loc = Loc.get_loc info in
-        let qf = Result.value ~default:[] @@ Quickfix.from_exception e in
-        let msg = CErrors.iprint (e, info) in
-        let status = error loc (Some qf) msg st in
-        let st = interp_error_recovery error_recovery st in
-        st, status, []
-
-(* This adapts the Future API with our event model *)
-[%%if coq = "8.18"]
-let definition_using e s ~fixnames:_ ~using ~terms =
-  Proof_using.definition_using e s ~using ~terms
-[%%elif coq = "8.19"]
-let definition_using = Proof_using.definition_using
-[%%endif]
-
-[%%if coq = "8.18" || coq = "8.19"]
-let add_using proof proof_using lemmas =
-      let env = Global.env () in
-      let sigma, _ = Declare.Proof.get_current_context proof in
-      let initial_goals pf = Proofview.initial_goals Proof.((data pf).entry) in
-      let terms = List.map (fun (_,_,x) -> x) (initial_goals (Declare.Proof.get proof)) in
-      let names = Vernacstate.LemmaStack.get_all_proof_names lemmas in
-      let using = definition_using env sigma ~fixnames:names ~using:proof_using ~terms in
-      let vars = Environ.named_context env in
-      Names.Id.Set.iter (fun id ->
-          if not (List.exists Util.(Context.Named.Declaration.get_id %> Names.Id.equal id) vars) then
-            CErrors.user_err
-              Pp.(str "Unknown variable: " ++ Names.Id.print id ++ str "."))
-        using;
-      let _, pstate = Declare.Proof.set_used_variables proof ~using in
-      pstate
-[%%else]
-let add_using proof proof_using _ =
-  Declare.Proof.set_proof_using proof proof_using |> snd
-[%%endif]
-
-let interp_qed_delayed ~proof_using ~state_id ~st =
-  let lemmas = Option.get @@ st.Vernacstate.interp.lemmas in
-  let f proof =
-    let proof = add_using proof proof_using lemmas in
-    let fix_exn = None in (* FIXME *)
-    let f, assign = Future.create_delegate ~blocking:false ~name:"XX" fix_exn in
-    Declare.Proof.close_future_proof ~feedback_id:state_id proof f, assign
-  in
-  let proof, assign = Vernacstate.LemmaStack.with_top lemmas ~f in
-  let control = [] (* FIXME *) in
-  let opaque = Vernacexpr.Opaque in
-  let pending = CAst.make @@ Vernacexpr.Proved (opaque, None) in
-  (*log fun () -> "calling interp_qed_delayed done";*)
-  let interp = Vernacinterp.interp_qed_delayed_proof ~proof ~st ~control pending in
-  (*log fun () -> "interp_qed_delayed done";*)
-  let st = { st with interp } in
-  st, success st, assign
 
 let cut_overview task state document =
   let range = match task with
@@ -427,10 +293,10 @@ let update state id v =
 ;;
 
 let local_feedback feedback_queue : event Sel.Event.t =
-  Sel.On.queue_all ~name:"feedback" ~priority:PriorityManager.feedback feedback_queue (fun x xs -> LocalFeedback(feedback_queue, x :: xs))
+  Sel.On.queue_all ~name:"feedback" ~priority:Misc.PriorityManager.feedback feedback_queue (fun x xs -> LocalFeedback(feedback_queue, x :: xs))
 
 let install_feedback_listener doc_id send =
-  Log.feedback_add_feeder_on_Message (fun route span doc lvl loc qf msg ->
+  Misc.Log.feedback_add_feeder_on_Message (fun route span doc lvl loc qf msg ->
     if lvl != Feedback.Debug && doc = doc_id then send (route,span,(lvl,loc, qf, msg)))
 
 let init vernac_state =
@@ -454,7 +320,7 @@ let init vernac_state =
 (* called by the forked child. Since the Feedback API is imperative, the
    feedback pipes have to be modified in place *)
 let feedback_cleanup { coq_feeder; sel_feedback_queue; sel_cancellation_handle } =
-  Feedback.del_feeder coq_feeder;
+  Misc.Log.feedback_delete_feeder coq_feeder;
   Queue.clear sel_feedback_queue;
   Sel.Event.cancel sel_cancellation_handle
 
@@ -526,12 +392,12 @@ let is_remotely_executed st id =
   | _ -> false
   
   
-let jobs : (DelegationManager.job_handle * Sel.Event.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
+let jobs : (Rocq_worker.API.DelegationManager.job_handle * Sel.Event.cancellation_handle * ProofJob.t) Queue.t = Queue.create ()
 
 (* TODO: kill all Delegated... *)
 let destroy st =
   feedback_cleanup st;
-  Queue.iter (fun (h,c,_) -> DelegationManager.cancel_job h; Sel.Event.cancel c) jobs
+  Queue.iter (fun (h,c,_) -> Rocq_worker.API.DelegationManager.cancel_job h; Sel.Event.cancel c) jobs
 
 
 let last_opt l = try Some (CList.last l).id with Failure _ -> None
@@ -652,7 +518,7 @@ let execute_task st (vs, events, interrupted) task =
           begin match find_fulfilled_opt opener_id st.of_sentence with
           | Some (Success _) ->
             let job =  { ProofJob.tasks; initial_vernac_state = vs; doc_id = st.doc_id; terminator_id } in
-            let job_id = DelegationManager.mk_job_handle (0,terminator_id) in
+            let job_id = Rocq_worker.API.DelegationManager.mk_job_handle (0,terminator_id) in
             (* The proof was successfully opened *)
             let last_vs, _v, assign = interp_qed_delayed ~state_id:terminator_id ~proof_using ~st:vs in
             let complete_job status =
@@ -832,7 +698,7 @@ let invalidate1 of_sentence id =
     let p,_ = SM.find id of_sentence in
     match p with
     | Delegated (job_id,_) ->
-        DelegationManager.cancel_job job_id;
+        Rocq_worker.API.DelegationManager.cancel_job job_id;
         SM.remove id of_sentence
     | _ -> SM.remove id of_sentence
   with Not_found -> of_sentence
@@ -864,18 +730,6 @@ let rec invalidate document schedule id st =
   let deps = Scheduler.dependents schedule id in
   Stateid.Set.fold (invalidate document schedule) deps { st with of_sentence; todo }
 
-let context_of_state st =
-    Vernacstate.Interp.unfreeze_interp_state st;
-    begin match st.lemmas with
-    | None ->
-      let env = Global.env () in
-      let sigma = Evd.from_env env in
-      sigma, env
-    | Some lemmas ->
-      let open Declare in
-      let open Vernacstate in
-      lemmas |> LemmaStack.with_top ~f:Proof.get_current_context
-    end
 
 let get_context st id =
   match find_fulfilled_opt id st.of_sentence with
@@ -896,13 +750,4 @@ let get_vernac_state st id =
   | Some (Success (Some st))
   | Some (Error (_,_, Some st)) ->
     Some st
-
-module ProofWorkerProcess = struct
-  type options = ProofWorker.options
-  let parse_options = ProofWorker.parse_options
-  let main ~st:_ options =
-    let send_back, job = ProofWorker.setup_plumbing options in
-    worker_main job ~send_back
-  let log = ProofWorker.log
-end
 

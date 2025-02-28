@@ -12,10 +12,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Types
 open Rocq_worker.Types
 
-let Log log = Log.mk_log "scheduler"
+let Misc.Log.Log log = Misc.Log.mk_log "scheduler"
 
 module SM = CMap.Make (Stateid)
 
@@ -52,6 +51,9 @@ type proof_block = {
   proof_sentences : executable_sentence list;
   opener_id : sentence_id;
 }
+
+let adapt_proof_block { proof_sentences } =
+  List.map (fun { ast; classif } -> classif, ast) proof_sentences
 
 type state = {
   document_scope : sentence_id list; (* List of sentences whose effect scope is the document that follows them *)
@@ -145,37 +147,6 @@ let flatten_proof_block st =
 
 (* FIXME handle commands with side effects followed by `Abort` *)
 
-let find_proof_using (ast : Synterp.vernac_control_entry) =
-  match ast.CAst.v.expr with
-  | VernacSynPure(VernacProof(_,Some e)) -> Some e
-  | _ -> log (fun () -> "no ast for proof using, looking at a default");
-         Proof_using.get_default_proof_using ()
-
-(* TODO: There is also a #[using] annotation on the proof opener we should
-   take into account (but it is not on a proof sentence, but rather
-   on the proof opener). Ask maxime if the attribute is processed during
-   synterp, and if so where its value is stored. *)
-let find_proof_using_annotation { proof_sentences } =
-  match List.rev proof_sentences with
-  | ex_sentence :: _ -> find_proof_using ex_sentence.ast
-  | _ -> None
-
-
-
-let is_opaque_flat_proof terminator section_depth block =
-  let open Vernacextend in
-  let has_side_effect { classif } = match classif with
-    | VtStartProof _ | VtSideff _ | VtQed _ | VtProofMode _ | VtMeta -> true
-    | VtProofStep _ | VtQuery -> false
-  in
-  if List.exists has_side_effect block.proof_sentences then None
-  else match terminator with
-  | VtDrop -> Some Vernacexpr.SsEmpty
-  | VtKeep VtKeepDefined -> None
-  | VtKeep (VtKeepAxiom | VtKeepOpaque) ->
-      if section_depth = 0 then Some Vernacexpr.SsEmpty
-      else find_proof_using_annotation block
-
 let push_state id ast synterp classif st =
   let open Vernacextend in
   let ex_sentence = { id; ast; classif; synterp; error_recovery = RSkip } in
@@ -189,7 +160,7 @@ let push_state id ast synterp classif st =
       base_id st, push_ex_sentence ex_sentence st, Exec ex_sentence
     | block :: pop ->
       (* TODO do not delegate if command with side effect inside the proof or nested lemmas *)
-      match is_opaque_flat_proof terminator_type st.section_depth block with
+      match Rocq_worker.API.is_opaque_flat_proof terminator_type ~section_depth:st.section_depth (adapt_proof_block block) with
       | Some proof_using ->
         log (fun () -> "opaque proof");
         let terminator = { ex_sentence with error_recovery = RAdmitted } in
@@ -218,7 +189,7 @@ let string_of_task (task_id,(base_id,task)) =
   | Query { id } -> Format.sprintf "Query %s" (Stateid.to_string id)
   | Block { id } -> Format.sprintf "Block %s" (Stateid.to_string id)
   in
-  Format.sprintf "[%s] : [%s] -> %s" (Stateid.to_string task_id) (Option.cata Stateid.to_string "init" base_id) s
+  Format.sprintf "[%s] : [%s] -> %s" (Stateid.to_string task_id) (Option.fold ~some:Stateid.to_string ~none:"init" base_id) s
 
 let _string_of_state st =
   let scopes = (List.map (fun b -> List.map (fun x -> x.id) b.proof_sentences) st.proof_blocks) @ [st.document_scope] in
@@ -232,15 +203,13 @@ let schedule_errored_sentence id error schedule =
 
 let schedule_sentence (id, (ast, classif, synterp_st)) st schedule =
   let base, st, task = 
-      let open Vernacexpr in
       let (base, st, task) = push_state id ast synterp_st classif st in
-      begin match ast.CAst.v.expr with
-      | VernacSynterp (EVernacBeginSection _) ->
+      if Rocq_worker.API.Pure.is_section_begin ast then
         (base, { st with section_depth = st.section_depth + 1 }, task)
-      | VernacSynterp (EVernacEndSegment _) ->
+      else if Rocq_worker.API.Pure.is_section_end ast then
         (base, { st with section_depth = max 0 (st.section_depth - 1) }, task)
-      | _ -> (base, st, task)
-      end
+      else
+        (base, st, task)
   in
 (*
   log (fun () -> "Scheduled " ^ (Stateid.to_string id) ^ " based on " ^ (match base with Some id -> Stateid.to_string id | None -> "no state"));
@@ -254,7 +223,7 @@ let schedule_sentence (id, (ast, classif, synterp_st)) st schedule =
     in
     SM.update x upd deps
   in
-  let dependencies = Option.cata (fun x -> add_dep schedule.dependencies x id) schedule.dependencies base in
+  let dependencies = Option.fold ~some:(fun x -> add_dep schedule.dependencies x id) ~none:schedule.dependencies base in
   (* This new sentence impacts no sentence (yet) *)
   let dependencies = SM.add id Stateid.Set.empty dependencies in
   st, { tasks; dependencies }

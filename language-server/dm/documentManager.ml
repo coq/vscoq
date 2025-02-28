@@ -15,13 +15,14 @@
 [%%import "vscoq_config.mlh"]
 
 open Lsp.Types
+open Rocq_worker.Types
 open Protocol
 open Protocol.LspWrapper
 open Protocol.ExtProtocol
 open Protocol.Printing
 open Types
 
-let Log log = Log.mk_log "documentManager"
+let Misc.Log.Log log = Misc.Log.mk_log "documentManager"
 
 type observe_id = Id of Types.sentence_id | Top
 
@@ -78,17 +79,17 @@ type handled_event = {
 let pp_event fmt = function
   | Execute { id; started; _ } ->
       let time = Unix.gettimeofday () -. started in 
-      Stdlib.Format.fprintf fmt "ExecuteToLoc %d (started %2.3f ago)" (Stateid.to_int id) time
+      Stdlib.Format.fprintf fmt "ExecuteToLoc %s (started %2.3f ago)" (Stateid.to_string id) time
   | ExecutionManagerEvent _ -> Stdlib.Format.fprintf fmt "ExecutionManagerEvent"
   | ParseEvent ->
     Stdlib.Format.fprintf fmt "ParseEvent"
   | Observe id ->
-    Stdlib.Format.fprintf fmt "Observe %d" (Stateid.to_int id)
+    Stdlib.Format.fprintf fmt "Observe %s" (Stateid.to_string id)
   | ParseMore _ -> Stdlib.Format.fprintf fmt "ParseMore event"
   | SendProofView id ->
-    Stdlib.Format.fprintf fmt "SendProofView %d" @@ (Stateid.to_int id)
+    Stdlib.Format.fprintf fmt "SendProofView %s" @@ (Stateid.to_string id)
   | SendBlockOnError id ->
-    Stdlib.Format.fprintf fmt "SendBlockOnError %d" @@ (Stateid.to_int id)
+    Stdlib.Format.fprintf fmt "SendBlockOnError %s" @@ (Stateid.to_string id)
   | SendMoveCursor range ->
     Stdlib.Format.fprintf fmt "SendBlockOnError %s" @@ (Range.to_string range)
 
@@ -97,11 +98,11 @@ let inject_em_events events = List.map inject_em_event events
 let inject_doc_event x = Sel.Event.map (fun e -> ParseMore e) x
 let inject_doc_events events = List.map inject_doc_event events
 let mk_proof_view_event id =
-  Sel.now ~priority:PriorityManager.proof_view (SendProofView (id))
+  Sel.now ~priority:Misc.PriorityManager.proof_view (SendProofView (id))
 let mk_observe_event id =
-  Sel.now ~priority:PriorityManager.execution (Observe id)
+  Sel.now ~priority:Misc.PriorityManager.execution (Observe id)
 let mk_move_cursor_event id = 
-  let priority = PriorityManager.move_cursor in
+  let priority = Misc.PriorityManager.move_cursor in
   Sel.now ~priority @@ SendMoveCursor id
 
 let mk_block_on_error_event last_range error_id background =
@@ -110,7 +111,7 @@ let mk_block_on_error_event last_range error_id background =
     update_goal_view
   else
     let red_flash =
-      [Sel.now ~priority:PriorityManager.move_cursor @@ SendBlockOnError error_id] in
+      [Sel.now ~priority:Misc.PriorityManager.move_cursor @@ SendBlockOnError error_id] in
     let move_cursor =
       match last_range with
       | Some last_range -> [mk_move_cursor_event last_range]
@@ -199,7 +200,7 @@ let mk_error_diag st (id,(oloc,msg,qf)) = (* mk_diag st (id,(Feedback.Error,oloc
         in
       Some code
   in
-  let lvl = Rocq_worker.API.Pure.severity_of_feedback_level Feedback.Error in
+  let lvl = Protocol.LspWrapper.DiagnosticSeverity.Error in
   make_diagnostic st.document (Document.range_of_id st.document id) oloc (Rocq_worker.API.Pure.string_of_ppcmds msg) lvl code
 
 
@@ -233,7 +234,7 @@ let all_diagnostics st =
   let all_exec_errors = ExecutionManager.all_errors st.execution_state in
   let all_feedback = ExecutionManager.all_feedback st.execution_state in
   (* we are resilient to a state where invalidate was not called yet *)
-  let exists (id,_) = Option.has_some (Document.get_sentence st.document id) in
+  let exists (id,_) = Option.is_some (Document.get_sentence st.document id) in
   let not_info (_, (lvl, _, _, _)) = 
     match lvl with
     | Feedback.Info -> false
@@ -291,7 +292,7 @@ let get_info_messages st pos =
     List.map (fun (lvl,_oloc,_,msg) -> Rocq_worker.API.Pure.severity_of_feedback_level lvl, pp_of_coqpp msg) feedback
 
 let create_execution_event background event =
-  let priority = if background then None else Some PriorityManager.execution in
+  let priority = if background then None else Some Misc.PriorityManager.execution in
   Sel.now ?priority event
 
 let state_before_error state error_id loc =
@@ -300,7 +301,7 @@ let state_before_error state error_id loc =
   | Some { start } ->
     let errored_sentence_range = Document.range_of_id_with_blank_space state.document error_id in
     let error_range = 
-      Option.cata (fun loc -> RawDocument.range_of_loc (Document.raw_document state.document) loc) errored_sentence_range loc in
+      Option.fold ~some:(fun loc -> RawDocument.range_of_loc (Document.raw_document state.document) loc) ~none:errored_sentence_range loc in
     match Document.find_sentence_before state.document start with
     | None ->
       let observe_id = Top in
@@ -336,7 +337,7 @@ let get_document_proofs st =
   let outline = Document.outline st.document in
   let is_theorem Document.{ type_ } =
     match type_ with
-    | TheoremKind _ -> true
+    | Theorem -> true
     | _ -> false
     in
   let mk_proof_block Document.{statement; proof; range } =
@@ -356,9 +357,9 @@ let get_document_symbols st =
   let to_document_symbol elem =
     let Document.{name; statement; range; type_} = elem in
     let kind = begin match type_ with
-    | TheoremKind _ -> SymbolKind.Function
-    | DefinitionType _ -> SymbolKind.Variable
-    | InductiveType _ -> SymbolKind.Struct
+    | Theorem -> SymbolKind.Function
+    | Definition -> SymbolKind.Variable
+    | Inductive -> SymbolKind.Struct
     | Other -> SymbolKind.Null
     end in
     DocumentSymbol.{name; detail=(Some statement); kind; range; selectionRange=range; children=None; deprecated=None; tags=None;}
@@ -426,7 +427,7 @@ let interpret_to_previous st check_mode =
     | Some { start } ->
       match Document.find_sentence_before st.document start with
       | None -> 
-        Vernacstate.unfreeze_full_state st.init_vs;
+        (* Vernacstate.unfreeze_full_state st.init_vs; *)
         let range = Range.top () in
         { st with observe_id=Top }, [mk_move_cursor_event range]
       | Some { id } -> 
@@ -489,43 +490,26 @@ let validate_document state (Document.{unchanged_id; invalid_ids; previous_docum
   let execution_state = ExecutionManager.reset_overview execution_state previous_document in
   { state with  execution_state; observe_id; document_state = Parsed }
 
-[%%if coq = "8.18" || coq = "8.19"]
-let start_library top opts = Coqinit.start_library ~top opts
-[%%else]
-let start_library top opts =
-  let intern = Vernacinterp.fs_intern in
-  Coqinit.start_library ~intern ~top opts;
-[%%endif]
 
-[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
-let dirpath_of_top = Coqargs.dirpath_of_top
-[%%else]
-let dirpath_of_top = Coqinit.dirpath_of_top
-[%%endif]
 
 let init init_vs ~opts uri ~text =
-  Vernacstate.unfreeze_full_state init_vs;
-  let top = try (dirpath_of_top (TopPhysical (DocumentUri.to_path uri))) with
-    e -> raise e
-  in
-  start_library top opts;
-  let init_vs = Vernacstate.freeze_full_state () in
-  let document = Document.create_document init_vs.Vernacstate.synterp text in
+  let init_vs = Rocq_worker.API.start_library ~init_vs ~path:(DocumentUri.to_path uri) opts in
+  let document = Document.create_document (Vernacstate.synterp_st_of_vs init_vs) text in
   let execution_state, feedback = ExecutionManager.init init_vs in
   let state = { uri; opts; init_vs; document; execution_state; observe_id=Top; cancel_handle = None; document_state = Parsing } in
-  let priority = Some PriorityManager.launch_parsing in
+  let priority = Some Misc.PriorityManager.launch_parsing in
   let event = Sel.now ?priority ParseEvent in
   state, [event] @ [inject_em_event feedback]
 
 let reset { uri; opts; init_vs; document; execution_state; } =
   let text = RawDocument.text @@ Document.raw_document document in
-  Vernacstate.unfreeze_full_state init_vs;
-  let document = Document.create_document init_vs.synterp text in
+  (* Vernacstate.unfreeze_full_state init_vs; *)
+  let document = Document.create_document (Vernacstate.synterp_st_of_vs init_vs) text in
   ExecutionManager.destroy execution_state;
   let execution_state, feedback = ExecutionManager.init init_vs in
   let observe_id = Top in
   let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handle = None ; document_state = Parsing } in
-  let priority = Some PriorityManager.launch_parsing in
+  let priority = Some Misc.PriorityManager.launch_parsing in
   let event = Sel.now ?priority ParseEvent in
   state, [event] @ [inject_em_event feedback]
 
@@ -541,13 +525,13 @@ let apply_text_edits state edits =
     {state with execution_state; document}
   in
   let state = List.fold_left apply_edit_and_shift_diagnostics_locs_and_overview state edits in
-  let priority = Some PriorityManager.launch_parsing in
+  let priority = Some Misc.PriorityManager.launch_parsing in
   let sel_event = Sel.now ?priority ParseEvent in
   state, [sel_event]
 
 let execution_finished st id started =
   let time = Unix.gettimeofday () -. started in
-  log (fun () -> Printf.sprintf "ExecuteToLoc %d ends after %2.3f" (Stateid.to_int id) time);
+  log (fun () -> Printf.sprintf "ExecuteToLoc %s ends after %2.3f" (Stateid.to_string id) time);
   (* We update the state to trigger a publication of diagnostics *)
   let update_view = true in
   let state = Some st in
@@ -570,10 +554,10 @@ let execute st id vst_for_next_todo started task background block =
   in
   match Document.get_sentence st.document id with
   | None ->
-    log (fun () -> Printf.sprintf "ExecuteToLoc %d stops after %2.3f, sentences invalidated" (Stateid.to_int id) time);
+    log (fun () -> Printf.sprintf "ExecuteToLoc %s stops after %2.3f, sentences invalidated" (Stateid.to_string id) time);
     {state=Some st; events=[]; update_view=true; notification=None} (* Sentences have been invalidate, probably because the user edited while executing *)
   | Some _ ->
-    log (fun () -> Printf.sprintf "ExecuteToLoc %d continues after %2.3f" (Stateid.to_int id) time);
+    log (fun () -> Printf.sprintf "ExecuteToLoc %s continues after %2.3f" (Stateid.to_string id) time);
     let (next, execution_state,vst_for_next_todo,events, exec_error) =
       ExecutionManager.execute st.execution_state st.document (vst_for_next_todo, [], false) task block in
     let st, block_events =
@@ -589,7 +573,7 @@ let execute st id vst_for_next_todo started task background block =
       | None, [] -> execution_finished { st with execution_state } id started (* There is no new tasks, and no errors -> execution finished *)
       | _ ->
         let cancel_handle = Option.map Sel.Event.get_cancellation_handle event in
-        let event = Option.cata (fun event -> [event]) [] event in
+        let event = Option.fold ~some:(fun event -> [event]) ~none:[] event in
         let state = Some {st with execution_state; cancel_handle} in
         let update_view = true in
         let events = proof_view_event @ inject_em_events events @ block_events @ event in
@@ -601,10 +585,10 @@ let get_proof st diff_mode id =
     Option.bind oid (ExecutionManager.get_vernac_state st.execution_state)
   in
   let observe_id = to_sentence_id st.observe_id in
-  let oid = Option.append id observe_id in
+  let oid = if Option.is_some id then id else observe_id in
   let ost = Option.bind oid (ExecutionManager.get_vernac_state st.execution_state) in
   let previous = Option.bind oid previous_st in
-  Option.bind ost (ProofState.get_proof ~previous diff_mode)
+  Option.bind ost (Rocq_worker.ProofState.get_proof ~previous diff_mode)
 
 let handle_execution_manager_event st ev =
   let id, execution_state_update, events = ExecutionManager.handle_event ev st.execution_state in
@@ -693,63 +677,21 @@ let get_completions st pos =
         []
     | Some lemmas -> lemmas
 
-[%%if coq = "8.18" || coq = "8.19"]
-[%%elif coq = "8.20"]
-  let parsable_make = Pcoq.Parsable.make
-  let unfreeze = Pcoq.unfreeze
-  let entry_parse = Pcoq.Entry.parse
-[%%else]
-  let parsable_make = Procq.Parsable.make
-  let unfreeze = Procq.unfreeze
-  let entry_parse = Procq.Entry.parse
-[%%endif]
-
-[%%if coq = "8.18" || coq = "8.19"]
 let parse_entry st pos entry pattern =
-  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string pattern) in
   let st = match Document.find_sentence_before st.document pos with
-  | None -> st.init_vs.Vernacstate.synterp.parsing
-  | Some { synterp_state } -> synterp_state.Vernacstate.Synterp.parsing
+  | None -> Vernacstate.synterp_st_of_vs st.init_vs
+  | Some { synterp_state } -> synterp_state
   in
-  Vernacstate.Parser.parse st entry pa
-[%%else]
-let parse_entry st pos entry pattern =
-  let pa = parsable_make (Gramlib.Stream.of_string pattern) in
-  let st = match Document.find_sentence_before st.document pos with
-  | None -> Vernacstate.(Synterp.parsing st.init_vs.synterp)
-  | Some { synterp_state } -> Vernacstate.Synterp.parsing synterp_state
-  in  
-  unfreeze st;
-  entry_parse entry pa
-[%%endif]
-
-[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
-  let smart_global = Pcoq.Prim.smart_global
-[%%else]
-  let smart_global = Procq.Prim.smart_global
-[%%endif]
-
-let about st pos ~pattern =
-  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match get_context st pos with
-  | None -> Error ({message="No context found"; code=None}) (*TODO execute *)
-  | Some (sigma, env) ->
-    try
-      let ref_or_by_not = parse_entry st loc (smart_global) pattern in
-      let udecl = None (* TODO? *) in
-      Ok (pp_of_coqpp @@ Prettyp.print_about env sigma ref_or_by_not udecl)
-    with e ->
-      let e, info = Exninfo.capture e in
-      let message = Rocq_worker.API.Pure.string_of_ppcmds @@ CErrors.iprint (e, info) in
-      Error ({message; code=None})
+  Rocq_worker.API.parse_entry st entry pattern
 
 let search st ~id pos pattern =
   let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
   match get_context st pos with
   | None -> [] (* TODO execute? *)
   | Some (sigma, env) ->
-    let query, r = parse_entry st loc (G_vernac.search_queries) pattern in
-    SearchQuery.interp_search ~id env sigma query r
+      let query, r = parse_entry st loc Rocq_worker.API.search_queries pattern in
+      Rocq_worker.SearchQuery.interp_search ~id env sigma query r
+      
 
 (** Try to generate hover text from [pattern] the context of the given [sentence] *)
 let hover_of_sentence st loc pattern sentence = 
@@ -797,101 +739,56 @@ let hover st pos =
         hover_of_sentence st loc pattern (Document.find_next_qed st.document loc)
       | _ -> None
 
-[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
-  let lconstr = Pcoq.Constr.lconstr
-[%%else]
-  let lconstr = Procq.Constr.lconstr
-[%%endif]
-
-
-[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
-let jump_to_definition _  _ = None
-[%%else]
 let jump_to_definition st pos =
   let raw_doc = Document.raw_document st.document in
   let loc = RawDocument.loc_of_position raw_doc pos in
+  let pst, vst = match Document.find_sentence_before st.document loc with
+    | None -> Vernacstate.synterp_st_of_vs st.init_vs, Some st.init_vs
+    | Some { id; synterp_state } -> synterp_state, ExecutionManager.get_vernac_state st.execution_state id
+  in
   let opattern = RawDocument.word_at_position raw_doc pos in
   match opattern with
   | None -> log (fun () -> "jumpToDef: no word found at cursor"); None
   | Some pattern ->
     log (fun () -> "jumpToDef: found word at cursor: \"" ^ pattern ^ "\"");
-    try
-    let qid = parse_entry st loc (Procq.Prim.qualid) pattern in
-      let ref = Nametab.locate_extended qid in
-        match Nametab.cci_src_loc ref with
-          | None -> None
-          | Some loc ->
-            begin match loc.Loc.fname with
-              | Loc.ToplevelInput | InFile  { dirpath = None } -> None
-              | InFile { dirpath = Some dp } ->
-                  let f = Loadpath.locate_absolute_library @@ Libnames.dirpath_of_string dp in
-                  begin match f with
-                    | Ok f ->
-                      let f =  Filename.remove_extension f ^ ".v" in
-                      (if Sys.file_exists f then
-                        let b_pos = Position.create ~character:(loc.bp - loc.bol_pos) ~line:(loc.line_nb - 1) in
-                        let e_pos = Position.create ~character:(loc.ep - loc.bol_pos) ~line:(loc.line_nb - 1) in
-                        let range = Range.create ~end_:b_pos ~start:e_pos in
-                        Some (range, f)
-                      else
-                        None
-                      )
-                    | Error _ -> None
-                  end
-            end
-        with e ->
-          let e, info = Exninfo.capture e in
-          log (fun () -> Rocq_worker.API.Pure.string_of_ppcmds @@ CErrors.iprint (e, info)); None
+    Rocq_worker.API.jump_to_definition pst vst pattern |> Option.map (fun (loc,f) ->
+      let open Loc in
+      let b_pos = Position.create ~character:(loc.bp - loc.bol_pos) ~line:(loc.line_nb - 1) in
+      let e_pos = Position.create ~character:(loc.ep - loc.bol_pos) ~line:(loc.line_nb - 1) in
+      let range = Range.create ~end_:b_pos ~start:e_pos in
+      range, f)
 
-[%%endif]
+let classic_query st pos text entry q =
+  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
+  match get_context st pos with
+  | None -> Error ({message="No context found"; code=None}) (*TODO execute *)
+  | Some (sigma, env) ->
+      try
+        let e = parse_entry st loc entry text in
+        Ok (Rocq_worker.API.Pure.pp_of_coq_pp @@ Rocq_worker.API.with_err (q env sigma) e)
+      with
+      | Rocq_worker.API.ParseError(_loc,msg,_qf) ->
+          Error ({message = Rocq_worker.API.Pure.string_of_ppcmds msg; code=None})
+      | Rocq_worker.API.Error(_loc,msg,_qf) ->
+          Error ({message = Rocq_worker.API.Pure.string_of_ppcmds msg; code=None})
+  
+let about st pos ~pattern =
+  classic_query st pos pattern Rocq_worker.API.smart_global (fun env sigma ref_or_by_not ->
+    let udecl = None (* TODO? *) in
+    Rocq_worker.API.print_about env sigma ref_or_by_not udecl)
 
 let check st pos ~pattern =
-  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match get_context st pos with
-  | None -> Error ({message="No context found"; code=None}) (*TODO execute *)
-  | Some (sigma,env) ->
-    let rc = parse_entry st loc lconstr pattern in
-    try
-      let redexpr = None in
-      Ok (pp_of_coqpp @@ Vernacentries.check_may_eval env sigma redexpr rc)
-    with e ->
-      let e, info = Exninfo.capture e in
-      let message = Rocq_worker.API.Pure.string_of_ppcmds @@ CErrors.iprint (e, info) in
-      Error ({message; code=None})
-
-[%%if coq = "8.18" || coq = "8.19"]
-let print_located_qualid _ qid = Prettyp.print_located_qualid qid
-[%%else]
-let print_located_qualid = Prettyp.print_located_qualid
-[%%endif]
+  classic_query st pos pattern Rocq_worker.API.lconstr (fun env sigma rc ->
+    let redexpr = None in
+    Rocq_worker.API.check_may_eval env sigma redexpr rc) 
 
 let locate st pos ~pattern = 
-  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match get_context st pos with
-  | None -> Error ({message="No context found"; code=None}) (*TODO execute *)
-  | Some (sigma, env) ->
-    match parse_entry st loc (smart_global) pattern with
-    | { v = AN qid } -> Ok (pp_of_coqpp @@ print_located_qualid env qid)
-    | { v = ByNotation (ntn, sc)} ->
-      Ok( pp_of_coqpp @@ Notation.locate_notation
-        (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) ntn sc)
-
-[%%if coq = "8.18" || coq = "8.19"]
-  let print_name = Prettyp.print_name
-[%%else]
-  let print_name =
-    let access = Library.indirect_accessor[@@warning "-3"] in
-    Prettyp.print_name access
-[%%endif]
+  classic_query st pos pattern Rocq_worker.API.smart_global (fun env sigma q ->
+    Rocq_worker.API.print_located_qualid env sigma q)
 
 let print st pos ~pattern = 
-  let loc = RawDocument.loc_of_position (Document.raw_document st.document) pos in
-  match get_context st pos with
-  | None -> Error({message="No context found"; code=None})
-  | Some (sigma, env) ->
-    let qid = parse_entry st loc (smart_global) pattern in
-    let udecl = None in (*TODO*)
-    Ok ( pp_of_coqpp @@ print_name env sigma qid udecl )
+  classic_query st pos pattern Rocq_worker.API.smart_global (fun env sigma q ->
+    Rocq_worker.API.print_name env sigma q)
     
 module Internal = struct
 

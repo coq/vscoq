@@ -14,6 +14,7 @@
 
 open Types
 open Lsp.Types
+open Rocq_worker.Types
 
 (** This file defines operations on the content of a document (text, parsing
     of sentences, scheduling). *)
@@ -21,12 +22,6 @@ open Lsp.Types
 (** The document gathers the text, which is partially validated (parsed into
     sentences *)
 type document
-
-type proof_block_type =
-  | TheoremKind of Decls.theorem_kind
-  | DefinitionType of Decls.definition_object_kind
-  | InductiveType of Vernacexpr.inductive_kind
-  | Other
 
 type proof_step = {
   id: sentence_id;
@@ -37,7 +32,7 @@ type proof_step = {
 type outline_element = {
     id: sentence_id;
     name: string;
-    type_: proof_block_type;
+    type_: Synterp.outline_type;
     statement: string;
     proof: proof_step list;
     range: Range.t;

@@ -14,6 +14,7 @@
 
 open Types
 open Protocol
+open Rocq_worker.Types
 
 (** The event manager is in charge of the actual event of tasks (as
     defined by the scheduler), caching event states and invalidating
@@ -38,7 +39,7 @@ type event
 type events = event Sel.Event.t list
 type errored_sentence = (sentence_id * Loc.t option) option
 
-type feedback_message = Feedback.level * Loc.t option * Quickfix.t list * Pp.t
+type feedback_message = LspWrapper.DiagnosticSeverity.t * Loc.t option * Quickfix.t list * Pp.t
 
 val pr_event : event -> Pp.t
 val init : Vernacstate.t -> state * event Sel.Event.t
@@ -65,8 +66,8 @@ val is_locally_executed : state -> sentence_id -> bool
 (** we know if it worked but we do not have the state in this process *)
 val is_remotely_executed : state -> sentence_id -> bool
 
-val get_context : state -> sentence_id -> (Evd.evar_map * Environ.env) option
-val get_initial_context : state -> Evd.evar_map * Environ.env
+(* val get_context : state -> sentence_id -> (Evd.evar_map * Environ.env) option
+val get_initial_context : state -> Evd.evar_map * Environ.env *)
 
 (** Returns the vernac state after the sentence *)
 val get_vernac_state : state -> sentence_id -> Vernacstate.t option
@@ -88,15 +89,3 @@ val prepare_overview : state -> LspWrapper.Range.t list -> state
 val overview : state -> exec_overview
 val overview_until_range : state -> LspWrapper.Range.t -> exec_overview
 val print_exec_overview_of_state : state -> unit
-
-(** Coq toplevels for delegation without fork *)
-module ProofWorkerProcess : sig
-  type options
-[%%if coq = "8.18" || coq = "8.19" || coq = "8.20"]
-   val parse_options : string list -> options * string list
-[%%else]
-   val parse_options : Coqargs.t -> string list -> options * string list
-[%%endif]
-  val main : st:Vernacstate.t -> options -> unit
-  val log : ?force:bool -> (unit -> string) -> unit
-end

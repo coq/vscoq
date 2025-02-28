@@ -3,9 +3,31 @@
  (public_name vscoq-language-server.rocq-worker)
  (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
  (preprocessor_deps vscoq_config.mlh)
- (private_modules hover printing proofState)
+ (modules :standard \ vscoqtop_proof_worker vscoqtop_tactic_worker)
+ (private_modules hover printing);  proofState);  searchQuery) ; delegationManager
  (wrapped true)
- (libraries base coq-core.sysinit coq-core.vernac coq-core.kernel coq-core.engine coq-core.pretyping coq-core.printing coq-core.parsing coq-core.interp coq-core.lib coq-core.clib coq-core.library coq-core.proofs protocol sel lsp))
+ (libraries misc coq-core.gramlib coq-core.boot coq-core.sysinit coq-core.vernac coq-core.kernel coq-core.engine coq-core.pretyping coq-core.printing coq-core.parsing coq-core.interp coq-core.lib coq-core.clib coq-core.library coq-core.proofs coq-core.tactics protocol sel lsp))
+
+(executable
+ (name vscoqtop_proof_worker)
+ (public_name vscoqtop_proof_worker.opt)
+ (modules vscoqtop_proof_worker)
+ (flags -linkall)
+ (package vscoq-language-server)
+ (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
+ (preprocessor_deps vscoq_config.mlh)
+ (libraries rocq_worker coq-core.boot coq-core.sysinit coq-core.vernac))
+
+(executable
+ (name vscoqtop_tactic_worker)
+ (public_name vscoqtop_tactic_worker.opt)
+ (modules vscoqtop_tactic_worker)
+ (flags -linkall)
+ (package vscoq-language-server)
+ (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
+ (preprocessor_deps vscoq_config.mlh)
+ (libraries rocq_worker coq-core.boot coq-core.sysinit coq-core.vernac))
+
 
 (rule
   (target vscoq_config.mlh)

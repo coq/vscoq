@@ -13,6 +13,7 @@
 (**************************************************************************)
 
 open Types
+open Rocq_worker.Types
 
 (** The scheduler is the component in charge of planning the execution of
     sentences. It also defines the task delegation strategy, and computes

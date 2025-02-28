@@ -4,4 +4,4 @@
  (flags -linkall)
  (package vscoq-language-server)
  (preprocess (pps ppx_optcomp -- -cookie "ppx_optcomp.env=env ~coq:(Defined \"%{coq:version.major}.%{coq:version.minor}\")"))
- (libraries coq-core.sysinit coq-core.tactics sel yojson dm lsp))
+ (libraries misc protocol coq-core.lib coq-core.clib coq-core.boot coq-core.sysinit sel yojson jsonrpc dm lsp rocq_worker))
