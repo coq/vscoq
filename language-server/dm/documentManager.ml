@@ -351,8 +351,20 @@ let get_document_proofs st =
   let proofs, _  = List.partition is_theorem outline in
   List.map mk_proof_block proofs
 
-let get_document_symbols st =
-  let outline = Document.outline st.document in
+let rec get_document_symbols outline (sec_or_m: DocumentSymbol.t option) symbols =
+  let record_in_outline outline symbol sec_or_m =
+    match sec_or_m with
+    | None ->
+      let symbols = symbols @ [symbol] in
+      get_document_symbols outline sec_or_m symbols
+    | Some sec_or_m ->
+      let children = match sec_or_m.children with
+        | None -> Some [symbol]
+        | Some l -> Some (l @ [symbol])
+      in
+      let sec_or_m = Some {sec_or_m with children} in
+      get_document_symbols outline sec_or_m symbols
+  in
   let to_document_symbol elem =
     let Document.{name; statement; range; type_} = elem in
     let kind = begin match type_ with
@@ -360,10 +372,34 @@ let get_document_symbols st =
     | DefinitionType _ -> SymbolKind.Variable
     | InductiveType _ -> SymbolKind.Struct
     | Other -> SymbolKind.Null
+    | BeginSection | BeginModule -> SymbolKind.Class
+    | End -> SymbolKind.Null
     end in
     DocumentSymbol.{name; detail=(Some statement); kind; range; selectionRange=range; children=None; deprecated=None; tags=None;}
   in
-  List.map to_document_symbol outline
+  match outline with
+  | [] -> symbols
+  | e :: l ->
+    let Document.{type_} = e in
+    match type_ with
+    | TheoremKind _ | DefinitionType _ | InductiveType _  | Other ->
+      let symbol = to_document_symbol e in
+      record_in_outline l symbol sec_or_m
+    | BeginSection ->
+      let symbol = to_document_symbol e in
+      get_document_symbols l (Some symbol) symbols
+    | BeginModule ->
+      let symbol = to_document_symbol e in
+      get_document_symbols l (Some symbol) symbols
+    | End ->
+      match sec_or_m with
+      | None -> log(fun () -> "Trying to end a module or section with no begin"); get_document_symbols l None symbols
+      | Some symbol ->
+        get_document_symbols l None (symbols @ [symbol])
+
+let get_document_symbols st =
+  let outline = List.rev @@ Document.outline st.document in
+  get_document_symbols outline None []
 
 let interpret_to st id check_mode =
   let observe_id = (Id id) in

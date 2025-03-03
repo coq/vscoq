@@ -26,6 +26,9 @@ type proof_block_type =
   | TheoremKind of Decls.theorem_kind
   | DefinitionType of Decls.definition_object_kind
   | InductiveType of Vernacexpr.inductive_kind
+  | BeginSection
+  | BeginModule
+  | End
   | Other
 
 type proof_step = {
@@ -210,6 +213,11 @@ let record_outline document id (ast : Synterp.vernac_control_entry) classif (out
     let vernac_gen_expr = ast.v.expr in
     let type_, statement = match vernac_gen_expr with
       | VernacSynterp (Synterp.EVernacExtend _) when names <> [] -> Some Other, "external"
+      | VernacSynterp (Synterp.EVernacBeginSection  _) -> log (fun () -> Format.sprintf "BEGIN SECTION %s" (string_of_id document id)); Some BeginSection, ""
+      | VernacSynterp (Synterp.EVernacDeclareModuleType  _) -> log (fun () -> Format.sprintf "BEGIN MODULE %s" (string_of_id document id)); Some BeginModule, ""
+      | VernacSynterp (Synterp.EVernacDefineModule  _) -> log (fun () -> Format.sprintf "BEGIN MODULE %s" (string_of_id document id)); Some BeginModule, ""
+      | VernacSynterp (Synterp.EVernacDeclareModule  _) -> log (fun () -> Format.sprintf "BEGIN MODULE %s" (string_of_id document id)); Some BeginModule, ""
+      | VernacSynterp (Synterp.EVernacEndSegment  _) -> log (fun () -> Format.sprintf "END SEGMENT"); Some End, ""
       | VernacSynterp _ -> None, ""
       | VernacSynPure pure -> 
         match pure with
