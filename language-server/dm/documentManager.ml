@@ -336,7 +336,7 @@ let get_document_proofs st =
   let outline = Document.outline st.document in
   let is_theorem Document.{ type_ } =
     match type_ with
-    | TheoremKind _ -> true
+    | TheoremKind -> true
     | _ -> false
     in
   let mk_proof_block Document.{statement; proof; range } =
@@ -351,26 +351,29 @@ let get_document_proofs st =
   let proofs, _  = List.partition is_theorem outline in
   List.map mk_proof_block proofs
 
-let rec get_document_symbols outline (sec_or_m: DocumentSymbol.t option) symbols =
+let rec get_document_symbols outline (sec_or_m: DocumentSymbol.t list) symbols =
+  let add_child (s_father: DocumentSymbol.t) s_child =
+    let children = match s_father.children with
+      | None -> Some [s_child]
+      | Some l -> Some (l @ [s_child])
+    in
+    {s_father with children} 
+  in
   let record_in_outline outline symbol sec_or_m =
     match sec_or_m with
-    | None ->
+    | [] ->
       let symbols = symbols @ [symbol] in
       get_document_symbols outline sec_or_m symbols
-    | Some sec_or_m ->
-      let children = match sec_or_m.children with
-        | None -> Some [symbol]
-        | Some l -> Some (l @ [symbol])
-      in
-      let sec_or_m = Some {sec_or_m with children} in
-      get_document_symbols outline sec_or_m symbols
+    | s :: l ->
+      let s = add_child s symbol in
+      get_document_symbols outline (s::l) symbols
   in
   let to_document_symbol elem =
     let Document.{name; statement; range; type_} = elem in
     let kind = begin match type_ with
-    | TheoremKind _ -> SymbolKind.Function
-    | DefinitionType _ -> SymbolKind.Variable
-    | InductiveType _ -> SymbolKind.Struct
+    | TheoremKind -> SymbolKind.Function
+    | DefinitionType -> SymbolKind.Variable
+    | InductiveType -> SymbolKind.Struct
     | Other -> SymbolKind.Null
     | BeginSection | BeginModule -> SymbolKind.Class
     | End -> SymbolKind.Null
@@ -382,24 +385,30 @@ let rec get_document_symbols outline (sec_or_m: DocumentSymbol.t option) symbols
   | e :: l ->
     let Document.{type_} = e in
     match type_ with
-    | TheoremKind _ | DefinitionType _ | InductiveType _  | Other ->
+    | TheoremKind | DefinitionType | InductiveType  | Other ->
       let symbol = to_document_symbol e in
       record_in_outline l symbol sec_or_m
     | BeginSection ->
       let symbol = to_document_symbol e in
-      get_document_symbols l (Some symbol) symbols
+      get_document_symbols l (symbol :: sec_or_m) symbols
     | BeginModule ->
       let symbol = to_document_symbol e in
-      get_document_symbols l (Some symbol) symbols
+      get_document_symbols l (symbol :: sec_or_m) symbols
     | End ->
       match sec_or_m with
-      | None -> log(fun () -> "Trying to end a module or section with no begin"); get_document_symbols l None symbols
-      | Some symbol ->
-        get_document_symbols l None (symbols @ [symbol])
+      | [] -> log(fun () -> "Trying to end a module or section with no begin"); get_document_symbols l [] symbols
+      | symbol :: s_l ->
+        match s_l with
+        | [] ->
+          get_document_symbols l s_l (symbols @ [symbol])
+        | s_parent :: s_l ->
+          let s = add_child s_parent symbol in
+          get_document_symbols l (s :: s_l) symbols
+          
 
 let get_document_symbols st =
   let outline = List.rev @@ Document.outline st.document in
-  get_document_symbols outline None []
+  get_document_symbols outline [] []
 
 let interpret_to st id check_mode =
   let observe_id = (Id id) in
