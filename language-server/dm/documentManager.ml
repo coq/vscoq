@@ -338,7 +338,7 @@ let coq_pilot_observe st position text =
   | Some {id} ->
     let sentences, sch = Document.parse_text_at_loc loc text st.document in
     let vst_for_next_todo, execution_state, _, _ = ExecutionManager.build_tasks_for st.document (Document.schedule st.document) st.execution_state id false in
-    let task, execution_state = ExecutionManager.build_tasks_for_sentences execution_state sch sentences in
+    let task, execution_state_after = ExecutionManager.build_tasks_for_sentences execution_state sch sentences in
     let rec execute_task execution_state vst_for_next_todo task =
       match task with
       | None -> log(fun() -> "NO TASK TO EXECUTE"); execution_state, vst_for_next_todo
@@ -348,8 +348,11 @@ let coq_pilot_observe st position text =
         ExecutionManager.execute_with_no_overview execution_state (vst_for_next_todo, [], false) task false in
         execute_task execution_state vst_for_next_todo next
     in
-    let execution_state, _ = execute_task execution_state vst_for_next_todo task in
-    let all_errors = ExecutionManager.all_errors execution_state in  (* TODO: RETURN ONLY THE NEW ERRORS *)
+    let execution_state_after, _ = execute_task execution_state_after vst_for_next_todo task in
+    let all_errors_before = ExecutionManager.all_errors execution_state in
+    let all_errors = ExecutionManager.all_errors execution_state_after in
+    let is_not_in_error_list (id, _) errors = List.find_opt (fun (e_id, _) -> e_id = id) errors = None in
+    let all_errors = List.filter (fun e -> is_not_in_error_list e all_errors_before)  all_errors in
     let get_pp_error (_, (_, pp, _)) = pp in
     List.map (fun e -> Pp.string_of_ppcmds @@  get_pp_error e) all_errors
 
