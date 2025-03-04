@@ -682,6 +682,19 @@ let execute st document (vs, events, interrupted) task block_on_first_error =
     let st = { st with todo=[]} in
     None, st, vst_for_next_todo, events, exec_error
 
+let execute_with_no_overview st (vs, events, interrupted) task block_on_first_error =
+  let st, vst_for_next_todo, events, _, exec_error =
+    execute_task st (vs, events, interrupted) task in
+  match block_on_first_error, exec_error with
+  | false, _ | _, None ->
+    let next, st = match st.todo with
+      | [] -> None, st
+      | task :: todo -> Some task, { st with todo }
+    in next, st, vst_for_next_todo, events, None
+  | true, Some _ ->
+    let st = { st with todo=[]} in
+    None, st, vst_for_next_todo, events, exec_error
+
 
 let build_tasks_for document sch st id block =
   let rec build_tasks id tasks st =
@@ -730,7 +743,10 @@ let build_tasks_for document sch st id block =
 let build_tasks_for_sentences st sch sentences =
   let tasks = List.map (fun ({id}: Document.sentence) -> snd @@ task_for_sentence sch id) sentences in
   let todo = List.concat_map prepare_task tasks in
-  {st with todo}
+  match todo with
+  | task :: todo ->
+    Some task, {st with todo}
+  | [] -> None, st
 
 let all_errors st =
   List.fold_left (fun acc (id, (p,_)) ->

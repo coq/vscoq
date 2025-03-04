@@ -337,14 +337,15 @@ let coq_pilot_observe st position text =
   | None -> log @@ (fun () -> "COQ PILOT ON NON VALID POSITION"); [] (* HANDLE ERROR *)
   | Some {id} ->
     let sentences, sch = Document.parse_text_at_loc loc text st.document in
-    let vst_for_next_todo, execution_state, task, _ = ExecutionManager.build_tasks_for st.document (Document.schedule st.document) st.execution_state id false in
-    let execution_state = ExecutionManager.build_tasks_for_sentences execution_state sch sentences in
+    let vst_for_next_todo, execution_state, _, _ = ExecutionManager.build_tasks_for st.document (Document.schedule st.document) st.execution_state id false in
+    let task, execution_state = ExecutionManager.build_tasks_for_sentences execution_state sch sentences in
     let rec execute_task execution_state vst_for_next_todo task =
       match task with
-      | None -> execution_state, vst_for_next_todo
+      | None -> log(fun() -> "NO TASK TO EXECUTE"); execution_state, vst_for_next_todo
       | Some task ->
+        log(fun () -> "EXECUTING TASK");
         let (next, execution_state,vst_for_next_todo,_events,_interrupted) =
-        ExecutionManager.execute execution_state st.document (vst_for_next_todo, [], false) task false in
+        ExecutionManager.execute_with_no_overview execution_state (vst_for_next_todo, [], false) task false in
         execute_task execution_state vst_for_next_todo next
     in
     let execution_state, _ = execute_task execution_state vst_for_next_todo task in
