@@ -351,6 +351,18 @@ let get_document_proofs st =
   let proofs, _  = List.partition is_theorem outline in
   List.map mk_proof_block proofs
 
+let to_document_symbol elem =
+  let Document.{name; statement; range; type_} = elem in
+  let kind = begin match type_ with
+  | TheoremKind -> SymbolKind.Function
+  | DefinitionType -> SymbolKind.Variable
+  | InductiveType -> SymbolKind.Struct
+  | Other -> SymbolKind.Null
+  | BeginSection | BeginModule -> SymbolKind.Class
+  | End -> SymbolKind.Null
+  end in
+  DocumentSymbol.{name; detail=(Some statement); kind; range; selectionRange=range; children=None; deprecated=None; tags=None;}
+
 let rec get_document_symbols outline (sec_or_m: DocumentSymbol.t list) symbols =
   let add_child (s_father: DocumentSymbol.t) s_child =
     let children = match s_father.children with
@@ -367,18 +379,6 @@ let rec get_document_symbols outline (sec_or_m: DocumentSymbol.t list) symbols =
     | s :: l ->
       let s = add_child s symbol in
       get_document_symbols outline (s::l) symbols
-  in
-  let to_document_symbol elem =
-    let Document.{name; statement; range; type_} = elem in
-    let kind = begin match type_ with
-    | TheoremKind -> SymbolKind.Function
-    | DefinitionType -> SymbolKind.Variable
-    | InductiveType -> SymbolKind.Struct
-    | Other -> SymbolKind.Null
-    | BeginSection | BeginModule -> SymbolKind.Class
-    | End -> SymbolKind.Null
-    end in
-    DocumentSymbol.{name; detail=(Some statement); kind; range; selectionRange=range; children=None; deprecated=None; tags=None;}
   in
   match outline with
   | [] -> symbols
