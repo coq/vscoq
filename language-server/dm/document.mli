@@ -65,6 +65,8 @@ val raw_document : document -> RawDocument.t
 
 val outline : document -> outline
 
+val shift_hover_info : document -> from:int -> amount:int -> document
+
 val create_document : Vernacstate.Synterp.t -> string -> document
 (** [create_document init_synterp_state text] creates a fresh document with content defined by
     [text] under [init_synterp_state]. *)

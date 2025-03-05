@@ -583,6 +583,7 @@ let apply_text_edits state edits =
     let edit_length = edit_stop - edit_start in
     let exec_st = ExecutionManager.shift_diagnostics_locs exec_st ~start:edit_stop ~offset:(String.length new_text - edit_length) in
     let execution_state = ExecutionManager.shift_overview exec_st ~before:(Document.raw_document state.document) ~after:(Document.raw_document document) ~start:edit_stop ~offset:(String.length new_text - edit_length) in
+    let document = Document.shift_hover_info document ~from:edit_stop ~amount:(String.length new_text - edit_length) in
     {state with execution_state; document}
   in
   let state = List.fold_left apply_edit_and_shift_diagnostics_locs_and_overview state edits in
