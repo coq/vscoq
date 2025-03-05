@@ -169,6 +169,8 @@ val range_of_id : document -> Stateid.t -> Range.t
 val range_of_id_with_blank_space : document -> Stateid.t -> Range.t
 (** [range_of_id_with_blank_space doc id] returns a Range object coressponding to the sentence id given in argument but with the white spaces before (until the previous sentence) *)
 
+val parse_text_at_loc : int -> string -> document -> sentence list * Scheduler.schedule
+
 module Internal : sig
 
   val string_of_sentence : sentence -> string
