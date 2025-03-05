@@ -79,7 +79,16 @@ val handle_event : event -> state -> (sentence_id option * state option * events
 type prepared_task
 val get_id_of_executed_task : prepared_task -> sentence_id
 val build_tasks_for : Document.document -> Scheduler.schedule -> state -> sentence_id -> bool -> Vernacstate.t * state * prepared_task option * errored_sentence
-val execute : state -> Document.document -> Vernacstate.t * events * bool -> prepared_task -> bool -> (prepared_task option * state * Vernacstate.t * events * errored_sentence)
+
+type cancellation_handle
+val cancel : cancellation_handle -> unit
+type 'a interruptible = {
+  promise : 'a Sel.Promise.t;
+  kill_handle : cancellation_handle;
+}
+type exec_result = (prepared_task option * state * Vernacstate.t * events * errored_sentence) (* TODO: turn into record *)
+(* TODO: hide the ugly type of the accumulator *)
+val execute : state -> Document.document -> Vernacstate.t * events * bool -> prepared_task -> bool -> exec_result interruptible
 
 (* val update_overview : prepared_task -> prepared_task list -> state -> Document.document -> state
 val cut_overview : prepared_task -> state -> Document.document -> state *)

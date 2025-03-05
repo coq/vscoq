@@ -535,6 +535,13 @@ let workspaceDidChangeConfiguration params =
   | Continuous -> run_documents ()
   | Manual -> reset_observe_ids (); ([] : events)
 
+let handle_interrupt params =
+  let Notification.Client.InterruptParams.{ textDocument } = params in
+  let uri = textDocument.uri in
+  match Hashtbl.find_opt states (DocumentUri.to_path uri) with
+  | None -> log (fun () -> "[interrupt] ignoring event on non existent document"); []
+  | Some { st } -> Dm.DocumentManager.cancel_ongoing_execution st; []
+
 let dispatch_std_request : type a. Jsonrpc.Id.t -> a Lsp.Client_request.t -> (a, error) result * events =
   fun id req ->
   match req with
@@ -590,6 +597,7 @@ let dispatch_notification =
   | InterpretToEnd params -> log (fun () -> "Received notification: vscoq/interpretToEnd"); coqtopInterpretToEnd params
   | StepBackward params -> log (fun () -> "Received notification: vscoq/stepBackward"); coqtopStepBackward params
   | StepForward params -> log (fun () -> "Received notification: vscoq/stepForward"); coqtopStepForward params
+  | Interrupt params -> log (fun () -> "Received notification: vscoq/interrupt"); handle_interrupt params
   | Std notif -> dispatch_std_notification notif
 
 let handle_lsp_event = function
