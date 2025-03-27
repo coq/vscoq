@@ -415,6 +415,12 @@
         "category": "Coq",
         "icon": "$(expand-all)",
         "enablement": "vscoq.hasSearchResults"
+      },
+      {
+        "command": "extension.coq.interrupt",
+        "title": "Interrupt",
+        "category": "Coq",
+        "icon": "$(stop-circle)"
       }
     ],
     "menus": {
@@ -423,6 +429,11 @@
           "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
           "command": "extension.coq.interpretToPoint",
           "group": "navigation@3"
+        },
+        {
+          "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",
+          "command": "extension.coq.interrupt",
+          "group": "navigation@1"
         },
         {
           "when": "resourceLangId == coq && config.vscoq.proof.display-buttons == true",

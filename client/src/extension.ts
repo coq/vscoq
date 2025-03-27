@@ -40,7 +40,8 @@ import {
     sendInterpretToPoint,
     sendInterpretToEnd,
     sendStepForward,
-    sendStepBackward
+    sendStepBackward,
+    sendInterrupt
 } from './manualChecking';
 import { 
     makeVersionedDocumentId,
@@ -207,6 +208,7 @@ export function activate(context: ExtensionContext) {
         registerVscoqTextCommand('addQueryTab', () => searchProvider.addTab());
         registerVscoqTextCommand('collapseAllQueries', () => searchProvider.collapseAll());
         registerVscoqTextCommand('expandAllQueries', () => searchProvider.expandAll());
+        registerVscoqTextCommand('interrupt', (editor) => sendInterrupt(editor, client));
         registerVscoqTextCommand('interpretToPoint', (editor) => sendInterpretToPoint(editor, client));
         registerVscoqTextCommand('interpretToEnd', (editor) => sendInterpretToEnd(editor, client));
         registerVscoqTextCommand('stepForward', (editor) => sendStepForward(editor, client));

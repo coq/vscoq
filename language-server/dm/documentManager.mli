@@ -94,6 +94,9 @@ val interpret_in_background : state -> should_block_on_error:bool -> (state * ev
 val reset : state -> state * events 
 (** resets Coq *)
 
+val cancel_ongoing_execution : state -> unit
+(** [cancel_ongoing_execution st] cancels any ongoing execution on [st]*)
+
 val executed_ranges : state -> Settings.Mode.t -> exec_overview
 (** [executes_ranges doc mode] returns the ranges corresponding to the sentences
     that have been executed. [mode] allows to send a "cut" range that only goes

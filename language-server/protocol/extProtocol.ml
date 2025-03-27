@@ -54,12 +54,21 @@ module Notification = struct
 
     end
 
+    module InterruptParams = struct
+
+        type t = {
+          textDocument : VersionedTextDocumentIdentifier.t;
+        } [@@deriving yojson]
+  
+      end
+
     type t =
     | Std of Lsp.Client_notification.t
     | InterpretToEnd of InterpretToEndParams.t
     | InterpretToPoint of InterpretToPointParams.t
     | StepForward of StepForwardParams.t
     | StepBackward of StepBackwardParams.t
+    | Interrupt of InterruptParams.t
 
     let of_jsonrpc (Jsonrpc.Notification.{ method_; params } as notif) =
       let open Lsp.Import.Result.O in
@@ -76,6 +85,9 @@ module Notification = struct
       | "vscoq/interpretToEnd" ->
         let+ params = Lsp.Import.Json.message_params params InterpretToEndParams.t_of_yojson in
         InterpretToEnd params
+      | "vscoq/interrupt" ->
+        let+ params = Lsp.Import.Json.message_params params InterruptParams.t_of_yojson in
+        Interrupt params
       | _ ->
         let+ notif = Lsp.Client_notification.of_jsonrpc notif in
         Std notif 

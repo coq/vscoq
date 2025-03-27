@@ -48,6 +48,7 @@ type state = {
   execution_state : ExecutionManager.state;
   observe_id : observe_id;
   cancel_handle : Sel.Event.cancellation_handle option;
+  kill_handle : ExecutionManager.cancellation_handle option;
   document_state: document_state;
 }
 
@@ -60,6 +61,15 @@ type event =
       task : ExecutionManager.prepared_task;
       started : float; (* time *)
     }
+  | ExecutePromise of {
+    id : Types.sentence_id;
+    started : float;
+    result : ExecutionManager.exec_result Sel.Promise.state;
+    (* ugly *)
+    background: bool;
+    block: bool;
+    proof_view_event : event Sel.Event.t list;
+  }
   | ExecutionManagerEvent of ExecutionManager.event
   | ParseEvent
   | Observe of Types.sentence_id
@@ -78,7 +88,9 @@ type handled_event = {
 let pp_event fmt = function
   | Execute { id; started; _ } ->
       let time = Unix.gettimeofday () -. started in 
-      Stdlib.Format.fprintf fmt "ExecuteToLoc %d (started %2.3f ago)" (Stateid.to_int id) time
+      Stdlib.Format.fprintf fmt "Execute %d (started %2.3f ago)" (Stateid.to_int id) time
+  | ExecutePromise { id; _ } ->
+      Stdlib.Format.fprintf fmt "ExecutePromise %d" (Stateid.to_int id)
   | ExecutionManagerEvent _ -> Stdlib.Format.fprintf fmt "ExecutionManagerEvent"
   | ParseEvent ->
     Stdlib.Format.fprintf fmt "ParseEvent"
@@ -294,6 +306,10 @@ let create_execution_event background event =
   let priority = if background then None else Some PriorityManager.execution in
   Sel.now ?priority event
 
+let create_execution_promise_event id started background block proof_view_event p =
+  let priority = if background then None else Some (-100) in
+  Sel.On.promise ?priority p (fun result -> ExecutePromise { result; id; started; background; block; proof_view_event; })
+
 let state_before_error state error_id loc =
   match Document.get_sentence state.document error_id with
   | None -> state, None
@@ -309,11 +325,15 @@ let state_before_error state error_id loc =
       let observe_id = (Id id) in
       {state with observe_id}, Some error_range
 
+let cancel_ongoing_execution state =
+  Option.iter Sel.Event.cancel state.cancel_handle;
+  Option.iter ExecutionManager.cancel state.kill_handle
+
 let observe ~background state id ~should_block_on_error : (state * event Sel.Event.t list) =
   match Document.get_sentence state.document id with
   | None -> state, [] (* TODO error? *)
   | Some { id } ->
-    Option.iter Sel.Event.cancel state.cancel_handle;
+    cancel_ongoing_execution state;
     let vst_for_next_todo, execution_state, task, error_id = ExecutionManager.build_tasks_for state.document (Document.schedule state.document) state.execution_state id should_block_on_error in
     match task with
     | Some task -> (* task will only be Some if there is no error *)
@@ -557,7 +577,7 @@ let init init_vs ~opts uri ~text =
   let init_vs = Vernacstate.freeze_full_state () in
   let document = Document.create_document init_vs.Vernacstate.synterp text in
   let execution_state, feedback = ExecutionManager.init init_vs in
-  let state = { uri; opts; init_vs; document; execution_state; observe_id=Top; cancel_handle = None; document_state = Parsing } in
+  let state = { uri; opts; init_vs; document; execution_state; observe_id=Top; cancel_handle = None; kill_handle = None; document_state = Parsing } in
   let priority = Some PriorityManager.launch_parsing in
   let event = Sel.now ?priority ParseEvent in
   state, [event] @ [inject_em_event feedback]
@@ -569,7 +589,7 @@ let reset { uri; opts; init_vs; document; execution_state; } =
   ExecutionManager.destroy execution_state;
   let execution_state, feedback = ExecutionManager.init init_vs in
   let observe_id = Top in
-  let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handle = None ; document_state = Parsing } in
+  let state = { uri; opts; init_vs; document; execution_state; observe_id; cancel_handle = None ; kill_handle = None; document_state = Parsing } in
   let priority = Some PriorityManager.launch_parsing in
   let event = Sel.now ?priority ParseEvent in
   state, [event] @ [inject_em_event feedback]
@@ -599,6 +619,8 @@ let execution_finished st id started =
   {state; events=[]; update_view; notification=None}
 
 let execute st id vst_for_next_todo started task background block =
+  (* block until any ongoing Coq computation is over *)
+  Option.iter ExecutionManager.cancel st.kill_handle;
   let time = Unix.gettimeofday () -. started in
   let proof_view_event = (*When in continuous mode we always check if we should update the goal view *)
     if background then begin
@@ -619,8 +641,14 @@ let execute st id vst_for_next_todo started task background block =
     {state=Some st; events=[]; update_view=true; notification=None} (* Sentences have been invalidate, probably because the user edited while executing *)
   | Some _ ->
     log (fun () -> Printf.sprintf "ExecuteToLoc %d continues after %2.3f" (Stateid.to_int id) time);
-    let (next, execution_state,vst_for_next_todo,events, exec_error) =
-      ExecutionManager.execute st.execution_state st.document (vst_for_next_todo, [], false) task block in
+    let interruptible = ExecutionManager.execute st.execution_state st.document (vst_for_next_todo, [], false) task block in
+    let st = { st with kill_handle = Some interruptible.kill_handle } in
+    {state=Some st; events=[create_execution_promise_event id started background block proof_view_event interruptible.promise]; update_view=true; notification=None}
+
+let post_execute st id started background block proof_view_event promise =
+  match promise with
+  | Sel.Promise.Rejected e -> assert false (* TODO, an error escaped *)
+  | Sel.Promise.Fulfilled (next, execution_state,vst_for_next_todo,events, exec_error) ->
     let st, block_events =
       match exec_error with
       | None -> st, []
@@ -635,7 +663,7 @@ let execute st id vst_for_next_todo started task background block =
       | _ ->
         let cancel_handle = Option.map Sel.Event.get_cancellation_handle event in
         let event = Option.cata (fun event -> [event]) [] event in
-        let state = Some {st with execution_state; cancel_handle} in
+        let state = Some {st with execution_state; cancel_handle; kill_handle = None} in
         let update_view = true in
         let events = proof_view_event @ inject_em_events events @ block_events @ event in
         {state; events; update_view; notification=None}
@@ -671,6 +699,8 @@ let handle_event ev st ~block check_mode diff_mode =
   match ev with
   | Execute { id; vst_for_next_todo; started; task } ->
     execute st id vst_for_next_todo started task background block
+  | ExecutePromise { id; started; background; block; proof_view_event; result } ->
+    post_execute st id started background block proof_view_event result
   | ExecutionManagerEvent ev ->
     handle_execution_manager_event st ev
   | Observe id ->
