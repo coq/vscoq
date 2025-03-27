@@ -447,9 +447,14 @@ let tok_equal t1 t2 =
   | QUOTATION(s1,t1), QUOTATION(s2,t2) -> CString.equal s1 s2 && CString.equal t1 t2
   | _ -> false
 
+let same_errors (e1 : parsing_error) (e2 : parsing_error) =
+  let s1 = Pp.string_of_ppcmds (snd e1.msg) in
+  let s2 = Pp.string_of_ppcmds (snd e2.msg) in
+  (s1 = s2) && (e1.start = e2.start) && (e1.stop = e2.stop)
+
 let same_tokens (s1 : sentence) (s2 : pre_sentence) =
   match s1.ast, s2.ast with
-  | Error _, Error _ -> false
+  | Error e1, Error e2 -> same_errors e1 e2
   | Parsed ast1, Parsed ast2 ->
     CList.equal tok_equal ast1.tokens ast2.tokens
   | _, _ -> false
