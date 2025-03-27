@@ -262,8 +262,13 @@ let ref_info env _sigma ref udecl =
   String.concat "\n\n---\n\n" @@ [md_code_block @@ compactify @@ Pp.string_of_ppcmds typ]@args@
   [Format.sprintf "**%s** %s" (pr_globref_kind ref) (Pp.string_of_ppcmds path)]
 
+[%%if coq = "8.18" || coq = "8.19" || coq = "8.20" || coq = "9.0"]
 let mod_info mp =
   md_code_block @@ Format.sprintf "Module %s" (DirPath.to_string (Nametab.dirpath_of_module mp))
+[%%else]
+let mod_info mp =
+  md_code_block @@ Format.sprintf "Module %s" (Libnames.string_of_path (Nametab.path_of_module mp))
+[%%endif]
 
 let modtype_info mp =
   md_code_block @@ Format.sprintf "Module Type %s" (Libnames.string_of_path (Nametab.path_of_modtype mp))
