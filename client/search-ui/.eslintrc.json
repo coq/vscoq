@@ -3,7 +3,8 @@
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 6,
-    "sourceType": "module"
+    "sourceType": "module",
+    "project": "./tsconfig.json"
   },
   "plugins": [
     "@typescript-eslint"
@@ -36,8 +37,8 @@
     "@typescript-eslint/switch-exhaustiveness-check": "error"
   },
   "ignorePatterns": [
-    "out",
-    "dist",
+    "build",
+    "node_modules",
     "**/*.d.ts"
   ],
   "extends": [
