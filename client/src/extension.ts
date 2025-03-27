@@ -9,7 +9,8 @@ import {workspace, window, commands, languages, ExtensionContext, env,
   extensions,
   StatusBarAlignment,
   MarkdownString,
-  WorkspaceEdit
+  WorkspaceEdit,
+  Position
 } from 'vscode';
 
 import {
@@ -27,6 +28,8 @@ import GoalPanel from './panels/GoalPanel';
 import SearchViewProvider from './panels/SearchViewProvider';
 import {
     CoqLogMessage,
+    CoqPilotRequest,
+    CoqPilotResponse,
     DocumentProofsRequest,
     DocumentProofsResponse,
     ErrorAlertNotification,
@@ -61,6 +64,14 @@ export function activate(context: ExtensionContext) {
         return client.sendRequest(req, params);
     };
 
+    const runTacticsAtLocContext = (uri: Uri, position: Position, text: string) => {
+        const textDocument = TextDocumentIdentifier.create(uri.toString());
+        const params: CoqPilotRequest = {textDocument, position, text};
+        const req = new RequestType<CoqPilotRequest, CoqPilotResponse, void>("vscoq/coqPilot");
+        Client.writeToVscoq2Channel("Trying running tactics: (" + text + ") for document: " + uri.toString());
+        return client.sendRequest(req, params);
+    };
+    
     const coqTM = new VsCoqToolchainManager();
     coqTM.intialize().then(
         () => {
@@ -370,7 +381,8 @@ Path: \`${coqTM.getVsCoqTopPath()}\`
     }
 
     const externalApi = {
-        getDocumentProofs
+        getDocumentProofs,
+        runTacticsAtLocContext
     };
 
     return externalApi;
