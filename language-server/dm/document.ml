@@ -100,6 +100,7 @@ type document = {
   sentences_by_end : sentence LM.t;
   parsing_errors_by_end : parsing_error LM.t;
   comments_by_end : comment LM.t;
+  hover_info : HoverInfo.t;
   schedule : Scheduler.schedule;
   outline : outline;
   parsed_loc : int;
@@ -672,6 +673,11 @@ let invalidate top_edit top_id parsed_doc new_sentences =
   let invalid_ids, doc = invalidate_diff parsed_doc scheduler_state Stateid.Set.empty diff in
   unchanged_id, invalid_ids, doc
 
+let shift_hover_info document ~from ~amount =
+  let {hover_info} = document in
+  let hover_info = HoverInfo.shift hover_info ~from ~amount in
+  {document with hover_info}
+
 (** Validate document when raw text has changed *)
 let validate_document ({ parsed_loc; raw_doc; cancel_handle } as document) =
   (* Cancel any previous parsing event *)
@@ -736,6 +742,7 @@ let create_document init_synterp_state text =
       outline = [];
       init_synterp_state;
       cancel_handle = None;
+      hover_info = HoverInfo.empty ();
     }
 
 let apply_text_edit document edit =
