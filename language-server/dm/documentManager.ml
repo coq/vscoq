@@ -937,7 +937,23 @@ let print st pos ~pattern =
     let qid = parse_entry st loc (smart_global) pattern in
     let udecl = None in (*TODO*)
     Ok ( pp_of_coqpp @@ print_name env sigma qid udecl )
-    
+
+(* Ignore nested proofs option (lives in STM) instead of failing with
+   anomaly when it is set in a .vo we Require.
+   cf #1060 *)
+
+let warn_nested_proofs_opt =
+  CWarnings.create ~name:"vscoq-nested-proofs-flag"
+    Pp.(fun () -> str "Flag \"Nested Proofs Allowed\" is ignored by VsCoq.")
+
+let () =
+  Goptions.declare_bool_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = None;
+      optkey   = Vernac_classifier.stm_allow_nested_proofs_option_name;
+      optread  = (fun () -> false);
+      optwrite = (fun b -> if b then warn_nested_proofs_opt ()) }
+
 module Internal = struct
 
   let document st =
